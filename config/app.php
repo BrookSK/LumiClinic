@@ -5,7 +5,12 @@ declare(strict_types=1);
 return [
     'app' => [
         'name' => 'LumiClinic',
-        'base_url' => getenv('APP_BASE_URL') ?: 'http://localhost:8000',
+        // 'base_url' => getenv('APP_BASE_URL') ?: 'http://localhost:8000',
+        'base_url' => getenv('APP_BASE_URL') ?: (
+            (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
+            . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+        ),
+
         'env' => getenv('APP_ENV') ?: 'local',
     ],
     'session' => [
