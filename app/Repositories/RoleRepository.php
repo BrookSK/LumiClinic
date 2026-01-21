@@ -50,4 +50,16 @@ final class RoleRepository
             'role_id' => $roleId,
         ]);
     }
+
+    public function clearRolesForUser(int $clinicId, int $userId): void
+    {
+        $sql = "
+            DELETE FROM user_roles
+            WHERE clinic_id = :clinic_id
+              AND user_id = :user_id
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'user_id' => $userId]);
+    }
 }

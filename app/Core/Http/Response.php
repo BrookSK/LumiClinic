@@ -23,6 +23,12 @@ final class Response
         return new self($status, ['Location' => $to], '');
     }
 
+    /** @param array<string, string> $headers */
+    public static function raw(string $body, int $status = 200, array $headers = []): self
+    {
+        return new self($status, $headers, $body);
+    }
+
     public function send(): void
     {
         http_response_code($this->status);

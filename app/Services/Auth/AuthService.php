@@ -29,6 +29,16 @@ final class AuthService
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
+        $hostClinicId = null;
+        if ($this->container->has('host_clinic_id')) {
+            $hostClinicId = $this->container->get('host_clinic_id');
+        }
+
+        if (is_int($hostClinicId) && $hostClinicId !== (int)$user['clinic_id']) {
+            $audit->log((int)$user['id'], (int)$user['clinic_id'], 'auth.login_blocked_host_mismatch', ['host_clinic_id' => $hostClinicId], $ip);
+            return new AuthResult(false, 'Credenciais inválidas.');
+        }
+
         $_SESSION['user_id'] = (int)$user['id'];
         $_SESSION['clinic_id'] = (int)$user['clinic_id'];
 

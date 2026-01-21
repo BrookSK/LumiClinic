@@ -22,8 +22,11 @@ $csrf = $_SESSION['_csrf'] ?? '';
         <nav class="lc-nav">
             <a class="lc-nav__item" href="/">Dashboard</a>
             <a class="lc-nav__item" href="/clinic">Clínica</a>
+            <a class="lc-nav__item" href="/clinic/working-hours">Horários</a>
+            <a class="lc-nav__item" href="/clinic/closed-days">Dias não atendidos</a>
             <a class="lc-nav__item" href="/users">Usuários</a>
             <a class="lc-nav__item" href="/settings">Configurações</a>
+            <a class="lc-nav__item" href="/audit-logs">Auditoria</a>
         </nav>
 
         <form method="post" action="/logout" class="lc-sidebar__footer">

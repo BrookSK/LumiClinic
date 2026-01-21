@@ -18,9 +18,14 @@ ob_start();
         <label class="lc-label">Nome</label>
         <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($clinic['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
 
+        <label class="lc-label">Tenant (subdomínio)</label>
+        <input class="lc-input" type="text" name="tenant_key" value="<?= htmlspecialchars((string)($clinic['tenant_key'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="ex: demo" />
+
         <div style="margin-top:14px; display:flex; gap:10px;">
             <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             <a class="lc-btn lc-btn--secondary" href="/">Voltar</a>
+            <a class="lc-btn lc-btn--secondary" href="/clinic/working-hours">Horários</a>
+            <a class="lc-btn lc-btn--secondary" href="/clinic/closed-days">Dias não atendidos</a>
         </div>
     </form>
 </div>

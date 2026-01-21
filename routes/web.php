@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\Auth\LoginController;
+use App\Controllers\Audit\AuditLogController;
 use App\Controllers\Clinics\ClinicController;
 use App\Controllers\DashboardController;
 use App\Controllers\Settings\SettingsController;
@@ -17,12 +18,27 @@ $router->post('/logout', [LoginController::class, 'logout']);
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);
 
+$router->get('/clinic/working-hours', [ClinicController::class, 'workingHours']);
+$router->post('/clinic/working-hours', [ClinicController::class, 'storeWorkingHour']);
+$router->post('/clinic/working-hours/delete', [ClinicController::class, 'deleteWorkingHour']);
+
+$router->get('/clinic/closed-days', [ClinicController::class, 'closedDays']);
+$router->post('/clinic/closed-days', [ClinicController::class, 'storeClosedDay']);
+$router->post('/clinic/closed-days/delete', [ClinicController::class, 'deleteClosedDay']);
+
 $router->get('/users', [UserController::class, 'index']);
 $router->get('/users/create', [UserController::class, 'create']);
 $router->post('/users/create', [UserController::class, 'store']);
+
+$router->get('/users/edit', [UserController::class, 'edit']);
+$router->post('/users/edit', [UserController::class, 'update']);
+$router->post('/users/disable', [UserController::class, 'disable']);
 
 $router->get('/settings', [SettingsController::class, 'index']);
 $router->post('/settings', [SettingsController::class, 'update']);
 
 $router->get('/settings/terminology', [SettingsController::class, 'terminology']);
 $router->post('/settings/terminology', [SettingsController::class, 'updateTerminology']);
+
+$router->get('/audit-logs', [AuditLogController::class, 'index']);
+$router->get('/audit-logs/export', [AuditLogController::class, 'export']);

@@ -20,6 +20,7 @@ ob_start();
                 <th>E-mail</th>
                 <th>Status</th>
                 <th>Criado em</th>
+                <th>Ações</th>
             </tr>
             </thead>
             <tbody>
@@ -30,6 +31,9 @@ ob_start();
                     <td><?= htmlspecialchars((string)$u['email'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$u['status'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$u['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>
+                        <a class="lc-btn lc-btn--secondary" href="/users/edit?id=<?= (int)$u['id'] ?>">Editar</a>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

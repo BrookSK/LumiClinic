@@ -25,6 +25,7 @@ final class ClinicController extends Controller
         $this->authorize('clinics.update');
 
         $name = trim((string)$request->input('name', ''));
+        $tenantKey = trim((string)$request->input('tenant_key', ''));
         if ($name === '') {
             return $this->view('clinics/edit', ['error' => 'Nome é obrigatório.']);
         }
@@ -32,6 +33,103 @@ final class ClinicController extends Controller
         $service = new ClinicService($this->container);
         $service->updateClinicName($name, $request->ip());
 
+        $service->updateTenantKey($tenantKey, $request->ip());
+
         return $this->redirect('/clinic');
+    }
+
+    public function workingHours(Request $request)
+    {
+        $this->authorize('clinics.read');
+
+        $service = new ClinicService($this->container);
+
+        return $this->view('clinics/working-hours', [
+            'items' => $service->listWorkingHours(),
+        ]);
+    }
+
+    public function storeWorkingHour(Request $request)
+    {
+        $this->authorize('clinics.update');
+
+        $weekday = (int)$request->input('weekday', -1);
+        $start = trim((string)$request->input('start_time', ''));
+        $end = trim((string)$request->input('end_time', ''));
+
+        if ($weekday < 0 || $weekday > 6 || $start === '' || $end === '') {
+            $service = new ClinicService($this->container);
+            return $this->view('clinics/working-hours', [
+                'items' => $service->listWorkingHours(),
+                'error' => 'Preencha todos os campos.',
+            ]);
+        }
+
+        $service = new ClinicService($this->container);
+        $service->createWorkingHour($weekday, $start, $end, $request->ip());
+
+        return $this->redirect('/clinic/working-hours');
+    }
+
+    public function deleteWorkingHour(Request $request)
+    {
+        $this->authorize('clinics.update');
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/clinic/working-hours');
+        }
+
+        $service = new ClinicService($this->container);
+        $service->deleteWorkingHour($id, $request->ip());
+
+        return $this->redirect('/clinic/working-hours');
+    }
+
+    public function closedDays(Request $request)
+    {
+        $this->authorize('clinics.read');
+
+        $service = new ClinicService($this->container);
+
+        return $this->view('clinics/closed-days', [
+            'items' => $service->listClosedDays(),
+        ]);
+    }
+
+    public function storeClosedDay(Request $request)
+    {
+        $this->authorize('clinics.update');
+
+        $date = trim((string)$request->input('closed_date', ''));
+        $reason = trim((string)$request->input('reason', ''));
+
+        if ($date === '') {
+            $service = new ClinicService($this->container);
+            return $this->view('clinics/closed-days', [
+                'items' => $service->listClosedDays(),
+                'error' => 'Data é obrigatória.',
+            ]);
+        }
+
+        $service = new ClinicService($this->container);
+        $service->createClosedDay($date, $reason, $request->ip());
+
+        return $this->redirect('/clinic/closed-days');
+    }
+
+    public function deleteClosedDay(Request $request)
+    {
+        $this->authorize('clinics.update');
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/clinic/closed-days');
+        }
+
+        $service = new ClinicService($this->container);
+        $service->deleteClosedDay($id, $request->ip());
+
+        return $this->redirect('/clinic/closed-days');
     }
 }
