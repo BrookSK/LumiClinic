@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Core;
+
+use App\Core\Container\Container;
+use App\Core\Http\Request;
+use App\Core\Http\Response;
+use App\Core\Middleware\MiddlewarePipeline;
+use App\Core\Routing\Router;
+use App\Middleware\AuthMiddleware;
+use App\Middleware\ClinicContextMiddleware;
+use App\Middleware\CsrfMiddleware;
+use App\Middleware\SessionMiddleware;
+
+final class App
+{
+    public function __construct(
+        private readonly Container $container,
+        private readonly Router $router,
+        private readonly MiddlewarePipeline $pipeline,
+    ) {}
+
+    public static function bootstrap(): self
+    {
+        $container = new Container();
+
+        $config = require dirname(__DIR__, 2) . '/config/app.php';
+        $dbConfig = require dirname(__DIR__, 2) . '/config/database.php';
+
+        $container->set('config', fn () => $config);
+        $container->set('db.config', fn () => $dbConfig);
+
+        $container->set(\PDO::class, function () use ($dbConfig) {
+            $pdo = new \PDO(
+                $dbConfig['dsn'],
+                $dbConfig['username'],
+                $dbConfig['password'],
+                [
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                ]
+            );
+
+            return $pdo;
+        });
+
+        $router = new Router($container);
+        require dirname(__DIR__, 2) . '/routes/web.php';
+
+        $pipeline = new MiddlewarePipeline([
+            new SessionMiddleware($config['session']),
+            new CsrfMiddleware($config['csrf']),
+            new AuthMiddleware($container),
+            new ClinicContextMiddleware($container),
+        ]);
+
+        return new self($container, $router, $pipeline);
+    }
+
+    public function handle(Request $request): Response
+    {
+        try {
+            return $this->pipeline->handle($request, fn (Request $request) => $this->router->dispatch($request));
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'Acesso negado.') {
+                return Response::html('Acesso negado.', 403);
+            }
+
+            throw $e;
+        }
+    }
+}
