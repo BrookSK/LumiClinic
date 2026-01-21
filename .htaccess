@@ -1,4 +1,4 @@
-﻿RewriteEngine On
+RewriteEngine On
 
 RewriteCond %{REQUEST_URI} ^/guias/ [NC]
 RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
