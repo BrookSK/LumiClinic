@@ -24,12 +24,15 @@ final class AuthService
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
+        $isSuperAdmin = isset($user['is_super_admin']) && (int)$user['is_super_admin'] === 1;
+        $clinicIdForAudit = (!$isSuperAdmin && isset($user['clinic_id']) && $user['clinic_id'] !== null)
+            ? (int)$user['clinic_id']
+            : null;
+
         if (!password_verify($password, $user['password_hash'])) {
-            $audit->log((int)$user['id'], (int)$user['clinic_id'], 'auth.login_failed', ['email' => $email], $ip);
+            $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login_failed', ['email' => $email], $ip);
             return new AuthResult(false, 'Credenciais inválidas.');
         }
-
-        $isSuperAdmin = isset($user['is_super_admin']) && (int)$user['is_super_admin'] === 1;
 
         $hostClinicId = null;
         if ($this->container->has('host_clinic_id')) {
@@ -37,7 +40,7 @@ final class AuthService
         }
 
         if (!$isSuperAdmin && is_int($hostClinicId) && $hostClinicId !== (int)$user['clinic_id']) {
-            $audit->log((int)$user['id'], (int)$user['clinic_id'], 'auth.login_blocked_host_mismatch', ['host_clinic_id' => $hostClinicId], $ip);
+            $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login_blocked_host_mismatch', ['host_clinic_id' => $hostClinicId], $ip);
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
@@ -57,7 +60,7 @@ final class AuthService
             $_SESSION['permissions'] = [];
         }
 
-        $audit->log((int)$user['id'], (int)$user['clinic_id'], 'auth.login', [], $ip);
+        $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login', [], $ip);
 
         return new AuthResult(true, 'OK');
     }
