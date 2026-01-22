@@ -142,6 +142,24 @@ body.lc-body{
 
 .lc-input:focus{border-color: rgba(238,184,16,0.45); box-shadow: 0 0 0 4px rgba(238,184,16,0.12)}
 
+.lc-select{
+    width:100%;
+    padding:11px 12px;
+    border-radius: 12px;
+    border:1px solid var(--lc-border);
+    background: rgba(7,8,12,0.55);
+    color: var(--lc-text);
+    outline:none;
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    line-height: 1.2;
+}
+
+.lc-select:focus{border-color: rgba(238,184,16,0.45); box-shadow: 0 0 0 4px rgba(238,184,16,0.12)}
+
+.lc-select option{background: var(--lc-dark-900); color: var(--lc-text)}
+
 .lc-label{display:block;margin:12px 0 6px 0;color:var(--lc-muted);font-size:13px}
 
 .lc-form{display:flex;flex-direction:column;gap:0}
