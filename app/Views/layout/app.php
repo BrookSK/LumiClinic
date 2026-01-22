@@ -2,6 +2,21 @@
 /** @var string $content */
 /** @var string $title */
 $csrf = $_SESSION['_csrf'] ?? '';
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
+$isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -21,12 +36,27 @@ $csrf = $_SESSION['_csrf'] ?? '';
 
         <nav class="lc-nav">
             <a class="lc-nav__item" href="/">Dashboard</a>
-            <a class="lc-nav__item" href="/clinic">Clínica</a>
-            <a class="lc-nav__item" href="/clinic/working-hours">Horários</a>
-            <a class="lc-nav__item" href="/clinic/closed-days">Dias não atendidos</a>
-            <a class="lc-nav__item" href="/users">Usuários</a>
-            <a class="lc-nav__item" href="/settings">Configurações</a>
-            <a class="lc-nav__item" href="/audit-logs">Auditoria</a>
+            <?php if ($can('clinics.read')): ?>
+                <a class="lc-nav__item" href="/clinic">Clínica</a>
+                <a class="lc-nav__item" href="/clinic/working-hours">Horários</a>
+                <a class="lc-nav__item" href="/clinic/closed-days">Dias não atendidos</a>
+            <?php endif; ?>
+
+            <?php if ($can('users.read')): ?>
+                <a class="lc-nav__item" href="/users">Usuários</a>
+            <?php endif; ?>
+
+            <?php if ($can('settings.read')): ?>
+                <a class="lc-nav__item" href="/settings">Configurações</a>
+            <?php endif; ?>
+
+            <?php if ($can('audit.read')): ?>
+                <a class="lc-nav__item" href="/audit-logs">Auditoria</a>
+            <?php endif; ?>
+
+            <?php if ($isSuperAdmin): ?>
+                <a class="lc-nav__item" href="/sys/clinics">Admin do Sistema</a>
+            <?php endif; ?>
         </nav>
 
         <form method="post" action="/logout" class="lc-sidebar__footer">

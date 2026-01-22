@@ -18,6 +18,10 @@ final class AuthorizationService
         $userId = $auth->userId();
         $clinicId = $auth->clinicId();
 
+        if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+            return true;
+        }
+
         if ($userId === null || $clinicId === null) {
             return false;
         }

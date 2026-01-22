@@ -9,6 +9,7 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Middleware\MiddlewarePipeline;
 use App\Core\Routing\Router;
+use App\Core\View\View;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\ClinicContextMiddleware;
 use App\Middleware\CsrfMiddleware;
@@ -65,7 +66,7 @@ final class App
             return $this->pipeline->handle($request, fn (Request $request) => $this->router->dispatch($request));
         } catch (\RuntimeException $e) {
             if ($e->getMessage() === 'Acesso negado.') {
-                return Response::html('Acesso negado.', 403);
+                return Response::html(View::render('errors/403', ['title' => 'Acesso negado']), 403);
             }
 
             throw $e;

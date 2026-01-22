@@ -44,6 +44,7 @@ final class ClinicContextMiddleware implements MiddlewareInterface
 
         $sessionClinicId = $auth->clinicId();
         $userId = $auth->userId();
+        $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
 
         $tenantKey = $this->resolveTenantKeyFromHost($request->header('host'));
         $hostClinicId = null;
@@ -58,7 +59,7 @@ final class ClinicContextMiddleware implements MiddlewareInterface
 
         $this->container->set('host_clinic_id', fn () => $hostClinicId);
 
-        if ($userId !== null) {
+        if ($userId !== null && !$isSuperAdmin) {
             if ($sessionClinicId === null) {
                 return Response::html('Contexto de clínica ausente.', 403);
             }

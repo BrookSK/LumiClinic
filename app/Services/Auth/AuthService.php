@@ -29,21 +29,33 @@ final class AuthService
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
+        $isSuperAdmin = isset($user['is_super_admin']) && (int)$user['is_super_admin'] === 1;
+
         $hostClinicId = null;
         if ($this->container->has('host_clinic_id')) {
             $hostClinicId = $this->container->get('host_clinic_id');
         }
 
-        if (is_int($hostClinicId) && $hostClinicId !== (int)$user['clinic_id']) {
+        if (!$isSuperAdmin && is_int($hostClinicId) && $hostClinicId !== (int)$user['clinic_id']) {
             $audit->log((int)$user['id'], (int)$user['clinic_id'], 'auth.login_blocked_host_mismatch', ['host_clinic_id' => $hostClinicId], $ip);
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
         $_SESSION['user_id'] = (int)$user['id'];
-        $_SESSION['clinic_id'] = (int)$user['clinic_id'];
+        $_SESSION['is_super_admin'] = $isSuperAdmin ? 1 : 0;
 
-        $permissionsRepo = new PermissionRepository($this->container->get(\PDO::class));
-        $_SESSION['permissions'] = $permissionsRepo->getPermissionCodesForUser((int)$user['clinic_id'], (int)$user['id']);
+        if (!$isSuperAdmin) {
+            $_SESSION['clinic_id'] = (int)$user['clinic_id'];
+        } else {
+            unset($_SESSION['clinic_id']);
+        }
+
+        if (!$isSuperAdmin) {
+            $permissionsRepo = new PermissionRepository($this->container->get(\PDO::class));
+            $_SESSION['permissions'] = $permissionsRepo->getPermissionCodesForUser((int)$user['clinic_id'], (int)$user['id']);
+        } else {
+            $_SESSION['permissions'] = [];
+        }
 
         $audit->log((int)$user['id'], (int)$user['clinic_id'], 'auth.login', [], $ip);
 
@@ -58,7 +70,7 @@ final class AuthService
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'auth.logout', [], $ip);
 
-        unset($_SESSION['user_id'], $_SESSION['clinic_id'], $_SESSION['permissions']);
+        unset($_SESSION['user_id'], $_SESSION['clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
         session_regenerate_id(true);
     }
 

@@ -12,7 +12,7 @@ final class UserRepository
     public function findActiveByEmail(string $email): ?array
     {
         $sql = "
-            SELECT id, clinic_id, email, password_hash
+            SELECT id, clinic_id, email, password_hash, is_super_admin
             FROM users
             WHERE email = :email
               AND deleted_at IS NULL

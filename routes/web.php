@@ -7,6 +7,7 @@ use App\Controllers\Audit\AuditLogController;
 use App\Controllers\Clinics\ClinicController;
 use App\Controllers\DashboardController;
 use App\Controllers\Settings\SettingsController;
+use App\Controllers\System\SystemClinicController;
 use App\Controllers\Users\UserController;
 
 $router->get('/', [DashboardController::class, 'index']);
@@ -42,3 +43,7 @@ $router->post('/settings/terminology', [SettingsController::class, 'updateTermin
 
 $router->get('/audit-logs', [AuditLogController::class, 'index']);
 $router->get('/audit-logs/export', [AuditLogController::class, 'export']);
+
+$router->get('/sys/clinics', [SystemClinicController::class, 'index']);
+$router->get('/sys/clinics/create', [SystemClinicController::class, 'create']);
+$router->post('/sys/clinics/create', [SystemClinicController::class, 'store']);
