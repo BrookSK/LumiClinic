@@ -12,7 +12,7 @@ final class ClinicSettingsRepository
     public function findByClinicId(int $clinicId): ?array
     {
         $sql = "
-            SELECT clinic_id, timezone, language
+            SELECT clinic_id, timezone, language, encryption_key
             FROM clinic_settings
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL

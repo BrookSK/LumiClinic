@@ -42,9 +42,11 @@ final class SystemClinicRepository
 
     public function createClinicDefaults(int $clinicId): void
     {
+        $encryptionKey = bin2hex(random_bytes(32));
+
         $sql1 = "
-            INSERT INTO clinic_settings (clinic_id, timezone, language, created_at)
-            VALUES (:clinic_id, 'America/Sao_Paulo', 'pt-BR', NOW())
+            INSERT INTO clinic_settings (clinic_id, timezone, language, encryption_key, created_at)
+            VALUES (:clinic_id, 'America/Sao_Paulo', 'pt-BR', :encryption_key, NOW())
         ";
 
         $sql2 = "
@@ -53,7 +55,7 @@ final class SystemClinicRepository
         ";
 
         $stmt1 = $this->pdo->prepare($sql1);
-        $stmt1->execute(['clinic_id' => $clinicId]);
+        $stmt1->execute(['clinic_id' => $clinicId, 'encryption_key' => $encryptionKey]);
 
         $stmt2 = $this->pdo->prepare($sql2);
         $stmt2->execute(['clinic_id' => $clinicId]);
