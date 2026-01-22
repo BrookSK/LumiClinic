@@ -13,6 +13,13 @@ $can = function (string $permissionCode): bool {
         return false;
     }
 
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
     return in_array($permissionCode, $permissions, true);
 };
 
@@ -52,6 +59,10 @@ $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_a
 
             <?php if ($can('audit.read')): ?>
                 <a class="lc-nav__item" href="/audit-logs">Auditoria</a>
+            <?php endif; ?>
+
+            <?php if ($can('rbac.manage')): ?>
+                <a class="lc-nav__item" href="/rbac">Papéis & Permissões</a>
             <?php endif; ?>
 
             <?php if ($isSuperAdmin): ?>

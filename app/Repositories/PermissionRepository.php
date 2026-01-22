@@ -35,4 +35,46 @@ final class PermissionRepository
 
         return $codes;
     }
+
+    /**
+     * @return array{allow:list<string>,deny:list<string>}
+     */
+    public function getPermissionDecisionsForUser(int $clinicId, int $userId): array
+    {
+        $sql = "
+            SELECT DISTINCT p.code, rp.effect
+            FROM user_roles ur
+            INNER JOIN role_permissions rp ON rp.role_id = ur.role_id
+            INNER JOIN permissions p ON p.id = rp.permission_id
+            WHERE ur.clinic_id = :clinic_id
+              AND ur.user_id = :user_id
+              AND ur.deleted_at IS NULL
+              AND rp.deleted_at IS NULL
+              AND p.deleted_at IS NULL
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'user_id' => $userId]);
+
+        $rows = $stmt->fetchAll();
+
+        $allow = [];
+        $deny = [];
+
+        foreach ($rows as $row) {
+            $code = (string)$row['code'];
+            $effect = isset($row['effect']) ? (string)$row['effect'] : 'allow';
+
+            if ($effect === 'deny') {
+                $deny[] = $code;
+            } else {
+                $allow[] = $code;
+            }
+        }
+
+        return [
+            'allow' => array_values(array_unique($allow)),
+            'deny' => array_values(array_unique($deny)),
+        ];
+    }
 }

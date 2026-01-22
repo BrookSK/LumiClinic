@@ -31,6 +31,13 @@ final class AuthorizationService
             return false;
         }
 
+        if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+            if (in_array($permissionCode, $permissions['deny'], true)) {
+                return false;
+            }
+            return in_array($permissionCode, $permissions['allow'], true);
+        }
+
         return in_array($permissionCode, $permissions, true);
     }
 }

@@ -120,6 +120,27 @@ final class SystemClinicRepository
 
         $roleOwnerId = $this->getRoleId($clinicId, 'owner');
 
+        $sqlEnsureRbacManage = "
+            INSERT INTO permissions (clinic_id, module, action, code, description, created_at)
+            SELECT NULL, 'rbac', 'manage', 'rbac.manage', 'Gerenciar papéis e permissões', NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM permissions p WHERE p.code = 'rbac.manage' AND p.deleted_at IS NULL
+            )
+        ";
+
+        $this->pdo->exec($sqlEnsureRbacManage);
+
+        $sqlAssignRbacManage = "
+            INSERT INTO role_permissions (clinic_id, role_id, permission_id, effect, created_at)
+            SELECT :clinic_id, :role_id, p.id, 'allow', NOW()
+            FROM permissions p
+            WHERE p.code = 'rbac.manage'
+              AND p.deleted_at IS NULL
+        ";
+
+        $stmtAssign = $this->pdo->prepare($sqlAssignRbacManage);
+        $stmtAssign->execute(['clinic_id' => $clinicId, 'role_id' => $roleOwnerId]);
+
         $sqlRolePerms = "
             INSERT INTO role_permissions (clinic_id, role_id, permission_id, created_at)
             SELECT :clinic_id, :role_id, p.id, NOW()

@@ -55,7 +55,13 @@ final class AuthService
 
         if (!$isSuperAdmin) {
             $permissionsRepo = new PermissionRepository($this->container->get(\PDO::class));
-            $_SESSION['permissions'] = $permissionsRepo->getPermissionCodesForUser((int)$user['clinic_id'], (int)$user['id']);
+            $decisions = $permissionsRepo->getPermissionDecisionsForUser((int)$user['clinic_id'], (int)$user['id']);
+
+            if (is_array($decisions) && isset($decisions['allow'], $decisions['deny'])) {
+                $_SESSION['permissions'] = $decisions;
+            } else {
+                $_SESSION['permissions'] = $permissionsRepo->getPermissionCodesForUser((int)$user['clinic_id'], (int)$user['id']);
+            }
         } else {
             $_SESSION['permissions'] = [];
         }
