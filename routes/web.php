@@ -7,6 +7,11 @@ use App\Controllers\Audit\AuditLogController;
 use App\Controllers\Clinics\ClinicController;
 use App\Controllers\DashboardController;
 use App\Controllers\Rbac\RbacController;
+use App\Controllers\Scheduling\BlockController;
+use App\Controllers\Scheduling\ProfessionalController;
+use App\Controllers\Scheduling\ProfessionalScheduleController;
+use App\Controllers\Scheduling\ScheduleController;
+use App\Controllers\Scheduling\ServiceController;
 use App\Controllers\Settings\SettingsController;
 use App\Controllers\System\SystemClinicController;
 use App\Controllers\Users\UserController;
@@ -44,6 +49,26 @@ $router->post('/settings/terminology', [SettingsController::class, 'updateTermin
 
 $router->get('/audit-logs', [AuditLogController::class, 'index']);
 $router->get('/audit-logs/export', [AuditLogController::class, 'export']);
+
+$router->get('/schedule', [ScheduleController::class, 'index']);
+$router->get('/schedule/available', [ScheduleController::class, 'available']);
+$router->post('/schedule/create', [ScheduleController::class, 'create']);
+$router->post('/schedule/cancel', [ScheduleController::class, 'cancel']);
+$router->post('/schedule/status', [ScheduleController::class, 'updateStatus']);
+$router->get('/schedule/reschedule', [ScheduleController::class, 'reschedule']);
+$router->post('/schedule/reschedule', [ScheduleController::class, 'rescheduleSubmit']);
+
+$router->get('/services', [ServiceController::class, 'index']);
+$router->post('/services/create', [ServiceController::class, 'create']);
+
+$router->get('/professionals', [ProfessionalController::class, 'index']);
+$router->post('/professionals/create', [ProfessionalController::class, 'create']);
+
+$router->get('/blocks', [BlockController::class, 'index']);
+$router->post('/blocks/create', [BlockController::class, 'create']);
+
+$router->get('/schedule-rules', [ProfessionalScheduleController::class, 'index']);
+$router->post('/schedule-rules/create', [ProfessionalScheduleController::class, 'create']);
 
 $router->get('/rbac', [RbacController::class, 'index']);
 $router->get('/rbac/edit', [RbacController::class, 'edit']);

@@ -58,6 +58,26 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <a class="lc-nav__item" href="/settings">Configurações</a>
             <?php endif; ?>
 
+            <?php if ($can('scheduling.read') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/schedule">Agenda</a>
+            <?php endif; ?>
+
+            <?php if ($can('services.manage') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/services">Serviços</a>
+            <?php endif; ?>
+
+            <?php if ($can('professionals.manage') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/professionals">Profissionais</a>
+            <?php endif; ?>
+
+            <?php if ($can('blocks.manage') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/blocks">Bloqueios</a>
+            <?php endif; ?>
+
+            <?php if ($can('schedule_rules.manage') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/schedule-rules">Regras de Agenda</a>
+            <?php endif; ?>
+
             <?php if ($can('audit.read') && $hasClinicContext): ?>
                 <a class="lc-nav__item" href="/audit-logs">Auditoria</a>
             <?php endif; ?>
