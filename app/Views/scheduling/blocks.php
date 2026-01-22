@@ -2,6 +2,8 @@
 /** @var list<array<string,mixed>> $professionals */
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Bloqueios';
+
+ob_start();
 ?>
 
 <div class="lc-card">
@@ -50,3 +52,8 @@ $title = 'Bloqueios';
         </form>
     </div>
 </div>
+
+<?php
+$content = (string)ob_get_clean();
+require dirname(__DIR__) . '/layout/app.php';
+?>

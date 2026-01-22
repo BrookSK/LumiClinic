@@ -19,6 +19,8 @@ $profMap = [];
 foreach ($professionals as $p) {
     $profMap[(int)$p['id']] = $p;
 }
+
+ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
@@ -234,3 +236,8 @@ foreach ($professionals as $p) {
   profEl.addEventListener('change', loadSlots);
 })();
 </script>
+
+<?php
+$content = (string)ob_get_clean();
+require dirname(__DIR__) . '/layout/app.php';
+?>

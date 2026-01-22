@@ -11,6 +11,8 @@ $serviceId = (int)($appointment['service_id'] ?? 0);
 $professionalId = (int)($appointment['professional_id'] ?? 0);
 $startAt = (string)($appointment['start_at'] ?? '');
 $date = substr($startAt, 0, 10);
+
+ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
@@ -121,3 +123,8 @@ $date = substr($startAt, 0, 10);
   loadSlots();
 })();
 </script>
+
+<?php
+$content = (string)ob_get_clean();
+require dirname(__DIR__) . '/layout/app.php';
+?>

@@ -33,6 +33,8 @@ foreach ($items as $it) {
 }
 
 $weekStart = \DateTimeImmutable::createFromFormat('Y-m-d', $week_start);
+
+ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
@@ -162,3 +164,8 @@ $weekStart = \DateTimeImmutable::createFromFormat('Y-m-d', $week_start);
         </div>
     </div>
 <?php endif; ?>
+
+<?php
+$content = (string)ob_get_clean();
+require dirname(__DIR__) . '/layout/app.php';
+?>

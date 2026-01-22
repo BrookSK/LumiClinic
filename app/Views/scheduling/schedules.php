@@ -6,6 +6,8 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Regras de Agenda';
 
 $weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+ob_start();
 ?>
 
 <div class="lc-card" style="margin-bottom: 16px;">
@@ -93,3 +95,8 @@ $weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         </div>
     </div>
 <?php endif; ?>
+
+<?php
+$content = (string)ob_get_clean();
+require dirname(__DIR__) . '/layout/app.php';
+?>
