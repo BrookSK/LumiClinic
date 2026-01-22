@@ -66,6 +66,18 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <?php endif; ?>
             <?php endif; ?>
 
+            <?php if ($can('patients.read') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/patients">Pacientes</a>
+            <?php endif; ?>
+
+            <?php if ($can('consent_terms.manage') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/consent-terms">Termos</a>
+            <?php endif; ?>
+
+            <?php if ($can('anamnesis.manage') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/anamnesis/templates">Anamnese</a>
+            <?php endif; ?>
+
             <?php if ($can('services.manage') && $hasClinicContext): ?>
                 <a class="lc-nav__item" href="/services">Serviços</a>
             <?php endif; ?>

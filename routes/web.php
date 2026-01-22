@@ -15,6 +15,11 @@ use App\Controllers\Scheduling\ServiceController;
 use App\Controllers\Settings\SettingsController;
 use App\Controllers\System\SystemClinicController;
 use App\Controllers\Users\UserController;
+use App\Controllers\Patients\PatientController;
+use App\Controllers\MedicalRecords\MedicalRecordController;
+use App\Controllers\MedicalImages\MedicalImageController;
+use App\Controllers\Anamnesis\AnamnesisController;
+use App\Controllers\Consent\ConsentController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
@@ -75,6 +80,44 @@ $router->get('/rbac/edit', [RbacController::class, 'edit']);
 $router->post('/rbac/edit', [RbacController::class, 'update']);
 $router->post('/rbac/clone', [RbacController::class, 'clone']);
 $router->post('/rbac/reset', [RbacController::class, 'reset']);
+
+$router->get('/patients', [PatientController::class, 'index']);
+$router->get('/patients/create', [PatientController::class, 'create']);
+$router->post('/patients/create', [PatientController::class, 'store']);
+$router->get('/patients/view', [PatientController::class, 'show']);
+$router->get('/patients/edit', [PatientController::class, 'edit']);
+$router->post('/patients/edit', [PatientController::class, 'update']);
+
+$router->get('/medical-records', [MedicalRecordController::class, 'index']);
+$router->get('/medical-records/create', [MedicalRecordController::class, 'create']);
+$router->post('/medical-records/create', [MedicalRecordController::class, 'store']);
+$router->get('/medical-records/edit', [MedicalRecordController::class, 'edit']);
+$router->post('/medical-records/edit', [MedicalRecordController::class, 'update']);
+
+$router->get('/medical-images', [MedicalImageController::class, 'index']);
+$router->post('/medical-images/upload', [MedicalImageController::class, 'upload']);
+$router->get('/medical-images/file', [MedicalImageController::class, 'file']);
+
+$router->get('/anamnesis/templates', [AnamnesisController::class, 'templates']);
+$router->get('/anamnesis/templates/create', [AnamnesisController::class, 'createTemplate']);
+$router->post('/anamnesis/templates/create', [AnamnesisController::class, 'storeTemplate']);
+$router->get('/anamnesis/templates/edit', [AnamnesisController::class, 'editTemplate']);
+$router->post('/anamnesis/templates/edit', [AnamnesisController::class, 'updateTemplate']);
+
+$router->get('/anamnesis', [AnamnesisController::class, 'index']);
+$router->get('/anamnesis/fill', [AnamnesisController::class, 'fill']);
+$router->post('/anamnesis/fill', [AnamnesisController::class, 'submit']);
+
+$router->get('/consent-terms', [ConsentController::class, 'terms']);
+$router->get('/consent-terms/create', [ConsentController::class, 'createTerm']);
+$router->post('/consent-terms/create', [ConsentController::class, 'storeTerm']);
+$router->get('/consent-terms/edit', [ConsentController::class, 'editTerm']);
+$router->post('/consent-terms/edit', [ConsentController::class, 'updateTerm']);
+
+$router->get('/consent', [ConsentController::class, 'index']);
+$router->get('/consent/accept', [ConsentController::class, 'accept']);
+$router->post('/consent/accept', [ConsentController::class, 'submit']);
+$router->get('/signatures/file', [ConsentController::class, 'signatureFile']);
 
 $router->get('/sys/clinics', [SystemClinicController::class, 'index']);
 $router->get('/sys/clinics/create', [SystemClinicController::class, 'create']);
