@@ -9,7 +9,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Novo profissional</div>
     <div class="lc-card__body">
-        <form method="post" action="/professionals/create" class="lc-form" style="display:grid; grid-template-columns: 2fr 2fr 1fr; gap: 12px; align-items:end;">
+        <form method="post" action="/professionals/create" class="lc-form" style="display:grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap: 12px; align-items:end;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field">
@@ -20,6 +20,11 @@ ob_start();
             <div class="lc-field">
                 <label class="lc-label">Especialidade</label>
                 <input class="lc-input" type="text" name="specialty" />
+            </div>
+
+            <div class="lc-field">
+                <label class="lc-label">User ID (opcional)</label>
+                <input class="lc-input" type="number" name="user_id" min="1" step="1" />
             </div>
 
             <div class="lc-field">
@@ -48,6 +53,7 @@ ob_start();
                 <tr>
                     <th>Nome</th>
                     <th>Especialidade</th>
+                    <th>User</th>
                     <th>Online</th>
                 </tr>
                 </thead>
@@ -56,6 +62,7 @@ ob_start();
                     <tr>
                         <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)($it['specialty'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= ($it['user_id'] ?? null) === null ? '-' : (int)$it['user_id'] ?></td>
                         <td><?= ((int)$it['allow_online_booking'] === 1) ? 'Sim' : 'Não' ?></td>
                     </tr>
                 <?php endforeach; ?>

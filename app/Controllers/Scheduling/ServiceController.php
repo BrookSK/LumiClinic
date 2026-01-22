@@ -59,6 +59,8 @@ final class ServiceController extends Controller
 
         $name = trim((string)$request->input('name', ''));
         $duration = (int)$request->input('duration_minutes', 0);
+        $bufferBefore = (int)$request->input('buffer_before_minutes', 0);
+        $bufferAfter = (int)$request->input('buffer_after_minutes', 0);
         $price = trim((string)$request->input('price_cents', ''));
         $allowSpecific = (string)$request->input('allow_specific_professional', '0') === '1';
 
@@ -79,13 +81,15 @@ final class ServiceController extends Controller
         }
 
         $repo = new ServiceCatalogRepository($this->container->get(\PDO::class));
-        $id = $repo->create($clinicId, $name, $duration, $priceCents, $allowSpecific);
+        $id = $repo->create($clinicId, $name, $duration, $bufferBefore, $bufferAfter, $priceCents, $allowSpecific);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'scheduling.service_create', [
             'service_id' => $id,
             'name' => $name,
             'duration_minutes' => $duration,
+            'buffer_before_minutes' => $bufferBefore,
+            'buffer_after_minutes' => $bufferAfter,
             'price_cents' => $priceCents,
             'allow_specific_professional' => $allowSpecific,
         ], $request->ip());

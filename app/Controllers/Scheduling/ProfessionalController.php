@@ -59,6 +59,7 @@ final class ProfessionalController extends Controller
 
         $name = trim((string)$request->input('name', ''));
         $specialty = trim((string)$request->input('specialty', ''));
+        $linkUserId = (int)$request->input('user_id', 0);
         $allowOnline = (string)$request->input('allow_online_booking', '0') === '1';
 
         if ($name === '') {
@@ -73,11 +74,12 @@ final class ProfessionalController extends Controller
         }
 
         $repo = new ProfessionalRepository($this->container->get(\PDO::class));
-        $id = $repo->create($clinicId, $name, $specialty, $allowOnline);
+        $id = $repo->create($clinicId, ($linkUserId > 0 ? $linkUserId : null), $name, $specialty, $allowOnline);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'scheduling.professional_create', [
             'professional_id' => $id,
+            'user_id' => ($linkUserId > 0 ? $linkUserId : null),
             'name' => $name,
             'specialty' => $specialty,
             'allow_online_booking' => $allowOnline,

@@ -66,6 +66,10 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <?php endif; ?>
             <?php endif; ?>
 
+            <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/schedule/ops">Operação da Agenda</a>
+            <?php endif; ?>
+
             <?php if ($can('patients.read') && $hasClinicContext): ?>
                 <a class="lc-nav__item" href="/patients">Pacientes</a>
             <?php endif; ?>

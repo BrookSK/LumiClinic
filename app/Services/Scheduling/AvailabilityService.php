@@ -52,6 +52,11 @@ final class AvailabilityService
             throw new \RuntimeException('Serviço inválido.');
         }
 
+        $bufferBefore = isset($service['buffer_before_minutes']) ? (int)$service['buffer_before_minutes'] : 0;
+        $bufferAfter = isset($service['buffer_after_minutes']) ? (int)$service['buffer_after_minutes'] : 0;
+        $bufferBefore = max(0, $bufferBefore);
+        $bufferAfter = max(0, $bufferAfter);
+
         $clinicWhRepo = new ClinicWorkingHoursRepository($this->container->get(\PDO::class));
         $clinicWh = $clinicWhRepo->listByClinic($clinicId);
 
@@ -146,15 +151,20 @@ final class AvailabilityService
                         $startAt = $slotStart->format('Y-m-d H:i:s');
                         $endAt = $slotEnd->format('Y-m-d H:i:s');
 
-                        if ($this->overlapsAny($startAt, $endAt, $blocks)) {
+                        $occupiedStart = $bufferBefore > 0 ? $slotStart->modify('-' . $bufferBefore . ' minutes') : $slotStart;
+                        $occupiedEnd = $bufferAfter > 0 ? $slotEnd->modify('+' . $bufferAfter . ' minutes') : $slotEnd;
+                        $occupiedStartAt = $occupiedStart->format('Y-m-d H:i:s');
+                        $occupiedEndAt = $occupiedEnd->format('Y-m-d H:i:s');
+
+                        if ($this->overlapsAny($occupiedStartAt, $occupiedEndAt, $blocks)) {
                             $cursor = $cursor->modify('+' . $stepMinutes . ' minutes');
                             continue;
                         }
 
                         if ($excludeAppointmentId !== null) {
-                            $conflicts = $apptRepo->listOverlappingExcludingAppointment($clinicId, $pid, $startAt, $endAt, $excludeAppointmentId);
+                            $conflicts = $apptRepo->listOverlappingExcludingAppointment($clinicId, $pid, $occupiedStartAt, $occupiedEndAt, $excludeAppointmentId);
                         } else {
-                            $conflicts = $apptRepo->listOverlapping($clinicId, $pid, $startAt, $endAt);
+                            $conflicts = $apptRepo->listOverlapping($clinicId, $pid, $occupiedStartAt, $occupiedEndAt);
                         }
                         if ($conflicts !== []) {
                             $cursor = $cursor->modify('+' . $stepMinutes . ' minutes');

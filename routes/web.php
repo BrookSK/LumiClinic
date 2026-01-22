@@ -62,6 +62,8 @@ $router->post('/schedule/cancel', [ScheduleController::class, 'cancel']);
 $router->post('/schedule/status', [ScheduleController::class, 'updateStatus']);
 $router->get('/schedule/reschedule', [ScheduleController::class, 'reschedule']);
 $router->post('/schedule/reschedule', [ScheduleController::class, 'rescheduleSubmit']);
+$router->get('/schedule/ops', [ScheduleController::class, 'ops']);
+$router->get('/schedule/logs', [ScheduleController::class, 'logs']);
 
 $router->get('/services', [ServiceController::class, 'index']);
 $router->post('/services/create', [ServiceController::class, 'create']);

@@ -12,7 +12,7 @@ final class ServiceCatalogRepository
     public function listActiveByClinic(int $clinicId): array
     {
         $sql = "
-            SELECT id, clinic_id, name, duration_minutes, price_cents, allow_specific_professional, status
+            SELECT id, clinic_id, name, duration_minutes, buffer_before_minutes, buffer_after_minutes, price_cents, allow_specific_professional, status
             FROM services
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -31,7 +31,7 @@ final class ServiceCatalogRepository
     public function findById(int $clinicId, int $serviceId): ?array
     {
         $sql = "
-            SELECT id, clinic_id, name, duration_minutes, price_cents, allow_specific_professional, status
+            SELECT id, clinic_id, name, duration_minutes, buffer_before_minutes, buffer_after_minutes, price_cents, allow_specific_professional, status
             FROM services
             WHERE id = :id
               AND clinic_id = :clinic_id
@@ -50,12 +50,17 @@ final class ServiceCatalogRepository
         int $clinicId,
         string $name,
         int $durationMinutes,
+        int $bufferBeforeMinutes,
+        int $bufferAfterMinutes,
         ?int $priceCents,
         bool $allowSpecificProfessional
     ): int {
+        $bufferBeforeMinutes = max(0, $bufferBeforeMinutes);
+        $bufferAfterMinutes = max(0, $bufferAfterMinutes);
+
         $sql = "
-            INSERT INTO services (clinic_id, name, duration_minutes, price_cents, allow_specific_professional, status, created_at)
-            VALUES (:clinic_id, :name, :duration_minutes, :price_cents, :allow_specific_professional, 'active', NOW())
+            INSERT INTO services (clinic_id, name, duration_minutes, buffer_before_minutes, buffer_after_minutes, price_cents, allow_specific_professional, status, created_at)
+            VALUES (:clinic_id, :name, :duration_minutes, :buffer_before_minutes, :buffer_after_minutes, :price_cents, :allow_specific_professional, 'active', NOW())
         ";
 
         $stmt = $this->pdo->prepare($sql);
@@ -63,6 +68,8 @@ final class ServiceCatalogRepository
             'clinic_id' => $clinicId,
             'name' => $name,
             'duration_minutes' => $durationMinutes,
+            'buffer_before_minutes' => $bufferBeforeMinutes,
+            'buffer_after_minutes' => $bufferAfterMinutes,
             'price_cents' => $priceCents,
             'allow_specific_professional' => $allowSpecificProfessional ? 1 : 0,
         ]);

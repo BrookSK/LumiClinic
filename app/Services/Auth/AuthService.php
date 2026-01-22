@@ -7,6 +7,7 @@ namespace App\Services\Auth;
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\PermissionRepository;
+use App\Repositories\UserRoleRepository;
 use App\Repositories\UserRepository;
 
 final class AuthService
@@ -62,8 +63,12 @@ final class AuthService
             } else {
                 $_SESSION['permissions'] = $permissionsRepo->getPermissionCodesForUser((int)$user['clinic_id'], (int)$user['id']);
             }
+
+            $rolesRepo = new UserRoleRepository($this->container->get(\PDO::class));
+            $_SESSION['role_codes'] = $rolesRepo->getRoleCodesForUser((int)$user['clinic_id'], (int)$user['id']);
         } else {
             $_SESSION['permissions'] = [];
+            $_SESSION['role_codes'] = [];
         }
 
         $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login', [], $ip);
@@ -80,6 +85,7 @@ final class AuthService
         $audit->log($userId, $clinicId, 'auth.logout', [], $ip);
 
         unset($_SESSION['user_id'], $_SESSION['clinic_id'], $_SESSION['active_clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
+        unset($_SESSION['role_codes']);
         session_regenerate_id(true);
     }
 

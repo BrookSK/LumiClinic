@@ -7,6 +7,7 @@
 /** @var string $error */
 $view = isset($view) ? (string)$view : 'day';
 $professionalId = isset($professional_id) ? (int)$professional_id : 0;
+$isProfessional = isset($is_professional) ? (bool)$is_professional : false;
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Agenda';
 
@@ -46,68 +47,75 @@ ob_start();
             <label class="lc-label">Data</label>
             <input class="lc-input" type="date" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
         </div>
-        <div class="lc-field" style="min-width: 280px;">
-            <label class="lc-label">Profissional</label>
-            <select class="lc-select" name="professional_id">
-                <option value="0">Todos</option>
-                <?php foreach ($professionals as $p): ?>
-                    <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === (int)$professionalId) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+        <?php if (!$isProfessional): ?>
+            <div class="lc-field" style="min-width: 280px;">
+                <label class="lc-label">Profissional</label>
+                <select class="lc-select" name="professional_id">
+                    <option value="0">Todos</option>
+                    <?php foreach ($professionals as $p): ?>
+                        <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === (int)$professionalId) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        <?php else: ?>
+            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+        <?php endif; ?>
         <div>
             <button class="lc-btn" type="submit">Ver</button>
             <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode($date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Semana</a>
+            <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
         </div>
     </form>
 </div>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Criar agendamento</div>
-    <div class="lc-card__body">
-        <form method="post" action="/schedule/create" class="lc-form" style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; align-items: end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+<?php if (!$isProfessional): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Criar agendamento</div>
+        <div class="lc-card__body">
+            <form method="post" action="/schedule/create" class="lc-form" style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; align-items: end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
-            <div class="lc-field">
-                <label class="lc-label">Serviço</label>
-                <select class="lc-select" name="service_id" id="service_id" required>
-                    <option value="">Selecione</option>
-                    <?php foreach ($services as $s): ?>
-                        <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Serviço</label>
+                    <select class="lc-select" name="service_id" id="service_id" required>
+                        <option value="">Selecione</option>
+                        <?php foreach ($services as $s): ?>
+                            <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Profissional</label>
-                <select class="lc-select" name="professional_id" id="professional_id" required>
-                    <option value="">Selecione</option>
-                    <?php foreach ($professionals as $p): ?>
-                        <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Profissional</label>
+                    <select class="lc-select" name="professional_id" id="professional_id" required>
+                        <option value="">Selecione</option>
+                        <?php foreach ($professionals as $p): ?>
+                            <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Horário</label>
-                <select class="lc-select" name="start_at" id="start_at" required>
-                    <option value="">Selecione um serviço + profissional + data</option>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Horário</label>
+                    <select class="lc-select" name="start_at" id="start_at" required>
+                        <option value="">Selecione um serviço + profissional + data</option>
+                    </select>
+                </div>
 
-            <div>
-                <button class="lc-btn" type="submit">Agendar</button>
-            </div>
+                <div>
+                    <button class="lc-btn" type="submit">Agendar</button>
+                </div>
 
-            <div class="lc-field" style="grid-column: 1 / -1;">
-                <label class="lc-label">Observações (opcional)</label>
-                <input class="lc-input" type="text" name="notes" placeholder="" />
-            </div>
-        </form>
+                <div class="lc-field" style="grid-column: 1 / -1;">
+                    <label class="lc-label">Observações (opcional)</label>
+                    <input class="lc-input" type="text" name="notes" placeholder="" />
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__header">Agendamentos do dia</div>
@@ -137,6 +145,7 @@ ob_start();
                         $border = '#d4af37';
                         if ($status === 'cancelled') $border = '#6b7280';
                         if ($status === 'confirmed') $border = '#2563eb';
+                        if ($status === 'in_progress') $border = '#f59e0b';
                         if ($status === 'completed') $border = '#16a34a';
                         if ($status === 'no_show') $border = '#b91c1c';
                     ?>
@@ -149,6 +158,7 @@ ob_start();
                         <td style="text-align:right;">
                             <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap: wrap;">
                                 <a class="lc-btn lc-btn--secondary" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
+                                <a class="lc-btn lc-btn--secondary" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
 
                                 <form method="post" action="/schedule/status">
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
@@ -158,6 +168,16 @@ ob_start();
                                     <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
                                     <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
                                     <button class="lc-btn lc-btn--secondary" type="submit">Confirmar</button>
+                                </form>
+
+                                <form method="post" action="/schedule/status">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                    <input type="hidden" name="status" value="in_progress" />
+                                    <input type="hidden" name="view" value="day" />
+                                    <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                    <button class="lc-btn lc-btn--secondary" type="submit">Atender</button>
                                 </form>
 
                                 <form method="post" action="/schedule/status">

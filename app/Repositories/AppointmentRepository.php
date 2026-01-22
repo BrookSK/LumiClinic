@@ -12,7 +12,7 @@ final class AppointmentRepository
     public function listByClinicDate(int $clinicId, string $dateYmd): array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
             FROM appointments
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -31,7 +31,7 @@ final class AppointmentRepository
     public function listByClinicRange(int $clinicId, string $startAt, string $endAt, ?int $professionalId = null): array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
             FROM appointments
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -63,7 +63,7 @@ final class AppointmentRepository
     public function findById(int $clinicId, int $id): ?array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
             FROM appointments
             WHERE id = :id
               AND clinic_id = :clinic_id
@@ -213,6 +213,8 @@ final class AppointmentRepository
         ?int $patientId,
         string $startAt,
         string $endAt,
+        int $bufferBeforeMinutes,
+        int $bufferAfterMinutes,
         string $status,
         string $origin,
         ?string $notes,
@@ -221,9 +223,11 @@ final class AppointmentRepository
         $sql = "
             INSERT INTO appointments (
                 clinic_id, professional_id, service_id, patient_id, start_at, end_at,
+                buffer_before_minutes, buffer_after_minutes,
                 status, origin, notes, created_by_user_id, created_at
             ) VALUES (
                 :clinic_id, :professional_id, :service_id, :patient_id, :start_at, :end_at,
+                :buffer_before_minutes, :buffer_after_minutes,
                 :status, :origin, :notes, :created_by_user_id, NOW()
             )
         ";
@@ -236,6 +240,8 @@ final class AppointmentRepository
             'patient_id' => $patientId,
             'start_at' => $startAt,
             'end_at' => $endAt,
+            'buffer_before_minutes' => max(0, (int)$bufferBeforeMinutes),
+            'buffer_after_minutes' => max(0, (int)$bufferAfterMinutes),
             'status' => $status,
             'origin' => $origin,
             'notes' => ($notes === '' ? null : $notes),
@@ -294,7 +300,9 @@ final class AppointmentRepository
         int $professionalId,
         int $serviceId,
         string $startAt,
-        string $endAt
+        string $endAt,
+        int $bufferBeforeMinutes,
+        int $bufferAfterMinutes
     ): void {
         $sql = "
             UPDATE appointments
@@ -302,6 +310,8 @@ final class AppointmentRepository
                    service_id = :service_id,
                    start_at = :start_at,
                    end_at = :end_at,
+                   buffer_before_minutes = :buffer_before_minutes,
+                   buffer_after_minutes = :buffer_after_minutes,
                    updated_at = NOW()
              WHERE id = :id
                AND clinic_id = :clinic_id
@@ -316,6 +326,8 @@ final class AppointmentRepository
             'service_id' => $serviceId,
             'start_at' => $startAt,
             'end_at' => $endAt,
+            'buffer_before_minutes' => max(0, (int)$bufferBeforeMinutes),
+            'buffer_after_minutes' => max(0, (int)$bufferAfterMinutes),
         ]);
     }
 }
