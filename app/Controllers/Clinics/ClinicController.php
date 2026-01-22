@@ -7,12 +7,33 @@ namespace App\Controllers\Clinics;
 use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Services\Clinics\ClinicService;
+use App\Services\Auth\AuthService;
 
 final class ClinicController extends Controller
 {
+    private function redirectSuperAdminWithoutClinicContext(): ?\App\Core\Http\Response
+    {
+        $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+        if (!$isSuperAdmin) {
+            return null;
+        }
+
+        $auth = new AuthService($this->container);
+        if ($auth->clinicId() === null) {
+            return $this->redirect('/sys/clinics');
+        }
+
+        return null;
+    }
+
     public function edit(Request $request)
     {
         $this->authorize('clinics.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $service = new ClinicService($this->container);
         $clinic = $service->getCurrentClinic();
@@ -42,6 +63,11 @@ final class ClinicController extends Controller
     {
         $this->authorize('clinics.read');
 
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
         $service = new ClinicService($this->container);
 
         return $this->view('clinics/working-hours', [
@@ -52,6 +78,11 @@ final class ClinicController extends Controller
     public function storeWorkingHour(Request $request)
     {
         $this->authorize('clinics.update');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $weekday = (int)$request->input('weekday', -1);
         $start = trim((string)$request->input('start_time', ''));
@@ -75,6 +106,11 @@ final class ClinicController extends Controller
     {
         $this->authorize('clinics.update');
 
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
         $id = (int)$request->input('id', 0);
         if ($id <= 0) {
             return $this->redirect('/clinic/working-hours');
@@ -90,6 +126,11 @@ final class ClinicController extends Controller
     {
         $this->authorize('clinics.read');
 
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
         $service = new ClinicService($this->container);
 
         return $this->view('clinics/closed-days', [
@@ -100,6 +141,11 @@ final class ClinicController extends Controller
     public function storeClosedDay(Request $request)
     {
         $this->authorize('clinics.update');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $date = trim((string)$request->input('closed_date', ''));
         $reason = trim((string)$request->input('reason', ''));
@@ -121,6 +167,11 @@ final class ClinicController extends Controller
     public function deleteClosedDay(Request $request)
     {
         $this->authorize('clinics.update');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $id = (int)$request->input('id', 0);
         if ($id <= 0) {

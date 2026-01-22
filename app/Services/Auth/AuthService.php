@@ -84,6 +84,15 @@ final class AuthService
 
     public function clinicId(): ?int
     {
-        return isset($_SESSION['clinic_id']) ? (int)$_SESSION['clinic_id'] : null;
+        if (isset($_SESSION['clinic_id'])) {
+            return (int)$_SESSION['clinic_id'];
+        }
+
+        if ($this->container->has('clinic_id')) {
+            $activeClinicId = $this->container->get('clinic_id');
+            return is_int($activeClinicId) ? $activeClinicId : null;
+        }
+
+        return null;
     }
 }
