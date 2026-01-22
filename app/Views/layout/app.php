@@ -58,7 +58,7 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <a class="lc-nav__item" href="/settings">Configurações</a>
             <?php endif; ?>
 
-            <?php if ($can('audit.read')): ?>
+            <?php if ($can('audit.read') && $hasClinicContext): ?>
                 <a class="lc-nav__item" href="/audit-logs">Auditoria</a>
             <?php endif; ?>
 

@@ -13,9 +13,29 @@ use App\Services\Auth\AuthService;
 
 final class AuditLogController extends Controller
 {
+    private function redirectSuperAdminWithoutClinicContext(): ?\App\Core\Http\Response
+    {
+        $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+        if (!$isSuperAdmin) {
+            return null;
+        }
+
+        $auth = new AuthService($this->container);
+        if ($auth->clinicId() === null) {
+            return $this->redirect('/sys/clinics');
+        }
+
+        return null;
+    }
+
     public function index(Request $request)
     {
         $this->authorize('audit.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $service = new AuditLogService($this->container);
 
@@ -34,6 +54,11 @@ final class AuditLogController extends Controller
     public function export(Request $request)
     {
         $this->authorize('audit.export');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $service = new AuditLogService($this->container);
 

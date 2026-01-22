@@ -79,7 +79,7 @@ final class AuthService
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'auth.logout', [], $ip);
 
-        unset($_SESSION['user_id'], $_SESSION['clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
+        unset($_SESSION['user_id'], $_SESSION['clinic_id'], $_SESSION['active_clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
         session_regenerate_id(true);
     }
 
@@ -92,6 +92,11 @@ final class AuthService
     {
         if (isset($_SESSION['clinic_id'])) {
             return (int)$_SESSION['clinic_id'];
+        }
+
+        $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+        if ($isSuperAdmin && isset($_SESSION['active_clinic_id']) && is_int($_SESSION['active_clinic_id'])) {
+            return $_SESSION['active_clinic_id'];
         }
 
         if ($this->container->has('clinic_id')) {
