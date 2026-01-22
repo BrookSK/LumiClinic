@@ -6,13 +6,34 @@ namespace App\Controllers\Rbac;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Services\Auth\AuthService;
 use App\Services\Rbac\RbacService;
 
 final class RbacController extends Controller
 {
+    private function redirectSuperAdminWithoutClinicContext(): ?\App\Core\Http\Response
+    {
+        $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+        if (!$isSuperAdmin) {
+            return null;
+        }
+
+        $auth = new AuthService($this->container);
+        if ($auth->clinicId() === null) {
+            return $this->redirect('/sys/clinics');
+        }
+
+        return null;
+    }
+
     public function index(Request $request)
     {
         $this->authorize('rbac.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $service = new RbacService($this->container);
 
@@ -24,6 +45,11 @@ final class RbacController extends Controller
     public function edit(Request $request)
     {
         $this->authorize('rbac.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $roleId = (int)$request->input('id', 0);
         if ($roleId <= 0) {
@@ -42,6 +68,11 @@ final class RbacController extends Controller
     public function update(Request $request)
     {
         $this->authorize('rbac.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $roleId = (int)$request->input('id', 0);
         if ($roleId <= 0) {
@@ -78,6 +109,11 @@ final class RbacController extends Controller
     {
         $this->authorize('rbac.manage');
 
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
         $fromRoleId = (int)$request->input('from_role_id', 0);
         if ($fromRoleId <= 0) {
             return $this->redirect('/rbac');
@@ -97,6 +133,11 @@ final class RbacController extends Controller
     public function reset(Request $request)
     {
         $this->authorize('rbac.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
 
         $roleId = (int)$request->input('id', 0);
         if ($roleId <= 0) {

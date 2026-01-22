@@ -72,6 +72,14 @@ final class ClinicContextMiddleware implements MiddlewareInterface
         $activeClinicId = $hostClinicId ?? $sessionClinicId;
         $this->container->set('clinic_id', fn () => $activeClinicId);
 
+        if ($userId !== null) {
+            if (is_int($activeClinicId)) {
+                $_SESSION['active_clinic_id'] = $activeClinicId;
+            } else {
+                unset($_SESSION['active_clinic_id']);
+            }
+        }
+
         return $next($request);
     }
 }

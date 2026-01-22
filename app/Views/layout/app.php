@@ -24,6 +24,7 @@ $can = function (string $permissionCode): bool {
 };
 
 $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+$hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['active_clinic_id']);
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -61,7 +62,7 @@ $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_a
                 <a class="lc-nav__item" href="/audit-logs">Auditoria</a>
             <?php endif; ?>
 
-            <?php if ($can('rbac.manage')): ?>
+            <?php if ($can('rbac.manage') && $hasClinicContext): ?>
                 <a class="lc-nav__item" href="/rbac">Papéis & Permissões</a>
             <?php endif; ?>
 
