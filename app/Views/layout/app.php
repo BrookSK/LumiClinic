@@ -58,8 +58,12 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <a class="lc-nav__item" href="/settings">Configurações</a>
             <?php endif; ?>
 
-            <?php if ($can('scheduling.read') && $hasClinicContext): ?>
-                <a class="lc-nav__item" href="/schedule">Agenda</a>
+            <?php if ($can('scheduling.read')): ?>
+                <?php if ($hasClinicContext): ?>
+                    <a class="lc-nav__item" href="/schedule">Agenda</a>
+                <?php elseif ($isSuperAdmin): ?>
+                    <a class="lc-nav__item" href="/sys/clinics">Agenda</a>
+                <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($can('services.manage') && $hasClinicContext): ?>
