@@ -18,7 +18,7 @@ final class MedicalImageService
     public function __construct(private readonly Container $container) {}
 
     /** @return array{patient:array<string,mixed>,images:list<array<string,mixed>>,professionals:list<array<string,mixed>>} */
-    public function listForPatient(int $patientId, string $ip): array
+    public function listForPatient(int $patientId, string $ip, ?string $userAgent = null): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -43,9 +43,18 @@ final class MedicalImageService
         $professionals = $profRepo->listActiveByClinic($clinicId);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'medical_images.view', [
-            'patient_id' => $patientId,
-        ], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'medical_images.view',
+            ['patient_id' => $patientId],
+            $ip,
+            $roleCodes,
+            'patient',
+            $patientId,
+            $userAgent
+        );
 
         return ['patient' => $patient, 'images' => $images, 'professionals' => $professionals];
     }
@@ -53,7 +62,7 @@ final class MedicalImageService
     /**
      * @param array{kind:string,taken_at:?string,procedure_type:?string,professional_id:?int,medical_record_id:?int} $meta
      */
-    public function upload(int $patientId, array $meta, array $file, string $ip): int
+    public function upload(int $patientId, array $meta, array $file, string $ip, ?string $userAgent = null): int
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -127,18 +136,23 @@ final class MedicalImageService
         );
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'medical_images.upload', [
-            'medical_image_id' => $id,
-            'patient_id' => $patientId,
-            'kind' => $kind,
-            'mime' => $mime,
-            'size_bytes' => $size,
-        ], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'medical_images.upload',
+            ['medical_image_id' => $id, 'patient_id' => $patientId, 'kind' => $kind, 'mime' => $mime, 'size_bytes' => $size],
+            $ip,
+            $roleCodes,
+            'medical_image',
+            $id,
+            $userAgent
+        );
 
         return $id;
     }
 
-    public function serveFile(int $imageId, string $ip): Response
+    public function serveFile(int $imageId, string $ip, ?string $userAgent = null): Response
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -148,7 +162,8 @@ final class MedicalImageService
             throw new \RuntimeException('Contexto inválido.');
         }
 
-        $repo = new MedicalImageRepository($this->container->get(\PDO::class));
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new MedicalImageRepository($pdo);
         $img = $repo->findById($clinicId, $imageId);
         if ($img === null) {
             return Response::html('Not Found', 404);
@@ -172,12 +187,19 @@ final class MedicalImageService
             'Cache-Control' => 'private, max-age=0, no-cache',
         ];
 
-        $audit = new AuditLogRepository($this->container->get(\PDO::class));
-        $audit->log($actorId, $clinicId, 'files.read', [
-            'medical_image_id' => $imageId,
-            'patient_id' => (int)$img['patient_id'],
-            'storage_path' => $path,
-        ], $ip);
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'files.read',
+            ['medical_image_id' => $imageId, 'patient_id' => (int)$img['patient_id'], 'storage_path' => $path],
+            $ip,
+            $roleCodes,
+            'medical_image',
+            $imageId,
+            $userAgent
+        );
 
         return Response::raw($bytes, 200, $headers);
     }

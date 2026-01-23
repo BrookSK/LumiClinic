@@ -7,6 +7,7 @@ namespace App\Services\Finance;
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\CostCenterRepository;
+use App\Repositories\DataVersionRepository;
 use App\Repositories\FinancialEntryLogRepository;
 use App\Repositories\FinancialEntryRepository;
 use App\Repositories\PaymentRepository;
@@ -32,7 +33,7 @@ final class FinancialService
         return $repo->listActiveByClinic($clinicId);
     }
 
-    public function createCostCenter(string $name, string $ip): int
+    public function createCostCenter(string $name, string $ip, ?string $userAgent = null): int
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -51,13 +52,14 @@ final class FinancialService
         $id = $repo->create($clinicId, $name);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'finance.cost_centers.create', ['cost_center_id' => $id], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.cost_centers.create', ['cost_center_id' => $id], $ip, $roleCodes, 'cost_center', $id, $userAgent);
 
         return $id;
     }
 
     /** @return array{from:string,to:string,entries:list<array<string,mixed>>,totals:array{in:float,out:float,balance:float}} */
-    public function listEntries(string $from, string $to): array
+    public function listEntries(string $from, string $to, int $limit = 200, int $offset = 0): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -68,19 +70,15 @@ final class FinancialService
         $from = $from === '' ? date('Y-m-01') : $from;
         $to = $to === '' ? date('Y-m-d') : $to;
 
-        $repo = new FinancialEntryRepository($this->container->get(\PDO::class));
-        $entries = $repo->listByClinicRange($clinicId, $from, $to, 500);
+        $limit = max(25, min($limit, 500));
+        $offset = max(0, $offset);
 
-        $in = 0.0;
-        $out = 0.0;
-        foreach ($entries as $e) {
-            $amt = (float)$e['amount'];
-            if ((string)$e['kind'] === 'in') {
-                $in += $amt;
-            } else {
-                $out += $amt;
-            }
-        }
+        $repo = new FinancialEntryRepository($this->container->get(\PDO::class));
+        $entries = $repo->listByClinicRange($clinicId, $from, $to, $limit, $offset);
+
+        $totals = $repo->summarizeTotalsByClinicRange($clinicId, $from, $to);
+        $in = (float)$totals['in_total'];
+        $out = (float)$totals['out_total'];
 
         return [
             'from' => $from,
@@ -101,7 +99,8 @@ final class FinancialService
         ?string $method,
         ?int $costCenterId,
         ?string $description,
-        string $ip
+        string $ip,
+        ?string $userAgent = null
     ): int {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -150,12 +149,13 @@ final class FinancialService
         $log->log($clinicId, $id, 'financial_entries.create', null, ['amount' => $amount, 'kind' => $kind], $actorId, $ip);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'finance.entries.create', ['entry_id' => $id], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.entries.create', ['entry_id' => $id], $ip, $roleCodes, 'financial_entry', $id, $userAgent);
 
         return $id;
     }
 
-    public function deleteEntry(int $entryId, string $ip): void
+    public function deleteEntry(int $entryId, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -171,13 +171,25 @@ final class FinancialService
             throw new \RuntimeException('Lançamento inválido.');
         }
 
+        (new DataVersionRepository($pdo))->record(
+            $clinicId,
+            'financial_entry',
+            $entryId,
+            'finance.entries.delete',
+            $before,
+            $actorId,
+            $ip,
+            $userAgent
+        );
+
         $repo->softDelete($clinicId, $entryId);
 
         $log = new FinancialEntryLogRepository($pdo);
         $log->log($clinicId, $entryId, 'financial_entries.delete', $before, null, $actorId, $ip);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'finance.entries.delete', ['entry_id' => $entryId], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.entries.delete', ['entry_id' => $entryId], $ip, $roleCodes, 'financial_entry', $entryId, $userAgent);
     }
 
     /** @return array{from:string,to:string,by_professional:list<array<string,mixed>>,by_service:list<array<string,mixed>>,ticket_medio:float,appointments:int,paid_sales:int,conversion_rate:float,recurring_revenue:float} */

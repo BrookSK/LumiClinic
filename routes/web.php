@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use App\Controllers\Auth\LoginController;
 use App\Controllers\Audit\AuditLogController;
+use App\Controllers\Compliance\ComplianceLgpdController;
+use App\Controllers\Compliance\ComplianceCertificationController;
+use App\Controllers\Compliance\SecurityIncidentController;
+use App\Controllers\Bi\BiController;
 use App\Controllers\Clinics\ClinicController;
 use App\Controllers\DashboardController;
 use App\Controllers\Rbac\RbacController;
@@ -15,6 +19,8 @@ use App\Controllers\Scheduling\ServiceController;
 use App\Controllers\Scheduling\ServiceMaterialsController;
 use App\Controllers\Settings\SettingsController;
 use App\Controllers\System\SystemClinicController;
+use App\Controllers\System\SystemBillingAdminController;
+use App\Controllers\System\SystemQueueJobController;
 use App\Controllers\Users\UserController;
 use App\Controllers\Patients\PatientController;
 use App\Controllers\Patients\PatientPortalAccessController;
@@ -42,6 +48,7 @@ use App\Controllers\Portal\PortalMetricsController;
 use App\Controllers\Portal\PortalLgpdController;
 use App\Controllers\Portal\PortalApiTokensController;
 use App\Controllers\Api\ApiV1Controller;
+use App\Controllers\Billing\WebhookController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
@@ -85,6 +92,9 @@ $router->post('/portal/api-tokens/revoke', [PortalApiTokensController::class, 'r
 $router->get('/api/v1/me', [ApiV1Controller::class, 'me']);
 $router->get('/api/v1/appointments/upcoming', [ApiV1Controller::class, 'upcomingAppointments']);
 
+$router->post('/webhooks/asaas', [WebhookController::class, 'asaas']);
+$router->post('/webhooks/mercadopago', [WebhookController::class, 'mercadopago']);
+
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);
 
@@ -112,6 +122,24 @@ $router->post('/settings/terminology', [SettingsController::class, 'updateTermin
 
 $router->get('/audit-logs', [AuditLogController::class, 'index']);
 $router->get('/audit-logs/export', [AuditLogController::class, 'export']);
+
+$router->get('/compliance/lgpd-requests', [ComplianceLgpdController::class, 'index']);
+$router->post('/compliance/lgpd-requests/process', [ComplianceLgpdController::class, 'process']);
+$router->get('/compliance/lgpd-requests/export', [ComplianceLgpdController::class, 'export']);
+$router->post('/compliance/lgpd-requests/anonymize', [ComplianceLgpdController::class, 'anonymize']);
+
+$router->get('/compliance/certifications', [ComplianceCertificationController::class, 'index']);
+$router->post('/compliance/certifications/policies/create', [ComplianceCertificationController::class, 'createPolicy']);
+$router->post('/compliance/certifications/policies/update', [ComplianceCertificationController::class, 'updatePolicy']);
+$router->post('/compliance/certifications/controls/create', [ComplianceCertificationController::class, 'createControl']);
+$router->post('/compliance/certifications/controls/update', [ComplianceCertificationController::class, 'updateControl']);
+
+$router->get('/compliance/incidents', [SecurityIncidentController::class, 'index']);
+$router->post('/compliance/incidents/create', [SecurityIncidentController::class, 'create']);
+$router->post('/compliance/incidents/update', [SecurityIncidentController::class, 'update']);
+
+$router->get('/bi', [BiController::class, 'index']);
+$router->post('/bi/refresh', [BiController::class, 'refresh']);
 
 $router->get('/schedule', [ScheduleController::class, 'index']);
 $router->get('/schedule/available', [ScheduleController::class, 'available']);
@@ -221,3 +249,13 @@ $router->get('/signatures/file', [ConsentController::class, 'signatureFile']);
 $router->get('/sys/clinics', [SystemClinicController::class, 'index']);
 $router->get('/sys/clinics/create', [SystemClinicController::class, 'create']);
 $router->post('/sys/clinics/create', [SystemClinicController::class, 'store']);
+
+$router->get('/sys/billing', [SystemBillingAdminController::class, 'index']);
+$router->post('/sys/billing/set-plan', [SystemBillingAdminController::class, 'setPlan']);
+$router->post('/sys/billing/set-status', [SystemBillingAdminController::class, 'setStatus']);
+$router->post('/sys/billing/set-gateway', [SystemBillingAdminController::class, 'setGateway']);
+$router->post('/sys/billing/ensure-gateway', [SystemBillingAdminController::class, 'ensureGateway']);
+
+$router->get('/sys/queue-jobs', [SystemQueueJobController::class, 'index']);
+$router->post('/sys/queue-jobs/retry', [SystemQueueJobController::class, 'retry']);
+$router->post('/sys/queue-jobs/enqueue-test', [SystemQueueJobController::class, 'enqueueTest']);

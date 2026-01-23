@@ -211,6 +211,6 @@ final class ConsentController extends Controller
         }
 
         $service = new ConsentService($this->container);
-        return $service->serveSignature($id, $request->ip());
+        return $service->serveSignature($id, $request->ip(), $request->header('user-agent'));
     }
 }

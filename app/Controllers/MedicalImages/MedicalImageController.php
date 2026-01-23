@@ -41,7 +41,7 @@ final class MedicalImageController extends Controller
         }
 
         $service = new MedicalImageService($this->container);
-        $data = $service->listForPatient($patientId, $request->ip());
+        $data = $service->listForPatient($patientId, $request->ip(), $request->header('user-agent'));
 
         return $this->view('medical-images/index', [
             'patient' => $data['patient'],
@@ -82,7 +82,7 @@ final class MedicalImageController extends Controller
             'procedure_type' => ($procedureType === '' ? null : $procedureType),
             'professional_id' => ($professionalId > 0 ? $professionalId : null),
             'medical_record_id' => ($medicalRecordId > 0 ? $medicalRecordId : null),
-        ], $file, $request->ip());
+        ], $file, $request->ip(), $request->header('user-agent'));
 
         return $this->redirect('/medical-images?patient_id=' . $patientId);
     }
@@ -103,6 +103,6 @@ final class MedicalImageController extends Controller
         }
 
         $service = new MedicalImageService($this->container);
-        return $service->serveFile($id, $request->ip());
+        return $service->serveFile($id, $request->ip(), $request->header('user-agent'));
     }
 }

@@ -15,7 +15,10 @@ use App\Middleware\ClinicContextMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\ApiPatientAuthMiddleware;
 use App\Middleware\PatientAuthMiddleware;
+use App\Middleware\RateLimitMiddleware;
+use App\Middleware\SecurityHeadersMiddleware;
 use App\Middleware\SessionMiddleware;
+use App\Middleware\BillingEnforcementMiddleware;
 
 final class App
 {
@@ -24,6 +27,11 @@ final class App
         private readonly Router $router,
         private readonly MiddlewarePipeline $pipeline,
     ) {}
+
+    public function container(): Container
+    {
+        return $this->container;
+    }
 
     public static function bootstrap(): self
     {
@@ -53,12 +61,15 @@ final class App
         require dirname(__DIR__, 2) . '/routes/web.php';
 
         $pipeline = new MiddlewarePipeline([
+            new SecurityHeadersMiddleware(),
             new SessionMiddleware($config['session']),
+            new RateLimitMiddleware($container),
             new CsrfMiddleware($config['csrf']),
             new AuthMiddleware($container),
             new PatientAuthMiddleware($container),
             new ApiPatientAuthMiddleware($container),
             new ClinicContextMiddleware($container),
+            new BillingEnforcementMiddleware($container),
         ]);
 
         return new self($container, $router, $pipeline);

@@ -41,7 +41,7 @@ final class MedicalRecordController extends Controller
         }
 
         $service = new MedicalRecordService($this->container);
-        $data = $service->timeline($patientId, $request->ip());
+        $data = $service->timeline($patientId, $request->ip(), $request->header('user-agent'));
 
         return $this->view('medical-records/index', [
             'patient' => $data['patient'],
@@ -64,7 +64,7 @@ final class MedicalRecordController extends Controller
         }
 
         $service = new MedicalRecordService($this->container);
-        $data = $service->timeline($patientId, $request->ip());
+        $data = $service->timeline($patientId, $request->ip(), $request->header('user-agent'));
 
         return $this->view('medical-records/create', [
             'patient' => $data['patient'],
@@ -116,7 +116,7 @@ final class MedicalRecordController extends Controller
             'clinical_description' => ($clinicalDescription === '' ? null : $clinicalDescription),
             'clinical_evolution' => ($clinicalEvolution === '' ? null : $clinicalEvolution),
             'notes' => ($notes === '' ? null : $notes),
-        ], $request->ip());
+        ], $request->ip(), $request->header('user-agent'));
 
         return $this->redirect('/medical-records?patient_id=' . $patientId . '#mr-' . $id);
     }
@@ -137,7 +137,7 @@ final class MedicalRecordController extends Controller
         }
 
         $service = new MedicalRecordService($this->container);
-        $data = $service->getForEdit($patientId, $id, $request->ip());
+        $data = $service->getForEdit($patientId, $id, $request->ip(), $request->header('user-agent'));
 
         return $this->view('medical-records/edit', [
             'patient' => $data['patient'],
@@ -170,7 +170,7 @@ final class MedicalRecordController extends Controller
 
         if ($attendedAt === '') {
             $service = new MedicalRecordService($this->container);
-            $data = $service->getForEdit($patientId, $id, $request->ip());
+            $data = $service->getForEdit($patientId, $id, $request->ip(), $request->header('user-agent'));
             return $this->view('medical-records/edit', [
                 'patient' => $data['patient'],
                 'record' => $data['record'],
@@ -192,7 +192,7 @@ final class MedicalRecordController extends Controller
             'clinical_description' => ($clinicalDescription === '' ? null : $clinicalDescription),
             'clinical_evolution' => ($clinicalEvolution === '' ? null : $clinicalEvolution),
             'notes' => ($notes === '' ? null : $notes),
-        ], $request->ip());
+        ], $request->ip(), $request->header('user-agent'));
 
         return $this->redirect('/medical-records?patient_id=' . $patientId . '#mr-' . $id);
     }

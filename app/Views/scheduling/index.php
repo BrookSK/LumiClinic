@@ -8,6 +8,9 @@
 $view = isset($view) ? (string)$view : 'day';
 $professionalId = isset($professional_id) ? (int)$professional_id : 0;
 $isProfessional = isset($is_professional) ? (bool)$is_professional : false;
+$page = isset($page) ? (int)$page : 1;
+$perPage = isset($per_page) ? (int)$per_page : 100;
+$hasNext = isset($has_next) ? (bool)$has_next : false;
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Agenda';
 
@@ -43,6 +46,8 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <form method="get" action="/schedule" class="lc-form" style="display:flex; gap: 12px; align-items: end; flex-wrap: wrap;">
         <input type="hidden" name="view" value="day" />
+        <input type="hidden" name="per_page" value="<?= (int)$perPage ?>" />
+        <input type="hidden" name="page" value="1" />
         <div class="lc-field">
             <label class="lc-label">Data</label>
             <input class="lc-input" type="date" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
@@ -212,6 +217,18 @@ ob_start();
                 </tbody>
             </table>
         <?php endif; ?>
+
+        <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div class="lc-muted">Página <?= (int)$page ?></div>
+            <div style="display:flex; gap:10px;">
+                <?php if ($page > 1): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
+                <?php endif; ?>
+                <?php if ($hasNext): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?>">Próxima</a>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 </div>
 

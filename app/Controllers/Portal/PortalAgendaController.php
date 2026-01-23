@@ -20,12 +20,26 @@ final class PortalAgendaController extends Controller
             return $this->redirect('/portal/login');
         }
 
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 10);
+        $page = max(1, $page);
+        $perPage = max(5, min(25, $perPage));
+        $offset = ($page - 1) * $perPage;
+
         $svc = new PortalAgendaService($this->container);
-        $data = $svc->agenda($clinicId, $patientId);
+        $data = $svc->agenda($clinicId, $patientId, $perPage + 1, $offset);
+
+        $hasNext = count($data['appointments']) > $perPage;
+        if ($hasNext) {
+            $data['appointments'] = array_slice($data['appointments'], 0, $perPage);
+        }
 
         return $this->view('portal/agenda', [
             'appointments' => $data['appointments'],
             'pending_requests' => $data['pending_requests'],
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
         ]);
     }
 

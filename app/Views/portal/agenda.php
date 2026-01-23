@@ -4,6 +4,9 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $appointments = $appointments ?? [];
 $pending_requests = $pending_requests ?? [];
+$page = isset($page) ? (int)$page : 1;
+$perPage = isset($per_page) ? (int)$per_page : 10;
+$hasNext = isset($has_next) ? (bool)$has_next : false;
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -85,6 +88,18 @@ $pending_requests = $pending_requests ?? [];
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
+
+                <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                    <div class="lc-muted">Página <?= (int)$page ?></div>
+                    <div style="display:flex; gap:10px;">
+                        <?php if ($page > 1): ?>
+                            <a class="lc-btn lc-btn--secondary" href="/portal/agenda?per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
+                        <?php endif; ?>
+                        <?php if ($hasNext): ?>
+                            <a class="lc-btn lc-btn--secondary" href="/portal/agenda?per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?>">Próxima</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
         </div>
 

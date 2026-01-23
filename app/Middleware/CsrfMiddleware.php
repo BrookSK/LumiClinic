@@ -24,6 +24,10 @@ final class CsrfMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        if (str_starts_with($path, '/webhooks')) {
+            return $next($request);
+        }
+
         if (!isset($_SESSION[$this->config['token_key']])) {
             $_SESSION[$this->config['token_key']] = bin2hex(random_bytes(32));
         }

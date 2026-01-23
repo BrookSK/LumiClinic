@@ -9,8 +9,9 @@ final class FinancialEntryRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string,mixed>> */
-    public function listByClinicRange(int $clinicId, string $fromDate, string $toDate, int $limit = 300): array
+    public function listByClinicRange(int $clinicId, string $fromDate, string $toDate, int $limit = 300, int $offset = 0): array
     {
+        $offset = max(0, $offset);
         $sql = "
             SELECT
                 id, clinic_id, kind, occurred_on,
@@ -25,6 +26,7 @@ final class FinancialEntryRepository
               AND occurred_on BETWEEN :from_date AND :to_date
             ORDER BY occurred_on DESC, id DESC
             LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
         ";
 
         $stmt = $this->pdo->prepare($sql);
@@ -36,6 +38,33 @@ final class FinancialEntryRepository
 
         /** @var list<array<string,mixed>> */
         return $stmt->fetchAll();
+    }
+
+    /** @return array{in_total:float,out_total:float} */
+    public function summarizeTotalsByClinicRange(int $clinicId, string $fromDate, string $toDate): array
+    {
+        $sql = "
+            SELECT
+                COALESCE(SUM(CASE WHEN kind = 'in' THEN amount ELSE 0 END), 0) AS in_total,
+                COALESCE(SUM(CASE WHEN kind = 'out' THEN amount ELSE 0 END), 0) AS out_total
+            FROM financial_entries
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+              AND occurred_on BETWEEN :from_date AND :to_date
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ]);
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'in_total' => (float)($row['in_total'] ?? 0),
+            'out_total' => (float)($row['out_total'] ?? 0),
+        ];
     }
 
     /** @return array<string,mixed>|null */

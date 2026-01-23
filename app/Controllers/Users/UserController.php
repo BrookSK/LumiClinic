@@ -35,10 +35,25 @@ final class UserController extends Controller
             return $redirect;
         }
 
-        $service = new UserAdminService($this->container);
-        $users = $service->listUsers();
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 50);
+        $page = max(1, $page);
+        $perPage = max(25, min(200, $perPage));
+        $offset = ($page - 1) * $perPage;
 
-        return $this->view('users/index', ['users' => $users]);
+        $service = new UserAdminService($this->container);
+        $users = $service->listUsers($perPage + 1, $offset);
+        $hasNext = count($users) > $perPage;
+        if ($hasNext) {
+            $users = array_slice($users, 0, $perPage);
+        }
+
+        return $this->view('users/index', [
+            'users' => $users,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
+        ]);
     }
 
     public function create(Request $request)

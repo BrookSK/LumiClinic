@@ -44,8 +44,9 @@ final class PatientAppointmentRequestRepository
     }
 
     /** @return list<array<string,mixed>> */
-    public function listPendingByPatient(int $clinicId, int $patientId, int $limit = 50): array
+    public function listPendingByPatient(int $clinicId, int $patientId, int $limit = 50, int $offset = 0): array
     {
+        $offset = max(0, $offset);
         $sql = "
             SELECT id, clinic_id, patient_id, appointment_id, type, status, requested_start_at, note, created_at
             FROM patient_appointment_requests
@@ -55,6 +56,7 @@ final class PatientAppointmentRequestRepository
               AND status = 'pending'
             ORDER BY id DESC
             LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
         ";
 
         $stmt = $this->pdo->prepare($sql);

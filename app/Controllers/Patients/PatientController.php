@@ -36,13 +36,26 @@ final class PatientController extends Controller
         }
 
         $q = trim((string)$request->input('q', ''));
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 25);
+
+        $page = max(1, $page);
+        $perPage = max(5, min(100, $perPage));
+        $offset = ($page - 1) * $perPage;
 
         $service = new PatientService($this->container);
-        $patients = $service->search($q);
+        $patients = $service->search($q, $perPage + 1, $offset);
+        $hasNext = count($patients) > $perPage;
+        if ($hasNext) {
+            $patients = array_slice($patients, 0, $perPage);
+        }
 
         return $this->view('patients/index', [
             'patients' => $patients,
             'q' => $q,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
         ]);
     }
 
@@ -198,7 +211,7 @@ final class PatientController extends Controller
             'notes' => ($notes === '' ? null : $notes),
             'reference_professional_id' => ($refProfessionalId > 0 ? $refProfessionalId : null),
             'status' => ($status === '' ? 'active' : $status),
-        ], $request->ip());
+        ], $request->ip(), $request->header('user-agent'));
 
         return $this->redirect('/patients/view?id=' . $id);
     }

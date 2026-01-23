@@ -125,6 +125,22 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <a class="lc-nav__item" href="/audit-logs">Auditoria</a>
             <?php endif; ?>
 
+            <?php if ($can('bi.read') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/bi">BI</a>
+            <?php endif; ?>
+
+            <?php if ($can('compliance.lgpd.read') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/compliance/lgpd-requests">LGPD</a>
+            <?php endif; ?>
+
+            <?php if ($can('compliance.policies.read') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/compliance/certifications">Certificações</a>
+            <?php endif; ?>
+
+            <?php if ($can('compliance.incidents.read') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/compliance/incidents">Incidentes</a>
+            <?php endif; ?>
+
             <?php if ($can('rbac.manage') && $hasClinicContext): ?>
                 <a class="lc-nav__item" href="/rbac">Papéis & Permissões</a>
             <?php endif; ?>

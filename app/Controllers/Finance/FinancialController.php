@@ -61,9 +61,20 @@ final class FinancialController extends Controller
 
         $from = trim((string)$request->input('from', date('Y-m-01')));
         $to = trim((string)$request->input('to', date('Y-m-d')));
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 100);
+
+        $page = max(1, $page);
+        $perPage = max(25, min(200, $perPage));
+        $offset = ($page - 1) * $perPage;
 
         $service = new FinancialService($this->container);
-        $data = $service->listEntries($from, $to);
+        $data = $service->listEntries($from, $to, $perPage + 1, $offset);
+
+        $hasNext = count($data['entries']) > $perPage;
+        if ($hasNext) {
+            $data['entries'] = array_slice($data['entries'], 0, $perPage);
+        }
 
         return $this->view('finance/cashflow', [
             'from' => $data['from'],
@@ -72,6 +83,9 @@ final class FinancialController extends Controller
             'totals' => $data['totals'],
             'cost_centers' => $service->listCostCenters(),
             'error' => trim((string)$request->input('error', '')),
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
         ]);
     }
 
@@ -100,7 +114,8 @@ final class FinancialController extends Controller
                 $method === '' ? null : $method,
                 $costCenterId > 0 ? $costCenterId : null,
                 $desc === '' ? null : $desc,
-                $request->ip()
+                $request->ip(),
+                $request->header('user-agent')
             );
 
             return $this->redirect('/finance/cashflow?from=' . urlencode($request->input('from', date('Y-m-01'))) . '&to=' . urlencode($request->input('to', date('Y-m-d'))));
@@ -125,7 +140,7 @@ final class FinancialController extends Controller
 
         try {
             $service = new FinancialService($this->container);
-            $service->deleteEntry($entryId, $request->ip());
+            $service->deleteEntry($entryId, $request->ip(), $request->header('user-agent'));
             return $this->redirect('/finance/cashflow');
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/cashflow?error=' . urlencode($e->getMessage()));

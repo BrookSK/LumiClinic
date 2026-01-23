@@ -14,7 +14,7 @@ final class PatientAuthService
 {
     public function __construct(private readonly Container $container) {}
 
-    public function attempt(string $email, string $password, string $ip): PatientAuthResult
+    public function attempt(string $email, string $password, string $ip, ?string $userAgent = null): PatientAuthResult
     {
         $pdo = $this->container->get(\PDO::class);
         $users = new PatientUserRepository($pdo);
@@ -22,11 +22,11 @@ final class PatientAuthService
 
         $candidates = $users->listActiveByEmail($email, 5);
         if (count($candidates) === 0) {
-            $audit->log(null, null, 'portal.login_failed', ['email' => $email], $ip);
+            $audit->log(null, null, 'portal.login_failed', ['email' => $email], $ip, null, 'patient_user', null, $userAgent);
             return new PatientAuthResult(false, 'Credenciais inválidas.');
         }
         if (count($candidates) > 1) {
-            $audit->log(null, null, 'portal.login_failed_multi_clinic', ['email' => $email], $ip);
+            $audit->log(null, null, 'portal.login_failed_multi_clinic', ['email' => $email], $ip, null, 'patient_user', null, $userAgent);
             return new PatientAuthResult(false, 'Este e-mail está vinculado a mais de uma clínica. Contate a clínica para ajustar seu acesso.');
         }
 
@@ -34,7 +34,7 @@ final class PatientAuthService
         $clinicId = (int)$user['clinic_id'];
 
         if (!password_verify($password, (string)$user['password_hash'])) {
-            $audit->log(null, $clinicId, 'portal.login_failed', ['email' => $email, 'patient_user_id' => (int)$user['id'], 'patient_id' => (int)$user['patient_id']], $ip);
+            $audit->log(null, $clinicId, 'portal.login_failed', ['email' => $email, 'patient_user_id' => (int)$user['id'], 'patient_id' => (int)$user['patient_id']], $ip, null, 'patient_user', (int)$user['id'], $userAgent);
             return new PatientAuthResult(false, 'Credenciais inválidas.');
         }
 
@@ -45,7 +45,7 @@ final class PatientAuthService
 
         $users->touchLogin($clinicId, (int)$user['id'], $ip);
 
-        $audit->log(null, $clinicId, 'portal.login', ['patient_user_id' => (int)$user['id'], 'patient_id' => (int)$user['patient_id']], $ip);
+        $audit->log(null, $clinicId, 'portal.login', ['patient_user_id' => (int)$user['id'], 'patient_id' => (int)$user['patient_id']], $ip, null, 'patient_user', (int)$user['id'], $userAgent);
 
         (new PatientEventRepository($pdo))->create(
             $clinicId,
@@ -59,7 +59,7 @@ final class PatientAuthService
         return new PatientAuthResult(true, 'OK');
     }
 
-    public function logout(?string $ip): void
+    public function logout(?string $ip, ?string $userAgent = null): void
     {
         $clinicId = isset($_SESSION['clinic_id']) ? (int)$_SESSION['clinic_id'] : null;
         $patientUserId = isset($_SESSION['patient_user_id']) ? (int)$_SESSION['patient_user_id'] : null;
@@ -67,7 +67,7 @@ final class PatientAuthService
 
         $pdo = $this->container->get(\PDO::class);
         $audit = new AuditLogRepository($pdo);
-        $audit->log(null, $clinicId, 'portal.logout', ['patient_user_id' => $patientUserId, 'patient_id' => $patientId], $ip);
+        $audit->log(null, $clinicId, 'portal.logout', ['patient_user_id' => $patientUserId, 'patient_id' => $patientId], $ip, null, 'patient_user', $patientUserId, $userAgent);
 
         unset($_SESSION['patient_user_id'], $_SESSION['patient_id'], $_SESSION['clinic_id'], $_SESSION['patient_two_factor_required']);
         session_regenerate_id(true);

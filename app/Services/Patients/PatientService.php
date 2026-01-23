@@ -6,6 +6,7 @@ namespace App\Services\Patients;
 
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\DataVersionRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Services\Auth\AuthService;
@@ -15,7 +16,7 @@ final class PatientService
     public function __construct(private readonly Container $container) {}
 
     /** @return list<array<string, mixed>> */
-    public function search(string $q): array
+    public function search(string $q, int $limit = 50, int $offset = 0): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -24,7 +25,9 @@ final class PatientService
         }
 
         $repo = new PatientRepository($this->container->get(\PDO::class));
-        return $repo->searchByClinic($clinicId, $q, 50);
+        $limit = max(1, min($limit, 200));
+        $offset = max(0, $offset);
+        return $repo->searchByClinic($clinicId, $q, $limit, $offset);
     }
 
     /** @return list<array<string, mixed>> */
@@ -104,7 +107,7 @@ final class PatientService
     }
 
     /** @param array{name:string,email:?string,phone:?string,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int,status:string} $data */
-    public function update(int $patientId, array $data, string $ip): void
+    public function update(int $patientId, array $data, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -114,8 +117,22 @@ final class PatientService
             throw new \RuntimeException('Contexto inválido.');
         }
 
-        $repo = new PatientRepository($this->container->get(\PDO::class));
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new PatientRepository($pdo);
         $existing = $repo->findClinicalById($clinicId, $patientId);
+
+        if ($existing !== null) {
+            (new DataVersionRepository($pdo))->record(
+                $clinicId,
+                'patient',
+                $patientId,
+                'patients.update',
+                $existing,
+                $actorId,
+                $ip,
+                $userAgent
+            );
+        }
 
         $cpf = $existing !== null ? ($existing['cpf'] ?? null) : null;
         $cpf = $cpf !== null ? (string)$cpf : null;
@@ -143,7 +160,8 @@ final class PatientService
             $data['status']
         );
 
-        $audit = new AuditLogRepository($this->container->get(\PDO::class));
-        $audit->log($actorId, $clinicId, 'patients.update', ['patient_id' => $patientId], $ip);
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'patients.update', ['patient_id' => $patientId], $ip, $roleCodes, 'patient', $patientId, $userAgent);
     }
 }

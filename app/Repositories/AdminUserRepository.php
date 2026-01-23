@@ -9,14 +9,17 @@ final class AdminUserRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string, mixed>> */
-    public function listByClinic(int $clinicId): array
+    public function listByClinic(int $clinicId, int $limit = 200, int $offset = 0): array
     {
+        $offset = max(0, $offset);
         $sql = "
             SELECT id, name, email, status, created_at
             FROM users
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
             ORDER BY id DESC
+            LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
         ";
 
         $stmt = $this->pdo->prepare($sql);

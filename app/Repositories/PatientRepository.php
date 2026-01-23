@@ -53,8 +53,9 @@ final class PatientRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function searchByClinic(int $clinicId, string $q, int $limit = 20): array
+    public function searchByClinic(int $clinicId, string $q, int $limit = 20, int $offset = 0): array
     {
+        $offset = max(0, $offset);
         $sql = "
             SELECT id, name, email, phone, status
             FROM patients
@@ -68,6 +69,7 @@ final class PatientRepository
               )
             ORDER BY name ASC
             LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
         ";
 
         $like = '%' . $q . '%';
@@ -191,5 +193,35 @@ final class PatientRepository
         ]);
 
         return (int)$this->pdo->lastInsertId();
+    }
+
+    public function anonymizeById(int $clinicId, int $id): void
+    {
+        $sql = "
+            UPDATE patients
+            SET
+                name = :name,
+                email = NULL,
+                phone = NULL,
+                birth_date = NULL,
+                sex = NULL,
+                cpf = NULL,
+                cpf_last4 = NULL,
+                address = NULL,
+                notes = NULL,
+                status = 'inactive',
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $id,
+            'clinic_id' => $clinicId,
+            'name' => 'Anonimizado #' . $id,
+        ]);
     }
 }

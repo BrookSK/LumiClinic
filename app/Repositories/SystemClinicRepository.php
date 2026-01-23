@@ -12,7 +12,16 @@ final class SystemClinicRepository
     public function listAll(): array
     {
         $sql = "
-            SELECT id, name, tenant_key, status, created_at
+            SELECT
+                id, name, tenant_key, status, created_at,
+                (
+                    SELECT d.domain
+                    FROM clinic_domains d
+                    WHERE d.clinic_id = clinics.id
+                      AND d.is_primary = 1
+                    ORDER BY d.id DESC
+                    LIMIT 1
+                ) AS primary_domain
             FROM clinics
             WHERE deleted_at IS NULL
             ORDER BY id DESC
@@ -35,6 +44,22 @@ final class SystemClinicRepository
         $stmt->execute([
             'name' => $name,
             'tenant_key' => $tenantKey,
+        ]);
+
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    public function createPrimaryDomain(int $clinicId, string $domain): int
+    {
+        $sql = "
+            INSERT INTO clinic_domains (clinic_id, domain, is_primary, created_at)
+            VALUES (:clinic_id, :domain, 1, NOW())
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'domain' => $domain,
         ]);
 
         return (int)$this->pdo->lastInsertId();

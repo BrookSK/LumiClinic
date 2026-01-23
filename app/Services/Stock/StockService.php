@@ -238,7 +238,7 @@ final class StockService
     }
 
     /** @return array{from:string,to:string,movements:list<array<string,mixed>>} */
-    public function listMovements(string $from, string $to): array
+    public function listMovements(string $from, string $to, int $limit = 200, int $offset = 0): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -249,11 +249,14 @@ final class StockService
         $from = $from === '' ? date('Y-m-01') : $from;
         $to = $to === '' ? date('Y-m-d') : $to;
 
+        $limit = max(25, min($limit, 500));
+        $offset = max(0, $offset);
+
         $repo = new StockMovementRepository($this->container->get(\PDO::class));
         return [
             'from' => $from,
             'to' => $to,
-            'movements' => $repo->listByClinic($clinicId, $from, $to, 700),
+            'movements' => $repo->listByClinic($clinicId, $from, $to, $limit, $offset),
         ];
     }
 

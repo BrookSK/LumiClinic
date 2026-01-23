@@ -84,8 +84,20 @@ final class SalesController extends Controller
             $professionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
         }
 
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 50);
+        $page = max(1, $page);
+        $perPage = max(25, min(200, $perPage));
+        $offset = ($page - 1) * $perPage;
+
+        $sales = $service->listSales($professionalId, $perPage + 1, $offset);
+        $hasNext = count($sales) > $perPage;
+        if ($hasNext) {
+            $sales = array_slice($sales, 0, $perPage);
+        }
+
         return $this->view('finance/sales', [
-            'sales' => $service->listSales($professionalId),
+            'sales' => $sales,
             'professionals' => $service->listReferenceProfessionals(),
             'services' => $service->listServices(),
             'packages' => $service->listPackages(),
@@ -93,6 +105,9 @@ final class SalesController extends Controller
             'error' => trim((string)$request->input('error', '')),
             'created' => (int)$request->input('created', 0),
             'is_professional' => $this->isProfessionalRole(),
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
         ]);
     }
 
@@ -116,7 +131,7 @@ final class SalesController extends Controller
 
         try {
             $service = new SalesService($this->container);
-            $saleId = $service->createSale($patientId > 0 ? $patientId : null, $origin, $desconto, $notes === '' ? null : $notes, $request->ip());
+            $saleId = $service->createSale($patientId > 0 ? $patientId : null, $origin, $desconto, $notes === '' ? null : $notes, $request->ip(), $request->header('user-agent'));
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales?error=' . urlencode($e->getMessage()));
@@ -198,7 +213,8 @@ final class SalesController extends Controller
                 $professionalId > 0 ? $professionalId : null,
                 $quantity,
                 $unitPrice,
-                $request->ip()
+                $request->ip(),
+                $request->header('user-agent')
             );
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
@@ -226,7 +242,7 @@ final class SalesController extends Controller
 
         try {
             $service = new SalesService($this->container);
-            $service->cancelSale($saleId, $request->ip());
+            $service->cancelSale($saleId, $request->ip(), $request->header('user-agent'));
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));

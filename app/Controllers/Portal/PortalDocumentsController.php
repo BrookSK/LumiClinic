@@ -21,7 +21,7 @@ final class PortalDocumentsController extends Controller
         }
 
         $svc = new PortalDocumentsService($this->container);
-        $data = $svc->list($clinicId, $patientId, $request->ip());
+        $data = $svc->list($clinicId, $patientId, $request->ip(), $request->header('user-agent'));
 
         return $this->view('portal/documents', [
             'acceptances' => $data['acceptances'],
@@ -44,7 +44,7 @@ final class PortalDocumentsController extends Controller
             return $this->redirect('/portal/documentos');
         }
 
-        return (new PortalDocumentsService($this->container))->serveSignature($clinicId, $patientId, $id, $request->ip());
+        return (new PortalDocumentsService($this->container))->serveSignature($clinicId, $patientId, $id, $request->ip(), $request->header('user-agent'));
     }
 
     public function medicalImageFile(Request $request)
@@ -61,6 +61,6 @@ final class PortalDocumentsController extends Controller
             return $this->redirect('/portal/documentos');
         }
 
-        return (new PortalDocumentsService($this->container))->serveMedicalImage($clinicId, $patientId, $id, $request->ip());
+        return (new PortalDocumentsService($this->container))->serveMedicalImage($clinicId, $patientId, $id, $request->ip(), $request->header('user-agent'));
     }
 }

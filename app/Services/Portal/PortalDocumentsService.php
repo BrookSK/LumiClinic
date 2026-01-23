@@ -23,7 +23,7 @@ final class PortalDocumentsService
      *   images:list<array<string,mixed>>
      * }
      */
-    public function list(int $clinicId, int $patientId, string $ip): array
+    public function list(int $clinicId, int $patientId, string $ip, ?string $userAgent = null): array
     {
         $pdo = $this->container->get(\PDO::class);
 
@@ -32,7 +32,7 @@ final class PortalDocumentsService
         $imgRepo = new MedicalImageRepository($pdo);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log(null, $clinicId, 'portal.documents.view', ['patient_id' => $patientId], $ip);
+        $audit->log(null, $clinicId, 'portal.documents.view', ['patient_id' => $patientId], $ip, null, 'patient', $patientId, $userAgent);
 
         return [
             'acceptances' => $accRepo->listByPatient($clinicId, $patientId, 100),
@@ -41,7 +41,7 @@ final class PortalDocumentsService
         ];
     }
 
-    public function serveSignature(int $clinicId, int $patientId, int $signatureId, string $ip): Response
+    public function serveSignature(int $clinicId, int $patientId, int $signatureId, string $ip, ?string $userAgent = null): Response
     {
         $pdo = $this->container->get(\PDO::class);
         $repo = new SignatureRepository($pdo);
@@ -69,16 +69,12 @@ final class PortalDocumentsService
         ];
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log(null, $clinicId, 'portal.files.read', [
-            'signature_id' => $signatureId,
-            'patient_id' => $patientId,
-            'storage_path' => $path,
-        ], $ip);
+        $audit->log(null, $clinicId, 'portal.files.read', ['signature_id' => $signatureId, 'patient_id' => $patientId, 'storage_path' => $path], $ip, null, 'signature', $signatureId, $userAgent);
 
         return Response::raw($bytes, 200, $headers);
     }
 
-    public function serveMedicalImage(int $clinicId, int $patientId, int $imageId, string $ip): Response
+    public function serveMedicalImage(int $clinicId, int $patientId, int $imageId, string $ip, ?string $userAgent = null): Response
     {
         $pdo = $this->container->get(\PDO::class);
         $repo = new MedicalImageRepository($pdo);
@@ -106,11 +102,7 @@ final class PortalDocumentsService
         ];
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log(null, $clinicId, 'portal.files.read', [
-            'medical_image_id' => $imageId,
-            'patient_id' => $patientId,
-            'storage_path' => $path,
-        ], $ip);
+        $audit->log(null, $clinicId, 'portal.files.read', ['medical_image_id' => $imageId, 'patient_id' => $patientId, 'storage_path' => $path], $ip, null, 'medical_image', $imageId, $userAgent);
 
         return Response::raw($bytes, 200, $headers);
     }

@@ -13,6 +13,20 @@ return [
 
         'env' => getenv('APP_ENV') ?: 'local',
     ],
+    'billing' => [
+        'asaas' => [
+            'base_url' => getenv('ASAAS_BASE_URL') ?: 'https://www.asaas.com/api/v3',
+            'api_key' => getenv('ASAAS_API_KEY') ?: '',
+            'billing_type' => getenv('ASAAS_BILLING_TYPE') ?: 'BOLETO',
+            'webhook_secret' => getenv('ASAAS_WEBHOOK_SECRET') ?: '',
+        ],
+        'mercadopago' => [
+            'base_url' => getenv('MP_BASE_URL') ?: 'https://api.mercadopago.com',
+            'access_token' => getenv('MP_ACCESS_TOKEN') ?: '',
+            'payer_email_default' => getenv('MP_PAYER_EMAIL_DEFAULT') ?: '',
+            'webhook_secret' => getenv('MP_WEBHOOK_SECRET') ?: '',
+        ],
+    ],
     'session' => [
         'name' => 'lumiclinic_session',
         'name_patient' => 'lumiclinic_patient_session',

@@ -16,7 +16,7 @@ final class UserAdminService
     public function __construct(private readonly Container $container) {}
 
     /** @return list<array<string, mixed>> */
-    public function listUsers(): array
+    public function listUsers(int $limit = 200, int $offset = 0): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -26,7 +26,9 @@ final class UserAdminService
         }
 
         $repo = new AdminUserRepository($this->container->get(\PDO::class));
-        return $repo->listByClinic($clinicId);
+        $limit = max(1, min($limit, 500));
+        $offset = max(0, $offset);
+        return $repo->listByClinic($clinicId, $limit, $offset);
     }
 
     /** @return list<array{id:int,code:string,name:string}> */

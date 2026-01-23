@@ -13,9 +13,11 @@ final class Response
         private string $body = '',
     ) {}
 
-    public static function html(string $html, int $status = 200): self
+    /** @param array<string, string> $headers */
+    public static function html(string $html, int $status = 200, array $headers = []): self
     {
-        return new self($status, ['Content-Type' => 'text/html; charset=UTF-8'], $html);
+        $base = ['Content-Type' => 'text/html; charset=UTF-8'];
+        return new self($status, array_merge($base, $headers), $html);
     }
 
     public static function redirect(string $to, int $status = 302): self
@@ -30,13 +32,31 @@ final class Response
     }
 
     /** @param array<string, mixed> $data */
-    public static function json(array $data, int $status = 200): self
+    /** @param array<string, string> $headers */
+    public static function json(array $data, int $status = 200, array $headers = []): self
     {
         return new self(
             $status,
-            ['Content-Type' => 'application/json; charset=UTF-8'],
+            array_merge(['Content-Type' => 'application/json; charset=UTF-8'], $headers),
             (string)json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
         );
+    }
+
+    public function withHeader(string $name, string $value): self
+    {
+        $clone = clone $this;
+        $clone->headers[$name] = $value;
+        return $clone;
+    }
+
+    /** @param array<string, string> $headers */
+    public function withHeaders(array $headers): self
+    {
+        $clone = clone $this;
+        foreach ($headers as $name => $value) {
+            $clone->headers[(string)$name] = (string)$value;
+        }
+        return $clone;
     }
 
     public function send(): void

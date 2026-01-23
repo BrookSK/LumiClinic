@@ -10,7 +10,7 @@ final class AuditLogQueryRepository
 
     /** @param array{action:string,from:string,to:string} $filters */
     /** @return list<array<string, mixed>> */
-    public function search(int $clinicId, array $filters, int $limit): array
+    public function search(int $clinicId, array $filters, int $limit, int $offset = 0): array
     {
         $where = ['clinic_id = :clinic_id'];
         $params = ['clinic_id' => $clinicId];
@@ -31,14 +31,16 @@ final class AuditLogQueryRepository
         }
 
         $limit = max(1, min($limit, 5000));
+        $offset = max(0, $offset);
 
         $sql = "
-            SELECT id, clinic_id, user_id, action, meta_json, ip_address, created_at
+            SELECT id, clinic_id, user_id, role_codes_json, action, entity_type, entity_id, meta_json, ip_address, user_agent, occurred_at, created_at
             FROM audit_logs
             WHERE " . implode(' AND ', $where) . "
               AND deleted_at IS NULL
             ORDER BY id DESC
             LIMIT {$limit}
+            OFFSET {$offset}
         ";
 
         $stmt = $this->pdo->prepare($sql);

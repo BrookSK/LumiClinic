@@ -9,8 +9,9 @@ final class AppointmentRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string, mixed>> */
-    public function listUpcomingByPatient(int $clinicId, int $patientId, int $limit = 10): array
+    public function listUpcomingByPatient(int $clinicId, int $patientId, int $limit = 10, int $offset = 0): array
     {
+        $offset = max(0, $offset);
         $sql = "
             SELECT
                 a.id,
@@ -35,6 +36,7 @@ final class AppointmentRepository
               AND a.start_at >= NOW()
             ORDER BY a.start_at ASC
             LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
         ";
 
         $stmt = $this->pdo->prepare($sql);
@@ -105,7 +107,7 @@ final class AppointmentRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function listByClinicRange(int $clinicId, string $startAt, string $endAt, ?int $professionalId = null): array
+    public function listByClinicRange(int $clinicId, string $startAt, string $endAt, ?int $professionalId = null, ?int $limit = null, int $offset = 0): array
     {
         $sql = "
             SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
@@ -128,6 +130,12 @@ final class AppointmentRepository
         }
 
         $sql .= " ORDER BY start_at ASC ";
+
+        if ($limit !== null) {
+            $limit = max(1, min($limit, 5000));
+            $offset = max(0, $offset);
+            $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset . " ";
+        }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);

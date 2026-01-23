@@ -21,7 +21,7 @@ final class AuthPatientController extends Controller
         $password = (string)$request->input('password', '');
 
         $auth = new PatientAuthService($this->container);
-        $result = $auth->attempt($email, $password, $request->ip());
+        $result = $auth->attempt($email, $password, $request->ip(), $request->header('user-agent'));
 
         if (!$result->success) {
             return $this->view('portal/login', ['error' => $result->message]);
@@ -33,7 +33,7 @@ final class AuthPatientController extends Controller
     public function logout(Request $request)
     {
         $auth = new PatientAuthService($this->container);
-        $auth->logout($request->ip());
+        $auth->logout($request->ip(), $request->header('user-agent'));
 
         return $this->redirect('/portal/login');
     }

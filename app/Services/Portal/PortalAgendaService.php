@@ -8,24 +8,27 @@ use App\Core\Container\Container;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\PatientAppointmentRequestRepository;
-use App\Services\Portal\PortalNotificationService;
 use App\Repositories\PatientEventRepository;
+use App\Services\Queue\QueueService;
 
 final class PortalAgendaService
 {
     public function __construct(private readonly Container $container) {}
 
     /** @return array{appointments:list<array<string,mixed>>,pending_requests:list<array<string,mixed>>} */
-    public function agenda(int $clinicId, int $patientId): array
+    public function agenda(int $clinicId, int $patientId, int $limit = 20, int $offset = 0): array
     {
         $pdo = $this->container->get(\PDO::class);
+
+        $limit = max(5, min($limit, 50));
+        $offset = max(0, $offset);
 
         $apptRepo = new AppointmentRepository($pdo);
         $reqRepo = new PatientAppointmentRequestRepository($pdo);
 
         return [
-            'appointments' => $apptRepo->listUpcomingByPatient($clinicId, $patientId, 50),
-            'pending_requests' => $reqRepo->listPendingByPatient($clinicId, $patientId, 50),
+            'appointments' => $apptRepo->listUpcomingByPatient($clinicId, $patientId, $limit, $offset),
+            'pending_requests' => $reqRepo->listPendingByPatient($clinicId, $patientId, $limit, $offset),
         ];
     }
 
@@ -51,7 +54,12 @@ final class PortalAgendaService
 
         $audit->log(null, $clinicId, 'portal.appointment_confirm', ['appointment_id' => $appointmentId, 'patient_id' => $patientId, 'from' => $from, 'to' => 'confirmed'], $ip);
 
-        (new PortalNotificationService($this->container))->notifyAppointmentConfirmed($clinicId, $patientId, $appointmentId);
+        (new QueueService($this->container))->enqueue(
+            'portal.notify_appointment_confirmed',
+            ['patient_id' => $patientId, 'appointment_id' => $appointmentId],
+            $clinicId,
+            'notifications'
+        );
 
         (new PatientEventRepository($pdo))->create(
             $clinicId,

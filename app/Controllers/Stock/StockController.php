@@ -37,9 +37,20 @@ final class StockController extends Controller
 
         $from = trim((string)$request->input('from', date('Y-m-01')));
         $to = trim((string)$request->input('to', date('Y-m-d')));
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 100);
+
+        $page = max(1, $page);
+        $perPage = max(25, min(200, $perPage));
+        $offset = ($page - 1) * $perPage;
 
         $svc = new StockService($this->container);
-        $data = $svc->listMovements($from, $to);
+        $data = $svc->listMovements($from, $to, $perPage + 1, $offset);
+
+        $hasNext = count($data['movements']) > $perPage;
+        if ($hasNext) {
+            $data['movements'] = array_slice($data['movements'], 0, $perPage);
+        }
 
         return $this->view('stock/movements', [
             'from' => $data['from'],
@@ -47,6 +58,9 @@ final class StockController extends Controller
             'movements' => $data['movements'],
             'materials' => $svc->listMaterials(),
             'error' => trim((string)$request->input('error', '')),
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
         ]);
     }
 

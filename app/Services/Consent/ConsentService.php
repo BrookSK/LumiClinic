@@ -219,7 +219,7 @@ final class ConsentService
         }
     }
 
-    public function serveSignature(int $signatureId, string $ip): Response
+    public function serveSignature(int $signatureId, string $ip, ?string $userAgent = null): Response
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -247,12 +247,20 @@ final class ConsentService
 
         $mime = (string)($sig['mime_type'] ?? 'application/octet-stream');
 
-        $audit = new AuditLogRepository($this->container->get(\PDO::class));
-        $audit->log($actorId, $clinicId, 'files.read', [
-            'signature_id' => $signatureId,
-            'patient_id' => (int)$sig['patient_id'],
-            'storage_path' => $path,
-        ], $ip);
+        $pdo = $this->container->get(\PDO::class);
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'files.read',
+            ['signature_id' => $signatureId, 'patient_id' => (int)$sig['patient_id'], 'storage_path' => $path],
+            $ip,
+            $roleCodes,
+            'signature',
+            $signatureId,
+            $userAgent
+        );
 
         return Response::raw($bytes, 200, [
             'Content-Type' => $mime,

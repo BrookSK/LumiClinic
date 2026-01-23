@@ -28,8 +28,9 @@ final class SaleRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function listByClinic(int $clinicId, int $limit = 200, ?int $professionalId = null): array
+    public function listByClinic(int $clinicId, int $limit = 200, ?int $professionalId = null, int $offset = 0): array
     {
+        $offset = max(0, $offset);
         $where = " s.clinic_id = :clinic_id AND s.deleted_at IS NULL ";
         $join = '';
         $params = ['clinic_id' => $clinicId];
@@ -52,6 +53,7 @@ final class SaleRepository
             WHERE " . $where . "
             ORDER BY s.id DESC
             LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
         ";
 
         $stmt = $this->pdo->prepare($sql);

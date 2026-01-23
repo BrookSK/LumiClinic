@@ -20,6 +20,9 @@ ob_start();
         <label class="lc-label">Tenant (subdomínio opcional)</label>
         <input class="lc-input" type="text" name="tenant_key" placeholder="ex: clinica01" />
 
+        <label class="lc-label">Domínio principal (opcional)</label>
+        <input class="lc-input" type="text" name="primary_domain" placeholder="ex: clinica01.com.br" />
+
         <div class="lc-card" style="margin-top:14px;">
             <div class="lc-card__title">Owner inicial</div>
 

@@ -58,7 +58,7 @@ final class PaymentController extends Controller
 
         try {
             $service = new SalesService($this->container);
-            $service->addPayment($saleId, $method, $amount, $status, $fees, $gatewayRef === '' ? null : $gatewayRef, $request->ip());
+            $service->addPayment($saleId, $method, $amount, $status, $fees, $gatewayRef === '' ? null : $gatewayRef, $request->ip(), $request->header('user-agent'));
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));
@@ -87,7 +87,7 @@ final class PaymentController extends Controller
 
         try {
             $service = new SalesService($this->container);
-            $service->refundPayment($paymentId, $request->ip());
+            $service->refundPayment($paymentId, $request->ip(), $request->header('user-agent'));
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));

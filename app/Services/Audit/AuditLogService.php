@@ -14,7 +14,7 @@ final class AuditLogService
 
     /** @param array{action:string,from:string,to:string} $filters */
     /** @return list<array<string, mixed>> */
-    public function list(array $filters, int $limit = 250): array
+    public function list(array $filters, int $limit = 250, int $offset = 0): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -24,6 +24,8 @@ final class AuditLogService
         }
 
         $repo = new AuditLogQueryRepository($this->container->get(\PDO::class));
-        return $repo->search($clinicId, $filters, $limit);
+        $limit = max(1, min($limit, 5000));
+        $offset = max(0, $offset);
+        return $repo->search($clinicId, $filters, $limit, $offset);
     }
 }

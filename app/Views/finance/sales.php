@@ -7,9 +7,16 @@
 /** @var string $error */
 /** @var int $created */
 /** @var bool $is_professional */
+/** @var int $page */
+/** @var int $per_page */
+/** @var bool $has_next */
 
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Financeiro - Vendas';
+
+$page = isset($page) ? (int)$page : 1;
+$perPage = isset($per_page) ? (int)$per_page : 50;
+$hasNext = isset($has_next) ? (bool)$has_next : false;
 
 ob_start();
 ?>
@@ -94,6 +101,18 @@ ob_start();
                 </tbody>
             </table>
         <?php endif; ?>
+
+        <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div class="lc-muted">Página <?= (int)$page ?></div>
+            <div style="display:flex; gap:10px;">
+                <?php if ($page > 1): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
+                <?php endif; ?>
+                <?php if ($hasNext): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?>">Próxima</a>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 </div>
 

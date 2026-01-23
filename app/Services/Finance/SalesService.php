@@ -6,6 +6,7 @@ namespace App\Services\Finance;
 
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\DataVersionRepository;
 use App\Repositories\PackageRepository;
 use App\Repositories\PatientPackageRepository;
 use App\Repositories\PatientRepository;
@@ -24,7 +25,7 @@ final class SalesService
     public function __construct(private readonly Container $container) {}
 
     /** @return list<array<string,mixed>> */
-    public function listSales(?int $professionalId = null): array
+    public function listSales(?int $professionalId = null, int $limit = 200, int $offset = 0): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -32,8 +33,11 @@ final class SalesService
             throw new \RuntimeException('Contexto inv?lido.');
         }
 
+        $limit = max(1, min($limit, 500));
+        $offset = max(0, $offset);
+
         $repo = new SaleRepository($this->container->get(\PDO::class));
-        return $repo->listByClinic($clinicId, 200, $professionalId);
+        return $repo->listByClinic($clinicId, $limit, $professionalId, $offset);
     }
 
     /** @return array{sale:array<string,mixed>,items:list<array<string,mixed>>,payments:list<array<string,mixed>>,logs:list<array<string,mixed>>}|null */
@@ -65,7 +69,7 @@ final class SalesService
         ];
     }
 
-    public function createSale(?int $patientId, string $origin, string $descontoStr, ?string $notes, string $ip): int
+    public function createSale(?int $patientId, string $origin, string $descontoStr, ?string $notes, string $ip, ?string $userAgent = null): int
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -101,7 +105,8 @@ final class SalesService
         $saleLog->log($clinicId, $saleId, 'sales.create', ['patient_id' => $patientId, 'origin' => $origin, 'desconto' => $desconto], $actorId, $ip);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'finance.sales.create', ['sale_id' => $saleId], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.sales.create', ['sale_id' => $saleId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
 
         return $saleId;
     }
@@ -113,7 +118,8 @@ final class SalesService
         ?int $professionalId,
         int $quantity,
         string $unitPriceStr,
-        string $ip
+        string $ip,
+        ?string $userAgent = null
     ): int {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -226,13 +232,17 @@ final class SalesService
             $ip
         );
 
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.sales.update', ['sale_id' => $saleId, 'sale_item_id' => $itemId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
         $this->syncDerivedEntitiesFromItem($clinicId, $saleId, $itemId, $actorId, $ip);
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
 
         return $itemId;
     }
 
-    public function addPayment(int $saleId, string $method, string $amountStr, string $status, string $feesStr, ?string $gatewayRef, string $ip): int
+    public function addPayment(int $saleId, string $method, string $amountStr, string $status, string $feesStr, ?string $gatewayRef, string $ip, ?string $userAgent = null): int
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -309,12 +319,16 @@ final class SalesService
             $ip
         );
 
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.payments.create', ['sale_id' => $saleId, 'payment_id' => $paymentId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
 
         return $paymentId;
     }
 
-    public function refundPayment(int $paymentId, string $ip): void
+    public function refundPayment(int $paymentId, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -329,6 +343,17 @@ final class SalesService
         if ($payment === null) {
             throw new \RuntimeException('Pagamento inv?lido.');
         }
+
+        (new DataVersionRepository($pdo))->record(
+            $clinicId,
+            'payment',
+            $paymentId,
+            'finance.payments.refund',
+            $payment,
+            $actorId,
+            $ip,
+            $userAgent
+        );
 
         $status = (string)$payment['status'];
         if ($status === 'refunded') {
@@ -352,10 +377,14 @@ final class SalesService
             $ip
         );
 
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.payments.refund', ['sale_id' => $saleId, 'payment_id' => $paymentId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
     }
 
-    public function cancelSale(int $saleId, string $ip): void
+    public function cancelSale(int $saleId, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -371,6 +400,17 @@ final class SalesService
             throw new \RuntimeException('Venda inv?lida.');
         }
 
+        (new DataVersionRepository($pdo))->record(
+            $clinicId,
+            'sale',
+            $saleId,
+            'finance.sales.cancel',
+            $sale,
+            $actorId,
+            $ip,
+            $userAgent
+        );
+
         if ((string)$sale['status'] === 'cancelled') {
             return;
         }
@@ -381,7 +421,8 @@ final class SalesService
         $saleLog->log($clinicId, $saleId, 'sales.cancel', [], $actorId, $ip);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'finance.sales.cancel', ['sale_id' => $saleId], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.sales.cancel', ['sale_id' => $saleId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
     }
 
     /** @return list<array<string,mixed>> */

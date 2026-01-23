@@ -4,9 +4,16 @@
 /** @var list<array<string,mixed>> $movements */
 /** @var list<array<string,mixed>> $materials */
 /** @var string $error */
+/** @var int $page */
+/** @var int $per_page */
+/** @var bool $has_next */
 
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Estoque - Movimentações';
+
+$page = isset($page) ? (int)$page : 1;
+$perPage = isset($per_page) ? (int)$per_page : 100;
+$hasNext = isset($has_next) ? (bool)$has_next : false;
 
 $matMap = [];
 foreach ($materials as $m) {
@@ -26,6 +33,8 @@ ob_start();
     <div class="lc-card__header">Filtros</div>
     <div class="lc-card__body">
         <form method="get" action="/stock/movements" class="lc-form" style="display:flex; gap: 12px; flex-wrap: wrap; align-items:end;">
+            <input type="hidden" name="per_page" value="<?= (int)$perPage ?>" />
+            <input type="hidden" name="page" value="1" />
             <div class="lc-field">
                 <label class="lc-label">De</label>
                 <input class="lc-input" type="date" name="from" value="<?= htmlspecialchars($from, ENT_QUOTES, 'UTF-8') ?>" />
@@ -134,6 +143,18 @@ ob_start();
                 </tbody>
             </table>
         <?php endif; ?>
+
+        <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div class="lc-muted">Página <?= (int)$page ?></div>
+            <div style="display:flex; gap:10px;">
+                <?php if ($page > 1): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/stock/movements?from=<?= urlencode((string)$from) ?>&to=<?= urlencode((string)$to) ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
+                <?php endif; ?>
+                <?php if ($hasNext): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/stock/movements?from=<?= urlencode((string)$from) ?>&to=<?= urlencode((string)$to) ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?>">Próxima</a>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 </div>
 

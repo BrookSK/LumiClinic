@@ -41,6 +41,7 @@ final class SystemClinicController extends Controller
 
         $clinicName = trim((string)$request->input('clinic_name', ''));
         $tenantKey = trim((string)$request->input('tenant_key', ''));
+        $primaryDomain = trim((string)$request->input('primary_domain', ''));
 
         $ownerName = trim((string)$request->input('owner_name', ''));
         $ownerEmail = trim((string)$request->input('owner_email', ''));
@@ -54,6 +55,7 @@ final class SystemClinicController extends Controller
         $service->createClinicWithOwner(
             $clinicName,
             ($tenantKey === '' ? null : $tenantKey),
+            ($primaryDomain === '' ? null : $primaryDomain),
             $ownerName,
             $ownerEmail,
             $ownerPassword,

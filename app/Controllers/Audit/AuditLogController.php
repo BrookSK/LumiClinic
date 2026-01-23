@@ -39,6 +39,12 @@ final class AuditLogController extends Controller
 
         $service = new AuditLogService($this->container);
 
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 50);
+        $page = max(1, $page);
+        $perPage = max(25, min(200, $perPage));
+        $offset = ($page - 1) * $perPage;
+
         $filters = [
             'action' => trim((string)$request->input('action', '')),
             'from' => trim((string)$request->input('from', '')),
@@ -46,8 +52,17 @@ final class AuditLogController extends Controller
         ];
 
         return $this->view('audit/index', [
-            'items' => $service->list($filters),
+            'items' => (function () use ($service, $filters, $perPage, $offset) {
+                $rows = $service->list($filters, $perPage + 1, $offset);
+                $hasNext = count($rows) > $perPage;
+                if ($hasNext) {
+                    $rows = array_slice($rows, 0, $perPage);
+                }
+                return ['rows' => $rows, 'has_next' => $hasNext];
+            })(),
             'filters' => $filters,
+            'page' => $page,
+            'per_page' => $perPage,
         ]);
     }
 
@@ -72,7 +87,8 @@ final class AuditLogController extends Controller
 
         $auth = new AuthService($this->container);
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
-        $audit->log($auth->userId(), $auth->clinicId(), 'audit.export', $filters, $request->ip());
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($auth->userId(), $auth->clinicId(), 'audit.export', $filters, $request->ip(), $roleCodes, null, null, $request->header('user-agent'));
 
         $out = fopen('php://temp', 'r+');
         fputcsv($out, ['id', 'created_at', 'user_id', 'action', 'ip_address', 'meta_json']);

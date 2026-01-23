@@ -9,8 +9,9 @@ final class StockMovementRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string,mixed>> */
-    public function listByClinic(int $clinicId, string $fromDate, string $toDate, int $limit = 500): array
+    public function listByClinic(int $clinicId, string $fromDate, string $toDate, int $limit = 500, int $offset = 0): array
     {
+        $offset = max(0, $offset);
         $sql = "
             SELECT
                 id, clinic_id, material_id,
@@ -27,6 +28,7 @@ final class StockMovementRepository
               AND DATE(created_at) BETWEEN :from_date AND :to_date
             ORDER BY id DESC
             LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
         ";
 
         $stmt = $this->pdo->prepare($sql);

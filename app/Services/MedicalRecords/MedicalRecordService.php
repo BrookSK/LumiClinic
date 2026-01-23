@@ -16,7 +16,7 @@ final class MedicalRecordService
     public function __construct(private readonly Container $container) {}
 
     /** @return array{patient:array<string,mixed>,records:list<array<string,mixed>>} */
-    public function timeline(int $patientId, string $ip): array
+    public function timeline(int $patientId, string $ip, ?string $userAgent = null): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -37,9 +37,18 @@ final class MedicalRecordService
         $records = $repo->listByPatient($clinicId, $patientId, 200);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'medical_records.view', [
-            'patient_id' => $patientId,
-        ], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'medical_records.view',
+            ['patient_id' => $patientId],
+            $ip,
+            $roleCodes,
+            'patient',
+            $patientId,
+            $userAgent
+        );
 
         return ['patient' => $patient, 'records' => $records];
     }
@@ -58,7 +67,7 @@ final class MedicalRecordService
     }
 
     /** @param array{professional_id:?int,attended_at:string,procedure_type:?string,clinical_description:?string,clinical_evolution:?string,notes:?string} $data */
-    public function create(int $patientId, array $data, string $ip): int
+    public function create(int $patientId, array $data, string $ip, ?string $userAgent = null): int
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -89,16 +98,24 @@ final class MedicalRecordService
         );
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'medical_records.create', [
-            'medical_record_id' => $id,
-            'patient_id' => $patientId,
-        ], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'medical_records.create',
+            ['medical_record_id' => $id, 'patient_id' => $patientId],
+            $ip,
+            $roleCodes,
+            'medical_record',
+            $id,
+            $userAgent
+        );
 
         return $id;
     }
 
     /** @return array{patient:array<string,mixed>,record:array<string,mixed>} */
-    public function getForEdit(int $patientId, int $recordId, string $ip): array
+    public function getForEdit(int $patientId, int $recordId, string $ip, ?string $userAgent = null): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -122,17 +139,24 @@ final class MedicalRecordService
         }
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'medical_records.view', [
-            'patient_id' => $patientId,
-            'medical_record_id' => $recordId,
-            'context' => 'edit',
-        ], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'medical_records.view',
+            ['patient_id' => $patientId, 'medical_record_id' => $recordId, 'context' => 'edit'],
+            $ip,
+            $roleCodes,
+            'medical_record',
+            $recordId,
+            $userAgent
+        );
 
         return ['patient' => $patient, 'record' => $record];
     }
 
     /** @param array{professional_id:?int,attended_at:string,procedure_type:?string,clinical_description:?string,clinical_evolution:?string,notes:?string} $data */
-    public function update(int $patientId, int $recordId, array $data, string $ip): void
+    public function update(int $patientId, int $recordId, array $data, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -173,11 +197,18 @@ final class MedicalRecordService
             );
 
             $audit = new AuditLogRepository($pdo);
-            $audit->log($actorId, $clinicId, 'medical_records.update', [
-                'medical_record_id' => $recordId,
-                'patient_id' => $patientId,
-                'version_no' => $versionNo,
-            ], $ip);
+            $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+            $audit->log(
+                $actorId,
+                $clinicId,
+                'medical_records.update',
+                ['medical_record_id' => $recordId, 'patient_id' => $patientId, 'version_no' => $versionNo],
+                $ip,
+                $roleCodes,
+                'medical_record',
+                $recordId,
+                $userAgent
+            );
 
             $pdo->commit();
         } catch (\Throwable $e) {

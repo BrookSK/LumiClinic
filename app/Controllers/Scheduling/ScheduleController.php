@@ -218,6 +218,8 @@ final class ScheduleController extends Controller
         $view = trim((string)$request->input('view', 'day'));
         $date = trim((string)$request->input('date', date('Y-m-d')));
         $professionalId = (int)$request->input('professional_id', 0);
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 100);
         $created = trim((string)$request->input('created', ''));
         $error = trim((string)$request->input('error', ''));
 
@@ -264,13 +266,24 @@ final class ScheduleController extends Controller
             ]);
         }
 
+        $page = max(1, $page);
+        $perPage = max(25, min(200, $perPage));
+        $offset = ($page - 1) * $perPage;
+
         $apptRepo = new AppointmentRepository($this->container->get(\PDO::class));
         $items = $apptRepo->listByClinicRange(
             $clinicId,
             $date . ' 00:00:00',
             $date . ' 23:59:59',
-            $professionalId > 0 ? $professionalId : null
+            $professionalId > 0 ? $professionalId : null,
+            $perPage + 1,
+            $offset
         );
+
+        $hasNext = count($items) > $perPage;
+        if ($hasNext) {
+            $items = array_slice($items, 0, $perPage);
+        }
 
         $profRepo = new ProfessionalRepository($this->container->get(\PDO::class));
         $professionals = $profRepo->listActiveByClinic($clinicId);
@@ -288,6 +301,9 @@ final class ScheduleController extends Controller
             'items' => $items,
             'professionals' => $professionals,
             'services' => $services,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
         ]);
     }
 

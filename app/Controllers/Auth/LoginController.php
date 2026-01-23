@@ -22,7 +22,7 @@ final class LoginController extends Controller
         $email = (string)$request->input('email', '');
         $password = (string)$request->input('password', '');
 
-        $result = $auth->attempt($email, $password, $request->ip());
+        $result = $auth->attempt($email, $password, $request->ip(), $request->header('user-agent'));
 
         if (!$result->success) {
             return $this->view('auth/login', ['error' => $result->message]);
@@ -34,7 +34,7 @@ final class LoginController extends Controller
     public function logout(Request $request)
     {
         $auth = new AuthService($this->container);
-        $auth->logout($request->ip());
+        $auth->logout($request->ip(), $request->header('user-agent'));
 
         return $this->redirect('/login');
     }

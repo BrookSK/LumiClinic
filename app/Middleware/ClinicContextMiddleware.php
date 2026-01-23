@@ -9,6 +9,7 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Middleware\MiddlewareInterface;
 use App\Repositories\ClinicRepository;
+use App\Repositories\ClinicDomainRepository;
 use App\Services\Auth\AuthService;
 
 final class ClinicContextMiddleware implements MiddlewareInterface
@@ -38,6 +39,22 @@ final class ClinicContextMiddleware implements MiddlewareInterface
         return $tenant !== '' ? $tenant : null;
     }
 
+    private function normalizeHost(?string $host): ?string
+    {
+        if ($host === null || $host === '') {
+            return null;
+        }
+
+        $host = strtolower(trim($host));
+        $host = explode(':', $host, 2)[0];
+
+        if ($host === '' || $host === 'localhost' || preg_match('/^\d+\.\d+\.\d+\.\d+$/', $host)) {
+            return null;
+        }
+
+        return $host;
+    }
+
     public function handle(Request $request, callable $next): Response
     {
         $auth = new AuthService($this->container);
@@ -46,11 +63,22 @@ final class ClinicContextMiddleware implements MiddlewareInterface
         $userId = $auth->userId();
         $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
 
-        $tenantKey = $this->resolveTenantKeyFromHost($request->header('host'));
+        $host = $this->normalizeHost($request->header('host'));
+        $tenantKey = $this->resolveTenantKeyFromHost($host);
         $hostClinicId = null;
 
-        if ($tenantKey !== null) {
-            $repo = new ClinicRepository($this->container->get(\PDO::class));
+        $pdo = $this->container->get(\PDO::class);
+
+        if ($host !== null) {
+            $domains = new ClinicDomainRepository($pdo);
+            $match = $domains->findByDomain($host);
+            if ($match !== null) {
+                $hostClinicId = (int)$match['clinic_id'];
+            }
+        }
+
+        if ($hostClinicId === null && $tenantKey !== null) {
+            $repo = new ClinicRepository($pdo);
             $clinic = $repo->findByTenantKey($tenantKey);
             if ($clinic !== null) {
                 $hostClinicId = (int)$clinic['id'];
