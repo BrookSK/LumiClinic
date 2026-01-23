@@ -9,6 +9,9 @@ use App\Repositories\BillingEventRepository;
 use App\Repositories\QueueJobRepository;
 use App\Services\Bi\BiService;
 use App\Services\Billing\BillingEventProcessorService;
+use App\Services\Observability\MetricsService;
+use App\Services\Observability\AlertEngineService;
+use App\Services\Observability\ObservabilityRetentionService;
 use App\Services\Portal\PortalNotificationService;
 
 final class QueueService
@@ -95,6 +98,49 @@ final class QueueService
 
             (new BillingEventProcessorService($this->container))->process($event);
             $repo->markProcessed($eventId);
+            return;
+        }
+
+        if ($jobType === 'metrics.daily') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para metrics.daily.');
+            }
+
+            $ref = trim((string)($payload['reference_date'] ?? ''));
+            if ($ref === '') {
+                $ref = (new \DateTimeImmutable('today'))->format('Y-m-d');
+            }
+
+            (new MetricsService($this->container))->computeDailyClinicMetrics($clinicId, $ref);
+            return;
+        }
+
+        if ($jobType === 'alerts.evaluate') {
+            $ref = trim((string)($payload['reference_date'] ?? ''));
+            if ($ref === '') {
+                $ref = (new \DateTimeImmutable('today'))->format('Y-m-d');
+            }
+
+            (new AlertEngineService($this->container))->evaluate($ref);
+            return;
+        }
+
+        if ($jobType === 'observability.purge') {
+            (new ObservabilityRetentionService($this->container))->purge();
+            return;
+        }
+
+        if ($jobType === 'metrics.weekly' || $jobType === 'metrics.monthly') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para ' . $jobType . '.');
+            }
+
+            $ref = trim((string)($payload['reference_date'] ?? ''));
+            if ($ref === '') {
+                $ref = (new \DateTimeImmutable('today'))->format('Y-m-d');
+            }
+
+            (new MetricsService($this->container))->computeDailyClinicMetrics($clinicId, $ref);
             return;
         }
 

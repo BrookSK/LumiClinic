@@ -9,6 +9,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\UserRoleRepository;
 use App\Repositories\UserRepository;
+use App\Services\Observability\SystemEvent;
 
 final class AuthService
 {
@@ -22,6 +23,7 @@ final class AuthService
         $user = $users->findActiveByEmail($email);
         if ($user === null) {
             $audit->log(null, null, 'auth.login_failed', ['email' => $email], $ip, null, 'user', null, $userAgent);
+            SystemEvent::dispatch($this->container, 'user.login_failed', ['email' => $email], 'user', null, $ip, $userAgent);
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
@@ -32,6 +34,7 @@ final class AuthService
 
         if (!password_verify($password, $user['password_hash'])) {
             $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login_failed', ['email' => $email], $ip, null, 'user', (int)$user['id'], $userAgent);
+            SystemEvent::dispatch($this->container, 'user.login_failed', ['email' => $email], 'user', (int)$user['id'], $ip, $userAgent);
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
@@ -42,6 +45,7 @@ final class AuthService
 
         if (!$isSuperAdmin && is_int($hostClinicId) && $hostClinicId !== (int)$user['clinic_id']) {
             $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login_blocked_host_mismatch', ['host_clinic_id' => $hostClinicId], $ip, null, 'user', (int)$user['id'], $userAgent);
+            SystemEvent::dispatch($this->container, 'user.login_blocked_host_mismatch', ['host_clinic_id' => $hostClinicId], 'user', (int)$user['id'], $ip, $userAgent);
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
@@ -73,6 +77,7 @@ final class AuthService
 
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login', [], $ip, $roleCodes, 'user', (int)$user['id'], $userAgent);
+        SystemEvent::dispatch($this->container, 'user.login', ['is_super_admin' => $isSuperAdmin], 'user', (int)$user['id'], $ip, $userAgent);
 
         return new AuthResult(true, 'OK');
     }
@@ -85,6 +90,7 @@ final class AuthService
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'auth.logout', [], $ip, $roleCodes, 'user', $userId, $userAgent);
+        SystemEvent::dispatch($this->container, 'user.logout', [], 'user', $userId, $ip, $userAgent);
 
         unset($_SESSION['user_id'], $_SESSION['clinic_id'], $_SESSION['active_clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
         unset($_SESSION['role_codes']);

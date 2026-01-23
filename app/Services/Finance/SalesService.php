@@ -19,6 +19,7 @@ use App\Repositories\SaleRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Repositories\SubscriptionPlanRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Observability\SystemEvent;
 
 final class SalesService
 {
@@ -107,6 +108,12 @@ final class SalesService
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log($actorId, $clinicId, 'finance.sales.create', ['sale_id' => $saleId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
+        SystemEvent::dispatch($this->container, 'sale.created', [
+            'sale_id' => $saleId,
+            'patient_id' => $patientId,
+            'origin' => $origin,
+        ], 'sale', $saleId, $ip, $userAgent);
 
         return $saleId;
     }
@@ -323,6 +330,16 @@ final class SalesService
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log($actorId, $clinicId, 'finance.payments.create', ['sale_id' => $saleId, 'payment_id' => $paymentId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
 
+        SystemEvent::dispatch($this->container, 'payment.created', [
+            'sale_id' => $saleId,
+            'payment_id' => $paymentId,
+            'method' => $method,
+            'amount' => $amount,
+            'status' => $status,
+            'fees' => $fees,
+            'gateway_ref' => $gatewayRef,
+        ], 'payment', $paymentId, $ip, $userAgent);
+
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
 
         return $paymentId;
@@ -380,6 +397,11 @@ final class SalesService
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log($actorId, $clinicId, 'finance.payments.refund', ['sale_id' => $saleId, 'payment_id' => $paymentId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
+        SystemEvent::dispatch($this->container, 'payment.refunded', [
+            'sale_id' => $saleId,
+            'payment_id' => $paymentId,
+        ], 'payment', $paymentId, $ip, $userAgent);
 
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
     }

@@ -49,6 +49,13 @@ use App\Controllers\Portal\PortalLgpdController;
 use App\Controllers\Portal\PortalApiTokensController;
 use App\Controllers\Api\ApiV1Controller;
 use App\Controllers\Billing\WebhookController;
+use App\Controllers\Dashboard\ClinicDashboardController;
+use App\Controllers\Dashboard\ProfessionalDashboardController;
+use App\Controllers\Dashboard\AdminDashboardController;
+use App\Controllers\Dashboard\PlatformDashboardController;
+use App\Controllers\Dashboard\SystemHealthController;
+use App\Controllers\Ai\AiController;
+use App\Controllers\Reports\ReportsController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
@@ -94,6 +101,19 @@ $router->get('/api/v1/appointments/upcoming', [ApiV1Controller::class, 'upcoming
 
 $router->post('/webhooks/asaas', [WebhookController::class, 'asaas']);
 $router->post('/webhooks/mercadopago', [WebhookController::class, 'mercadopago']);
+
+$router->get('/dashboard/clinic', [ClinicDashboardController::class, 'index']);
+$router->get('/dashboard/professional', [ProfessionalDashboardController::class, 'index']);
+$router->get('/dashboard/admin', [AdminDashboardController::class, 'index']);
+$router->get('/dashboard/platform', [PlatformDashboardController::class, 'index']);
+$router->get('/dashboard/system-health', [SystemHealthController::class, 'index']);
+
+$router->get('/ai/insights', [AiController::class, 'insights']);
+$router->get('/ai/forecast', [AiController::class, 'forecast']);
+$router->get('/ai/anomalies', [AiController::class, 'anomalies']);
+
+$router->get('/reports/metrics.csv', [ReportsController::class, 'metricsCsv']);
+$router->get('/reports/performance.csv', [ReportsController::class, 'performanceCsv']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);

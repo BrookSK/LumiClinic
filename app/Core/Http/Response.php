@@ -42,6 +42,11 @@ final class Response
         );
     }
 
+    public function status(): int
+    {
+        return $this->status;
+    }
+
     public function withHeader(string $name, string $value): self
     {
         $clone = clone $this;

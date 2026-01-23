@@ -13,6 +13,7 @@ use App\Repositories\ProfessionalRepository;
 use App\Repositories\SchedulingBlockRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Observability\SystemEvent;
 
 final class AppointmentService
 {
@@ -137,6 +138,16 @@ final class AppointmentService
                 'origin' => $origin,
             ], $ip);
 
+            SystemEvent::dispatch($this->container, 'appointment.created', [
+                'appointment_id' => $id,
+                'service_id' => $serviceId,
+                'professional_id' => $professionalId,
+                'patient_id' => $patientId,
+                'start_at' => $startStr,
+                'end_at' => $endStr,
+                'origin' => $origin,
+            ], 'appointment', $id, $ip, null);
+
             $pdo->commit();
             return $id;
         } catch (\Throwable $e) {
@@ -180,6 +191,10 @@ final class AppointmentService
         $audit->log($userId, $clinicId, 'scheduling.appointment_cancel', [
             'appointment_id' => $appointmentId,
         ], $ip);
+
+        SystemEvent::dispatch($this->container, 'appointment.cancelled', [
+            'appointment_id' => $appointmentId,
+        ], 'appointment', $appointmentId, $ip, null);
     }
 
     public function updateStatus(int $appointmentId, string $status, string $ip): void
@@ -228,6 +243,12 @@ final class AppointmentService
             'from' => $from,
             'to' => $status,
         ], $ip);
+
+        SystemEvent::dispatch($this->container, 'appointment.status_updated', [
+            'appointment_id' => $appointmentId,
+            'from' => $from,
+            'to' => $status,
+        ], 'appointment', $appointmentId, $ip, null);
     }
 
     private function canTransition(string $from, string $to): bool
@@ -367,6 +388,22 @@ final class AppointmentService
                     'end_at' => $endStr,
                 ],
             ], $ip);
+
+            SystemEvent::dispatch($this->container, 'appointment.rescheduled', [
+                'appointment_id' => $appointmentId,
+                'from' => [
+                    'professional_id' => (int)$current['professional_id'],
+                    'service_id' => (int)$current['service_id'],
+                    'start_at' => (string)$current['start_at'],
+                    'end_at' => (string)$current['end_at'],
+                ],
+                'to' => [
+                    'professional_id' => $professionalId,
+                    'service_id' => $serviceId,
+                    'start_at' => $startStr,
+                    'end_at' => $endStr,
+                ],
+            ], 'appointment', $appointmentId, $ip, null);
 
             $pdo->commit();
         } catch (\Throwable $e) {

@@ -19,6 +19,7 @@ use App\Middleware\RateLimitMiddleware;
 use App\Middleware\SecurityHeadersMiddleware;
 use App\Middleware\SessionMiddleware;
 use App\Middleware\BillingEnforcementMiddleware;
+use App\Middleware\PerformanceMonitoringMiddleware;
 
 final class App
 {
@@ -62,6 +63,7 @@ final class App
 
         $pipeline = new MiddlewarePipeline([
             new SecurityHeadersMiddleware(),
+            new PerformanceMonitoringMiddleware($container),
             new SessionMiddleware($config['session']),
             new RateLimitMiddleware($container),
             new CsrfMiddleware($config['csrf']),
