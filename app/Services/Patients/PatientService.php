@@ -9,7 +9,6 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Services\Auth\AuthService;
-use App\Services\Security\CryptoService;
 
 final class PatientService
 {
@@ -52,16 +51,13 @@ final class PatientService
             throw new \RuntimeException('Contexto inválido.');
         }
 
-        $cpfEncrypted = null;
-        $cpfLast4 = null;
+        $cpf = null;
         if ($data['cpf'] !== null && $data['cpf'] !== '') {
-            $cpfDigits = preg_replace('/\\D+/', '', $data['cpf']);
+            $cpfDigits = preg_replace('/\D+/', '', $data['cpf']);
             $cpfDigits = $cpfDigits === null ? '' : $cpfDigits;
 
             if ($cpfDigits !== '') {
-                $crypto = new CryptoService($this->container);
-                $cpfEncrypted = $crypto->encrypt($clinicId, $cpfDigits);
-                $cpfLast4 = substr($cpfDigits, -4);
+                $cpf = $cpfDigits;
             }
         }
 
@@ -73,8 +69,7 @@ final class PatientService
             $data['phone'],
             $data['birth_date'],
             $data['sex'],
-            $cpfEncrypted,
-            $cpfLast4,
+            $cpf,
             $data['address'],
             $data['notes'],
             $data['reference_professional_id']
@@ -122,20 +117,15 @@ final class PatientService
         $repo = new PatientRepository($this->container->get(\PDO::class));
         $existing = $repo->findClinicalById($clinicId, $patientId);
 
-        $cpfEncrypted = $existing !== null ? ($existing['cpf_encrypted'] ?? null) : null;
-        $cpfEncrypted = $cpfEncrypted !== null ? (string)$cpfEncrypted : null;
-
-        $cpfLast4 = $existing !== null ? ($existing['cpf_last4'] ?? null) : null;
-        $cpfLast4 = $cpfLast4 !== null ? (string)$cpfLast4 : null;
+        $cpf = $existing !== null ? ($existing['cpf'] ?? null) : null;
+        $cpf = $cpf !== null ? (string)$cpf : null;
 
         if ($data['cpf'] !== null && $data['cpf'] !== '') {
             $cpfDigits = preg_replace('/\D+/', '', $data['cpf']);
             $cpfDigits = $cpfDigits === null ? '' : $cpfDigits;
 
             if ($cpfDigits !== '') {
-                $crypto = new CryptoService($this->container);
-                $cpfEncrypted = $crypto->encrypt($clinicId, $cpfDigits);
-                $cpfLast4 = substr($cpfDigits, -4);
+                $cpf = $cpfDigits;
             }
         }
         $repo->updateClinicalFields(
@@ -146,8 +136,7 @@ final class PatientService
             $data['phone'],
             $data['birth_date'],
             $data['sex'],
-            $cpfEncrypted,
-            $cpfLast4,
+            $cpf,
             $data['address'],
             $data['notes'],
             $data['reference_professional_id'],

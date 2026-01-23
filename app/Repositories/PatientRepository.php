@@ -15,8 +15,7 @@ final class PatientRepository
         ?string $phone,
         ?string $birthDate,
         ?string $sex,
-        ?string $cpfEncrypted,
-        ?string $cpfLast4,
+        ?string $cpf,
         ?string $address,
         ?string $notes,
         ?int $referenceProfessionalId
@@ -24,13 +23,13 @@ final class PatientRepository
         $sql = "
             INSERT INTO patients (
                 clinic_id, name, email, phone, birth_date, sex,
-                cpf_encrypted, cpf_last4,
+                cpf,
                 address, notes, reference_professional_id,
                 status, created_at
             )
             VALUES (
                 :clinic_id, :name, :email, :phone, :birth_date, :sex,
-                :cpf_encrypted, :cpf_last4,
+                :cpf,
                 :address, :notes, :reference_professional_id,
                 'active', NOW()
             )
@@ -44,8 +43,7 @@ final class PatientRepository
             'phone' => ($phone === '' ? null : $phone),
             'birth_date' => ($birthDate === '' ? null : $birthDate),
             'sex' => ($sex === '' ? null : $sex),
-            'cpf_encrypted' => ($cpfEncrypted === '' ? null : $cpfEncrypted),
-            'cpf_last4' => ($cpfLast4 === '' ? null : $cpfLast4),
+            'cpf' => ($cpf === '' ? null : $cpf),
             'address' => ($address === '' ? null : $address),
             'notes' => ($notes === '' ? null : $notes),
             'reference_professional_id' => ($referenceProfessionalId !== null && $referenceProfessionalId > 0 ? $referenceProfessionalId : null),
@@ -110,7 +108,7 @@ final class PatientRepository
         $sql = "
             SELECT
                 id, clinic_id, name, email, phone, status,
-                birth_date, sex, cpf_last4,
+                birth_date, sex, cpf, cpf_last4,
                 address, notes, reference_professional_id
             FROM patients
             WHERE id = :id
@@ -134,8 +132,7 @@ final class PatientRepository
         ?string $phone,
         ?string $birthDate,
         ?string $sex,
-        ?string $cpfEncrypted,
-        ?string $cpfLast4,
+        ?string $cpf,
         ?string $address,
         ?string $notes,
         ?int $referenceProfessionalId,
@@ -149,8 +146,7 @@ final class PatientRepository
                 phone = :phone,
                 birth_date = :birth_date,
                 sex = :sex,
-                cpf_encrypted = :cpf_encrypted,
-                cpf_last4 = :cpf_last4,
+                cpf = :cpf,
                 address = :address,
                 notes = :notes,
                 reference_professional_id = :reference_professional_id,
@@ -171,8 +167,7 @@ final class PatientRepository
             'phone' => ($phone === '' ? null : $phone),
             'birth_date' => ($birthDate === '' ? null : $birthDate),
             'sex' => ($sex === '' ? null : $sex),
-            'cpf_encrypted' => ($cpfEncrypted === '' ? null : $cpfEncrypted),
-            'cpf_last4' => ($cpfLast4 === '' ? null : $cpfLast4),
+            'cpf' => ($cpf === '' ? null : $cpf),
             'address' => ($address === '' ? null : $address),
             'notes' => ($notes === '' ? null : $notes),
             'reference_professional_id' => ($referenceProfessionalId !== null && $referenceProfessionalId > 0 ? $referenceProfessionalId : null),

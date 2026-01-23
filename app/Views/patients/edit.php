@@ -48,8 +48,8 @@ ob_start();
             </div>
         </div>
 
-        <label class="lc-label">CPF (não exibimos o valor; informe para atualizar)</label>
-        <input class="lc-input" type="text" name="cpf" placeholder="<?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '' ?>" />
+        <label class="lc-label">CPF</label>
+        <input class="lc-input" type="text" name="cpf" value="<?= htmlspecialchars((string)($patient['cpf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
         <label class="lc-label">Profissional de referência</label>
         <?php $currentRef = (int)($patient['reference_professional_id'] ?? 0); ?>

@@ -45,7 +45,7 @@ ob_start();
             </div>
         </div>
 
-        <label class="lc-label">CPF (armazenado criptografado)</label>
+        <label class="lc-label">CPF</label>
         <input class="lc-input" type="text" name="cpf" />
 
         <label class="lc-label">Profissional de referência</label>

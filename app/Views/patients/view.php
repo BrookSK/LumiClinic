@@ -38,7 +38,13 @@ ob_start();
             </div>
             <div>
                 <div class="lc-label">CPF</div>
-                <div><?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '' ?></div>
+                <div>
+                    <?php if (isset($patient['cpf']) && (string)$patient['cpf'] !== ''): ?>
+                        <?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?>
+                    <?php else: ?>
+                        <?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '' ?>
+                    <?php endif; ?>
+                </div>
             </div>
             <div>
                 <div class="lc-label">Status</div>
