@@ -66,6 +66,16 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <?php endif; ?>
             <?php endif; ?>
 
+            <?php if ($can('finance.sales.read') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/finance/sales">Financeiro</a>
+                <?php if ($can('finance.entries.read')): ?>
+                    <a class="lc-nav__item" href="/finance/cashflow">Caixa</a>
+                <?php endif; ?>
+                <?php if ($can('finance.reports.read')): ?>
+                    <a class="lc-nav__item" href="/finance/reports">Relatórios Financeiros</a>
+                <?php endif; ?>
+            <?php endif; ?>
+
             <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
                 <a class="lc-nav__item" href="/schedule/ops">Operação da Agenda</a>
             <?php endif; ?>

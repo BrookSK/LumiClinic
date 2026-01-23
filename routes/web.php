@@ -20,6 +20,9 @@ use App\Controllers\MedicalRecords\MedicalRecordController;
 use App\Controllers\MedicalImages\MedicalImageController;
 use App\Controllers\Anamnesis\AnamnesisController;
 use App\Controllers\Consent\ConsentController;
+use App\Controllers\Finance\FinancialController;
+use App\Controllers\Finance\PaymentController;
+use App\Controllers\Finance\SalesController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
@@ -64,6 +67,21 @@ $router->get('/schedule/reschedule', [ScheduleController::class, 'reschedule']);
 $router->post('/schedule/reschedule', [ScheduleController::class, 'rescheduleSubmit']);
 $router->get('/schedule/ops', [ScheduleController::class, 'ops']);
 $router->get('/schedule/logs', [ScheduleController::class, 'logs']);
+
+$router->get('/finance/sales', [SalesController::class, 'index']);
+$router->post('/finance/sales/create', [SalesController::class, 'create']);
+$router->get('/finance/sales/view', [SalesController::class, 'show']);
+$router->post('/finance/sales/items/add', [SalesController::class, 'addItem']);
+$router->post('/finance/sales/cancel', [SalesController::class, 'cancel']);
+
+$router->post('/finance/payments/create', [PaymentController::class, 'create']);
+$router->post('/finance/payments/refund', [PaymentController::class, 'refund']);
+
+$router->get('/finance/cashflow', [FinancialController::class, 'cashflow']);
+$router->post('/finance/entries/create', [FinancialController::class, 'createEntry']);
+$router->post('/finance/entries/delete', [FinancialController::class, 'deleteEntry']);
+
+$router->get('/finance/reports', [FinancialController::class, 'reports']);
 
 $router->get('/services', [ServiceController::class, 'index']);
 $router->post('/services/create', [ServiceController::class, 'create']);
