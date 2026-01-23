@@ -76,6 +76,19 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <?php endif; ?>
             <?php endif; ?>
 
+            <?php if ($can('stock.materials.read') && $hasClinicContext): ?>
+                <a class="lc-nav__item" href="/stock/materials">Estoque</a>
+                <?php if ($can('stock.movements.read')): ?>
+                    <a class="lc-nav__item" href="/stock/movements">Movimentações</a>
+                <?php endif; ?>
+                <?php if ($can('stock.alerts.read')): ?>
+                    <a class="lc-nav__item" href="/stock/alerts">Alertas</a>
+                <?php endif; ?>
+                <?php if ($can('stock.reports.read')): ?>
+                    <a class="lc-nav__item" href="/stock/reports">Relatórios</a>
+                <?php endif; ?>
+            <?php endif; ?>
+
             <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
                 <a class="lc-nav__item" href="/schedule/ops">Operação da Agenda</a>
             <?php endif; ?>

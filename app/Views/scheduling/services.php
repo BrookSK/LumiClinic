@@ -66,6 +66,7 @@ ob_start();
                     <th>Buffer</th>
                     <th>Preço</th>
                     <th>Específico</th>
+                    <th></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -76,6 +77,9 @@ ob_start();
                         <td><?= (int)($it['buffer_before_minutes'] ?? 0) ?> / <?= (int)($it['buffer_after_minutes'] ?? 0) ?> min</td>
                         <td><?= $it['price_cents'] === null ? '-' : (int)$it['price_cents'] ?></td>
                         <td><?= ((int)$it['allow_specific_professional'] === 1) ? 'Sim' : 'Não' ?></td>
+                        <td style="text-align:right;">
+                            <a class="lc-btn lc-btn--secondary" href="/services/materials?service_id=<?= (int)$it['id'] ?>">Materiais</a>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

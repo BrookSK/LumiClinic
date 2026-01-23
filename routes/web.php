@@ -12,6 +12,7 @@ use App\Controllers\Scheduling\ProfessionalController;
 use App\Controllers\Scheduling\ProfessionalScheduleController;
 use App\Controllers\Scheduling\ScheduleController;
 use App\Controllers\Scheduling\ServiceController;
+use App\Controllers\Scheduling\ServiceMaterialsController;
 use App\Controllers\Settings\SettingsController;
 use App\Controllers\System\SystemClinicController;
 use App\Controllers\Users\UserController;
@@ -23,6 +24,10 @@ use App\Controllers\Consent\ConsentController;
 use App\Controllers\Finance\FinancialController;
 use App\Controllers\Finance\PaymentController;
 use App\Controllers\Finance\SalesController;
+use App\Controllers\Stock\MaterialController;
+use App\Controllers\Stock\StockController;
+use App\Controllers\Stock\StockAlertsController;
+use App\Controllers\Stock\StockReportsController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
@@ -63,6 +68,8 @@ $router->get('/schedule/available', [ScheduleController::class, 'available']);
 $router->post('/schedule/create', [ScheduleController::class, 'create']);
 $router->post('/schedule/cancel', [ScheduleController::class, 'cancel']);
 $router->post('/schedule/status', [ScheduleController::class, 'updateStatus']);
+$router->get('/schedule/complete-materials', [ScheduleController::class, 'completeMaterials']);
+$router->post('/schedule/complete-materials', [ScheduleController::class, 'completeMaterialsSubmit']);
 $router->get('/schedule/reschedule', [ScheduleController::class, 'reschedule']);
 $router->post('/schedule/reschedule', [ScheduleController::class, 'rescheduleSubmit']);
 $router->get('/schedule/ops', [ScheduleController::class, 'ops']);
@@ -83,8 +90,19 @@ $router->post('/finance/entries/delete', [FinancialController::class, 'deleteEnt
 
 $router->get('/finance/reports', [FinancialController::class, 'reports']);
 
+$router->get('/stock/materials', [MaterialController::class, 'index']);
+$router->post('/stock/materials/create', [MaterialController::class, 'create']);
+$router->get('/stock/movements', [StockController::class, 'movements']);
+$router->post('/stock/movements/create', [StockController::class, 'createMovement']);
+$router->get('/stock/alerts', [StockAlertsController::class, 'index']);
+$router->get('/stock/reports', [StockReportsController::class, 'index']);
+
 $router->get('/services', [ServiceController::class, 'index']);
 $router->post('/services/create', [ServiceController::class, 'create']);
+
+$router->get('/services/materials', [ServiceMaterialsController::class, 'index']);
+$router->post('/services/materials/create', [ServiceMaterialsController::class, 'create']);
+$router->post('/services/materials/delete', [ServiceMaterialsController::class, 'delete']);
 
 $router->get('/professionals', [ProfessionalController::class, 'index']);
 $router->post('/professionals/create', [ProfessionalController::class, 'create']);

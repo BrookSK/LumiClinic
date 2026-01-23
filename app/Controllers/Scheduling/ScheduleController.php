@@ -11,9 +11,12 @@ use App\Repositories\AppointmentRepository;
 use App\Repositories\AppointmentLogRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Repositories\ServiceCatalogRepository;
+use App\Repositories\ServiceMaterialDefaultRepository;
+use App\Services\Finance\FinancialService;
 use App\Services\Auth\AuthService;
 use App\Services\Scheduling\AppointmentService;
 use App\Services\Scheduling\AvailabilityService;
+use App\Services\Stock\StockService;
 
 final class ScheduleController extends Controller
 {
@@ -21,6 +24,148 @@ final class ScheduleController extends Controller
     {
         $roles = $_SESSION['role_codes'] ?? [];
         return is_array($roles) && in_array('professional', $roles, true);
+    }
+
+    public function completeMaterials(Request $request)
+    {
+        $this->authorize('scheduling.finalize');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/schedule');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($this->isProfessionalRole()) {
+            $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
+            $repo = new AppointmentRepository($this->container->get(\PDO::class));
+            $appointment = $repo->findById($clinicId, $id);
+            if ($appointment === null) {
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+            }
+            if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
+                throw new \RuntimeException('Acesso negado.');
+            }
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new AppointmentRepository($pdo);
+        $appointment = $repo->findById($clinicId, $id);
+        if ($appointment === null) {
+            return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+        }
+
+        $svcRepo = new ServiceCatalogRepository($pdo);
+        $service = $svcRepo->findById($clinicId, (int)$appointment['service_id']);
+        if ($service === null) {
+            return $this->redirect('/schedule?error=' . urlencode('Serviço inválido.'));
+        }
+
+        $defaultsRepo = new ServiceMaterialDefaultRepository($pdo);
+        $defaults = $defaultsRepo->listDetailedByService($clinicId, (int)$appointment['service_id']);
+
+        return $this->view('scheduling/complete_materials', [
+            'appointment' => $appointment,
+            'service' => $service,
+            'defaults' => $defaults,
+            'date' => trim((string)$request->input('date', '')),
+            'view' => trim((string)$request->input('view', 'day')),
+            'professional_id' => (int)$request->input('professional_id', 0),
+            'error' => trim((string)$request->input('error', '')),
+        ]);
+    }
+
+    public function completeMaterialsSubmit(Request $request)
+    {
+        $this->authorize('scheduling.finalize');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        $returnDate = trim((string)$request->input('date', ''));
+        $view = trim((string)$request->input('view', 'day'));
+        $professionalId = (int)$request->input('professional_id', 0);
+        $note = trim((string)$request->input('note', ''));
+        $qty = $request->input('qty', []);
+
+        if ($id <= 0) {
+            return $this->redirect('/schedule');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($this->isProfessionalRole()) {
+            $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
+            $repo = new AppointmentRepository($this->container->get(\PDO::class));
+            $appointment = $repo->findById($clinicId, $id);
+            if ($appointment === null) {
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+            }
+            if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
+                throw new \RuntimeException('Acesso negado.');
+            }
+            $professionalId = $ownProfessionalId;
+        }
+
+        try {
+            $pdo = $this->container->get(\PDO::class);
+            $repo = new AppointmentRepository($pdo);
+            $appointment = $repo->findById($clinicId, $id);
+            if ($appointment === null) {
+                throw new \RuntimeException('Agendamento inválido.');
+            }
+
+            $stock = new StockService($this->container);
+
+            $result = ['movement_ids' => [], 'total_cost' => 0.0];
+            if (is_array($qty) && $qty !== []) {
+                /** @var array<int,string> $qty */
+                $result = $stock->consumeForAppointmentAdjusted($id, (int)$appointment['service_id'], $qty, $note, $request->ip());
+            } else {
+                $result = $stock->consumeForAppointmentAdjusted($id, (int)$appointment['service_id'], [], $note, $request->ip());
+            }
+
+            if ((float)$result['total_cost'] > 0) {
+                (new FinancialService($this->container))->createEntry(
+                    'out',
+                    date('Y-m-d'),
+                    number_format((float)$result['total_cost'], 2, '.', ''),
+                    null,
+                    null,
+                    'Custo de materiais (sessão #' . (int)$id . ') - ' . $note,
+                    $request->ip()
+                );
+            }
+
+            (new AppointmentService($this->container))->updateStatus($id, 'completed', $request->ip());
+
+            $q = [];
+            if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
+            if ($view !== '') { $q[] = 'view=' . urlencode($view); }
+            if ($professionalId > 0) { $q[] = 'professional_id=' . $professionalId; }
+            return $this->redirect('/schedule' . ($q ? ('?' . implode('&', $q)) : ''));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/schedule/complete-materials?id=' . (int)$id . '&error=' . urlencode($e->getMessage()));
+        } catch (\Throwable $e) {
+            return $this->redirect('/schedule/complete-materials?id=' . (int)$id . '&error=' . urlencode('Erro ao finalizar sessão.'));
+        }
     }
 
     private function forceProfessionalIdForCurrentUser(int $clinicId): int
@@ -315,6 +460,31 @@ final class ScheduleController extends Controller
             }
 
             $professionalId = $ownProfessionalId;
+        }
+
+        if ($status === 'completed') {
+            $auth = new AuthService($this->container);
+            $clinicId = $auth->clinicId();
+            if ($clinicId === null) {
+                throw new \RuntimeException('Contexto inválido.');
+            }
+
+            $repo = new AppointmentRepository($this->container->get(\PDO::class));
+            $appointment = $repo->findById($clinicId, $id);
+            if ($appointment === null) {
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+            }
+
+            if ((string)$appointment['status'] !== 'in_progress') {
+                return $this->redirect('/schedule?error=' . urlencode('Somente atendimentos em andamento podem ser concluídos.'));
+            }
+
+            $q = [];
+            $q[] = 'id=' . (int)$id;
+            if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
+            if ($view !== '') { $q[] = 'view=' . urlencode($view); }
+            if ($professionalId > 0) { $q[] = 'professional_id=' . $professionalId; }
+            return $this->redirect('/schedule/complete-materials?' . implode('&', $q));
         }
 
         try {
