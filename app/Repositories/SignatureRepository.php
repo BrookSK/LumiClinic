@@ -88,4 +88,24 @@ final class SignatureRepository
         /** @var list<array<string, mixed>> */
         return $stmt->fetchAll();
     }
+
+    /** @return array<string, mixed>|null */
+    public function findByIdForPatient(int $clinicId, int $patientId, int $id): ?array
+    {
+        $sql = "
+            SELECT id, clinic_id, patient_id, term_acceptance_id, medical_record_id,
+                   storage_path, mime_type, signed_by_user_id, ip_address, created_at
+            FROM signatures
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND patient_id = :patient_id
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $id, 'clinic_id' => $clinicId, 'patient_id' => $patientId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
 }

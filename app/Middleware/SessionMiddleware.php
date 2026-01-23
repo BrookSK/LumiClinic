@@ -16,7 +16,14 @@ final class SessionMiddleware implements MiddlewareInterface
     public function handle(Request $request, callable $next): Response
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_name($this->config['name']);
+            $path = $request->path();
+            $isPortal = str_starts_with($path, '/portal');
+            $sessionName = $this->config['name'];
+            if ($isPortal && isset($this->config['name_patient']) && is_string($this->config['name_patient']) && $this->config['name_patient'] !== '') {
+                $sessionName = $this->config['name_patient'];
+            }
+
+            session_name($sessionName);
             session_set_cookie_params([
                 'secure' => $this->config['secure'],
                 'httponly' => $this->config['httponly'],

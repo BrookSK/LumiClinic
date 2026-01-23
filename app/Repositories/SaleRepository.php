@@ -8,6 +8,25 @@ final class SaleRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    /** @return array{total_liquido:float} */
+    public function summarizeTotalLiquidoByPatient(int $clinicId, int $patientId): array
+    {
+        $sql = "
+            SELECT COALESCE(SUM(total_liquido), 0) AS total_liquido
+            FROM sales
+            WHERE clinic_id = :clinic_id
+              AND patient_id = :patient_id
+              AND deleted_at IS NULL
+              AND status <> 'cancelled'
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
+        $row = $stmt->fetch() ?: [];
+
+        return ['total_liquido' => (float)($row['total_liquido'] ?? 0)];
+    }
+
     /** @return list<array<string, mixed>> */
     public function listByClinic(int $clinicId, int $limit = 200, ?int $professionalId = null): array
     {

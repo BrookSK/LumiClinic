@@ -11,6 +11,7 @@ ob_start();
         <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Imagens</a>
         <a class="lc-btn lc-btn--secondary" href="/anamnesis?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Anamnese</a>
         <a class="lc-btn lc-btn--secondary" href="/consent?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Termos</a>
+        <a class="lc-btn lc-btn--secondary" href="/patients/portal-access?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Acesso ao Portal</a>
         <a class="lc-btn lc-btn--primary" href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>">Editar</a>
     </div>
 </div>

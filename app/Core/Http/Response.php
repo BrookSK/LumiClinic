@@ -29,6 +29,16 @@ final class Response
         return new self($status, $headers, $body);
     }
 
+    /** @param array<string, mixed> $data */
+    public static function json(array $data, int $status = 200): self
+    {
+        return new self(
+            $status,
+            ['Content-Type' => 'application/json; charset=UTF-8'],
+            (string)json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        );
+    }
+
     public function send(): void
     {
         http_response_code($this->status);

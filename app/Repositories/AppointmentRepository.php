@@ -9,6 +9,83 @@ final class AppointmentRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string, mixed>> */
+    public function listUpcomingByPatient(int $clinicId, int $patientId, int $limit = 10): array
+    {
+        $sql = "
+            SELECT
+                a.id,
+                a.start_at,
+                a.end_at,
+                a.status,
+                s.name AS service_name,
+                p.name AS professional_name
+            FROM appointments a
+            LEFT JOIN services s
+                   ON s.id = a.service_id
+                  AND s.clinic_id = a.clinic_id
+                  AND s.deleted_at IS NULL
+            LEFT JOIN professionals p
+                   ON p.id = a.professional_id
+                  AND p.clinic_id = a.clinic_id
+                  AND p.deleted_at IS NULL
+            WHERE a.clinic_id = :clinic_id
+              AND a.patient_id = :patient_id
+              AND a.deleted_at IS NULL
+              AND a.status NOT IN ('cancelled')
+              AND a.start_at >= NOW()
+            ORDER BY a.start_at ASC
+            LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
+
+        /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByIdForPatient(int $clinicId, int $patientId, int $appointmentId): ?array
+    {
+        $sql = "
+            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes
+            FROM appointments
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND patient_id = :patient_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $appointmentId, 'clinic_id' => $clinicId, 'patient_id' => $patientId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function updateStatusForPatient(int $clinicId, int $patientId, int $appointmentId, string $status): void
+    {
+        $sql = "
+            UPDATE appointments
+               SET status = :status,
+                   updated_at = NOW()
+             WHERE id = :id
+               AND clinic_id = :clinic_id
+               AND patient_id = :patient_id
+               AND deleted_at IS NULL
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $appointmentId,
+            'clinic_id' => $clinicId,
+            'patient_id' => $patientId,
+            'status' => $status,
+        ]);
+    }
+
+    /** @return list<array<string, mixed>> */
     public function listByClinicDate(int $clinicId, string $dateYmd): array
     {
         $sql = "

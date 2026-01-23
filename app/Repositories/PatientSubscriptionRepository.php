@@ -8,6 +8,37 @@ final class PatientSubscriptionRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    /** @return list<array<string,mixed>> */
+    public function listActiveByPatient(int $clinicId, int $patientId, int $limit = 20): array
+    {
+        $sql = "
+            SELECT
+                ps.id,
+                ps.plan_id,
+                ps.status,
+                ps.started_at,
+                ps.ends_at,
+                sp.name AS plan_name
+            FROM patient_subscriptions ps
+            LEFT JOIN subscription_plans sp
+                   ON sp.id = ps.plan_id
+                  AND sp.clinic_id = ps.clinic_id
+                  AND sp.deleted_at IS NULL
+            WHERE ps.clinic_id = :clinic_id
+              AND ps.patient_id = :patient_id
+              AND ps.deleted_at IS NULL
+              AND ps.status = 'active'
+            ORDER BY ps.id DESC
+            LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
+
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
+
     public function create(
         int $clinicId,
         int $patientId,

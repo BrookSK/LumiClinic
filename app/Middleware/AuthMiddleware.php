@@ -18,6 +18,14 @@ final class AuthMiddleware implements MiddlewareInterface
     {
         $path = $request->path();
 
+        if (str_starts_with($path, '/portal')) {
+            return $next($request);
+        }
+
+        if (str_starts_with($path, '/api')) {
+            return $next($request);
+        }
+
         $public = [
             '/login',
         ];

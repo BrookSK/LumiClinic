@@ -15,6 +15,7 @@ return [
     ],
     'session' => [
         'name' => 'lumiclinic_session',
+        'name_patient' => 'lumiclinic_patient_session',
         'secure' => (bool)(getenv('SESSION_SECURE') ?: false),
         'httponly' => true,
         'samesite' => 'Lax',

@@ -17,8 +17,11 @@ use App\Controllers\Settings\SettingsController;
 use App\Controllers\System\SystemClinicController;
 use App\Controllers\Users\UserController;
 use App\Controllers\Patients\PatientController;
+use App\Controllers\Patients\PatientPortalAccessController;
+use App\Controllers\Patients\PatientContentController;
 use App\Controllers\MedicalRecords\MedicalRecordController;
 use App\Controllers\MedicalImages\MedicalImageController;
+use App\Controllers\MedicalImages\PatientUploadModerationController;
 use App\Controllers\Anamnesis\AnamnesisController;
 use App\Controllers\Consent\ConsentController;
 use App\Controllers\Finance\FinancialController;
@@ -28,12 +31,59 @@ use App\Controllers\Stock\MaterialController;
 use App\Controllers\Stock\StockController;
 use App\Controllers\Stock\StockAlertsController;
 use App\Controllers\Stock\StockReportsController;
+use App\Controllers\Portal\AuthPatientController;
+use App\Controllers\Portal\PortalController;
+use App\Controllers\Portal\PortalAgendaController;
+use App\Controllers\Portal\PortalDocumentsController;
+use App\Controllers\Portal\PortalUploadController;
+use App\Controllers\Portal\PortalNotificationsController;
+use App\Controllers\Portal\PortalContentController;
+use App\Controllers\Portal\PortalMetricsController;
+use App\Controllers\Portal\PortalLgpdController;
+use App\Controllers\Portal\PortalApiTokensController;
+use App\Controllers\Api\ApiV1Controller;
 
 $router->get('/', [DashboardController::class, 'index']);
 
 $router->get('/login', [LoginController::class, 'show']);
 $router->post('/login', [LoginController::class, 'login']);
 $router->post('/logout', [LoginController::class, 'logout']);
+
+$router->get('/portal/login', [AuthPatientController::class, 'showLogin']);
+$router->post('/portal/login', [AuthPatientController::class, 'login']);
+$router->post('/portal/logout', [AuthPatientController::class, 'logout']);
+$router->get('/portal/forgot', [AuthPatientController::class, 'showForgot']);
+$router->post('/portal/forgot', [AuthPatientController::class, 'forgot']);
+$router->get('/portal/reset', [AuthPatientController::class, 'showReset']);
+$router->post('/portal/reset', [AuthPatientController::class, 'reset']);
+$router->get('/portal', [PortalController::class, 'dashboard']);
+
+$router->get('/portal/agenda', [PortalAgendaController::class, 'index']);
+$router->post('/portal/agenda/confirm', [PortalAgendaController::class, 'confirm']);
+$router->post('/portal/agenda/cancel-request', [PortalAgendaController::class, 'requestCancel']);
+$router->post('/portal/agenda/reschedule-request', [PortalAgendaController::class, 'requestReschedule']);
+
+$router->get('/portal/documentos', [PortalDocumentsController::class, 'index']);
+$router->get('/portal/signatures/file', [PortalDocumentsController::class, 'signatureFile']);
+$router->get('/portal/medical-images/file', [PortalDocumentsController::class, 'medicalImageFile']);
+
+$router->get('/portal/uploads', [PortalUploadController::class, 'index']);
+$router->post('/portal/uploads', [PortalUploadController::class, 'submit']);
+
+$router->get('/portal/notificacoes', [PortalNotificationsController::class, 'index']);
+$router->post('/portal/notificacoes/read', [PortalNotificationsController::class, 'markRead']);
+
+$router->get('/portal/conteudos', [PortalContentController::class, 'index']);
+$router->get('/portal/metricas', [PortalMetricsController::class, 'index']);
+$router->get('/portal/lgpd', [PortalLgpdController::class, 'index']);
+$router->post('/portal/lgpd', [PortalLgpdController::class, 'submit']);
+
+$router->get('/portal/api-tokens', [PortalApiTokensController::class, 'index']);
+$router->post('/portal/api-tokens/create', [PortalApiTokensController::class, 'create']);
+$router->post('/portal/api-tokens/revoke', [PortalApiTokensController::class, 'revoke']);
+
+$router->get('/api/v1/me', [ApiV1Controller::class, 'me']);
+$router->get('/api/v1/appointments/upcoming', [ApiV1Controller::class, 'upcomingAppointments']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);
@@ -126,6 +176,13 @@ $router->get('/patients/view', [PatientController::class, 'show']);
 $router->get('/patients/edit', [PatientController::class, 'edit']);
 $router->post('/patients/edit', [PatientController::class, 'update']);
 
+$router->get('/patients/portal-access', [PatientPortalAccessController::class, 'show']);
+$router->post('/patients/portal-access/ensure', [PatientPortalAccessController::class, 'ensure']);
+
+$router->get('/patients/content', [PatientContentController::class, 'index']);
+$router->post('/patients/content/create', [PatientContentController::class, 'create']);
+$router->post('/patients/content/grant', [PatientContentController::class, 'grant']);
+
 $router->get('/medical-records', [MedicalRecordController::class, 'index']);
 $router->get('/medical-records/create', [MedicalRecordController::class, 'create']);
 $router->post('/medical-records/create', [MedicalRecordController::class, 'store']);
@@ -135,6 +192,10 @@ $router->post('/medical-records/edit', [MedicalRecordController::class, 'update'
 $router->get('/medical-images', [MedicalImageController::class, 'index']);
 $router->post('/medical-images/upload', [MedicalImageController::class, 'upload']);
 $router->get('/medical-images/file', [MedicalImageController::class, 'file']);
+
+$router->get('/medical-images/moderation', [PatientUploadModerationController::class, 'index']);
+$router->post('/medical-images/moderation/approve', [PatientUploadModerationController::class, 'approve']);
+$router->post('/medical-images/moderation/reject', [PatientUploadModerationController::class, 'reject']);
 
 $router->get('/anamnesis/templates', [AnamnesisController::class, 'templates']);
 $router->get('/anamnesis/templates/create', [AnamnesisController::class, 'createTemplate']);

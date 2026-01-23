@@ -8,6 +8,30 @@ final class PaymentRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    /** @return array{paid_total:float} */
+    public function summarizePaidByPatient(int $clinicId, int $patientId): array
+    {
+        $sql = "
+            SELECT COALESCE(SUM(p.amount), 0) AS paid_total
+            FROM payments p
+            INNER JOIN sales s
+                    ON s.id = p.sale_id
+                   AND s.clinic_id = p.clinic_id
+                   AND s.deleted_at IS NULL
+            WHERE p.clinic_id = :clinic_id
+              AND s.patient_id = :patient_id
+              AND p.deleted_at IS NULL
+              AND p.status = 'paid'
+              AND s.status <> 'cancelled'
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
+        $row = $stmt->fetch() ?: [];
+
+        return ['paid_total' => (float)($row['paid_total'] ?? 0)];
+    }
+
     /** @return list<array<string, mixed>> */
     public function listBySale(int $clinicId, int $saleId): array
     {

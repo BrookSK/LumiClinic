@@ -13,6 +13,8 @@ use App\Core\View\View;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\ClinicContextMiddleware;
 use App\Middleware\CsrfMiddleware;
+use App\Middleware\ApiPatientAuthMiddleware;
+use App\Middleware\PatientAuthMiddleware;
 use App\Middleware\SessionMiddleware;
 
 final class App
@@ -54,6 +56,8 @@ final class App
             new SessionMiddleware($config['session']),
             new CsrfMiddleware($config['csrf']),
             new AuthMiddleware($container),
+            new PatientAuthMiddleware($container),
+            new ApiPatientAuthMiddleware($container),
             new ClinicContextMiddleware($container),
         ]);
 
