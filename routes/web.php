@@ -56,6 +56,7 @@ use App\Controllers\Dashboard\PlatformDashboardController;
 use App\Controllers\Dashboard\SystemHealthController;
 use App\Controllers\Ai\AiController;
 use App\Controllers\Reports\ReportsController;
+use App\Controllers\Private\PrivateTutorialController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
@@ -114,6 +115,11 @@ $router->get('/ai/anomalies', [AiController::class, 'anomalies']);
 
 $router->get('/reports/metrics.csv', [ReportsController::class, 'metricsCsv']);
 $router->get('/reports/performance.csv', [ReportsController::class, 'performanceCsv']);
+
+$router->get('/private/tutorial/platform', [PrivateTutorialController::class, 'platform']);
+$router->post('/private/tutorial/platform', [PrivateTutorialController::class, 'platform']);
+$router->get('/private/tutorial/clinic', [PrivateTutorialController::class, 'clinic']);
+$router->post('/private/tutorial/clinic', [PrivateTutorialController::class, 'clinic']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);

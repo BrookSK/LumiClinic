@@ -28,6 +28,8 @@ final class AuthMiddleware implements MiddlewareInterface
 
         $public = [
             '/login',
+            '/private/tutorial/platform',
+            '/private/tutorial/clinic',
         ];
 
         if (in_array($path, $public, true)) {

@@ -1,6 +1,6 @@
 {
   "name": "lumiclinic/app",
-  "description": "LumiClinic SaaS (Fase 1)",
+  "description": "LumiClinic SaaS (Finalizado até a Fase 11)",
   "type": "project",
   "require": {
     "php": ">=8.2"

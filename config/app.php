@@ -44,4 +44,7 @@ return [
         'retention_days_system_metrics' => (int)(getenv('OBS_RETENTION_METRICS_DAYS') ?: 365),
         'event_payload_max_bytes' => (int)(getenv('OBS_EVENT_PAYLOAD_MAX_BYTES') ?: 16384),
     ],
+    'private' => [
+        'tutorial_password' => 'lumiclinic',
+    ],
 ];
