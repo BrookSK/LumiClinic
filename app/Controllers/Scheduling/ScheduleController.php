@@ -228,6 +228,43 @@ final class ScheduleController extends Controller
             $professionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
         }
 
+        if ($view === 'month') {
+            $start = \DateTimeImmutable::createFromFormat('Y-m-d', $date);
+            if ($start === false) {
+                throw new \RuntimeException('Data inválida.');
+            }
+
+            $monthStart = $start->modify('first day of this month');
+            $monthEnd = $monthStart->modify('first day of next month');
+
+            $apptRepo = new AppointmentRepository($this->container->get(\PDO::class));
+            $items = $apptRepo->listByClinicRange(
+                $clinicId,
+                $monthStart->format('Y-m-d 00:00:00'),
+                $monthEnd->format('Y-m-d 00:00:00'),
+                $professionalId > 0 ? $professionalId : null
+            );
+
+            $profRepo = new ProfessionalRepository($this->container->get(\PDO::class));
+            $professionals = $profRepo->listActiveByClinic($clinicId);
+
+            $svcRepo = new ServiceCatalogRepository($this->container->get(\PDO::class));
+            $services = $svcRepo->listActiveByClinic($clinicId);
+
+            return $this->view('scheduling/month', [
+                'date' => $date,
+                'view' => $view,
+                'professional_id' => $professionalId,
+                'is_professional' => $isProfessional,
+                'created' => $created,
+                'error' => $error,
+                'items' => $items,
+                'professionals' => $professionals,
+                'services' => $services,
+                'month_start' => $monthStart->format('Y-m-d'),
+            ]);
+        }
+
         if ($view === 'week') {
             $start = \DateTimeImmutable::createFromFormat('Y-m-d', $date);
             if ($start === false) {

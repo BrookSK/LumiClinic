@@ -79,6 +79,7 @@ ob_start();
             <div>
                 <button class="lc-btn" type="submit">Ver Semana</button>
                 <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode($date) ?><?= $professional_id>0 ? ('&professional_id=' . (int)$professional_id) : '' ?>">Ver Dia</a>
+                <a class="lc-btn lc-btn--secondary" href="/schedule?view=month&date=<?= urlencode($date) ?><?= $professional_id>0 ? ('&professional_id=' . (int)$professional_id) : '' ?>">Ver Mês</a>
             </div>
         </form>
     </div>

@@ -70,6 +70,7 @@ ob_start();
         <div>
             <button class="lc-btn" type="submit">Ver</button>
             <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode($date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Semana</a>
+            <a class="lc-btn lc-btn--secondary" href="/schedule?view=month&date=<?= urlencode($date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
             <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
         </div>
     </form>
