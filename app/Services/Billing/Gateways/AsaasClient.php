@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Billing\Gateways;
 
 use App\Core\Container\Container;
+use App\Services\System\SystemSettingsService;
 use App\Services\Http\HttpClient;
 
 final class AsaasClient
@@ -15,8 +16,10 @@ final class AsaasClient
     public function createCustomer(string $name, ?string $email = null): array
     {
         $cfg = $this->container->get('config');
-        $baseUrl = rtrim((string)($cfg['billing']['asaas']['base_url'] ?? ''), '/');
-        $apiKey = (string)($cfg['billing']['asaas']['api_key'] ?? '');
+        $settings = new SystemSettingsService($this->container);
+        $baseUrl = $settings->getText('billing.asaas.base_url') ?? (string)($cfg['billing']['asaas']['base_url'] ?? '');
+        $apiKey = $settings->getText('billing.asaas.api_key') ?? (string)($cfg['billing']['asaas']['api_key'] ?? '');
+        $baseUrl = rtrim((string)$baseUrl, '/');
 
         if ($baseUrl === '' || $apiKey === '') {
             throw new \RuntimeException('Asaas não configurado (ASAAS_BASE_URL/ASAAS_API_KEY).');
@@ -48,8 +51,10 @@ final class AsaasClient
     public function createSubscription(string $customerId, float $value, string $billingType = 'BOLETO'): array
     {
         $cfg = $this->container->get('config');
-        $baseUrl = rtrim((string)($cfg['billing']['asaas']['base_url'] ?? ''), '/');
-        $apiKey = (string)($cfg['billing']['asaas']['api_key'] ?? '');
+        $settings = new SystemSettingsService($this->container);
+        $baseUrl = $settings->getText('billing.asaas.base_url') ?? (string)($cfg['billing']['asaas']['base_url'] ?? '');
+        $apiKey = $settings->getText('billing.asaas.api_key') ?? (string)($cfg['billing']['asaas']['api_key'] ?? '');
+        $baseUrl = rtrim((string)$baseUrl, '/');
 
         if ($baseUrl === '' || $apiKey === '') {
             throw new \RuntimeException('Asaas não configurado (ASAAS_BASE_URL/ASAAS_API_KEY).');

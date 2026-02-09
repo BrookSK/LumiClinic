@@ -285,6 +285,9 @@ $router->post('/sys/billing/set-status', [SystemBillingAdminController::class, '
 $router->post('/sys/billing/set-gateway', [SystemBillingAdminController::class, 'setGateway']);
 $router->post('/sys/billing/ensure-gateway', [SystemBillingAdminController::class, 'ensureGateway']);
 
+$router->get('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billing']);
+$router->post('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billingSubmit']);
+
 $router->get('/sys/queue-jobs', [SystemQueueJobController::class, 'index']);
 $router->post('/sys/queue-jobs/retry', [SystemQueueJobController::class, 'retry']);
 $router->post('/sys/queue-jobs/enqueue-test', [SystemQueueJobController::class, 'enqueueTest']);

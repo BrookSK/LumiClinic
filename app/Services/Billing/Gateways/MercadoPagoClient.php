@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Billing\Gateways;
 
 use App\Core\Container\Container;
+use App\Services\System\SystemSettingsService;
 use App\Services\Http\HttpClient;
 
 final class MercadoPagoClient
@@ -15,8 +16,10 @@ final class MercadoPagoClient
     public function createPreapproval(string $reason, float $autoRecurringAmount, string $payerEmail): array
     {
         $cfg = $this->container->get('config');
-        $baseUrl = rtrim((string)($cfg['billing']['mercadopago']['base_url'] ?? ''), '/');
-        $token = (string)($cfg['billing']['mercadopago']['access_token'] ?? '');
+        $settings = new SystemSettingsService($this->container);
+        $baseUrl = $settings->getText('billing.mercadopago.base_url') ?? (string)($cfg['billing']['mercadopago']['base_url'] ?? '');
+        $token = $settings->getText('billing.mercadopago.access_token') ?? (string)($cfg['billing']['mercadopago']['access_token'] ?? '');
+        $baseUrl = rtrim((string)$baseUrl, '/');
 
         if ($baseUrl === '' || $token === '') {
             throw new \RuntimeException('MercadoPago não configurado (MP_BASE_URL/MP_ACCESS_TOKEN).');
