@@ -121,29 +121,33 @@ final class SystemClinicRepository
 
         $sqlPerms = "
             INSERT INTO permissions (clinic_id, module, action, code, description, created_at)
-            VALUES
-            (:clinic_id, 'clinics', 'read', 'clinics.read', 'Ver dados da clínica', NOW()),
-            (:clinic_id, 'clinics', 'create', 'clinics.create', 'Criar clínica', NOW()),
-            (:clinic_id, 'clinics', 'update', 'clinics.update', 'Editar dados da clínica', NOW()),
-            (:clinic_id, 'clinics', 'delete', 'clinics.delete', 'Excluir clínica', NOW()),
-            (:clinic_id, 'clinics', 'export', 'clinics.export', 'Exportar dados da clínica', NOW()),
+            SELECT NULL, t.module, t.action, t.code, t.description, NOW()
+            FROM (
+                SELECT 'clinics' AS module, 'read' AS action, 'clinics.read' AS code, 'Ver dados da clínica' AS description
+                UNION ALL SELECT 'clinics', 'create', 'clinics.create', 'Criar clínica'
+                UNION ALL SELECT 'clinics', 'update', 'clinics.update', 'Editar dados da clínica'
+                UNION ALL SELECT 'clinics', 'delete', 'clinics.delete', 'Excluir clínica'
+                UNION ALL SELECT 'clinics', 'export', 'clinics.export', 'Exportar dados da clínica'
 
-            (:clinic_id, 'users', 'read', 'users.read', 'Listar usuários', NOW()),
-            (:clinic_id, 'users', 'create', 'users.create', 'Criar usuário', NOW()),
-            (:clinic_id, 'users', 'update', 'users.update', 'Editar usuário', NOW()),
-            (:clinic_id, 'users', 'delete', 'users.delete', 'Desativar/excluir usuário', NOW()),
-            (:clinic_id, 'users', 'export', 'users.export', 'Exportar usuários', NOW()),
-            (:clinic_id, 'users', 'sensitive', 'users.sensitive', 'Acesso a dados sensíveis de usuários', NOW()),
+                UNION ALL SELECT 'users', 'read', 'users.read', 'Listar usuários'
+                UNION ALL SELECT 'users', 'create', 'users.create', 'Criar usuário'
+                UNION ALL SELECT 'users', 'update', 'users.update', 'Editar usuário'
+                UNION ALL SELECT 'users', 'delete', 'users.delete', 'Desativar/excluir usuário'
+                UNION ALL SELECT 'users', 'export', 'users.export', 'Exportar usuários'
+                UNION ALL SELECT 'users', 'sensitive', 'users.sensitive', 'Acesso a dados sensíveis de usuários'
 
-            (:clinic_id, 'settings', 'read', 'settings.read', 'Ver configurações', NOW()),
-            (:clinic_id, 'settings', 'update', 'settings.update', 'Editar configurações', NOW()),
+                UNION ALL SELECT 'settings', 'read', 'settings.read', 'Ver configurações'
+                UNION ALL SELECT 'settings', 'update', 'settings.update', 'Editar configurações'
 
-            (:clinic_id, 'audit', 'read', 'audit.read', 'Ver logs de auditoria', NOW()),
-            (:clinic_id, 'audit', 'export', 'audit.export', 'Exportar logs de auditoria', NOW())
+                UNION ALL SELECT 'audit', 'read', 'audit.read', 'Ver logs de auditoria'
+                UNION ALL SELECT 'audit', 'export', 'audit.export', 'Exportar logs de auditoria'
+            ) t
+            WHERE NOT EXISTS (
+                SELECT 1 FROM permissions p WHERE p.code = t.code AND p.deleted_at IS NULL
+            )
         ";
 
-        $stmt2 = $this->pdo->prepare($sqlPerms);
-        $stmt2->execute(['clinic_id' => $clinicId]);
+        $this->pdo->exec($sqlPerms);
 
         $roleOwnerId = $this->getRoleId($clinicId, 'owner');
 
@@ -163,6 +167,14 @@ final class SystemClinicRepository
             FROM permissions p
             WHERE p.code = 'rbac.manage'
               AND p.deleted_at IS NULL
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM role_permissions rp
+                  WHERE rp.clinic_id = :clinic_id
+                    AND rp.role_id = :role_id
+                    AND rp.permission_id = p.id
+                    AND rp.deleted_at IS NULL
+              )
         ";
 
         $stmtAssign = $this->pdo->prepare($sqlAssignRbacManage);
@@ -172,7 +184,21 @@ final class SystemClinicRepository
             INSERT INTO role_permissions (clinic_id, role_id, permission_id, created_at)
             SELECT :clinic_id, :role_id, p.id, NOW()
             FROM permissions p
-            WHERE p.clinic_id = :clinic_id
+            WHERE p.code IN (
+                'clinics.read','clinics.create','clinics.update','clinics.delete','clinics.export',
+                'users.read','users.create','users.update','users.delete','users.export','users.sensitive',
+                'settings.read','settings.update',
+                'audit.read','audit.export'
+            )
+              AND p.deleted_at IS NULL
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM role_permissions rp
+                  WHERE rp.clinic_id = :clinic_id
+                    AND rp.role_id = :role_id
+                    AND rp.permission_id = p.id
+                    AND rp.deleted_at IS NULL
+              )
         ";
 
         $stmt3 = $this->pdo->prepare($sqlRolePerms);
