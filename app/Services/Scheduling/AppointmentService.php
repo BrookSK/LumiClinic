@@ -265,7 +265,7 @@ final class AppointmentService
         $allowed = [
             'scheduled' => ['confirmed', 'in_progress', 'cancelled', 'no_show'],
             'confirmed' => ['in_progress', 'cancelled', 'no_show'],
-            'in_progress' => ['completed', 'cancelled'],
+            'in_progress' => ['completed', 'cancelled', 'no_show'],
         ];
 
         return isset($allowed[$from]) && in_array($to, $allowed[$from], true);
