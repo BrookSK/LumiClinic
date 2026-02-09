@@ -27,109 +27,122 @@ foreach ($professionals as $p) {
 ob_start();
 ?>
 
-<?php if (isset($error) && $error !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #b91c1c;">
-        <div class="lc-card__body">
+<div class="lc-schedule">
+    <?php if (isset($error) && $error !== ''): ?>
+        <div class="lc-alert lc-alert--danger">
             <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
         </div>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
 
-<?php if (isset($created) && $created !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #16a34a;">
-        <div class="lc-card__body">
+    <?php if (isset($created) && $created !== ''): ?>
+        <div class="lc-alert lc-alert--success">
             Agendamento criado. ID: <?= htmlspecialchars($created, ENT_QUOTES, 'UTF-8') ?>
         </div>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <form method="get" action="/schedule" class="lc-form" style="display:flex; gap: 12px; align-items: end; flex-wrap: wrap;">
-        <input type="hidden" name="view" value="day" />
-        <input type="hidden" name="per_page" value="<?= (int)$perPage ?>" />
-        <input type="hidden" name="page" value="1" />
-        <div class="lc-field">
-            <label class="lc-label">Data</label>
-            <input class="lc-input" type="date" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-        </div>
-        <?php if (!$isProfessional): ?>
-            <div class="lc-field" style="min-width: 280px;">
-                <label class="lc-label">Profissional</label>
-                <select class="lc-select" name="professional_id">
-                    <option value="0">Todos</option>
-                    <?php foreach ($professionals as $p): ?>
-                        <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === (int)$professionalId) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+    <div class="lc-card lc-card--soft">
+        <div class="lc-card__header">
+            <div class="lc-card__title">Filtros</div>
+            <div class="lc-card__actions">
+                <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Semana</a>
+                <a class="lc-btn lc-btn--secondary" href="/schedule?view=month&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
+                <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
             </div>
-        <?php else: ?>
-            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-        <?php endif; ?>
-        <div>
-            <button class="lc-btn" type="submit">Ver</button>
-            <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode($date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Semana</a>
-            <a class="lc-btn lc-btn--secondary" href="/schedule?view=month&date=<?= urlencode($date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
-            <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
         </div>
-    </form>
-</div>
-
-<?php if (!$isProfessional): ?>
-    <div class="lc-card" style="margin-bottom: 16px;">
-        <div class="lc-card__header">Criar agendamento</div>
         <div class="lc-card__body">
-            <form method="post" action="/schedule/create" class="lc-form" style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; align-items: end;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <form method="get" action="/schedule" class="lc-form lc-form--row">
+                <input type="hidden" name="view" value="day" />
+                <input type="hidden" name="per_page" value="<?= (int)$perPage ?>" />
+                <input type="hidden" name="page" value="1" />
 
                 <div class="lc-field">
-                    <label class="lc-label">Serviço</label>
-                    <select class="lc-select" name="service_id" id="service_id" required>
-                        <option value="">Selecione</option>
-                        <?php foreach ($services as $s): ?>
-                            <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label class="lc-label">Data</label>
+                    <input class="lc-input" type="date" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
                 </div>
 
-                <div class="lc-field">
-                    <label class="lc-label">Profissional</label>
-                    <select class="lc-select" name="professional_id" id="professional_id" required>
-                        <option value="">Selecione</option>
-                        <?php foreach ($professionals as $p): ?>
-                            <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+                <?php if (!$isProfessional): ?>
+                    <div class="lc-field lc-field--wide">
+                        <label class="lc-label">Profissional</label>
+                        <select class="lc-select" name="professional_id">
+                            <option value="0">Todos</option>
+                            <?php foreach ($professionals as $p): ?>
+                                <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === (int)$professionalId) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                <?php else: ?>
+                    <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                <?php endif; ?>
 
-                <div class="lc-field">
-                    <label class="lc-label">Horário</label>
-                    <select class="lc-select" name="start_at" id="start_at" required>
-                        <option value="">Selecione um serviço + profissional + data</option>
-                    </select>
-                </div>
-
-                <div>
-                    <button class="lc-btn" type="submit">Agendar</button>
-                </div>
-
-                <div class="lc-field" style="grid-column: 1 / -1;">
-                    <label class="lc-label">Observações (opcional)</label>
-                    <input class="lc-input" type="text" name="notes" placeholder="" />
+                <div class="lc-form__actions">
+                    <button class="lc-btn lc-btn--primary" type="submit">Ver</button>
                 </div>
             </form>
         </div>
     </div>
-<?php endif; ?>
 
-<div class="lc-card">
-    <div class="lc-card__header">Agendamentos do dia</div>
-    <div class="lc-card__body">
+    <?php if (!$isProfessional): ?>
+        <div class="lc-card lc-card--soft">
+            <div class="lc-card__header">
+                <div class="lc-card__title">Criar agendamento</div>
+            </div>
+            <div class="lc-card__body">
+                <form method="post" action="/schedule/create" class="lc-form lc-form--grid">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+
+                    <div class="lc-field">
+                        <label class="lc-label">Serviço</label>
+                        <select class="lc-select" name="service_id" id="service_id" required>
+                            <option value="">Selecione</option>
+                            <?php foreach ($services as $s): ?>
+                                <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Profissional</label>
+                        <select class="lc-select" name="professional_id" id="professional_id" required>
+                            <option value="">Selecione</option>
+                            <?php foreach ($professionals as $p): ?>
+                                <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Horário</label>
+                        <select class="lc-select" name="start_at" id="start_at" required>
+                            <option value="">Selecione um serviço + profissional + data</option>
+                        </select>
+                    </div>
+
+                    <div class="lc-form__actions">
+                        <button class="lc-btn lc-btn--primary" type="submit">Agendar</button>
+                    </div>
+
+                    <div class="lc-field lc-field--full">
+                        <label class="lc-label">Observações (opcional)</label>
+                        <input class="lc-input" type="text" name="notes" placeholder="" />
+                    </div>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <div class="lc-card lc-card--soft">
+        <div class="lc-card__header">
+            <div class="lc-card__title">Agendamentos do dia</div>
+            <div class="lc-badge lc-badge--gold"><?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></div>
+        </div>
+        <div class="lc-card__body">
         <?php if ($items === []): ?>
             <div class="lc-muted">Nenhum agendamento.</div>
         <?php else: ?>
-            <table class="lc-table">
+            <div class="lc-table-wrap">
+                <table class="lc-table">
                 <thead>
                 <tr>
                     <th>Início</th>
@@ -161,8 +174,8 @@ ob_start();
                         <td><?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></td>
-                        <td style="text-align:right;">
-                            <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap: wrap;">
+                        <td class="lc-td-actions">
+                            <div class="lc-actions">
                                 <a class="lc-btn lc-btn--secondary" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
                                 <a class="lc-btn lc-btn--secondary" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
 
@@ -216,12 +229,13 @@ ob_start();
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
-            </table>
+                </table>
+            </div>
         <?php endif; ?>
 
-        <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <div class="lc-pager">
             <div class="lc-muted">Página <?= (int)$page ?></div>
-            <div style="display:flex; gap:10px;">
+            <div class="lc-pager__actions">
                 <?php if ($page > 1): ?>
                     <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
                 <?php endif; ?>
@@ -229,6 +243,7 @@ ob_start();
                     <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?>">Próxima</a>
                 <?php endif; ?>
             </div>
+        </div>
         </div>
     </div>
 </div>
