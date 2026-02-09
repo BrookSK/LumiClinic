@@ -95,4 +95,4 @@ ob_start();
 
 <?php
 $content = (string)ob_get_clean();
-require dirname(__DIR__, 3) . '/layout/app.php';
+require dirname(__DIR__, 2) . '/layout/app.php';
