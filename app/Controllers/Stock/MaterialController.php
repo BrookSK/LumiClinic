@@ -42,6 +42,11 @@ final class MaterialController extends Controller
         ]);
     }
 
+    public function createForm(Request $request)
+    {
+        return $this->redirect('/stock/materials');
+    }
+
     public function create(Request $request)
     {
         $this->authorize('stock.materials.manage');

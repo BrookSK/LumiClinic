@@ -195,9 +195,7 @@ $router->post('/finance/entries/delete', [FinancialController::class, 'deleteEnt
 $router->get('/finance/reports', [FinancialController::class, 'reports']);
 
 $router->get('/stock/materials', [MaterialController::class, 'index']);
-$router->get('/stock/materials/create', function () {
-    return (new \App\Core\Http\Response())->redirect('/stock/materials');
-});
+$router->get('/stock/materials/create', [MaterialController::class, 'createForm']);
 $router->post('/stock/materials/create', [MaterialController::class, 'create']);
 $router->get('/stock/movements', [StockController::class, 'movements']);
 $router->post('/stock/movements/create', [StockController::class, 'createMovement']);
