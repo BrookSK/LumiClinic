@@ -46,8 +46,9 @@ ob_start();
                 <a class="lc-segmented__item <?= $view === 'day' ? 'lc-segmented__item--active' : '' ?>" role="tab" aria-selected="<?= $view === 'day' ? 'true' : 'false' ?>" href="/schedule?view=day&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Dia</a>
                 <a class="lc-segmented__item <?= $view === 'week' ? 'lc-segmented__item--active' : '' ?>" role="tab" aria-selected="<?= $view === 'week' ? 'true' : 'false' ?>" href="/schedule?view=week&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Semana</a>
                 <a class="lc-segmented__item <?= $view === 'month' ? 'lc-segmented__item--active' : '' ?>" role="tab" aria-selected="<?= $view === 'month' ? 'true' : 'false' ?>" href="/schedule?view=month&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
-                <a class="lc-segmented__item" role="tab" aria-selected="false" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
             </div>
+
+            <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
 
             <?php if (!$isProfessional): ?>
                 <button class="lc-btn lc-btn--primary" type="button" id="openCreateAppointment">Novo agendamento</button>
@@ -68,6 +69,9 @@ ob_start();
     <?php endif; ?>
 
     <div class="lc-card lc-card--soft lc-toolbar">
+        <div class="lc-card__header">
+            <div class="lc-card__title">Filtros</div>
+        </div>
         <div class="lc-card__body">
             <form method="get" action="/schedule" class="lc-toolbar__form">
                 <input type="hidden" name="view" value="day" />
