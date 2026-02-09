@@ -17,6 +17,24 @@ final class AvailabilityService
 {
     public function __construct(private readonly Container $container) {}
 
+    private function normalizeTimeToHms(string $time): ?string
+    {
+        $t = trim($time);
+        if ($t === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{2}:\d{2}$/', $t) === 1) {
+            return $t . ':00';
+        }
+
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $t) === 1) {
+            return $t;
+        }
+
+        return null;
+    }
+
     /**
      * @return list<array{start_at:string,end_at:string}>
      */
@@ -63,9 +81,14 @@ final class AvailabilityService
         $clinicWindows = [];
         foreach ($clinicWh as $row) {
             if ((int)$row['weekday'] === $weekday) {
+                $start = $this->normalizeTimeToHms((string)$row['start_time']);
+                $end = $this->normalizeTimeToHms((string)$row['end_time']);
+                if ($start === null || $end === null) {
+                    continue;
+                }
                 $clinicWindows[] = [
-                    'start' => (string)$row['start_time'],
-                    'end' => (string)$row['end_time'],
+                    'start' => $start,
+                    'end' => $end,
                 ];
             }
         }
@@ -109,9 +132,15 @@ final class AvailabilityService
                 if ((int)$s['weekday'] !== $weekday) {
                     continue;
                 }
+
+                $start = $this->normalizeTimeToHms((string)$s['start_time']);
+                $end = $this->normalizeTimeToHms((string)$s['end_time']);
+                if ($start === null || $end === null) {
+                    continue;
+                }
                 $profWindows[] = [
-                    'start' => (string)$s['start_time'],
-                    'end' => (string)$s['end_time'],
+                    'start' => $start,
+                    'end' => $end,
                     'interval' => $intervalMinutesOverride !== null ? $intervalMinutesOverride : (isset($s['interval_minutes']) ? (int)$s['interval_minutes'] : null),
                 ];
             }
@@ -134,8 +163,8 @@ final class AvailabilityService
                     $intervalMinutes = $pw['interval'] ?? 0;
                     $stepMinutes = max(5, (int)$intervalMinutes);
 
-                    $cursor = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $dateYmd . ' ' . $windowStart . ':00');
-                    $endLimit = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $dateYmd . ' ' . $windowEnd . ':00');
+                    $cursor = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $dateYmd . ' ' . $windowStart);
+                    $endLimit = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $dateYmd . ' ' . $windowEnd);
                     if ($cursor === false || $endLimit === false) {
                         continue;
                     }
