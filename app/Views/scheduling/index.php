@@ -42,9 +42,16 @@ ob_start();
         </div>
 
         <div class="lc-pagehead__actions">
-            <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Semana</a>
-            <a class="lc-btn lc-btn--secondary" href="/schedule?view=month&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
-            <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
+            <div class="lc-segmented" role="tablist" aria-label="Visão da agenda">
+                <a class="lc-segmented__item <?= $view === 'day' ? 'lc-segmented__item--active' : '' ?>" role="tab" aria-selected="<?= $view === 'day' ? 'true' : 'false' ?>" href="/schedule?view=day&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Dia</a>
+                <a class="lc-segmented__item <?= $view === 'week' ? 'lc-segmented__item--active' : '' ?>" role="tab" aria-selected="<?= $view === 'week' ? 'true' : 'false' ?>" href="/schedule?view=week&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Semana</a>
+                <a class="lc-segmented__item <?= $view === 'month' ? 'lc-segmented__item--active' : '' ?>" role="tab" aria-selected="<?= $view === 'month' ? 'true' : 'false' ?>" href="/schedule?view=month&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
+                <a class="lc-segmented__item" role="tab" aria-selected="false" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
+            </div>
+
+            <?php if (!$isProfessional): ?>
+                <button class="lc-btn lc-btn--primary" type="button" id="openCreateAppointment">Novo agendamento</button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -60,105 +67,49 @@ ob_start();
         </div>
     <?php endif; ?>
 
-    <div class="lc-schedule__grid">
-        <div class="lc-stack">
-            <div class="lc-card lc-card--soft">
-                <div class="lc-card__header">
-                    <div class="lc-card__title">Filtros</div>
+    <div class="lc-card lc-card--soft lc-toolbar">
+        <div class="lc-card__body">
+            <form method="get" action="/schedule" class="lc-toolbar__form">
+                <input type="hidden" name="view" value="day" />
+                <input type="hidden" name="per_page" value="<?= (int)$perPage ?>" />
+                <input type="hidden" name="page" value="1" />
+
+                <div class="lc-field">
+                    <label class="lc-label">Data</label>
+                    <input class="lc-input" id="filter_date" type="date" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
                 </div>
-                <div class="lc-card__body">
-                    <form method="get" action="/schedule" class="lc-form lc-form--grid" style="grid-template-columns:1fr;">
-                        <input type="hidden" name="view" value="day" />
-                        <input type="hidden" name="per_page" value="<?= (int)$perPage ?>" />
-                        <input type="hidden" name="page" value="1" />
 
-                        <div class="lc-field">
-                            <label class="lc-label">Data</label>
-                            <input class="lc-input" type="date" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                        </div>
-
-                        <?php if (!$isProfessional): ?>
-                            <div class="lc-field">
-                                <label class="lc-label">Profissional</label>
-                                <select class="lc-select" name="professional_id">
-                                    <option value="0">Todos</option>
-                                    <?php foreach ($professionals as $p): ?>
-                                        <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === (int)$professionalId) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        <?php else: ?>
-                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                        <?php endif; ?>
-
-                        <div class="lc-form__actions">
-                            <button class="lc-btn lc-btn--primary" type="submit">Aplicar filtros</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <?php if (!$isProfessional): ?>
-                <div class="lc-card lc-card--soft">
-                    <div class="lc-card__header">
-                        <div class="lc-card__title">Criar agendamento</div>
+                <?php if (!$isProfessional): ?>
+                    <div class="lc-field lc-field--wide">
+                        <label class="lc-label">Profissional</label>
+                        <select class="lc-select" name="professional_id">
+                            <option value="0">Todos</option>
+                            <?php foreach ($professionals as $p): ?>
+                                <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === (int)$professionalId) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
-                    <div class="lc-card__body">
-                        <form method="post" action="/schedule/create" class="lc-form lc-form--grid" style="grid-template-columns:1fr;">
-                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <?php else: ?>
+                    <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                <?php endif; ?>
 
-                            <div class="lc-field">
-                                <label class="lc-label">Serviço</label>
-                                <select class="lc-select" name="service_id" id="service_id" required>
-                                    <option value="">Selecione</option>
-                                    <?php foreach ($services as $s): ?>
-                                        <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="lc-field">
-                                <label class="lc-label">Profissional</label>
-                                <select class="lc-select" name="professional_id" id="professional_id" required>
-                                    <option value="">Selecione</option>
-                                    <?php foreach ($professionals as $p): ?>
-                                        <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="lc-field">
-                                <label class="lc-label">Horário</label>
-                                <select class="lc-select" name="start_at" id="start_at" required>
-                                    <option value="">Selecione um serviço + profissional + data</option>
-                                </select>
-                            </div>
-
-                            <div class="lc-field">
-                                <label class="lc-label">Observações (opcional)</label>
-                                <input class="lc-input" type="text" name="notes" placeholder="" />
-                            </div>
-
-                            <div class="lc-form__actions">
-                                <button class="lc-btn lc-btn--primary" type="submit">Agendar</button>
-                            </div>
-                        </form>
-                    </div>
+                <div class="lc-toolbar__actions">
+                    <button class="lc-btn lc-btn--primary" type="submit">Aplicar filtros</button>
                 </div>
-            <?php endif; ?>
+            </form>
         </div>
+    </div>
 
-        <div>
-            <div class="lc-card lc-card--soft">
-                <div class="lc-card__header">
-                    <div class="lc-card__title">Agendamentos</div>
-                    <div class="lc-card__actions">
-                        <span class="lc-muted">Página <?= (int)$page ?></span>
-                    </div>
-                </div>
-                <div class="lc-card__body">
+    <div class="lc-card lc-card--soft">
+        <div class="lc-card__header">
+            <div class="lc-card__title">Agendamentos</div>
+            <div class="lc-card__actions">
+                <span class="lc-muted">Página <?= (int)$page ?></span>
+            </div>
+        </div>
+        <div class="lc-card__body">
         <?php if ($items === []): ?>
             <div class="lc-muted">Nenhum agendamento.</div>
         <?php else: ?>
@@ -278,25 +229,110 @@ ob_start();
             </div>
         </div>
     </div>
+
+    <?php if (!$isProfessional): ?>
+        <div class="lc-modal" id="createAppointmentModal" aria-hidden="true">
+            <div class="lc-modal__backdrop" data-close-modal></div>
+            <div class="lc-modal__panel" role="dialog" aria-modal="true" aria-label="Novo agendamento">
+                <div class="lc-modal__header">
+                    <div>
+                        <div class="lc-modal__title">Novo agendamento</div>
+                        <div class="lc-modal__subtitle">Preencha os dados para agendar.</div>
+                    </div>
+                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="button" data-close-modal>Fechar</button>
+                </div>
+
+                <form method="post" action="/schedule/create" class="lc-modal__body">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+
+                    <div class="lc-field">
+                        <label class="lc-label">Serviço</label>
+                        <select class="lc-select" name="service_id" id="modal_service_id" required>
+                            <option value="">Selecione</option>
+                            <?php foreach ($services as $s): ?>
+                                <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Profissional</label>
+                        <select class="lc-select" name="professional_id" id="modal_professional_id" required>
+                            <option value="">Selecione</option>
+                            <?php foreach ($professionals as $p): ?>
+                                <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Horário</label>
+                        <select class="lc-select" name="start_at" id="modal_start_at" required>
+                            <option value="">Selecione um serviço + profissional + data</option>
+                        </select>
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Observações (opcional)</label>
+                        <input class="lc-input" type="text" name="notes" placeholder="" />
+                    </div>
+
+                    <div class="lc-modal__footer">
+                        <button class="lc-btn lc-btn--primary" type="submit">Agendar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
+
 <script>
 (function() {
-  const serviceEl = document.getElementById('service_id');
-  const profEl = document.getElementById('professional_id');
-  const startEl = document.getElementById('start_at');
-  const date = <?= json_encode($date) ?>;
+  const dateFilterEl = document.getElementById('filter_date');
+  const openBtn = document.getElementById('openCreateAppointment');
+  const modal = document.getElementById('createAppointmentModal');
+  const modalServiceEl = document.getElementById('modal_service_id');
+  const modalProfEl = document.getElementById('modal_professional_id');
+  const modalStartEl = document.getElementById('modal_start_at');
 
-  if (!serviceEl || !profEl || !startEl) {
+  function openModal() {
+    if (!modal) return;
+    modal.setAttribute('aria-hidden', 'false');
+    modal.classList.add('lc-modal--open');
+  }
+
+  function closeModal() {
+    if (!modal) return;
+    modal.setAttribute('aria-hidden', 'true');
+    modal.classList.remove('lc-modal--open');
+  }
+
+  if (openBtn && modal) {
+    openBtn.addEventListener('click', openModal);
+    modal.addEventListener('click', function(e) {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      if (t.hasAttribute('data-close-modal')) {
+        closeModal();
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+  }
+
+  if (!modalServiceEl || !modalProfEl || !modalStartEl) {
     return;
   }
 
   async function loadSlots() {
-    const serviceId = serviceEl.value;
-    const profId = profEl.value;
-    startEl.innerHTML = '<option value="">Carregando...</option>';
+    const serviceId = modalServiceEl.value;
+    const profId = modalProfEl.value;
+    const date = dateFilterEl ? dateFilterEl.value : '';
+    modalStartEl.innerHTML = '<option value="">Carregando...</option>';
 
     if (!serviceId || !profId || !date) {
-      startEl.innerHTML = '<option value="">Selecione um serviço + profissional + data</option>';
+      modalStartEl.innerHTML = '<option value="">Selecione um serviço + profissional + data</option>';
       return;
     }
 
@@ -306,35 +342,37 @@ ob_start();
     try {
       const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
       if (!res.ok) {
-        startEl.innerHTML = '<option value="">Erro ao carregar horários</option>';
+        modalStartEl.innerHTML = '<option value="">Erro ao carregar horários</option>';
         return;
       }
       data = await res.json();
     } catch (e) {
-      startEl.innerHTML = '<option value="">Erro ao carregar horários</option>';
+      modalStartEl.innerHTML = '<option value="">Erro ao carregar horários</option>';
       return;
     }
 
     const slots = data.slots || [];
     if (slots.length === 0) {
-      startEl.innerHTML = '<option value="">Sem horários disponíveis</option>';
+      modalStartEl.innerHTML = '<option value="">Sem horários disponíveis</option>';
       return;
     }
 
-    startEl.innerHTML = '<option value="">Selecione</option>';
+    modalStartEl.innerHTML = '<option value="">Selecione</option>';
     for (const s of slots) {
       const t = (s.start_at || '').slice(11, 16);
       const opt = document.createElement('option');
       opt.value = s.start_at;
       opt.textContent = t;
-      startEl.appendChild(opt);
+      modalStartEl.appendChild(opt);
     }
   }
 
-  serviceEl.addEventListener('change', loadSlots);
-  profEl.addEventListener('change', loadSlots);
+  modalServiceEl.addEventListener('change', loadSlots);
+  modalProfEl.addEventListener('change', loadSlots);
 
-  loadSlots();
+  if (dateFilterEl) {
+    dateFilterEl.addEventListener('change', loadSlots);
+  }
 })();
 </script>
 
