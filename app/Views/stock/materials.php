@@ -5,6 +5,26 @@
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Estoque - Materiais';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -14,7 +34,7 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<?php if (isset($can) && $can('stock.materials.manage')): ?>
+<?php if ($can('stock.materials.manage')): ?>
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Novo material</div>
         <div class="lc-card__body">
