@@ -2,6 +2,7 @@
 $title = 'Admin do Sistema';
 $items = $items ?? [];
 $plans = $plans ?? [];
+$error = isset($error) ? (string)$error : '';
 $csrf = $_SESSION['_csrf'] ?? '';
 ob_start();
 ?>
@@ -9,6 +10,12 @@ ob_start();
     <div class="lc-badge lc-badge--gold">Billing (SaaS)</div>
     <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Voltar</a>
 </div>
+
+<?php if ($error !== ''): ?>
+    <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;">
+        <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
+    </div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__title">Assinaturas por clínica</div>

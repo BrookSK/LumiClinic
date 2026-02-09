@@ -10,6 +10,7 @@ use App\Repositories\ClinicSubscriptionRepository;
 use App\Repositories\SaasPlanRepository;
 use App\Services\Billing\Gateways\AsaasClient;
 use App\Services\Billing\Gateways\MercadoPagoClient;
+use App\Services\System\SystemSettingsService;
 
 final class BillingGatewayService
 {
@@ -75,7 +76,8 @@ final class BillingGatewayService
 
         if ($subscriptionId === '') {
             $cfg = $this->container->get('config');
-            $billingType = (string)($cfg['billing']['asaas']['billing_type'] ?? 'BOLETO');
+            $settings = new SystemSettingsService($this->container);
+            $billingType = $settings->getText('billing.asaas.billing_type') ?? (string)($cfg['billing']['asaas']['billing_type'] ?? 'BOLETO');
             $created = $client->createSubscription($customerId, $amount, $billingType);
             $subscriptionId = isset($created['id']) ? (string)$created['id'] : '';
         }
@@ -97,7 +99,8 @@ final class BillingGatewayService
         }
 
         $cfg = $this->container->get('config');
-        $payerEmail = (string)($cfg['billing']['mercadopago']['payer_email_default'] ?? '');
+        $settings = new SystemSettingsService($this->container);
+        $payerEmail = $settings->getText('billing.mercadopago.payer_email_default') ?? (string)($cfg['billing']['mercadopago']['payer_email_default'] ?? '');
         if (trim($payerEmail) === '') {
             throw new \RuntimeException('MercadoPago requer MP_PAYER_EMAIL_DEFAULT.');
         }

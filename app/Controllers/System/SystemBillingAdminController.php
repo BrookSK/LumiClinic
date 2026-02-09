@@ -26,6 +26,7 @@ final class SystemBillingAdminController extends Controller
         return $this->view('system/billing/index', [
             'items' => $service->listClinicsWithBilling(),
             'plans' => $service->listActivePlans(),
+            'error' => (string)$request->input('error', ''),
         ]);
     }
 
@@ -71,8 +72,11 @@ final class SystemBillingAdminController extends Controller
 
         $clinicId = (int)$request->input('clinic_id', 0);
 
-        (new SystemBillingService($this->container))->ensureGateway($clinicId, $request->ip());
-
-        return $this->redirect('/sys/billing');
+        try {
+            (new SystemBillingService($this->container))->ensureGateway($clinicId, $request->ip());
+            return $this->redirect('/sys/billing');
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/sys/billing?error=' . urlencode($e->getMessage()));
+        }
     }
 }
