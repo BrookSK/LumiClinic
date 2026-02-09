@@ -14,7 +14,7 @@ final class MedicalImageRepository
         $sql = "
             SELECT
                 mi.id, mi.clinic_id, mi.patient_id, mi.medical_record_id, mi.professional_id,
-                mi.kind, mi.taken_at, mi.procedure_type,
+                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type,
                 mi.storage_path, mi.original_filename, mi.mime_type, mi.size_bytes,
                 mi.created_by_user_id, mi.created_at
             FROM medical_images mi
@@ -32,6 +32,42 @@ final class MedicalImageRepository
         ]);
 
         /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array{comparison_key:string,before_id:int,after_id:int,procedure_type:?string,taken_at:?string,created_at:string}> */
+    public function listComparisonPairsByPatient(int $clinicId, int $patientId, int $limit = 100): array
+    {
+        $limit = max(1, min(200, $limit));
+
+        $sql = "
+            SELECT
+                a.comparison_key AS comparison_key,
+                b.id AS before_id,
+                a.id AS after_id,
+                a.procedure_type AS procedure_type,
+                a.taken_at AS taken_at,
+                a.created_at AS created_at
+            FROM medical_images a
+            JOIN medical_images b
+              ON b.clinic_id = a.clinic_id
+             AND b.patient_id = a.patient_id
+             AND b.deleted_at IS NULL
+             AND b.kind = 'before'
+             AND b.comparison_key = a.comparison_key
+            WHERE a.clinic_id = :clinic_id
+              AND a.patient_id = :patient_id
+              AND a.deleted_at IS NULL
+              AND a.kind = 'after'
+              AND a.comparison_key IS NOT NULL
+            ORDER BY a.created_at DESC, a.id DESC
+            LIMIT {$limit}
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
+
+        /** @var list<array{comparison_key:string,before_id:int,after_id:int,procedure_type:?string,taken_at:?string,created_at:string}> */
         return $stmt->fetchAll();
     }
 
@@ -123,7 +159,7 @@ final class MedicalImageRepository
         $sql = "
             SELECT
                 mi.id, mi.clinic_id, mi.patient_id, mi.medical_record_id, mi.professional_id,
-                mi.kind, mi.taken_at, mi.procedure_type,
+                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type,
                 mi.storage_path, mi.original_filename, mi.mime_type, mi.size_bytes,
                 mi.created_by_user_id, mi.created_at
             FROM medical_images mi
@@ -149,7 +185,7 @@ final class MedicalImageRepository
         $sql = "
             SELECT
                 mi.id, mi.clinic_id, mi.patient_id, mi.medical_record_id, mi.professional_id,
-                mi.kind, mi.taken_at, mi.procedure_type,
+                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type,
                 mi.storage_path, mi.original_filename, mi.mime_type, mi.size_bytes,
                 mi.created_by_user_id, mi.created_at
             FROM medical_images mi
@@ -177,6 +213,7 @@ final class MedicalImageRepository
         ?int $medicalRecordId,
         ?int $professionalId,
         string $kind,
+        ?string $comparisonKey,
         ?string $takenAt,
         ?string $procedureType,
         string $storagePath,
@@ -188,14 +225,14 @@ final class MedicalImageRepository
         $sql = "
             INSERT INTO medical_images (
                 clinic_id, patient_id, medical_record_id, professional_id,
-                kind, taken_at, procedure_type,
+                kind, comparison_key, taken_at, procedure_type,
                 storage_path, original_filename, mime_type, size_bytes,
                 created_by_user_id,
                 created_at
             )
             VALUES (
                 :clinic_id, :patient_id, :medical_record_id, :professional_id,
-                :kind, :taken_at, :procedure_type,
+                :kind, :comparison_key, :taken_at, :procedure_type,
                 :storage_path, :original_filename, :mime_type, :size_bytes,
                 :created_by_user_id,
                 NOW()
@@ -209,6 +246,7 @@ final class MedicalImageRepository
             'medical_record_id' => $medicalRecordId,
             'professional_id' => $professionalId,
             'kind' => $kind,
+            'comparison_key' => ($comparisonKey === '' ? null : $comparisonKey),
             'taken_at' => ($takenAt === '' ? null : $takenAt),
             'procedure_type' => ($procedureType === '' ? null : $procedureType),
             'storage_path' => $storagePath,

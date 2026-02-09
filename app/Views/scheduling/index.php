@@ -239,6 +239,10 @@ ob_start();
   const startEl = document.getElementById('start_at');
   const date = <?= json_encode($date) ?>;
 
+  if (!serviceEl || !profEl || !startEl) {
+    return;
+  }
+
   async function loadSlots() {
     const serviceId = serviceEl.value;
     const profId = profEl.value;
@@ -250,8 +254,19 @@ ob_start();
     }
 
     const url = `/schedule/available?service_id=${encodeURIComponent(serviceId)}&professional_id=${encodeURIComponent(profId)}&date=${encodeURIComponent(date)}`;
-    const res = await fetch(url);
-    const data = await res.json();
+
+    let data = null;
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) {
+        startEl.innerHTML = '<option value="">Erro ao carregar horários</option>';
+        return;
+      }
+      data = await res.json();
+    } catch (e) {
+      startEl.innerHTML = '<option value="">Erro ao carregar horários</option>';
+      return;
+    }
 
     const slots = data.slots || [];
     if (slots.length === 0) {
@@ -271,6 +286,8 @@ ob_start();
 
   serviceEl.addEventListener('change', loadSlots);
   profEl.addEventListener('change', loadSlots);
+
+  loadSlots();
 })();
 </script>
 

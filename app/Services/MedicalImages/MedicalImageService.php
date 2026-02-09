@@ -38,6 +38,7 @@ final class MedicalImageService
 
         $repo = new MedicalImageRepository($pdo);
         $images = $repo->listByPatient($clinicId, $patientId, 200);
+        $pairs = $repo->listComparisonPairsByPatient($clinicId, $patientId, 100);
 
         $profRepo = new ProfessionalRepository($pdo);
         $professionals = $profRepo->listActiveByClinic($clinicId);
@@ -56,7 +57,7 @@ final class MedicalImageService
             $userAgent
         );
 
-        return ['patient' => $patient, 'images' => $images, 'professionals' => $professionals];
+        return ['patient' => $patient, 'images' => $images, 'professionals' => $professionals, 'pairs' => $pairs];
     }
 
     /**
@@ -126,6 +127,7 @@ final class MedicalImageService
             $meta['medical_record_id'],
             $meta['professional_id'],
             $kind,
+            null,
             ($takenAt === '' ? null : $takenAt),
             $meta['procedure_type'],
             $relative,
@@ -150,6 +152,123 @@ final class MedicalImageService
         );
 
         return $id;
+    }
+
+    /**
+     * @param array{taken_at:?string,procedure_type:?string,professional_id:?int,medical_record_id:?int} $meta
+     */
+    public function uploadPair(int $patientId, array $meta, array $beforeFile, array $afterFile, string $ip, ?string $userAgent = null): string
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+
+        $patients = new PatientRepository($pdo);
+        if ($patients->findById($clinicId, $patientId) === null) {
+            throw new \RuntimeException('Paciente inválido.');
+        }
+
+        $takenAt = $meta['taken_at'];
+        if ($takenAt !== null && $takenAt !== '') {
+            $takenAt = str_replace('T', ' ', $takenAt);
+            if (strlen($takenAt) === 16) {
+                $takenAt .= ':00';
+            }
+        }
+
+        $key = bin2hex(random_bytes(12));
+
+        $before = $this->storeUploadedImage($clinicId, $patientId, $beforeFile);
+        $after = $this->storeUploadedImage($clinicId, $patientId, $afterFile);
+
+        $repo = new MedicalImageRepository($pdo);
+
+        $beforeId = $repo->create(
+            $clinicId,
+            $patientId,
+            $meta['medical_record_id'],
+            $meta['professional_id'],
+            'before',
+            $key,
+            ($takenAt === '' ? null : $takenAt),
+            $meta['procedure_type'],
+            $before['relative'],
+            $before['original_name'],
+            $before['mime'],
+            $before['size'],
+            $actorId
+        );
+
+        $afterId = $repo->create(
+            $clinicId,
+            $patientId,
+            $meta['medical_record_id'],
+            $meta['professional_id'],
+            'after',
+            $key,
+            ($takenAt === '' ? null : $takenAt),
+            $meta['procedure_type'],
+            $after['relative'],
+            $after['original_name'],
+            $after['mime'],
+            $after['size'],
+            $actorId
+        );
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'medical_images.upload_pair',
+            ['patient_id' => $patientId, 'comparison_key' => $key, 'before_id' => $beforeId, 'after_id' => $afterId],
+            $ip,
+            $roleCodes,
+            'patient',
+            $patientId,
+            $userAgent
+        );
+
+        return $key;
+    }
+
+    /** @return array{relative:string,original_name:?string,mime:string,size:?int} */
+    private function storeUploadedImage(int $clinicId, int $patientId, array $file): array
+    {
+        $tmp = isset($file['tmp_name']) ? (string)$file['tmp_name'] : '';
+        $err = isset($file['error']) ? (int)$file['error'] : UPLOAD_ERR_NO_FILE;
+        if ($err !== UPLOAD_ERR_OK || $tmp === '' || !is_file($tmp)) {
+            throw new \RuntimeException('Falha no upload.');
+        }
+
+        $bytes = file_get_contents($tmp);
+        if ($bytes === false || $bytes === '') {
+            throw new \RuntimeException('Arquivo inválido.');
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = (string)$finfo->file($tmp);
+        $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        if (!isset($allowed[$mime])) {
+            throw new \RuntimeException('Formato não suportado. Use JPG/PNG/WEBP.');
+        }
+
+        $ext = $allowed[$mime];
+        $token = bin2hex(random_bytes(16));
+        $relative = 'medical_images/patient_' . $patientId . '/' . date('Ymd') . '_' . $token . '.' . $ext;
+
+        PrivateStorage::put($clinicId, $relative, $bytes);
+
+        $originalName = isset($file['name']) ? (string)$file['name'] : null;
+        $size = isset($file['size']) ? (int)$file['size'] : null;
+
+        return ['relative' => $relative, 'original_name' => $originalName, 'mime' => $mime, 'size' => $size];
     }
 
     public function serveFile(int $imageId, string $ip, ?string $userAgent = null): Response

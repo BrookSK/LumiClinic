@@ -245,6 +245,8 @@ $router->post('/medical-records/edit', [MedicalRecordController::class, 'update'
 
 $router->get('/medical-images', [MedicalImageController::class, 'index']);
 $router->post('/medical-images/upload', [MedicalImageController::class, 'upload']);
+$router->post('/medical-images/upload-pair', [MedicalImageController::class, 'uploadPair']);
+$router->get('/medical-images/compare', [MedicalImageController::class, 'compare']);
 $router->get('/medical-images/file', [MedicalImageController::class, 'file']);
 
 $router->get('/medical-images/moderation', [PatientUploadModerationController::class, 'index']);

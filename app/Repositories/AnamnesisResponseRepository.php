@@ -48,7 +48,7 @@ final class AnamnesisResponseRepository
             )
             VALUES (
                 :clinic_id, :patient_id, :template_id, :professional_id,
-                CAST(:answers_json AS JSON),
+                :answers_json,
                 :created_by_user_id,
                 NOW()
             )
