@@ -21,7 +21,7 @@ ob_start();
         <label class="lc-label">Motivo (opcional)</label>
         <input class="lc-input" type="text" name="reason" />
 
-        <div style="margin-top:14px; display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Adicionar</button>
             <a class="lc-btn lc-btn--secondary" href="/clinic">Voltar</a>
         </div>

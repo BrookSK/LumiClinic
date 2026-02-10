@@ -3,9 +3,9 @@ $title = 'Admin do Sistema';
 $items = $items ?? [];
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <div class="lc-badge lc-badge--gold">Gestão de clínicas</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
+    <div class="lc-badge lc-badge--primary">Gestão de clínicas</div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/sys/billing">Billing</a>
         <a class="lc-btn lc-btn--primary" href="/sys/clinics/create">Nova clínica</a>
     </div>

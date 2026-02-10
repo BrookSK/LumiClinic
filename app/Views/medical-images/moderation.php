@@ -4,9 +4,9 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $pending = $pending ?? [];
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Moderação</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">Moderação</div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/">Voltar</a>
     </div>
 </div>
@@ -39,7 +39,7 @@ ob_start();
                             <td><?= htmlspecialchars((string)($u['original_filename'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($u['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($u['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <td class="lc-flex lc-flex--wrap" style="gap:10px;">
                                 <form method="post" action="/medical-images/moderation/approve" class="lc-form">
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                     <input type="hidden" name="id" value="<?= (int)($u['id'] ?? 0) ?>" />

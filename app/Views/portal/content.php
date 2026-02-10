@@ -18,7 +18,7 @@ $items = $items ?? [];
             <h1 class="lc-page__title">Conteúdos</h1>
             <div class="lc-page__subtitle">Portal do Paciente</div>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm">
             <a class="lc-btn lc-btn--secondary" href="/portal">Dashboard</a>
             <form method="post" action="/portal/logout">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
@@ -33,7 +33,7 @@ $items = $items ?? [];
             <?php if (!is_array($items) || $items === []): ?>
                 <div>Nenhum conteúdo disponível.</div>
             <?php else: ?>
-                <div style="display:grid; gap:10px;">
+                <div class="lc-grid" style="gap:10px;">
                     <?php foreach ($items as $c): ?>
                         <div class="lc-card" style="padding:12px;">
                             <div><strong><?= htmlspecialchars((string)($c['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></div>

@@ -6,8 +6,8 @@ $error = isset($error) ? (string)$error : '';
 $csrf = $_SESSION['_csrf'] ?? '';
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <div class="lc-badge lc-badge--gold">Billing (SaaS)</div>
+<div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
+    <div class="lc-badge lc-badge--primary">Billing (SaaS)</div>
     <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Voltar</a>
 </div>
 
@@ -41,12 +41,12 @@ ob_start();
                     <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($it['tenant_key'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td>
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <div class="lc-flex lc-flex--wrap" style="gap:8px; align-items:center;">
                             <div>
                                 <?= htmlspecialchars((string)($it['plan_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                                 <?= htmlspecialchars((string)($it['plan_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                             </div>
-                            <form method="post" action="/sys/billing/set-plan" style="display:flex; gap:8px; align-items:center;">
+                            <form method="post" action="/sys/billing/set-plan" class="lc-flex" style="gap:8px; align-items:center;">
                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                 <input type="hidden" name="clinic_id" value="<?= (int)$it['id'] ?>" />
                                 <select class="lc-input" name="plan_id">
@@ -61,7 +61,7 @@ ob_start();
                         </div>
                     </td>
                     <td>
-                        <form method="post" action="/sys/billing/set-status" style="display:flex; gap:8px; align-items:center;">
+                        <form method="post" action="/sys/billing/set-status" class="lc-flex" style="gap:8px; align-items:center;">
                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                             <input type="hidden" name="clinic_id" value="<?= (int)$it['id'] ?>" />
                             <select class="lc-input" name="status">
@@ -74,7 +74,7 @@ ob_start();
                         </form>
                     </td>
                     <td>
-                        <form method="post" action="/sys/billing/set-gateway" style="display:flex; gap:8px; align-items:center;">
+                        <form method="post" action="/sys/billing/set-gateway" class="lc-flex" style="gap:8px; align-items:center;">
                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                             <input type="hidden" name="clinic_id" value="<?= (int)$it['id'] ?>" />
                             <?php $gp = (string)($it['gateway_provider'] ?? ''); ?>

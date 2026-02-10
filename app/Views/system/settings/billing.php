@@ -15,9 +15,9 @@ $mp_webhook_secret = isset($mp_webhook_secret) ? (string)$mp_webhook_secret : ''
 ob_start();
 ?>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:12px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Configurações (Billing)</div>
-    <div style="display:flex; gap:10px;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap lc-gap-md" style="margin-bottom:14px;">
+    <div class="lc-badge lc-badge--primary">Configurações (Billing)</div>
+    <div class="lc-flex lc-gap-sm">
         <a class="lc-btn lc-btn--secondary" href="/sys/billing">Assinaturas</a>
         <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Clínicas</a>
     </div>
@@ -28,7 +28,7 @@ ob_start();
         <div class="lc-card__title">Asaas</div>
     </div>
     <div class="lc-card__body">
-        <form method="post" action="/sys/settings/billing" class="lc-form" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <form method="post" action="/sys/settings/billing" class="lc-form lc-grid lc-grid--2 lc-gap-grid">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field">
@@ -51,7 +51,7 @@ ob_start();
                 <input class="lc-input" type="password" name="asaas_webhook_secret" value="<?= htmlspecialchars($asaas_webhook_secret, ENT_QUOTES, 'UTF-8') ?>" />
             </div>
 
-            <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
+            <div class="lc-flex lc-flex--end lc-gap-sm" style="grid-column: 1 / -1;">
                 <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             </div>
         </form>
@@ -63,7 +63,7 @@ ob_start();
         <div class="lc-card__title">Mercado Pago</div>
     </div>
     <div class="lc-card__body">
-        <form method="post" action="/sys/settings/billing" class="lc-form" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <form method="post" action="/sys/settings/billing" class="lc-form lc-grid lc-grid--2 lc-gap-grid">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field">
@@ -86,7 +86,7 @@ ob_start();
                 <input class="lc-input" type="password" name="mp_webhook_secret" value="<?= htmlspecialchars($mp_webhook_secret, ENT_QUOTES, 'UTF-8') ?>" />
             </div>
 
-            <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
+            <div class="lc-flex lc-flex--end lc-gap-sm" style="grid-column: 1 / -1;">
                 <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             </div>
         </form>

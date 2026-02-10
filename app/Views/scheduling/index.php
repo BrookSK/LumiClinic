@@ -32,7 +32,7 @@ ob_start();
         <div>
             <div class="lc-pagehead__title">Agenda</div>
             <div class="lc-pagehead__meta">
-                <span class="lc-badge lc-badge--gold"><?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="lc-badge lc-badge--primary"><?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></span>
                 <?php if (!$isProfessional && $professionalId > 0 && isset($profMap[$professionalId])): ?>
                     <span class="lc-badge"><?= htmlspecialchars((string)$profMap[$professionalId]['name'], ENT_QUOTES, 'UTF-8') ?></span>
                 <?php elseif (!$isProfessional && $professionalId === 0): ?>

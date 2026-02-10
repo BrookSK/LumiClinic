@@ -29,7 +29,7 @@ ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #b91c1c;">
+    <div class="lc-card lc-statusbar lc-statusbar--no_show" style="margin-bottom: 16px;">
         <div class="lc-card__body"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     </div>
 <?php endif; ?>
@@ -38,7 +38,7 @@ ob_start();
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Novo material</div>
         <div class="lc-card__body">
-            <form method="post" action="/stock/materials/create" class="lc-form" style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr; gap: 12px; align-items:end;">
+            <form method="post" action="/stock/materials/create" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
                 <div class="lc-field">

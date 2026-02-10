@@ -11,14 +11,14 @@ ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #b91c1c;">
+    <div class="lc-card lc-statusbar lc-statusbar--no_show" style="margin-bottom: 16px;">
         <div class="lc-card__body"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     </div>
 <?php endif; ?>
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Serviço</div>
-    <div class="lc-card__body" style="display:flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+    <div class="lc-card__body lc-flex lc-flex--between lc-flex--wrap lc-gap-md">
         <div>
             <div><strong><?= htmlspecialchars((string)$service['name'], ENT_QUOTES, 'UTF-8') ?></strong></div>
             <div class="lc-muted">Padrões de consumo por sessão</div>
@@ -32,7 +32,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Adicionar material padrão</div>
     <div class="lc-card__body">
-        <form method="post" action="/services/materials/create" class="lc-form" style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; align-items:end;">
+        <form method="post" action="/services/materials/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
             <input type="hidden" name="service_id" value="<?= (int)$service['id'] ?>" />
 

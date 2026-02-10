@@ -25,7 +25,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Filtros</div>
     <div class="lc-card__body">
-        <form method="get" action="/finance/reports" class="lc-form" style="display:flex; gap: 12px; flex-wrap: wrap; align-items:end;">
+        <form method="get" action="/finance/reports" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
             <div class="lc-field">
                 <label class="lc-label">De</label>
                 <input class="lc-input" type="date" name="from" value="<?= htmlspecialchars($from, ENT_QUOTES, 'UTF-8') ?>" />
@@ -63,7 +63,7 @@ ob_start();
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Conversão (agenda → venda paga)</div>
-    <div class="lc-card__body" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+    <div class="lc-card__body lc-grid lc-grid--3 lc-gap-grid">
         <div><strong>Agendamentos:</strong> <?= (int)$appointments ?></div>
         <div><strong>Vendas pagas:</strong> <?= (int)$paid_sales ?></div>
         <div><strong>Taxa:</strong> <?= number_format(((float)$conversion_rate) * 100.0, 2, ',', '.') ?>%</div>

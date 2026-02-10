@@ -5,7 +5,7 @@ $error = $error ?? null;
 $settings = $settings ?? null;
 ob_start();
 ?>
-<div class="lc-grid" style="grid-template-columns: 1fr;">
+<div class="lc-grid">
     <div class="lc-card">
         <div class="lc-card__title">Geral</div>
 
@@ -22,7 +22,7 @@ ob_start();
             <label class="lc-label">Idioma</label>
             <input class="lc-input" type="text" name="language" value="<?= htmlspecialchars((string)($settings['language'] ?? 'pt-BR'), ENT_QUOTES, 'UTF-8') ?>" required />
 
-            <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+            <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
                 <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
                 <a class="lc-btn lc-btn--secondary" href="/settings/terminology">Editar terminologia</a>
             </div>

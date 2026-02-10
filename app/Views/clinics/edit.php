@@ -18,7 +18,7 @@ ob_start();
         <label class="lc-label">Nome</label>
         <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($clinic['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
 
-        <div style="margin-top:14px; display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             <a class="lc-btn lc-btn--secondary" href="/">Voltar</a>
             <a class="lc-btn lc-btn--secondary" href="/clinic/working-hours">Horários</a>

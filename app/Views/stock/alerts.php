@@ -13,7 +13,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Filtros</div>
     <div class="lc-card__body">
-        <form method="get" action="/stock/alerts" class="lc-form" style="display:flex; gap: 12px; flex-wrap: wrap; align-items:end;">
+        <form method="get" action="/stock/alerts" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
             <div class="lc-field">
                 <label class="lc-label">Dias para validade próxima</label>
                 <input class="lc-input" type="number" name="days" min="1" max="365" value="<?= (int)$days ?>" />

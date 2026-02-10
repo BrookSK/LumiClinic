@@ -5,8 +5,8 @@ $patient = $patient ?? null;
 $term = $term ?? null;
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Assinatura</div>
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">Assinatura</div>
     <div>
         <a class="lc-btn lc-btn--secondary" href="/consent?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Voltar</a>
     </div>
@@ -15,7 +15,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title"><?= htmlspecialchars((string)($term['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
     <div class="lc-card__body">
-        <div style="margin-bottom:10px; color:rgba(244,236,212,0.72);">
+        <div class="lc-muted" style="margin-bottom:10px;">
             Procedimento: <?= htmlspecialchars((string)($term['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
         </div>
         <div style="white-space:pre-wrap; line-height:1.6;">
@@ -31,7 +31,7 @@ ob_start();
         Use o mouse ou toque para assinar.
     </div>
 
-    <canvas id="sig" width="720" height="220" style="width:100%; max-width:720px; border:1px solid rgba(203,169,106,0.22); border-radius:12px; background:rgba(7,8,12,0.55);"></canvas>
+    <canvas id="sig" class="lc-signature-canvas" width="720" height="220" style="width:100%; max-width:720px;"></canvas>
 
     <form method="post" action="/consent/accept" style="margin-top:14px;">
         <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
@@ -39,7 +39,7 @@ ob_start();
         <input type="hidden" name="term_id" value="<?= (int)($term['id'] ?? 0) ?>" />
         <input type="hidden" id="signature" name="signature" value="" />
 
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <div class="lc-flex lc-gap-sm lc-flex--wrap">
             <button class="lc-btn lc-btn--secondary" type="button" id="clear">Limpar</button>
             <button class="lc-btn lc-btn--primary" type="submit" id="submit">Confirmar e salvar</button>
         </div>
@@ -52,7 +52,7 @@ ob_start();
   const ctx = canvas.getContext('2d');
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
-  ctx.strokeStyle = 'rgba(244,236,212,0.9)';
+  ctx.strokeStyle = 'rgba(31,41,55,0.92)';
 
   let drawing = false;
   let last = null;

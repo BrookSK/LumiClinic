@@ -40,7 +40,7 @@ ob_start();
         <label class="lc-label">Notas</label>
         <textarea class="lc-input" name="notes" rows="4"></textarea>
 
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Voltar</a>
         </div>

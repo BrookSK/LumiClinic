@@ -4,9 +4,9 @@ $patient = $patient ?? null;
 $records = $records ?? [];
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Prontuário</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">Prontuário</div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar ao paciente</a>
         <a class="lc-btn lc-btn--primary" href="/medical-records/create?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Novo registro</a>
     </div>
@@ -21,7 +21,7 @@ ob_start();
 
 <?php foreach ($records as $r): ?>
     <div id="mr-<?= (int)$r['id'] ?>" class="lc-card" style="margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="gap:10px;">
             <div>
                 <div class="lc-card__title">Atendimento em <?= htmlspecialchars((string)$r['attended_at'], ENT_QUOTES, 'UTF-8') ?></div>
                 <div class="lc-card__body">

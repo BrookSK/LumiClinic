@@ -22,7 +22,7 @@ ob_start();
 
         <div class="lc-card" style="margin-top:10px;">
             <div class="lc-card__body">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="gap:10px; margin-bottom:10px;">
                     <div class="lc-muted">Adicione os campos do formulário.</div>
                     <button class="lc-btn lc-btn--secondary" type="button" id="add-field">Adicionar campo</button>
                 </div>
@@ -45,7 +45,7 @@ ob_start();
             </div>
         </div>
 
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Criar</button>
             <a class="lc-btn lc-btn--secondary" href="/anamnesis/templates">Voltar</a>
         </div>

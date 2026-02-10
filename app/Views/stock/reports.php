@@ -14,7 +14,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Filtros</div>
     <div class="lc-card__body">
-        <form method="get" action="/stock/reports" class="lc-form" style="display:flex; gap: 12px; flex-wrap: wrap; align-items:end;">
+        <form method="get" action="/stock/reports" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
             <div class="lc-field">
                 <label class="lc-label">De</label>
                 <input class="lc-input" type="date" name="from" value="<?= htmlspecialchars((string)$from, ENT_QUOTES, 'UTF-8') ?>" />
@@ -35,7 +35,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Resumo do período</div>
     <div class="lc-card__body">
-        <div style="display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px;">
+        <div class="lc-grid lc-grid--4 lc-gap-grid">
             <div class="lc-card" style="margin:0;"><div class="lc-card__body">Custo total saídas: <strong>R$ <?= number_format((float)($summary['total_exit_cost'] ?? 0), 2, ',', '.') ?></strong></div></div>
             <div class="lc-card" style="margin:0;"><div class="lc-card__body">Custo perdas: <strong>R$ <?= number_format((float)($summary['total_loss_cost'] ?? 0), 2, ',', '.') ?></strong></div></div>
             <div class="lc-card" style="margin:0;"><div class="lc-card__body">Custo vencimento: <strong>R$ <?= number_format((float)($summary['total_expiration_cost'] ?? 0), 2, ',', '.') ?></strong></div></div>

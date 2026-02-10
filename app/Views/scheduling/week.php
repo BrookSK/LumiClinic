@@ -39,20 +39,20 @@ ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #b91c1c;">
+    <div class="lc-card lc-statusbar lc-statusbar--no_show" style="margin-bottom: 16px;">
         <div class="lc-card__body"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     </div>
 <?php endif; ?>
 
 <?php if (isset($created) && $created !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #16a34a;">
+    <div class="lc-card lc-statusbar lc-statusbar--completed" style="margin-bottom: 16px;">
         <div class="lc-card__body">Atualizado. ID: <?= htmlspecialchars($created, ENT_QUOTES, 'UTF-8') ?></div>
     </div>
 <?php endif; ?>
 
 <div class="lc-card" style="margin-bottom:16px;">
     <div class="lc-card__body">
-        <form method="get" action="/schedule" class="lc-form" style="display:flex; gap: 12px; align-items:end; flex-wrap: wrap;">
+        <form method="get" action="/schedule" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
             <input type="hidden" name="view" value="week" />
 
             <div class="lc-field">
@@ -89,7 +89,7 @@ ob_start();
     <div class="lc-card">
         <div class="lc-card__header">Semana</div>
         <div class="lc-card__body">
-            <div style="display:grid; grid-template-columns: repeat(7, 1fr); gap: 12px;">
+            <div class="lc-grid lc-gap-grid" style="grid-template-columns: repeat(7, minmax(0, 1fr));">
                 <?php for ($i=0; $i<7; $i++): ?>
                     <?php $d = $weekStart->modify('+' . $i . ' days'); $ymd = $d->format('Y-m-d'); ?>
                     <div class="lc-card" style="margin:0;">
@@ -98,7 +98,7 @@ ob_start();
                                 <?= htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') ?>
                             </div>
                         </div>
-                        <div class="lc-card__body" style="display:flex; flex-direction: column; gap: 8px;">
+                        <div class="lc-card__body lc-flex" style="flex-direction:column; gap:8px;">
                             <?php $dayItems = $byDay[$ymd] ?? []; ?>
                             <?php if ($dayItems === []): ?>
                                 <div class="lc-muted">Sem agendamentos</div>
@@ -110,14 +110,14 @@ ob_start();
                                         $pname = isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : ('#' . $pid);
                                         $sname = isset($svcMap[$sid]) ? (string)$svcMap[$sid]['name'] : ('#' . $sid);
                                         $status = (string)$it['status'];
-                                        $border = '#d4af37';
-                                        if ($status === 'cancelled') $border = '#6b7280';
-                                        if ($status === 'confirmed') $border = '#2563eb';
-                                        if ($status === 'in_progress') $border = '#f59e0b';
-                                        if ($status === 'completed') $border = '#16a34a';
-                                        if ($status === 'no_show') $border = '#b91c1c';
+                                        $statusClass = 'scheduled';
+                                        if ($status === 'cancelled') $statusClass = 'cancelled';
+                                        if ($status === 'confirmed') $statusClass = 'confirmed';
+                                        if ($status === 'in_progress') $statusClass = 'in_progress';
+                                        if ($status === 'completed') $statusClass = 'completed';
+                                        if ($status === 'no_show') $statusClass = 'no_show';
                                     ?>
-                                    <div style="border-left:4px solid <?= htmlspecialchars($border, ENT_QUOTES, 'UTF-8') ?>; padding-left:8px;">
+                                    <div class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>" style="padding-left:8px;">
                                         <div style="font-weight: 600;">
                                             <?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?>
                                             -
@@ -126,7 +126,7 @@ ob_start();
                                         <div class="lc-muted" style="font-size:12px;">
                                             <?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?> • <?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?> • <?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>
                                         </div>
-                                        <div style="display:flex; gap:8px; margin-top:6px; flex-wrap: wrap;">
+                                        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:6px;">
                                             <a class="lc-btn lc-btn--secondary" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
                                             <a class="lc-btn lc-btn--secondary" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
                                             <form method="post" action="/schedule/status">

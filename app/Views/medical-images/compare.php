@@ -5,9 +5,9 @@ $beforeId = (int)($before_id ?? 0);
 $afterId = (int)($after_id ?? 0);
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Comparação</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">Comparação</div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Voltar</a>
     </div>
 </div>
@@ -19,17 +19,17 @@ ob_start();
 
 <div class="lc-card">
     <div class="lc-card__body">
-        <div id="ba-wrap" style="position:relative; width:100%; max-width:980px; margin:0 auto; aspect-ratio: 16 / 9; background:#0b0f14; overflow:hidden; border-radius:12px;">
+        <div id="ba-wrap" class="lc-ba-wrap" style="position:relative; width:100%; max-width:980px; margin:0 auto; aspect-ratio: 16 / 9; overflow:hidden; border-radius:12px;">
             <img id="img-after" src="/medical-images/file?id=<?= $afterId ?>" alt="Depois" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
             <div id="before-clip" style="position:absolute; inset:0; width:50%; overflow:hidden;">
                 <img id="img-before" src="/medical-images/file?id=<?= $beforeId ?>" alt="Antes" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
             </div>
-            <div id="divider" style="position:absolute; top:0; bottom:0; left:50%; width:2px; background:#22c55e;"></div>
-            <div id="handle" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:36px; height:36px; border-radius:999px; background:#22c55e; display:flex; align-items:center; justify-content:center; color:#0b0f14; font-weight:700; user-select:none;">↔</div>
+            <div id="divider" class="lc-ba-divider" style="position:absolute; top:0; bottom:0; left:50%; width:2px;"></div>
+            <div id="handle" class="lc-flex lc-ba-handle" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:36px; height:36px; border-radius:999px; align-items:center; justify-content:center; font-weight:700; user-select:none;">↔</div>
         </div>
         <div style="max-width:980px; margin:12px auto 0;">
             <input id="ba-range" type="range" min="0" max="100" value="50" style="width:100%;" />
-            <div style="display:flex; justify-content:space-between; margin-top:6px;">
+            <div class="lc-flex lc-flex--between" style="margin-top:6px;">
                 <div class="lc-muted">ANTES</div>
                 <div class="lc-muted">DEPOIS</div>
             </div>

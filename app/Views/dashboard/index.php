@@ -11,7 +11,7 @@ ob_start();
     <div class="lc-card">
         <div class="lc-card__title">Status</div>
         <div class="lc-card__body">
-            <div class="lc-badge lc-badge--gold">FASE 11 (finalizado)</div>
+            <div class="lc-badge lc-badge--primary">FASE 11 (finalizado)</div>
         </div>
     </div>
 </div>

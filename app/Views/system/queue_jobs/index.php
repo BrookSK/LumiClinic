@@ -19,13 +19,13 @@ if (!array_key_exists($selected, $allowed)) {
 
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <div class="lc-badge lc-badge--gold">Jobs & Filas</div>
+<div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
+    <div class="lc-badge lc-badge--primary">Jobs & Filas</div>
 </div>
 
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title">Testes</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <form method="post" action="/sys/queue-jobs/enqueue-test" style="display:inline;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
             <input type="hidden" name="job_type" value="test.noop" />
@@ -57,7 +57,7 @@ ob_start();
                 </option>
             <?php endforeach; ?>
         </select>
-        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:10px;">
             <button class="lc-btn lc-btn--primary" type="submit">Aplicar</button>
             <a class="lc-btn lc-btn--secondary" href="/sys/queue-jobs">Limpar</a>
         </div>

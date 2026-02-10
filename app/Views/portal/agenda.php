@@ -23,7 +23,7 @@ $hasNext = isset($has_next) ? (bool)$has_next : false;
             <h1 class="lc-page__title">Agenda</h1>
             <div class="lc-page__subtitle">Portal do Paciente</div>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm">
             <a class="lc-btn lc-btn--secondary" href="/portal">Dashboard</a>
             <form method="post" action="/portal/logout">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
@@ -45,16 +45,16 @@ $hasNext = isset($has_next) ? (bool)$has_next : false;
                 <?php if (!is_array($appointments) || $appointments === []): ?>
                     <div>Nenhuma consulta agendada.</div>
                 <?php else: ?>
-                    <div style="display:grid; gap:10px;">
+                    <div class="lc-grid" style="gap:10px;">
                         <?php foreach ($appointments as $a): ?>
                             <div class="lc-card" style="padding:12px;">
-                                <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                                <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-md">
                                     <div>
                                         <div><strong><?= htmlspecialchars((string)($a['service_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></div>
                                         <div><?= htmlspecialchars((string)($a['professional_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
                                         <div><?= htmlspecialchars((string)($a['start_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
                                     </div>
-                                    <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;">
+                                    <div class="lc-flex lc-flex--wrap" style="gap:8px; align-items:flex-start;">
                                         <div class="lc-badge lc-badge--gray"><?= htmlspecialchars((string)($a['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
 
                                         <form method="post" action="/portal/agenda/confirm">
@@ -65,7 +65,7 @@ $hasNext = isset($has_next) ? (bool)$has_next : false;
                                     </div>
                                 </div>
 
-                                <div style="margin-top:10px; display:grid; gap:10px;">
+                                <div class="lc-grid" style="margin-top:10px; gap:10px;">
                                     <form method="post" action="/portal/agenda/reschedule-request" class="lc-form">
                                         <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                         <input type="hidden" name="appointment_id" value="<?= (int)($a['id'] ?? 0) ?>" />
@@ -89,9 +89,9 @@ $hasNext = isset($has_next) ? (bool)$has_next : false;
                     </div>
                 <?php endif; ?>
 
-                <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-sm" style="margin-top:12px;">
                     <div class="lc-muted">Página <?= (int)$page ?></div>
-                    <div style="display:flex; gap:10px;">
+                    <div class="lc-flex lc-gap-sm">
                         <?php if ($page > 1): ?>
                             <a class="lc-btn lc-btn--secondary" href="/portal/agenda?per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
                         <?php endif; ?>
@@ -109,7 +109,7 @@ $hasNext = isset($has_next) ? (bool)$has_next : false;
                 <?php if (!is_array($pending_requests) || $pending_requests === []): ?>
                     <div>Nenhuma solicitação pendente.</div>
                 <?php else: ?>
-                    <div style="display:grid; gap:10px;">
+                    <div class="lc-grid" style="gap:10px;">
                         <?php foreach ($pending_requests as $r): ?>
                             <div class="lc-card" style="padding:12px;">
                                 <div><strong><?= htmlspecialchars((string)($r['type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></div>

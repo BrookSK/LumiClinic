@@ -4,8 +4,8 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $roles = $roles ?? [];
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <div class="lc-badge lc-badge--gold">RBAC</div>
+<div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
+    <div class="lc-badge lc-badge--primary">RBAC</div>
 </div>
 
 <div class="lc-card">
@@ -32,7 +32,7 @@ ob_start();
                     <td>
                         <a class="lc-btn lc-btn--secondary" href="/rbac/edit?id=<?= (int)$r['id'] ?>">Abrir</a>
 
-                        <form method="post" action="/rbac/clone" style="display:inline-flex; gap:8px; align-items:center; margin-left:10px;">
+                        <form method="post" action="/rbac/clone" class="lc-flex" style="gap:8px; align-items:center; margin-left:10px;">
                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                             <input type="hidden" name="from_role_id" value="<?= (int)$r['id'] ?>" />
                             <input class="lc-input" style="width:220px;" type="text" name="name" placeholder="Clonar como..." />

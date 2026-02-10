@@ -32,7 +32,7 @@ ob_start();
             <?php endforeach; ?>
         </select>
 
-        <div style="margin-top:14px; display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Criar</button>
             <a class="lc-btn lc-btn--secondary" href="/users">Voltar</a>
         </div>

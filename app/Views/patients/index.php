@@ -8,10 +8,10 @@ $perPage = isset($per_page) ? (int)$per_page : 25;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:12px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Gestão de pacientes</div>
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <form method="get" action="/patients" style="display:flex; gap:10px; align-items:center;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap lc-gap-md" style="margin-bottom:14px;">
+    <div class="lc-badge lc-badge--primary">Gestão de pacientes</div>
+    <div class="lc-flex lc-gap-sm lc-flex--center lc-flex--wrap">
+        <form method="get" action="/patients" class="lc-flex lc-gap-sm" style="align-items:center;">
             <input type="hidden" name="per_page" value="<?= (int)$perPage ?>" />
             <input type="hidden" name="page" value="1" />
             <input class="lc-input" style="width:260px;" type="text" name="q" value="<?= htmlspecialchars((string)$q, ENT_QUOTES, 'UTF-8') ?>" placeholder="Buscar por nome, email ou telefone" />
@@ -20,9 +20,9 @@ ob_start();
         <a class="lc-btn lc-btn--primary" href="/patients/create">Novo paciente</a>
     </div>
 
-    <div style="margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-sm" style="margin-top:12px;">
         <div class="lc-muted">Página <?= (int)$page ?></div>
-        <div style="display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm">
             <?php if ($page > 1): ?>
                 <a class="lc-btn lc-btn--secondary" href="/patients?q=<?= urlencode((string)$q) ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
             <?php endif; ?>
@@ -56,7 +56,7 @@ ob_start();
                     <td><?= htmlspecialchars((string)($p['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($p['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$p['status'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <td class="lc-flex lc-flex--wrap" style="gap:8px;">
                         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)$p['id'] ?>">Abrir</a>
                         <a class="lc-btn lc-btn--secondary" href="/patients/edit?id=<?= (int)$p['id'] ?>">Editar</a>
                     </td>

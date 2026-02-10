@@ -9,7 +9,7 @@ ob_start();
 <div class="lc-card">
     <div class="lc-card__header">Criar bloqueio</div>
     <div class="lc-card__body">
-        <form method="post" action="/blocks/create" class="lc-form" style="display:grid; grid-template-columns: 2fr 2fr 2fr 2fr; gap: 12px; align-items:end;">
+        <form method="post" action="/blocks/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 2fr 2fr 2fr; align-items:end;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field">

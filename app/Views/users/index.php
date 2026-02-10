@@ -6,14 +6,14 @@ $perPage = isset($per_page) ? (int)$per_page : 50;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <div class="lc-badge lc-badge--gold">Gestão de usuários</div>
+<div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
+    <div class="lc-badge lc-badge--primary">Gestão de usuários</div>
     <a class="lc-btn lc-btn--primary" href="/users/create">Novo usuário</a>
 </div>
 
-<div style="margin-bottom:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-sm" style="margin-bottom:12px;">
     <div class="lc-muted">Página <?= (int)$page ?></div>
-    <div style="display:flex; gap:10px;">
+    <div class="lc-flex lc-gap-sm">
         <?php if ($page > 1): ?>
             <a class="lc-btn lc-btn--secondary" href="/users?per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
         <?php endif; ?>

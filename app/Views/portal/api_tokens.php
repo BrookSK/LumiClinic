@@ -19,7 +19,7 @@ $created_token = $created_token ?? null;
             <h1 class="lc-page__title">API Tokens</h1>
             <div class="lc-page__subtitle">Estrutura para App Mobile</div>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm">
             <a class="lc-btn lc-btn--secondary" href="/portal">Dashboard</a>
             <form method="post" action="/portal/logout">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />

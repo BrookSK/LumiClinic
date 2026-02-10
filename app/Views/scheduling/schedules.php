@@ -11,7 +11,7 @@ ob_start();
 ?>
 
 <div class="lc-card" style="margin-bottom: 16px;">
-    <form method="get" action="/schedule-rules" class="lc-form" style="display:flex; gap: 12px; align-items:end;">
+    <form method="get" action="/schedule-rules" class="lc-form lc-flex lc-gap-md" style="align-items:end;">
         <div class="lc-field" style="min-width: 320px;">
             <label class="lc-label">Profissional</label>
             <select class="lc-select" name="professional_id" onchange="this.form.submit()">
@@ -30,7 +30,7 @@ ob_start();
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Nova regra</div>
         <div class="lc-card__body">
-            <form method="post" action="/schedule-rules/create" class="lc-form" style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 12px; align-items:end;">
+            <form method="post" action="/schedule-rules/create" class="lc-form lc-grid lc-grid--5 lc-gap-grid" style="align-items:end;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                 <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
 

@@ -3,9 +3,9 @@ $title = 'Anamnese - Templates';
 $templates = $templates ?? [];
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Templates de anamnese</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">Templates de anamnese</div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--primary" href="/anamnesis/templates/create">Novo template</a>
     </div>
 </div>

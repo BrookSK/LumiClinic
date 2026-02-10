@@ -16,7 +16,7 @@ ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #b91c1c;">
+    <div class="lc-card lc-statusbar lc-statusbar--no_show" style="margin-bottom: 16px;">
         <div class="lc-card__body"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     </div>
 <?php endif; ?>
@@ -31,7 +31,7 @@ ob_start();
 <div class="lc-card">
     <div class="lc-card__header">Novo horário</div>
     <div class="lc-card__body">
-        <form method="post" action="/schedule/reschedule" class="lc-form" style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; align-items:end;">
+        <form method="post" action="/schedule/reschedule" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; align-items:end;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
             <input type="hidden" name="id" value="<?= (int)$apptId ?>" />
 

@@ -23,7 +23,7 @@ $notifications = $notifications ?? [];
             <h1 class="lc-page__title">Portal do Paciente</h1>
             <div class="lc-page__subtitle">Em construção</div>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm">
             <a class="lc-btn lc-btn--secondary" href="/portal/agenda">Agenda</a>
             <a class="lc-btn lc-btn--secondary" href="/portal/documentos">Documentos</a>
             <a class="lc-btn lc-btn--secondary" href="/portal/uploads">Uploads</a>
@@ -54,10 +54,10 @@ $notifications = $notifications ?? [];
                 <?php if (!is_array($upcoming_appointments) || $upcoming_appointments === []): ?>
                     <div>Nenhuma consulta agendada.</div>
                 <?php else: ?>
-                    <div style="display:grid; gap:10px;">
+                    <div class="lc-grid" style="gap:10px;">
                         <?php foreach ($upcoming_appointments as $a): ?>
                             <div class="lc-card" style="padding: 12px;">
-                                <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                                <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-md">
                                     <div>
                                         <div><strong><?= htmlspecialchars((string)($a['service_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></div>
                                         <div><?= htmlspecialchars((string)($a['professional_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
@@ -77,7 +77,7 @@ $notifications = $notifications ?? [];
         <div class="lc-card" style="padding: 16px;">
             <div class="lc-card__title">Financeiro</div>
             <div class="lc-card__body">
-                <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px;">
+                <div class="lc-grid lc-grid--3 lc-gap-grid">
                     <div>
                         <div class="lc-label">Total</div>
                         <div><?= htmlspecialchars(number_format((float)($finance['total'] ?? 0), 2, ',', '.'), ENT_QUOTES, 'UTF-8') ?></div>
@@ -100,7 +100,7 @@ $notifications = $notifications ?? [];
                 <?php if (!is_array($packages) || $packages === []): ?>
                     <div>Nenhum pacote ativo.</div>
                 <?php else: ?>
-                    <div style="display:grid; gap:10px;">
+                    <div class="lc-grid" style="gap:10px;">
                         <?php foreach ($packages as $pp): ?>
                             <?php
                             $totalSessions = isset($pp['total_sessions']) ? (int)$pp['total_sessions'] : 0;
@@ -124,7 +124,7 @@ $notifications = $notifications ?? [];
                 <?php if (!is_array($subscriptions) || $subscriptions === []): ?>
                     <div>Nenhuma assinatura ativa.</div>
                 <?php else: ?>
-                    <div style="display:grid; gap:10px;">
+                    <div class="lc-grid" style="gap:10px;">
                         <?php foreach ($subscriptions as $ps): ?>
                             <div class="lc-card" style="padding: 12px;">
                                 <div><strong><?= htmlspecialchars((string)($ps['plan_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></div>
@@ -143,19 +143,19 @@ $notifications = $notifications ?? [];
                 <?php if (!is_array($notifications) || $notifications === []): ?>
                     <div>Sem notificações.</div>
                 <?php else: ?>
-                    <div style="display:grid; gap:10px;">
+                    <div class="lc-grid" style="gap:10px;">
                         <?php foreach ($notifications as $n): ?>
                             <div class="lc-card" style="padding:12px;">
-                                <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                                <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-md">
                                     <div>
                                         <div><strong><?= htmlspecialchars((string)($n['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></div>
                                         <div><?= nl2br(htmlspecialchars((string)($n['body'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></div>
-                                        <div style="margin-top:6px; opacity:0.8;">
+                                        <div class="lc-muted" style="margin-top:6px;">
                                             <?= htmlspecialchars((string)($n['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                                         </div>
                                     </div>
                                     <div>
-                                        <?= (($n['read_at'] ?? null) === null) ? '<span class="lc-badge lc-badge--gold">Nova</span>' : '<span class="lc-badge lc-badge--gray">Lida</span>' ?>
+                                        <?= (($n['read_at'] ?? null) === null) ? '<span class="lc-badge lc-badge--primary">Nova</span>' : '<span class="lc-badge lc-badge--gray">Lida</span>' ?>
                                     </div>
                                 </div>
                             </div>

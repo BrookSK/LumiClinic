@@ -14,7 +14,7 @@ ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #b91c1c;">
+    <div class="lc-card lc-statusbar lc-statusbar--no_show" style="margin-bottom: 16px;">
         <div class="lc-card__body"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     </div>
 <?php endif; ?>
@@ -22,7 +22,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Finalizar sessão</div>
     <div class="lc-card__body">
-        <div style="display:flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-md">
             <div>
                 <div><strong><?= htmlspecialchars((string)$service['name'], ENT_QUOTES, 'UTF-8') ?></strong></div>
                 <div class="lc-muted">Confirme/ajuste o consumo de materiais e registre uma observação obrigatória.</div>
@@ -37,7 +37,7 @@ ob_start();
 <div class="lc-card">
     <div class="lc-card__header">Materiais consumidos</div>
     <div class="lc-card__body">
-        <form method="post" action="/schedule/complete-materials" class="lc-form" style="display:grid; gap: 12px;">
+        <form method="post" action="/schedule/complete-materials" class="lc-form lc-grid" style="gap:12px;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
             <input type="hidden" name="id" value="<?= (int)$appointment['id'] ?>" />
             <input type="hidden" name="date" value="<?= htmlspecialchars((string)($date !== null && $date !== '' ? $date : substr((string)$appointment['start_at'], 0, 10)), ENT_QUOTES, 'UTF-8') ?>" />

@@ -24,7 +24,7 @@ ob_start();
         <label class="lc-label">Profissional / Especialista</label>
         <input class="lc-input" type="text" name="professional_label" value="<?= htmlspecialchars((string)($terminology['professional_label'] ?? 'Profissional'), ENT_QUOTES, 'UTF-8') ?>" required />
 
-        <div style="margin-top:14px; display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
         </div>

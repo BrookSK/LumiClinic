@@ -8,9 +8,9 @@ $patient_user = $patient_user ?? null;
 $reset_token = $reset_token ?? null;
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Portal do Paciente</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">Portal do Paciente</div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)$patient_id ?>">Voltar</a>
     </div>
 </div>
@@ -26,7 +26,7 @@ ob_start();
             <div class="lc-alert lc-alert--success"><?= htmlspecialchars((string)$success, ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>
 
-        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;">
+        <div class="lc-grid lc-grid--2 lc-gap-grid">
             <div>
                 <div class="lc-label">Status</div>
                 <div><?= $patient_user ? 'Criado' : 'Não criado' ?></div>

@@ -34,14 +34,14 @@ ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
-    <div class="lc-card" style="margin-bottom: 16px; border-left: 4px solid #b91c1c;">
+    <div class="lc-card lc-statusbar lc-statusbar--no_show" style="margin-bottom: 16px;">
         <div class="lc-card__body"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
     </div>
 <?php endif; ?>
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Resumo</div>
-    <div class="lc-card__body" style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+    <div class="lc-card__body lc-grid lc-grid--4 lc-gap-grid">
         <div><strong>Status:</strong> <?= htmlspecialchars((string)$sale['status'], ENT_QUOTES, 'UTF-8') ?></div>
         <div><strong>Paciente:</strong> <?= $sale['patient_id'] === null ? '-' : (int)$sale['patient_id'] ?></div>
         <div><strong>Total líquido:</strong> R$ <?= number_format((float)$sale['total_liquido'], 2, ',', '.') ?></div>
@@ -53,7 +53,7 @@ ob_start();
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Adicionar item</div>
         <div class="lc-card__body">
-            <form method="post" action="/finance/sales/items/add" class="lc-form" style="display:grid; grid-template-columns: 1fr 2fr 1fr 1fr 1fr; gap: 12px; align-items:end;">
+            <form method="post" action="/finance/sales/items/add" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 1fr 2fr 1fr 1fr 1fr;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                 <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
 
@@ -159,7 +159,7 @@ ob_start();
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Registrar pagamento</div>
         <div class="lc-card__body">
-            <form method="post" action="/finance/payments/create" class="lc-form" style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr 2fr; gap: 12px; align-items:end;">
+            <form method="post" action="/finance/payments/create" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 1fr 1fr 1fr 1fr 2fr;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                 <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
 
@@ -251,7 +251,7 @@ ob_start();
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Ações</div>
-    <div class="lc-card__body" style="display:flex; gap: 12px; flex-wrap: wrap;">
+    <div class="lc-card__body lc-flex lc-gap-md lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/finance/sales">Voltar</a>
 
         <?php if (!isset($is_professional) || !$is_professional): ?>

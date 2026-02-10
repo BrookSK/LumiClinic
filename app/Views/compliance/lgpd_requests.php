@@ -5,9 +5,9 @@ $items = $items ?? [];
 $status = $status ?? 'pending';
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">LGPD</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">LGPD</div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/">Dashboard</a>
     </div>
 </div>
@@ -58,10 +58,10 @@ ob_start();
                             <td><?= htmlspecialchars((string)($r['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($r['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td style="min-width:420px;">
-                                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <div class="lc-flex lc-flex--wrap" style="gap:8px;">
                                     <a class="lc-btn lc-btn--secondary" href="/compliance/lgpd-requests/export?id=<?= (int)($r['id'] ?? 0) ?>">Export JSON</a>
 
-                                    <form method="post" action="/compliance/lgpd-requests/process" class="lc-form" style="display:flex; gap:8px; align-items:flex-end;">
+                                    <form method="post" action="/compliance/lgpd-requests/process" class="lc-form lc-flex" style="gap:8px; align-items:flex-end;">
                                         <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                         <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
                                         <select class="lc-select" name="decision">

@@ -19,7 +19,7 @@ $uploads = $uploads ?? [];
             <h1 class="lc-page__title">Enviar fotos</h1>
             <div class="lc-page__subtitle">Portal do Paciente</div>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div class="lc-flex lc-gap-sm">
             <a class="lc-btn lc-btn--secondary" href="/portal">Dashboard</a>
             <a class="lc-btn lc-btn--secondary" href="/portal/documentos">Documentos</a>
             <form method="post" action="/portal/logout">

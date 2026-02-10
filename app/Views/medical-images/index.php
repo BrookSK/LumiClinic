@@ -7,8 +7,8 @@ $professionals = $professionals ?? [];
 $pairs = $pairs ?? [];
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Imagens clínicas</div>
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">Imagens clínicas</div>
 
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title">Enviar Before/After (comparação)</div>
@@ -55,7 +55,7 @@ ob_start();
             </div>
         </div>
 
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Enviar e comparar</button>
         </div>
     </form>
@@ -81,7 +81,7 @@ ob_start();
                         <tr>
                             <td><?= htmlspecialchars((string)($p['taken_at'] ?? $p['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($p['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <td class="lc-flex lc-flex--wrap" style="gap:8px;">
                                 <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$p['comparison_key']) ?>">Comparar</a>
                             </td>
                         </tr>
@@ -92,7 +92,7 @@ ob_start();
         <?php endif; ?>
     </div>
 </div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar ao paciente</a>
     </div>
 </div>
@@ -148,7 +148,7 @@ ob_start();
         <label class="lc-label">Vincular ao registro do prontuário (ID, opcional)</label>
         <input class="lc-input" type="number" name="medical_record_id" min="1" />
 
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Enviar</button>
         </div>
     </form>
@@ -177,7 +177,7 @@ ob_start();
                     <td><?= htmlspecialchars((string)($img['taken_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($img['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($img['original_filename'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <td class="lc-flex lc-flex--wrap" style="gap:8px;">
                         <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= (int)$img['id'] ?>" target="_blank">Abrir</a>
                     </td>
                 </tr>

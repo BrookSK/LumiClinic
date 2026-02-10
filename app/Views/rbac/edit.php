@@ -21,7 +21,7 @@ ob_start();
     <?php if (!$role): ?>
         <div class="lc-alert lc-alert--danger">Role não encontrada.</div>
     <?php else: ?>
-        <div class="lc-badge lc-badge--gold" style="margin-bottom:12px;">
+        <div class="lc-badge lc-badge--primary" style="margin-bottom:12px;">
             <?= htmlspecialchars((string)$role['name'], ENT_QUOTES, 'UTF-8') ?>
             (<?= htmlspecialchars((string)$role['code'], ENT_QUOTES, 'UTF-8') ?>)
         </div>
@@ -60,7 +60,7 @@ ob_start();
                             <td><?= htmlspecialchars((string)$p['action'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
                                 <div style="font-weight:650;"><?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?></div>
-                                <div style="color: rgba(244,236,212,0.65); font-size:12px;">
+                                <div class="lc-muted" style="font-size:12px;">
                                     <?= htmlspecialchars((string)($p['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                                 </div>
                             </td>
@@ -76,7 +76,7 @@ ob_start();
                 </table>
             </div>
 
-            <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+            <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
                 <?php if ((int)$role['is_editable'] === 1): ?>
                     <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
                 <?php endif; ?>

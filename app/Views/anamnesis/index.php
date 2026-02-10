@@ -5,9 +5,9 @@ $templates = $templates ?? [];
 $responses = $responses ?? [];
 ob_start();
 ?>
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">
-    <div class="lc-badge lc-badge--gold">Anamnese</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
+    <div class="lc-badge lc-badge--primary">Anamnese</div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar ao paciente</a>
     </div>
 </div>
@@ -33,7 +33,7 @@ ob_start();
             <?php endforeach; ?>
         </select>
 
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Continuar</button>
         </div>
     </form>

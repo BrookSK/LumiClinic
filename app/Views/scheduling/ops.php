@@ -8,7 +8,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Indicadores do dia</div>
     <div class="lc-card__body">
-        <form method="get" action="/schedule/ops" class="lc-form" style="display:flex; gap: 12px; align-items:end; flex-wrap: wrap;">
+        <form method="get" action="/schedule/ops" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
             <div class="lc-field">
                 <label class="lc-label">Data</label>
                 <input class="lc-input" type="date" name="date" value="<?= htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') ?>" />
@@ -19,7 +19,7 @@ ob_start();
             </div>
         </form>
 
-        <div style="display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-top: 14px;">
+        <div class="lc-grid lc-grid--3 lc-gap-grid" style="margin-top:14px;">
             <div class="lc-card" style="margin:0;"><div class="lc-card__body">Total: <strong><?= (int)($counts['total'] ?? 0) ?></strong></div></div>
             <div class="lc-card" style="margin:0;"><div class="lc-card__body">Confirmados: <strong><?= (int)($counts['confirmed'] ?? 0) ?></strong></div></div>
             <div class="lc-card" style="margin:0;"><div class="lc-card__body">Em atendimento: <strong><?= (int)($counts['in_progress'] ?? 0) ?></strong></div></div>
