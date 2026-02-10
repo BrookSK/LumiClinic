@@ -58,11 +58,18 @@ $success = $success ?? null;
                 </div>
             </div>
 
-            <div class="lc-auth__right">
+            <div class="lc-auth__right" style="border-radius: 50px;">
                 <div class="lc-auth__rightInner">
                     <div class="lc-auth__promoTitle">Seu atendimento, mais perto</div>
                     <div class="lc-auth__promoText">Acesse agenda, documentos, notificações e envios de fotos com segurança.</div>
-                    <a class="lc-btn lc-btn--primary" href="/login">Área da clínica</a>
+
+                    <div class="lc-card space-card-lu" style="margin-top:16px; padding:24px;">
+                        <div style="font-weight:700; font-size:14px; margin-bottom:4px;">Acesso para a clínica</div>
+                        <div class="lc-muted" style="line-height:1.45; margin-bottom:12px;">
+                            Para sua equipe entrar e gerenciar agenda, pacientes, prontuário e financeiro.
+                        </div>
+                        <a class="lc-btn lc-btn--secondary" href="/login" style="width:100%; justify-content:center; font-size:13px;">Entrar na Área da clínica</a>
+                    </div>
                 </div>
             </div>
         </div>

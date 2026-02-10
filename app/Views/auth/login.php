@@ -56,7 +56,7 @@ $error = $error ?? null;
                 </div>
             </div>
 
-            <div class="lc-auth__right">
+            <div class="lc-auth__right" style="border-radius: 50px;">
                 <div class="lc-auth__rightInner">
                     <div class="lc-auth__promoTitle">Gestão completa da sua clínica</div>
                     <div class="lc-auth__promoText">Agenda, pacientes, prontuário, financeiro, estoque e configurações — tudo em um só lugar.</div>
