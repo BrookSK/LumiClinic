@@ -184,13 +184,7 @@ final class SystemClinicRepository
             INSERT INTO role_permissions (clinic_id, role_id, permission_id, created_at)
             SELECT :clinic_id, :role_id, p.id, NOW()
             FROM permissions p
-            WHERE p.code IN (
-                'clinics.read','clinics.create','clinics.update','clinics.delete','clinics.export',
-                'users.read','users.create','users.update','users.delete','users.export','users.sensitive',
-                'settings.read','settings.update',
-                'audit.read','audit.export'
-            )
-              AND p.deleted_at IS NULL
+            WHERE p.deleted_at IS NULL
               AND NOT EXISTS (
                   SELECT 1
                   FROM role_permissions rp
