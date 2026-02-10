@@ -8,6 +8,7 @@ use App\Core\Container\Container;
 use App\Core\Http\Response;
 use App\Core\View\View;
 use App\Services\Authorization\AuthorizationService;
+use App\Services\System\SystemSettingsService;
 
 abstract class Controller
 {
@@ -16,6 +17,11 @@ abstract class Controller
     /** @param array<string, mixed> $data */
     protected function view(string $view, array $data = []): Response
     {
+        $seo = (new SystemSettingsService($this->container))->getSeoSettings();
+        if (!array_key_exists('seo', $data)) {
+            $data['seo'] = $seo;
+        }
+
         return Response::html(View::render($view, $data));
     }
 

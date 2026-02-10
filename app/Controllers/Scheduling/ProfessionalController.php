@@ -7,7 +7,9 @@ namespace App\Controllers\Scheduling;
 use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\AdminUserRepository;
 use App\Repositories\ProfessionalRepository;
+use App\Repositories\RoleRepository;
 use App\Services\Auth\AuthService;
 
 final class ProfessionalController extends Controller
@@ -45,7 +47,14 @@ final class ProfessionalController extends Controller
         $repo = new ProfessionalRepository($this->container->get(\PDO::class));
         $items = $repo->listActiveByClinic($clinicId);
 
-        return $this->view('scheduling/professionals', ['items' => $items]);
+        $usersRepo = new AdminUserRepository($this->container->get(\PDO::class));
+        $users = $usersRepo->listByClinic($clinicId, 500, 0);
+
+        return $this->view('scheduling/professionals', [
+            'items' => $items,
+            'users' => $users,
+            'error' => trim((string)$request->input('error', '')),
+        ]);
     }
 
     public function create(Request $request)
@@ -57,14 +66,14 @@ final class ProfessionalController extends Controller
             return $redirect;
         }
 
-        $name = trim((string)$request->input('name', ''));
         $specialty = trim((string)$request->input('specialty', ''));
+        $linkMode = trim((string)$request->input('link_mode', 'existing'));
         $linkUserId = (int)$request->input('user_id', 0);
-        $allowOnline = (string)$request->input('allow_online_booking', '0') === '1';
 
-        if ($name === '') {
-            return $this->redirect('/professionals');
-        }
+        $newUserName = trim((string)$request->input('new_user_name', ''));
+        $newUserEmail = trim((string)$request->input('new_user_email', ''));
+        $newUserPassword = (string)$request->input('new_user_password', '');
+        $allowOnline = (string)$request->input('allow_online_booking', '0') === '1';
 
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -73,14 +82,67 @@ final class ProfessionalController extends Controller
             throw new \RuntimeException('Contexto inválido.');
         }
 
-        $repo = new ProfessionalRepository($this->container->get(\PDO::class));
-        $id = $repo->create($clinicId, ($linkUserId > 0 ? $linkUserId : null), $name, $specialty, $allowOnline);
+        $pdo = $this->container->get(\PDO::class);
+        $usersRepo = new AdminUserRepository($pdo);
+        $roleRepo = new RoleRepository($pdo);
+
+        $finalUserId = null;
+        $professionalName = '';
+
+        if ($linkMode === 'new') {
+            if ($newUserName === '' || $newUserEmail === '' || trim($newUserPassword) === '') {
+                return $this->redirect('/professionals?error=' . urlencode('Preencha nome, e-mail e senha do usuário.'));
+            }
+            if (!filter_var($newUserEmail, FILTER_VALIDATE_EMAIL)) {
+                return $this->redirect('/professionals?error=' . urlencode('E-mail inválido.'));
+            }
+
+            $passwordHash = password_hash($newUserPassword, PASSWORD_BCRYPT);
+            if ($passwordHash === false) {
+                return $this->redirect('/professionals?error=' . urlencode('Falha ao salvar senha.'));
+            }
+
+            $finalUserId = $usersRepo->create($clinicId, $newUserName, $newUserEmail, $passwordHash);
+
+            $roleId = $roleRepo->findIdByCode($clinicId, 'professional');
+            if ($roleId !== null && $roleId > 0) {
+                $roleRepo->assignRoleToUser($clinicId, $finalUserId, $roleId);
+            }
+
+            $professionalName = $newUserName;
+        } else {
+            if ($linkUserId <= 0) {
+                return $this->redirect('/professionals?error=' . urlencode('Selecione um usuário para vincular.'));
+            }
+
+            $u = $usersRepo->findById($clinicId, $linkUserId);
+            if ($u === null) {
+                return $this->redirect('/professionals?error=' . urlencode('Usuário não encontrado.'));
+            }
+
+            $finalUserId = $linkUserId;
+            $professionalName = trim((string)($u['name'] ?? ''));
+            if ($professionalName === '') {
+                $professionalName = 'Profissional';
+            }
+        }
+
+        $repo = new ProfessionalRepository($pdo);
+
+        if ($finalUserId !== null && $finalUserId > 0) {
+            $existing = $repo->findByUserId($clinicId, $finalUserId);
+            if ($existing !== null) {
+                return $this->redirect('/professionals?error=' . urlencode('Este usuário já está vinculado a um profissional.'));
+            }
+        }
+
+        $id = $repo->create($clinicId, $finalUserId, $professionalName, $specialty, $allowOnline);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'scheduling.professional_create', [
             'professional_id' => $id,
-            'user_id' => ($linkUserId > 0 ? $linkUserId : null),
-            'name' => $name,
+            'user_id' => $finalUserId,
+            'name' => $professionalName,
             'specialty' => $specialty,
             'allow_online_booking' => $allowOnline,
         ], $request->ip());

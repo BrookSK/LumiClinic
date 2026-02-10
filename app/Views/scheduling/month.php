@@ -43,6 +43,31 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<div class="lc-schedule">
+    <div class="lc-pagehead">
+        <div>
+            <div class="lc-pagehead__title">Agenda</div>
+            <div class="lc-pagehead__meta">
+                <span class="lc-badge lc-badge--primary"><?= htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php if (!$isProfessional && (int)$professionalId > 0 && isset($profMap[(int)$professionalId])): ?>
+                    <span class="lc-badge"><?= htmlspecialchars((string)$profMap[(int)$professionalId]['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                <?php elseif (!$isProfessional && (int)$professionalId === 0): ?>
+                    <span class="lc-badge">Todos os profissionais</span>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="lc-pagehead__actions">
+            <div class="lc-segmented" role="tablist" aria-label="Visão da agenda">
+                <a class="lc-segmented__item" role="tab" aria-selected="false" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Dia</a>
+                <a class="lc-segmented__item" role="tab" aria-selected="false" href="/schedule?view=week&date=<?= urlencode((string)$date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Semana</a>
+                <a class="lc-segmented__item lc-segmented__item--active" role="tab" aria-selected="true" href="/schedule?view=month&date=<?= urlencode((string)$date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
+            </div>
+
+            <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode((string)$date) ?>">Operação</a>
+        </div>
+    </div>
+
 <div class="lc-card" style="margin-bottom:16px;">
     <div class="lc-card__body">
         <form method="get" action="/schedule" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
@@ -70,9 +95,7 @@ ob_start();
             <?php endif; ?>
 
             <div>
-                <button class="lc-btn" type="submit">Ver Mês</button>
-                <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Ver Dia</a>
-                <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Ver Semana</a>
+                <button class="lc-btn" type="submit">Aplicar</button>
             </div>
         </form>
     </div>
@@ -166,6 +189,8 @@ ob_start();
         </div>
     </div>
 <?php endif; ?>
+
+</div>
 
 <?php
 $content = (string)ob_get_clean();

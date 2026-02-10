@@ -91,7 +91,30 @@ final class PatientController extends Controller
         $birthDate = trim((string)$request->input('birth_date', ''));
         $sex = trim((string)$request->input('sex', ''));
         $cpf = trim((string)$request->input('cpf', ''));
-        $address = trim((string)$request->input('address', ''));
+        $street = trim((string)$request->input('address_street', ''));
+        $number = trim((string)$request->input('address_number', ''));
+        $complement = trim((string)$request->input('address_complement', ''));
+        $district = trim((string)$request->input('address_district', ''));
+        $city = trim((string)$request->input('address_city', ''));
+        $state = trim((string)$request->input('address_state', ''));
+        $zip = trim((string)$request->input('address_zip', ''));
+
+        $address = '';
+        $line1 = trim($street
+            . ($number !== '' ? (', ' . $number) : '')
+            . ($complement !== '' ? (' - ' . $complement) : '')
+        );
+        $line2 = trim(
+            ($district !== '' ? ($district . ' - ') : '')
+            . $city
+            . ($state !== '' ? ('/' . $state) : '')
+        );
+        $line3 = $zip !== '' ? ('CEP: ' . $zip) : '';
+        $address = implode("\n", array_values(array_filter([$line1, $line2, $line3], fn ($v) => is_string($v) && trim($v) !== '')));
+
+        if (trim($address) === '') {
+            $address = trim((string)$request->input('address', ''));
+        }
         $notes = trim((string)$request->input('notes', ''));
         $refProfessionalId = (int)$request->input('reference_professional_id', 0);
 
@@ -186,7 +209,30 @@ final class PatientController extends Controller
         $birthDate = trim((string)$request->input('birth_date', ''));
         $sex = trim((string)$request->input('sex', ''));
         $cpf = trim((string)$request->input('cpf', ''));
-        $address = trim((string)$request->input('address', ''));
+        $street = trim((string)$request->input('address_street', ''));
+        $number = trim((string)$request->input('address_number', ''));
+        $complement = trim((string)$request->input('address_complement', ''));
+        $district = trim((string)$request->input('address_district', ''));
+        $city = trim((string)$request->input('address_city', ''));
+        $state = trim((string)$request->input('address_state', ''));
+        $zip = trim((string)$request->input('address_zip', ''));
+
+        $address = '';
+        $line1 = trim($street
+            . ($number !== '' ? (', ' . $number) : '')
+            . ($complement !== '' ? (' - ' . $complement) : '')
+        );
+        $line2 = trim(
+            ($district !== '' ? ($district . ' - ') : '')
+            . $city
+            . ($state !== '' ? ('/' . $state) : '')
+        );
+        $line3 = $zip !== '' ? ('CEP: ' . $zip) : '';
+        $address = implode("\n", array_values(array_filter([$line1, $line2, $line3], fn ($v) => is_string($v) && trim($v) !== '')));
+
+        if (trim($address) === '') {
+            $address = trim((string)$request->input('address', ''));
+        }
         $notes = trim((string)$request->input('notes', ''));
         $refProfessionalId = (int)$request->input('reference_professional_id', 0);
         $status = trim((string)$request->input('status', 'active'));

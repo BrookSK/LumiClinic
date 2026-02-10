@@ -98,6 +98,22 @@ final class ClinicSubscriptionRepository
         ]);
     }
 
+    public function updateCurrentPeriod(int $clinicId, ?string $start, ?string $end): void
+    {
+        $stmt = $this->pdo->prepare("\n            UPDATE clinic_subscriptions\n            SET current_period_start = :start,\n                current_period_end = :end,\n                updated_at = NOW()\n            WHERE clinic_id = :clinic_id\n            LIMIT 1\n        ");
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'start' => $start,
+            'end' => $end,
+        ]);
+    }
+
+    public function clearPastDueSince(int $clinicId): void
+    {
+        $stmt = $this->pdo->prepare("\n            UPDATE clinic_subscriptions\n            SET past_due_since = NULL,\n                updated_at = NOW()\n            WHERE clinic_id = :clinic_id\n            LIMIT 1\n        ");
+        $stmt->execute(['clinic_id' => $clinicId]);
+    }
+
     /** @return array<string,mixed>|null */
     public function findByAsaasSubscriptionId(string $asaasSubscriptionId): ?array
     {

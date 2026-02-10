@@ -6,10 +6,24 @@ $csrf = $_SESSION['_csrf'] ?? '';
 
 $allowed = [
     '' => 'Todos',
-    'pending' => 'Pending',
-    'processing' => 'Processing',
-    'done' => 'Done',
-    'dead' => 'Dead',
+    'pending' => 'Pendente',
+    'processing' => 'Em processamento',
+    'done' => 'Concluído',
+    'dead' => 'Falhou',
+];
+
+$queueLabel = [
+    '' => 'Padrão',
+    'default' => 'Padrão',
+    'mail' => 'E-mails',
+    'emails' => 'E-mails',
+    'billing' => 'Cobrança',
+    'reports' => 'Relatórios',
+];
+
+$jobTypeLabel = [
+    'test.noop' => 'Teste simples',
+    'test.throw' => 'Teste com erro',
 ];
 
 $selected = $status !== null ? (string)$status : '';
@@ -20,7 +34,7 @@ if (!array_key_exists($selected, $allowed)) {
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
-    <div class="lc-badge lc-badge--primary">Jobs & Filas</div>
+    <div class="lc-badge lc-badge--primary">Fila de tarefas</div>
 </div>
 
 <div class="lc-card" style="margin-bottom:14px;">
@@ -32,7 +46,7 @@ ob_start();
             <?php if ($selected !== ''): ?>
                 <input type="hidden" name="status" value="<?= htmlspecialchars($selected, ENT_QUOTES, 'UTF-8') ?>" />
             <?php endif; ?>
-            <button class="lc-btn lc-btn--secondary" type="submit">Enfileirar test.noop</button>
+            <button class="lc-btn lc-btn--secondary" type="submit">Enfileirar teste (noop)</button>
         </form>
 
         <form method="post" action="/sys/queue-jobs/enqueue-test" style="display:inline;">
@@ -41,7 +55,7 @@ ob_start();
             <?php if ($selected !== ''): ?>
                 <input type="hidden" name="status" value="<?= htmlspecialchars($selected, ENT_QUOTES, 'UTF-8') ?>" />
             <?php endif; ?>
-            <button class="lc-btn lc-btn--secondary" type="submit">Enfileirar test.throw</button>
+            <button class="lc-btn lc-btn--secondary" type="submit">Enfileirar teste (erro)</button>
         </form>
     </div>
 </div>
@@ -65,20 +79,20 @@ ob_start();
 </div>
 
 <div class="lc-card">
-    <div class="lc-card__title">Queue Jobs (últimos)</div>
+    <div class="lc-card__title">Tarefas (últimas)</div>
 
     <div class="lc-table-wrap">
         <table class="lc-table">
             <thead>
             <tr>
                 <th>ID</th>
-                <th>Clinic</th>
-                <th>Queue</th>
-                <th>Job</th>
+                <th>Clínica</th>
+                <th>Fila</th>
+                <th>Tarefa</th>
                 <th>Status</th>
-                <th>Attempts</th>
-                <th>Run at</th>
-                <th>Locked</th>
+                <th>Tentativas</th>
+                <th>Executar em</th>
+                <th>Em execução</th>
                 <th>Ações</th>
             </tr>
             </thead>
@@ -91,12 +105,30 @@ ob_start();
                 <tr>
                     <td><?= (int)$it['id'] ?></td>
                     <td><?= htmlspecialchars((string)($it['clinic_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)($it['queue'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)($it['job_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars($itStatus, ENT_QUOTES, 'UTF-8') ?></td>
+                    <?php
+                    $queueCode = (string)($it['queue'] ?? '');
+                    $jobCode = (string)($it['job_type'] ?? '');
+                    $lockedBy = trim((string)($it['locked_by'] ?? ''));
+
+                    $queueHuman = $queueLabel[$queueCode] ?? 'Padrão';
+                    $jobHuman = $jobTypeLabel[$jobCode] ?? '';
+                    if ($jobHuman === '') {
+                        $jobHuman = 'Tarefa do sistema';
+                        if (str_starts_with($jobCode, 'mail.')) {
+                            $jobHuman = 'Envio de e-mail';
+                        } elseif (str_starts_with($jobCode, 'billing.')) {
+                            $jobHuman = 'Cobrança';
+                        } elseif (str_starts_with($jobCode, 'reports.')) {
+                            $jobHuman = 'Relatório';
+                        }
+                    }
+                    ?>
+                    <td><?= htmlspecialchars((string)$queueHuman, ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)$jobHuman, ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($allowed[$itStatus] ?? $itStatus), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= (int)($it['attempts'] ?? 0) ?>/<?= (int)($it['max_attempts'] ?? 0) ?></td>
                     <td><?= htmlspecialchars((string)($it['run_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)($it['locked_by'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= $lockedBy !== '' ? 'Sim' : 'Não' ?></td>
                     <td>
                         <?php if ($isDead): ?>
                             <form method="post" action="/sys/queue-jobs/retry" style="display:inline;">

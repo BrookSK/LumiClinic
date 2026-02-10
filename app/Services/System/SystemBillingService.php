@@ -6,6 +6,7 @@ namespace App\Services\System;
 
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\ClinicSubscriptionRepository;
 use App\Repositories\SaasPlanRepository;
 use App\Repositories\SystemBillingRepository;
 use App\Services\Billing\BillingGatewayService;
@@ -19,6 +20,16 @@ final class SystemBillingService
     public function listClinicsWithBilling(): array
     {
         return (new SystemBillingRepository($this->container->get(\PDO::class)))->listClinicsWithBilling();
+    }
+
+    /** @return array<string,mixed>|null */
+    public function getClinicWithBilling(int $clinicId): ?array
+    {
+        if ($clinicId <= 0) {
+            return null;
+        }
+
+        return (new SystemBillingRepository($this->container->get(\PDO::class)))->findClinicWithBilling($clinicId);
     }
 
     /** @return list<array<string,mixed>> */
@@ -92,5 +103,56 @@ final class SystemBillingService
 
         $pdo = $this->container->get(\PDO::class);
         (new AuditLogRepository($pdo))->log((int)($_SESSION['user_id'] ?? null), null, 'system.billing.ensure_gateway', ['clinic_id' => $clinicId], $ip);
+    }
+
+    public function grantOneMonth(int $clinicId, string $ip): void
+    {
+        if ($clinicId <= 0) {
+            throw new \RuntimeException('Parâmetros inválidos.');
+        }
+
+        $billing = new BillingService($this->container);
+        $data = $billing->getOrCreateClinicSubscription($clinicId);
+        $sub = $data['subscription'];
+
+        $now = new \DateTimeImmutable('now');
+        $end = isset($sub['current_period_end']) && (string)($sub['current_period_end'] ?? '') !== ''
+            ? new \DateTimeImmutable((string)$sub['current_period_end'])
+            : null;
+
+        $base = $end !== null && $end > $now ? $end : $now;
+        $newEnd = $base->modify('+1 month');
+
+        $start = isset($sub['current_period_start']) && (string)($sub['current_period_start'] ?? '') !== ''
+            ? (string)$sub['current_period_start']
+            : $now->format('Y-m-d H:i:s');
+
+        $pdo = $this->container->get(\PDO::class);
+        $subsRepo = new ClinicSubscriptionRepository($pdo);
+        $subsRepo->updateCurrentPeriod($clinicId, $start, $newEnd->format('Y-m-d H:i:s'));
+        $subsRepo->updateStatus($clinicId, 'active', null);
+        $subsRepo->clearPastDueSince($clinicId);
+
+        (new AuditLogRepository($pdo))->log(
+            (int)($_SESSION['user_id'] ?? null),
+            null,
+            'system.billing.grant_month',
+            ['clinic_id' => $clinicId, 'new_end' => $newEnd->format('Y-m-d H:i:s')],
+            $ip
+        );
+    }
+
+    public function skipOneMonth(int $clinicId, string $ip): void
+    {
+        $this->grantOneMonth($clinicId, $ip);
+
+        $pdo = $this->container->get(\PDO::class);
+        (new AuditLogRepository($pdo))->log(
+            (int)($_SESSION['user_id'] ?? null),
+            null,
+            'system.billing.skip_month',
+            ['clinic_id' => $clinicId],
+            $ip
+        );
     }
 }

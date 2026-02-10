@@ -1,8 +1,9 @@
 <?php
-$title = 'Redefinir senha';
+$title = 'Recuperar senha';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
-$token = $token ?? '';
+$success = $success ?? null;
+$reset_token = $reset_token ?? null;
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -18,27 +19,29 @@ $token = $token ?? '';
         <div class="lc-auth__brand">
             <div class="lc-brand__logo">LC</div>
             <div>
-                <div class="lc-auth__title">Redefinir senha</div>
-                <div class="lc-auth__subtitle">Portal do Paciente</div>
+                <div class="lc-auth__title">Recuperar senha</div>
+                <div class="lc-auth__subtitle">LumiClinic</div>
             </div>
         </div>
 
         <?php if ($error): ?>
             <div class="lc-alert lc-alert--danger"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>
+        <?php if ($success): ?>
+            <div class="lc-alert lc-alert--success"><?= htmlspecialchars((string)$success, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
 
-        <form method="post" class="lc-form" action="/portal/reset" autocomplete="off">
+        <form method="post" class="lc-form" action="/forgot" autocomplete="off">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="token" value="<?= htmlspecialchars((string)$token, ENT_QUOTES, 'UTF-8') ?>" />
 
-            <label class="lc-label">Nova senha</label>
-            <input class="lc-input" type="password" name="password" required minlength="8" />
+            <label class="lc-label">E-mail</label>
+            <input class="lc-input" type="email" name="email" required />
 
-            <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+            <button class="lc-btn lc-btn--primary" type="submit">Gerar link</button>
         </form>
 
         <div style="margin-top: 10px;">
-            <a class="lc-link" href="/portal/login">Voltar</a>
+            <a class="lc-link" href="/login">Voltar</a>
         </div>
     </div>
 </div>

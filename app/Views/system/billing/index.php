@@ -4,10 +4,31 @@ $items = $items ?? [];
 $plans = $plans ?? [];
 $error = isset($error) ? (string)$error : '';
 $csrf = $_SESSION['_csrf'] ?? '';
+
+$statusLabel = [
+    'trial' => 'Período de teste',
+    'active' => 'Ativa',
+    'past_due' => 'Em atraso',
+    'canceled' => 'Cancelada',
+    'suspended' => 'Suspensa',
+];
+
+$gatewayLabel = [
+    'asaas' => 'Asaas',
+    'mercadopago' => 'Mercado Pago',
+    '' => 'Não definido',
+];
+
+$planLabel = [];
+foreach ($plans as $p) {
+    $code = (string)($p['code'] ?? '');
+    $name = (string)($p['name'] ?? '');
+    $planLabel[(int)($p['id'] ?? 0)] = trim($name !== '' ? $name : $code);
+}
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
-    <div class="lc-badge lc-badge--primary">Billing (SaaS)</div>
+    <div class="lc-badge lc-badge--primary">Assinaturas</div>
     <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Voltar</a>
 </div>
 
@@ -26,11 +47,10 @@ ob_start();
             <tr>
                 <th>ID</th>
                 <th>Clínica</th>
-                <th>Tenant</th>
+                <th>Identificação</th>
                 <th>Plano</th>
                 <th>Status</th>
-                <th>Gateway</th>
-                <th>IDs</th>
+                <th>Forma de cobrança</th>
                 <th>Ações</th>
             </tr>
             </thead>
@@ -38,13 +58,32 @@ ob_start();
             <?php foreach ($items as $it): ?>
                 <tr>
                     <td><?= (int)$it['id'] ?></td>
-                    <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)($it['tenant_key'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>
+                        <div style="font-weight:650;">
+                            <a href="/sys/billing/view?clinic_id=<?= (int)$it['id'] ?>">
+                                <?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?>
+                            </a>
+                        </div>
+                        <?php $domain = (string)($it['primary_domain'] ?? ''); ?>
+                        <?php if ($domain !== ''): ?>
+                            <div class="lc-muted" style="font-size:12px;">Domínio: <?= htmlspecialchars($domain, ENT_QUOTES, 'UTF-8') ?></div>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php
+                        $tenantKey = (string)($it['tenant_key'] ?? '');
+                        $clinicStatus = (string)($it['clinic_status'] ?? '');
+                        ?>
+                        <div><?= htmlspecialchars($tenantKey !== '' ? $tenantKey : '-', ENT_QUOTES, 'UTF-8') ?></div>
+                        <?php if ($clinicStatus !== ''): ?>
+                            <div class="lc-muted" style="font-size:12px;">Situação da clínica: <?= htmlspecialchars($clinicStatus, ENT_QUOTES, 'UTF-8') ?></div>
+                        <?php endif; ?>
+                    </td>
                     <td>
                         <div class="lc-flex lc-flex--wrap" style="gap:8px; align-items:center;">
                             <div>
-                                <?= htmlspecialchars((string)($it['plan_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                                <?= htmlspecialchars((string)($it['plan_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                                <?php $curPlanId = (int)($it['plan_id'] ?? 0); ?>
+                                <?= htmlspecialchars((string)($planLabel[$curPlanId] ?? (($it['plan_name'] ?? '') !== '' ? (string)$it['plan_name'] : (string)($it['plan_code'] ?? ''))), ENT_QUOTES, 'UTF-8') ?>
                             </div>
                             <form method="post" action="/sys/billing/set-plan" class="lc-flex" style="gap:8px; align-items:center;">
                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
@@ -52,11 +91,11 @@ ob_start();
                                 <select class="lc-input" name="plan_id">
                                     <?php foreach ($plans as $p): ?>
                                         <option value="<?= (int)$p['id'] ?>" <?= ((int)($it['plan_id'] ?? 0) === (int)$p['id']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars((string)$p['code'], ENT_QUOTES, 'UTF-8') ?>
+                                            <?= htmlspecialchars((string)($planLabel[(int)$p['id']] ?? (string)$p['code']), ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <button class="lc-btn lc-btn--secondary" type="submit">Trocar</button>
+                                <button class="lc-btn lc-btn--secondary" type="submit">Alterar</button>
                             </form>
                         </div>
                     </td>
@@ -67,7 +106,7 @@ ob_start();
                             <select class="lc-input" name="status">
                                 <?php $cur = (string)($it['subscription_status'] ?? ''); ?>
                                 <?php foreach (['trial','active','past_due','canceled','suspended'] as $st): ?>
-                                    <option value="<?= htmlspecialchars($st, ENT_QUOTES, 'UTF-8') ?>" <?= ($cur === $st) ? 'selected' : '' ?>><?= htmlspecialchars($st, ENT_QUOTES, 'UTF-8') ?></option>
+                                    <option value="<?= htmlspecialchars($st, ENT_QUOTES, 'UTF-8') ?>" <?= ($cur === $st) ? 'selected' : '' ?>><?= htmlspecialchars((string)($statusLabel[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <button class="lc-btn lc-btn--secondary" type="submit">Salvar</button>
@@ -79,24 +118,18 @@ ob_start();
                             <input type="hidden" name="clinic_id" value="<?= (int)$it['id'] ?>" />
                             <?php $gp = (string)($it['gateway_provider'] ?? ''); ?>
                             <select class="lc-input" name="gateway_provider">
-                                <option value="asaas" <?= ($gp === 'asaas') ? 'selected' : '' ?>>asaas</option>
-                                <option value="mercadopago" <?= ($gp === 'mercadopago') ? 'selected' : '' ?>>mercadopago</option>
+                                <option value="asaas" <?= ($gp === 'asaas') ? 'selected' : '' ?>>Asaas</option>
+                                <option value="mercadopago" <?= ($gp === 'mercadopago') ? 'selected' : '' ?>>Mercado Pago</option>
                             </select>
                             <button class="lc-btn lc-btn--secondary" type="submit">Salvar</button>
                         </form>
                     </td>
-                    <td style="max-width:360px;">
-                        <div style="font-size:12px; line-height:1.4;">
-                            <div>Asaas cust: <?= htmlspecialchars((string)($it['asaas_customer_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-                            <div>Asaas sub: <?= htmlspecialchars((string)($it['asaas_subscription_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-                            <div>MP preapproval: <?= htmlspecialchars((string)($it['mp_preapproval_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-                        </div>
-                    </td>
                     <td>
+                        <a class="lc-btn lc-btn--secondary" href="/sys/billing/view?clinic_id=<?= (int)$it['id'] ?>">Ver detalhes</a>
                         <form method="post" action="/sys/billing/ensure-gateway" style="display:inline;">
                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                             <input type="hidden" name="clinic_id" value="<?= (int)$it['id'] ?>" />
-                            <button class="lc-btn lc-btn--primary" type="submit">Ensure gateway</button>
+                            <button class="lc-btn lc-btn--primary" type="submit">Criar/atualizar cobrança</button>
                         </form>
                     </td>
                 </tr>

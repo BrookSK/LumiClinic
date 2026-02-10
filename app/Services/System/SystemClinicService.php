@@ -13,10 +13,14 @@ final class SystemClinicService
     public function __construct(private readonly Container $container) {}
 
     /** @return list<array<string, mixed>> */
-    public function listClinics(): array
+    public function listClinics(string $q = ''): array
     {
         $repo = new SystemClinicRepository($this->container->get(\PDO::class));
-        return $repo->listAll();
+        $q = trim($q);
+        if ($q === '') {
+            return $repo->listAll();
+        }
+        return $repo->search($q, 250);
     }
 
     public function createClinicWithOwner(

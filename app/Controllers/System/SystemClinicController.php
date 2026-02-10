@@ -23,8 +23,11 @@ final class SystemClinicController extends Controller
 
         $service = new SystemClinicService($this->container);
 
+        $q = trim((string)$request->input('q', ''));
+
         return $this->view('system/clinics/index', [
-            'items' => $service->listClinics(),
+            'items' => $service->listClinics($q),
+            'q' => $q,
         ]);
     }
 

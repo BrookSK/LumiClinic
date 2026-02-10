@@ -5,95 +5,104 @@ $patient = $patient ?? null;
 $images = $images ?? [];
 $professionals = $professionals ?? [];
 $pairs = $pairs ?? [];
+
+$kindLabel = [
+    'before' => 'Antes',
+    'after' => 'Depois',
+    'other' => 'Outro',
+];
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
     <div class="lc-badge lc-badge--primary">Imagens clínicas</div>
-
-<div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title">Enviar Before/After (comparação)</div>
-
-    <form method="post" action="/medical-images/upload-pair" enctype="multipart/form-data" class="lc-form">
-        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-        <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
-
-        <div class="lc-grid">
-            <div>
-                <label class="lc-label">Antes (Before)</label>
-                <input class="lc-input" type="file" name="before_image" accept="image/jpeg,image/png,image/webp" required />
-            </div>
-            <div>
-                <label class="lc-label">Depois (After)</label>
-                <input class="lc-input" type="file" name="after_image" accept="image/jpeg,image/png,image/webp" required />
-            </div>
-        </div>
-
-        <div class="lc-grid">
-            <div>
-                <label class="lc-label">Data (opcional)</label>
-                <input class="lc-input" type="datetime-local" name="taken_at" />
-            </div>
-            <div>
-                <label class="lc-label">Procedimento (opcional)</label>
-                <input class="lc-input" type="text" name="procedure_type" />
-            </div>
-        </div>
-
-        <div class="lc-grid">
-            <div>
-                <label class="lc-label">Profissional (opcional)</label>
-                <select class="lc-select" name="professional_id">
-                    <option value="">(opcional)</option>
-                    <?php foreach ($professionals as $pr): ?>
-                        <option value="<?= (int)$pr['id'] ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div>
-                <label class="lc-label">Vincular ao registro do prontuário (ID, opcional)</label>
-                <input class="lc-input" type="number" name="medical_record_id" min="1" />
-            </div>
-        </div>
-
-        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-            <button class="lc-btn lc-btn--primary" type="submit">Enviar e comparar</button>
-        </div>
-    </form>
-</div>
-
-<div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title">Comparações</div>
-    <div class="lc-card__body">
-        <?php if (!is_array($pairs) || $pairs === []): ?>
-            <div class="lc-muted">Nenhuma comparação cadastrada.</div>
-        <?php else: ?>
-            <div class="lc-table-wrap">
-                <table class="lc-table">
-                    <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Procedimento</th>
-                        <th>Ações</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($pairs as $p): ?>
-                        <tr>
-                            <td><?= htmlspecialchars((string)($p['taken_at'] ?? $p['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string)($p['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td class="lc-flex lc-flex--wrap" style="gap:8px;">
-                                <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$p['comparison_key']) ?>">Comparar</a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-    </div>
-</div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar ao paciente</a>
+    </div>
+</div>
+
+<div class="lc-grid lc-gap-grid" style="margin-bottom:14px; align-items:start;">
+    <div class="lc-card">
+        <div class="lc-card__title">Enviar comparação (Antes e Depois)</div>
+        <div class="lc-card__body">
+            <form method="post" action="/medical-images/upload-pair" enctype="multipart/form-data" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
+
+                <div class="lc-grid lc-gap-grid">
+                    <div>
+                        <label class="lc-label">Antes</label>
+                        <input class="lc-input" type="file" name="before_image" accept="image/jpeg,image/png,image/webp" required />
+                    </div>
+                    <div>
+                        <label class="lc-label">Depois</label>
+                        <input class="lc-input" type="file" name="after_image" accept="image/jpeg,image/png,image/webp" required />
+                    </div>
+                </div>
+
+                <div class="lc-grid lc-gap-grid">
+                    <div>
+                        <label class="lc-label">Data (opcional)</label>
+                        <input class="lc-input" type="datetime-local" name="taken_at" />
+                    </div>
+                    <div>
+                        <label class="lc-label">Procedimento (opcional)</label>
+                        <input class="lc-input" type="text" name="procedure_type" />
+                    </div>
+                </div>
+
+                <div class="lc-grid lc-gap-grid">
+                    <div>
+                        <label class="lc-label">Profissional (opcional)</label>
+                        <select class="lc-select" name="professional_id">
+                            <option value="">(opcional)</option>
+                            <?php foreach ($professionals as $pr): ?>
+                                <option value="<?= (int)$pr['id'] ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="lc-label">Vincular ao prontuário (opcional)</label>
+                        <input class="lc-input" type="number" name="medical_record_id" min="1" placeholder="Número do prontuário" />
+                    </div>
+                </div>
+
+                <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
+                    <button class="lc-btn lc-btn--primary" type="submit">Enviar e comparar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="lc-card">
+        <div class="lc-card__title">Comparações</div>
+        <div class="lc-card__body">
+            <?php if (!is_array($pairs) || $pairs === []): ?>
+                <div class="lc-muted">Nenhuma comparação cadastrada.</div>
+            <?php else: ?>
+                <div class="lc-table-wrap">
+                    <table class="lc-table">
+                        <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Procedimento</th>
+                            <th style="width:1%; white-space:nowrap;">Ações</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($pairs as $p): ?>
+                            <tr>
+                                <td><?= htmlspecialchars((string)($p['taken_at'] ?? $p['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($p['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td>
+                                    <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$p['comparison_key']) ?>">Comparar</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 
@@ -173,7 +182,8 @@ ob_start();
             <?php foreach ($images as $img): ?>
                 <tr>
                     <td><?= (int)$img['id'] ?></td>
-                    <td><?= htmlspecialchars((string)$img['kind'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <?php $k = (string)($img['kind'] ?? ''); ?>
+                    <td><?= htmlspecialchars((string)($kindLabel[$k] ?? $k), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($img['taken_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($img['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($img['original_filename'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>

@@ -9,11 +9,112 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\UserRoleRepository;
 use App\Repositories\UserRepository;
+use App\Repositories\UserPasswordResetRepository;
+use App\Services\Mail\MailerService;
 use App\Services\Observability\SystemEvent;
+use Throwable;
 
 final class AuthService
 {
     public function __construct(private readonly Container $container) {}
+
+    /** @return array{reset_token:string} */
+    public function createPasswordReset(string $email, string $ip): array
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $users = new UserRepository($pdo);
+        $audit = new AuditLogRepository($pdo);
+
+        $user = $users->findActiveByEmail($email);
+
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+        $expiresAt = date('Y-m-d H:i:s', time() + 60 * 60);
+
+        if ($user !== null) {
+            $clinicId = (isset($user['clinic_id']) && $user['clinic_id'] !== null) ? (int)$user['clinic_id'] : null;
+            $resets = new UserPasswordResetRepository($pdo);
+            $resets->create($clinicId, (int)$user['id'], $tokenHash, $expiresAt, $ip);
+
+            $appConfig = $this->container->has('config') ? $this->container->get('config') : [];
+            $baseUrl = is_array($appConfig) && isset($appConfig['app']) && is_array($appConfig['app'])
+                ? (string)($appConfig['app']['base_url'] ?? '')
+                : '';
+            $baseUrl = rtrim($baseUrl !== '' ? $baseUrl : (string)(getenv('APP_BASE_URL') ?: ''), '/');
+
+            if ($baseUrl === '' && isset($_SERVER['HTTP_HOST'])) {
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $baseUrl = $scheme . '://' . (string)$_SERVER['HTTP_HOST'];
+            }
+
+            $resetUrl = ($baseUrl !== '' ? $baseUrl : '') . '/reset?token=' . urlencode($token);
+
+            try {
+                $toEmail = (string)($user['email'] ?? '');
+                $toName = (string)($user['name'] ?? '');
+                if ($toEmail !== '') {
+                    $subject = 'Redefinição de senha - LumiClinic';
+                    $safeName = htmlspecialchars($toName !== '' ? $toName : $toEmail, ENT_QUOTES, 'UTF-8');
+                    $safeUrl = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
+                    $html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#111827">'
+                        . '<p>Olá, ' . $safeName . '.</p>'
+                        . '<p>Recebemos uma solicitação para redefinir sua senha no LumiClinic.</p>'
+                        . '<p><a href="' . $safeUrl . '">Clique aqui para redefinir sua senha</a></p>'
+                        . '<p>Se você não solicitou, ignore este e-mail.</p>'
+                        . '</div>';
+
+                    (new MailerService($this->container))->send($toEmail, $toName !== '' ? $toName : $toEmail, $subject, $html);
+                }
+            } catch (Throwable $e) {
+                $audit->log((int)$user['id'], $clinicId, 'auth.password_reset.email_failed', ['error' => $e->getMessage()], $ip);
+            }
+
+            $audit->log((int)$user['id'], $clinicId, 'auth.password_reset.request', ['email' => $email, 'user_id' => (int)$user['id']], $ip);
+            SystemEvent::dispatch($this->container, 'user.password_reset.request', ['email' => $email], 'user', (int)$user['id'], $ip, null);
+        } else {
+            $audit->log(null, null, 'auth.password_reset.request', ['email' => $email], $ip);
+            SystemEvent::dispatch($this->container, 'user.password_reset.request', ['email' => $email], 'user', null, $ip, null);
+        }
+
+        return ['reset_token' => $token];
+    }
+
+    public function resetPassword(string $token, string $newPassword, ?string $ip): AuthResult
+    {
+        $token = trim($token);
+        if ($token === '') {
+            return new AuthResult(false, 'Token inválido.');
+        }
+
+        if (strlen($newPassword) < 8) {
+            return new AuthResult(false, 'Senha deve ter pelo menos 8 caracteres.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $resets = new UserPasswordResetRepository($pdo);
+        $reset = $resets->findValidByTokenHash(hash('sha256', $token));
+        if ($reset === null) {
+            $audit = new AuditLogRepository($pdo);
+            $audit->log(null, null, 'auth.password_reset.invalid_token', [], $ip);
+            SystemEvent::dispatch($this->container, 'user.password_reset.invalid_token', [], 'user', null, $ip, null);
+            return new AuthResult(false, 'Token inválido ou expirado.');
+        }
+
+        $clinicId = (isset($reset['clinic_id']) && $reset['clinic_id'] !== null) ? (int)$reset['clinic_id'] : null;
+        $userId = (int)$reset['user_id'];
+
+        $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $users = new UserRepository($pdo);
+        $users->updatePasswordById($userId, $hash);
+
+        $resets->markUsed((int)$reset['id']);
+
+        $audit = new AuditLogRepository($pdo);
+        $audit->log($userId, $clinicId, 'auth.password_reset.success', ['user_id' => $userId], $ip);
+        SystemEvent::dispatch($this->container, 'user.password_reset.success', [], 'user', $userId, $ip, null);
+
+        return new AuthResult(true, 'Senha atualizada com sucesso.');
+    }
 
     public function attempt(string $email, string $password, string $ip, ?string $userAgent = null): AuthResult
     {

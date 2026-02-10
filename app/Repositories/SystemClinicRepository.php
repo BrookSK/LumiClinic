@@ -9,6 +9,51 @@ final class SystemClinicRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string, mixed>> */
+    public function search(string $q, int $limit = 200): array
+    {
+        $q = trim($q);
+        $limit = max(1, min(500, $limit));
+        if ($q === '') {
+            return $this->listAll();
+        }
+
+        $like = '%' . $q . '%';
+        $sql = "
+            SELECT
+                id, name, tenant_key, status, created_at,
+                (
+                    SELECT d.domain
+                    FROM clinic_domains d
+                    WHERE d.clinic_id = clinics.id
+                      AND d.is_primary = 1
+                    ORDER BY d.id DESC
+                    LIMIT 1
+                ) AS primary_domain
+            FROM clinics
+            WHERE deleted_at IS NULL
+              AND (
+                  name LIKE :like
+                  OR tenant_key LIKE :like
+                  OR EXISTS (
+                      SELECT 1
+                      FROM clinic_domains d
+                      WHERE d.clinic_id = clinics.id
+                        AND d.domain LIKE :like
+                        AND d.deleted_at IS NULL
+                  )
+              )
+            ORDER BY id DESC
+            LIMIT {$limit}
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['like' => $like]);
+
+        /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array<string, mixed>> */
     public function listAll(): array
     {
         $sql = "

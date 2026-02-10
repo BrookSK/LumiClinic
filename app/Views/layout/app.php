@@ -3,6 +3,20 @@
 /** @var string $title */
 $csrf = $_SESSION['_csrf'] ?? '';
 
+$seo = isset($seo) && is_array($seo) ? $seo : [];
+$seoSiteName = trim((string)($seo['site_name'] ?? ''));
+$seoDefaultTitle = trim((string)($seo['default_title'] ?? ''));
+$seoDescription = trim((string)($seo['meta_description'] ?? ''));
+$seoOgImageUrl = trim((string)($seo['og_image_url'] ?? ''));
+$seoFaviconUrl = trim((string)($seo['favicon_url'] ?? ''));
+
+$computedTitle = trim((string)($title ?? ''));
+if ($computedTitle === '') {
+    $computedTitle = $seoDefaultTitle !== '' ? $seoDefaultTitle : 'LumiClinic';
+} elseif ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
+    $computedTitle = $computedTitle . ' - ' . $seoSiteName;
+}
+
 $can = function (string $permissionCode): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
         return true;
@@ -60,7 +74,28 @@ $ico = [
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><?= htmlspecialchars($title ?? 'LumiClinic', ENT_QUOTES, 'UTF-8') ?></title>
+    <title><?= htmlspecialchars($computedTitle, ENT_QUOTES, 'UTF-8') ?></title>
+    <?php if ($seoDescription !== ''): ?>
+        <meta name="description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <?php if ($seoFaviconUrl !== ''): ?>
+        <link rel="icon" href="<?= htmlspecialchars($seoFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <meta property="og:title" content="<?= htmlspecialchars($computedTitle, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php if ($seoDescription !== ''): ?>
+        <meta property="og:description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <?php if ($seoOgImageUrl !== ''): ?>
+        <meta property="og:image" content="<?= htmlspecialchars($seoOgImageUrl, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="<?= htmlspecialchars($computedTitle, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php if ($seoDescription !== ''): ?>
+        <meta name="twitter:description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <?php if ($seoOgImageUrl !== ''): ?>
+        <meta name="twitter:image" content="<?= htmlspecialchars($seoOgImageUrl, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
     <link rel="stylesheet" href="/assets/css/design-system.css" />
 </head>
 <body class="lc-body">
@@ -76,13 +111,29 @@ $ico = [
                 <?= $navItem('/sys/clinics', 'Clínicas', $ico['sys'], $isActive('/sys/clinics')) ?>
                 <?= $navItem('/sys/billing', 'Assinaturas', $ico['finance'], $isActive('/sys/billing')) ?>
                 <?= $navItem('/sys/settings/billing', 'Configurações', $ico['settings'], $isActive('/sys/settings')) ?>
+                <?= $navItem('/sys/settings/seo', 'SEO', $ico['settings'], $isActive('/sys/settings/seo')) ?>
+                <?= $navItem('/sys/settings/support', 'Suporte', $ico['settings'], $isActive('/sys/settings/support')) ?>
+                <?= $navItem('/sys/settings/mail', 'E-mail', $ico['settings'], $isActive('/sys/settings/mail')) ?>
                 <?= $navItem('/sys/queue-jobs', 'Fila', $ico['stock'], $isActive('/sys/queue-jobs')) ?>
             <?php else: ?>
                 <?= $navItem('/', 'Dashboard', $ico['dashboard'], $isActive('/')) ?>
                 <?php if ($can('clinics.read')): ?>
-                    <?= $navItem('/clinic', 'Clínica', $ico['clinic'], $isActive('/clinic')) ?>
-                    <?= $navItem('/clinic/working-hours', 'Horários', $ico['calendar'], $isActive('/clinic/working-hours')) ?>
-                    <?= $navItem('/clinic/closed-days', 'Feriados e Recesso', $ico['calendar'], $isActive('/clinic/closed-days')) ?>
+                    <details class="lc-navgroup" <?= $isActive('/clinic') ? 'open' : '' ?>>
+                        <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/clinic') ? ' lc-nav__item--active' : '' ?>">
+                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['clinic'] ?></span>
+                            <span class="lc-nav__label">Clínica</span>
+                            <span class="lc-navgroup__chev" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </span>
+                        </summary>
+                        <div class="lc-navgroup__children">
+                            <?= $navItem('/clinic', 'Dados da clínica', $ico['clinic'], $isActive('/clinic') && !$isActive('/clinic/working-hours') && !$isActive('/clinic/closed-days')) ?>
+                            <div class="lc-nav__sub">
+                                <?= $navItem('/clinic/working-hours', 'Horários', $ico['calendar'], $isActive('/clinic/working-hours')) ?>
+                                <?= $navItem('/clinic/closed-days', 'Feriados e Recesso', $ico['calendar'], $isActive('/clinic/closed-days')) ?>
+                            </div>
+                        </div>
+                    </details>
                 <?php endif; ?>
 
                 <?php if ($can('users.read')): ?>
@@ -98,26 +149,52 @@ $ico = [
                 <?php endif; ?>
 
                 <?php if ($can('finance.sales.read') && $hasClinicContext): ?>
-                    <?= $navItem('/finance/sales', 'Financeiro', $ico['finance'], $isActive('/finance')) ?>
-                    <?php if ($can('finance.entries.read')): ?>
-                        <?= $navItem('/finance/cashflow', 'Caixa', $ico['finance'], $isActive('/finance/cashflow')) ?>
-                    <?php endif; ?>
-                    <?php if ($can('finance.reports.read')): ?>
-                        <?= $navItem('/finance/reports', 'Relatórios Financeiros', $ico['finance'], $isActive('/finance/reports')) ?>
-                    <?php endif; ?>
+                    <details class="lc-navgroup" <?= $isActive('/finance') ? 'open' : '' ?>>
+                        <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/finance') ? ' lc-nav__item--active' : '' ?>">
+                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['finance'] ?></span>
+                            <span class="lc-nav__label">Financeiro</span>
+                            <span class="lc-navgroup__chev" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </span>
+                        </summary>
+                        <div class="lc-navgroup__children">
+                            <div class="lc-nav__sub">
+                                <?= $navItem('/finance/sales', 'Vendas', $ico['finance'], $isActive('/finance/sales')) ?>
+                                <?php if ($can('finance.entries.read')): ?>
+                                    <?= $navItem('/finance/cashflow', 'Caixa', $ico['finance'], $isActive('/finance/cashflow')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('finance.reports.read')): ?>
+                                    <?= $navItem('/finance/reports', 'Relatórios', $ico['finance'], $isActive('/finance/reports')) ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </details>
                 <?php endif; ?>
 
                 <?php if ($can('stock.materials.read') && $hasClinicContext): ?>
-                    <?= $navItem('/stock/materials', 'Estoque', $ico['stock'], $isActive('/stock')) ?>
-                    <?php if ($can('stock.movements.read')): ?>
-                        <?= $navItem('/stock/movements', 'Movimentações', $ico['stock'], $isActive('/stock/movements')) ?>
-                    <?php endif; ?>
-                    <?php if ($can('stock.alerts.read')): ?>
-                        <?= $navItem('/stock/alerts', 'Alertas', $ico['stock'], $isActive('/stock/alerts')) ?>
-                    <?php endif; ?>
-                    <?php if ($can('stock.reports.read')): ?>
-                        <?= $navItem('/stock/reports', 'Relatórios', $ico['stock'], $isActive('/stock/reports')) ?>
-                    <?php endif; ?>
+                    <details class="lc-navgroup" <?= $isActive('/stock') ? 'open' : '' ?>>
+                        <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/stock') ? ' lc-nav__item--active' : '' ?>">
+                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['stock'] ?></span>
+                            <span class="lc-nav__label">Estoque</span>
+                            <span class="lc-navgroup__chev" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </span>
+                        </summary>
+                        <div class="lc-navgroup__children">
+                            <div class="lc-nav__sub">
+                                <?= $navItem('/stock/materials', 'Materiais', $ico['stock'], $isActive('/stock/materials')) ?>
+                                <?php if ($can('stock.movements.read')): ?>
+                                    <?= $navItem('/stock/movements', 'Movimentações', $ico['stock'], $isActive('/stock/movements')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('stock.alerts.read')): ?>
+                                    <?= $navItem('/stock/alerts', 'Alertas', $ico['stock'], $isActive('/stock/alerts')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('stock.reports.read')): ?>
+                                    <?= $navItem('/stock/reports', 'Relatórios', $ico['stock'], $isActive('/stock/reports')) ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </details>
                 <?php endif; ?>
 
                 <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
@@ -193,18 +270,16 @@ $ico = [
                     </button>
                     <div class="lc-header__title"><?= htmlspecialchars($title ?? 'Dashboard', ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="lc-topbar__search">
-                        <input class="lc-input" type="search" placeholder="Busca rápida..." />
+                        <input class="lc-input" id="lcQuickSearch" type="search" placeholder="Busca rápida..." autocomplete="off" />
                     </div>
                 </div>
                 <div class="lc-topbar__right">
-                    <div class="lc-topbar__pill"><?= $isSuperAdmin ? 'SUPER ADMIN' : 'CLÍNICA' ?></div>
+                    <div class="lc-topbar__pill"><?= $isSuperAdmin ? 'ADMINISTRADOR' : 'CLÍNICA' ?></div>
 
                     <details class="lc-actions__more">
                         <summary class="lc-topbar__icon" aria-label="Menu do usuário">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                            </svg>
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         </summary>
                         <div class="lc-actions__menu">
                             <form method="post" action="/logout">
@@ -277,6 +352,22 @@ $ico = [
         body.classList.toggle('lc-shell--collapsed');
         const isCollapsed = body.classList.contains('lc-shell--collapsed');
         if (window.localStorage) window.localStorage.setItem(key, isCollapsed ? '1' : '0');
+      });
+    }
+
+    const qs = document.getElementById('lcQuickSearch');
+    if (qs) {
+      qs.addEventListener('keydown', function(e){
+        if (!e || e.key !== 'Enter') return;
+        e.preventDefault();
+        const q = (qs.value || '').trim();
+        if (!q) return;
+        const isSuperAdmin = <?= $isSuperAdmin ? 'true' : 'false' ?>;
+        const canPatients = <?= ($can('patients.read') && $hasClinicContext) ? 'true' : 'false' ?>;
+        const url = isSuperAdmin
+          ? ('/sys/clinics?q=' + encodeURIComponent(q))
+          : (canPatients ? ('/patients?q=' + encodeURIComponent(q) + '&page=1') : ('/?q=' + encodeURIComponent(q)));
+        window.location.href = url;
       });
     }
   } catch (e) {}

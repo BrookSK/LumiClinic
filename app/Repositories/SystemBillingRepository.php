@@ -8,6 +8,59 @@ final class SystemBillingRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    /** @return array<string,mixed>|null */
+    public function findClinicWithBilling(int $clinicId): ?array
+    {
+        $sql = "
+            SELECT
+                c.id,
+                c.name,
+                c.tenant_key,
+                c.status AS clinic_status,
+                c.created_at,
+                (
+                    SELECT d.domain
+                    FROM clinic_domains d
+                    WHERE d.clinic_id = c.id
+                      AND d.is_primary = 1
+                    ORDER BY d.id DESC
+                    LIMIT 1
+                ) AS primary_domain,
+
+                cs.id AS subscription_id,
+                cs.plan_id,
+                cs.status AS subscription_status,
+                cs.gateway_provider,
+                cs.trial_ends_at,
+                cs.current_period_start,
+                cs.current_period_end,
+                cs.cancel_at_period_end,
+                cs.past_due_since,
+                cs.asaas_customer_id,
+                cs.asaas_subscription_id,
+                cs.mp_preapproval_id,
+                cs.created_at AS subscription_created_at,
+                cs.updated_at AS subscription_updated_at,
+
+                sp.code AS plan_code,
+                sp.name AS plan_name,
+                sp.price_cents AS plan_price_cents
+            FROM clinics c
+            LEFT JOIN clinic_subscriptions cs
+                ON cs.clinic_id = c.id
+            LEFT JOIN saas_plans sp
+                ON sp.id = cs.plan_id
+            WHERE c.deleted_at IS NULL
+              AND c.id = :clinic_id
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     /** @return list<array<string,mixed>> */
     public function listClinicsWithBilling(): array
     {

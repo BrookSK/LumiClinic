@@ -14,8 +14,8 @@ $reset_token = $reset_token ?? null;
     <link rel="stylesheet" href="/assets/css/design-system.css" />
 </head>
 <body class="lc-body lc-body--auth">
-<div class="lc-auth">
-    <div class="lc-auth__panel">
+<div class="lc-auth lc-auth--compact">
+    <div class="lc-auth__panel lc-auth__panel--compact">
         <div class="lc-auth__brand">
             <div class="lc-brand__logo">LC</div>
             <div>
@@ -39,15 +39,6 @@ $reset_token = $reset_token ?? null;
 
             <button class="lc-btn lc-btn--primary" type="submit">Gerar link</button>
         </form>
-
-        <?php if (is_string($reset_token) && $reset_token !== ''): ?>
-            <div style="margin-top: 12px;">
-                <div class="lc-alert lc-alert--info">
-                    Token (DEV): <?= htmlspecialchars($reset_token, ENT_QUOTES, 'UTF-8') ?>
-                </div>
-                <a class="lc-link" href="/portal/reset?token=<?= htmlspecialchars($reset_token, ENT_QUOTES, 'UTF-8') ?>">Abrir redefinição</a>
-            </div>
-        <?php endif; ?>
 
         <div style="margin-top: 10px;">
             <a class="lc-link" href="/portal/login">Voltar</a>

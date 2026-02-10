@@ -3,7 +3,8 @@
   "description": "LumiClinic SaaS (Finalizado até a Fase 11)",
   "type": "project",
   "require": {
-    "php": ">=8.2"
+    "php": ">=8.2",
+    "phpmailer/phpmailer": "^6.9"
   },
   "autoload": {
     "psr-4": {

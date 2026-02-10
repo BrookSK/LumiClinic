@@ -57,7 +57,40 @@ ob_start();
         </select>
 
         <label class="lc-label">Endereço</label>
-        <textarea class="lc-input" name="address" rows="3"></textarea>
+        <div class="lc-grid lc-gap-grid">
+            <div>
+                <label class="lc-label">Rua</label>
+                <input class="lc-input" type="text" name="address_street" />
+            </div>
+            <div>
+                <label class="lc-label">Número</label>
+                <input class="lc-input" type="text" name="address_number" />
+            </div>
+        </div>
+        <div class="lc-grid lc-gap-grid">
+            <div>
+                <label class="lc-label">Complemento</label>
+                <input class="lc-input" type="text" name="address_complement" />
+            </div>
+            <div>
+                <label class="lc-label">Bairro</label>
+                <input class="lc-input" type="text" name="address_district" />
+            </div>
+        </div>
+        <div class="lc-grid lc-gap-grid">
+            <div>
+                <label class="lc-label">Cidade</label>
+                <input class="lc-input" type="text" name="address_city" />
+            </div>
+            <div>
+                <label class="lc-label">UF</label>
+                <input class="lc-input" type="text" name="address_state" maxlength="2" placeholder="SP" />
+            </div>
+        </div>
+        <div>
+            <label class="lc-label">CEP</label>
+            <input class="lc-input" type="text" name="address_zip" placeholder="00000-000" />
+        </div>
 
         <label class="lc-label">Observações</label>
         <textarea class="lc-input" name="notes" rows="4"></textarea>

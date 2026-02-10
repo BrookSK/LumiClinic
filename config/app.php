@@ -34,6 +34,10 @@ return [
         'httponly' => true,
         'samesite' => 'Lax',
     ],
+    'mail' => [
+        'from_address' => '',
+        'from_name' => 'LumiClinic',
+    ],
     'csrf' => [
         'enabled' => true,
         'token_key' => '_csrf',

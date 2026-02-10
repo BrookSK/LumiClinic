@@ -3,6 +3,20 @@ $title = 'Incidentes de Segurança';
 $csrf = $_SESSION['_csrf'] ?? '';
 $items = $items ?? [];
 $error = $error ?? '';
+
+$severityLabel = [
+    'low' => 'Baixa',
+    'medium' => 'Média',
+    'high' => 'Alta',
+    'critical' => 'Crítica',
+];
+
+$statusLabel = [
+    'open' => 'Aberto',
+    'investigating' => 'Em apuração',
+    'contained' => 'Contido',
+    'resolved' => 'Resolvido',
+];
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -26,10 +40,10 @@ ob_start();
 
             <label class="lc-label">Severidade</label>
             <select class="lc-select" name="severity">
-                <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+                <option value="low">Baixa</option>
+                <option value="medium" selected>Média</option>
+                <option value="high">Alta</option>
+                <option value="critical">Crítica</option>
             </select>
 
             <label class="lc-label">Título</label>
@@ -65,8 +79,10 @@ ob_start();
                     <?php foreach ($items as $it): ?>
                         <tr>
                             <td><?= (int)($it['id'] ?? 0) ?></td>
-                            <td><?= htmlspecialchars((string)($it['severity'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string)($it['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <?php $sev = (string)($it['severity'] ?? ''); ?>
+                            <?php $st = (string)($it['status'] ?? ''); ?>
+                            <td><?= htmlspecialchars((string)($severityLabel[$sev] ?? $sev), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars((string)($statusLabel[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($it['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($it['detected_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td style="min-width:420px;">
@@ -75,13 +91,13 @@ ob_start();
                                     <input type="hidden" name="id" value="<?= (int)($it['id'] ?? 0) ?>" />
 
                                     <select class="lc-select" name="status">
-                                        <option value="open" <?= (($it['status'] ?? '')==='open')?'selected':'' ?>>open</option>
-                                        <option value="investigating" <?= (($it['status'] ?? '')==='investigating')?'selected':'' ?>>investigating</option>
-                                        <option value="contained" <?= (($it['status'] ?? '')==='contained')?'selected':'' ?>>contained</option>
-                                        <option value="resolved" <?= (($it['status'] ?? '')==='resolved')?'selected':'' ?>>resolved</option>
+                                        <option value="open" <?= (($it['status'] ?? '')==='open')?'selected':'' ?>>Aberto</option>
+                                        <option value="investigating" <?= (($it['status'] ?? '')==='investigating')?'selected':'' ?>>Em apuração</option>
+                                        <option value="contained" <?= (($it['status'] ?? '')==='contained')?'selected':'' ?>>Contido</option>
+                                        <option value="resolved" <?= (($it['status'] ?? '')==='resolved')?'selected':'' ?>>Resolvido</option>
                                     </select>
 
-                                    <input class="lc-input" type="number" name="assigned_to_user_id" min="0" placeholder="assigned_to_user_id" />
+                                    <input class="lc-input" type="number" name="assigned_to_user_id" min="0" placeholder="ID do responsável (opcional)" />
 
                                     <input class="lc-input" type="text" name="corrective_action" placeholder="ação corretiva (opcional)" />
 

@@ -30,6 +30,28 @@ final class SystemBillingAdminController extends Controller
         ]);
     }
 
+    public function details(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $clinicId = (int)$request->input('clinic_id', 0);
+        if ($clinicId <= 0) {
+            return $this->redirect('/sys/billing');
+        }
+
+        $service = new SystemBillingService($this->container);
+        $row = $service->getClinicWithBilling($clinicId);
+        if ($row === null) {
+            return $this->redirect('/sys/billing?error=' . urlencode('Assinatura não encontrada.'));
+        }
+
+        return $this->view('system/billing/view', [
+            'row' => $row,
+            'ok' => (string)$request->input('ok', ''),
+            'error' => (string)$request->input('error', ''),
+        ]);
+    }
+
     public function setPlan(Request $request)
     {
         $this->ensureSuperAdmin();
@@ -77,6 +99,32 @@ final class SystemBillingAdminController extends Controller
             return $this->redirect('/sys/billing');
         } catch (\RuntimeException $e) {
             return $this->redirect('/sys/billing?error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function grantMonth(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $clinicId = (int)$request->input('clinic_id', 0);
+        try {
+            (new SystemBillingService($this->container))->grantOneMonth($clinicId, $request->ip());
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&ok=' . urlencode('Mais 1 mês concedido com sucesso.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function skipMonth(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $clinicId = (int)$request->input('clinic_id', 0);
+        try {
+            (new SystemBillingService($this->container))->skipOneMonth($clinicId, $request->ip());
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&ok=' . urlencode('Mais 1 mês concedido com sucesso.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&error=' . urlencode($e->getMessage()));
         }
     }
 }

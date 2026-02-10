@@ -4,6 +4,19 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $policies = $policies ?? [];
 $controls = $controls ?? [];
 $error = $error ?? '';
+
+$policyStatusLabel = [
+    'draft' => 'Rascunho',
+    'active' => 'Ativa',
+    'retired' => 'Desativada',
+];
+
+$controlStatusLabel = [
+    'planned' => 'Planejado',
+    'implemented' => 'Implementado',
+    'tested' => 'Testado',
+    'failed' => 'Falhou',
+];
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -36,21 +49,21 @@ ob_start();
 
             <label class="lc-label">Status</label>
             <select class="lc-select" name="status">
-                <option value="draft" selected>draft</option>
-                <option value="active">active</option>
-                <option value="retired">retired</option>
+                <option value="draft" selected>Rascunho</option>
+                <option value="active">Ativa</option>
+                <option value="retired">Desativada</option>
             </select>
 
             <label class="lc-label">Versão</label>
             <input class="lc-input" type="number" name="version" min="1" value="1" />
 
-            <label class="lc-label">Owner (user_id)</label>
+            <label class="lc-label">Responsável (ID do usuário)</label>
             <input class="lc-input" type="number" name="owner_user_id" min="0" placeholder="opcional" />
 
-            <label class="lc-label">Revisado em (YYYY-MM-DD HH:MM:SS)</label>
+            <label class="lc-label">Revisado em (AAAA-MM-DD HH:MM:SS)</label>
             <input class="lc-input" type="text" name="reviewed_at" placeholder="opcional" />
 
-            <label class="lc-label">Próxima revisão (YYYY-MM-DD HH:MM:SS)</label>
+            <label class="lc-label">Próxima revisão (AAAA-MM-DD HH:MM:SS)</label>
             <input class="lc-input" type="text" name="next_review_at" placeholder="opcional" />
 
             <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
@@ -64,7 +77,7 @@ ob_start();
         <form method="post" action="/compliance/certifications/controls/create" class="lc-form">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
-            <label class="lc-label">Policy ID (opcional)</label>
+            <label class="lc-label">Política (ID) (opcional)</label>
             <input class="lc-input" type="number" name="policy_id" min="0" placeholder="opcional" />
 
             <label class="lc-label">Código</label>
@@ -78,19 +91,19 @@ ob_start();
 
             <label class="lc-label">Status</label>
             <select class="lc-select" name="status">
-                <option value="planned" selected>planned</option>
-                <option value="implemented">implemented</option>
-                <option value="tested">tested</option>
-                <option value="failed">failed</option>
+                <option value="planned" selected>Planejado</option>
+                <option value="implemented">Implementado</option>
+                <option value="tested">Testado</option>
+                <option value="failed">Falhou</option>
             </select>
 
-            <label class="lc-label">Owner (user_id)</label>
+            <label class="lc-label">Responsável (ID do usuário)</label>
             <input class="lc-input" type="number" name="owner_user_id" min="0" placeholder="opcional" />
 
-            <label class="lc-label">Evidence URL</label>
+            <label class="lc-label">Link de evidência</label>
             <input class="lc-input" type="text" name="evidence_url" placeholder="opcional" />
 
-            <label class="lc-label">Last tested at (YYYY-MM-DD HH:MM:SS)</label>
+            <label class="lc-label">Último teste em (AAAA-MM-DD HH:MM:SS)</label>
             <input class="lc-input" type="text" name="last_tested_at" placeholder="opcional" />
 
             <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
@@ -113,7 +126,7 @@ ob_start();
                         <th>Status</th>
                         <th>Versão</th>
                         <th>Título</th>
-                        <th>Owner</th>
+                        <th>Responsável</th>
                         <th>Ações</th>
                     </tr>
                     </thead>
@@ -122,7 +135,8 @@ ob_start();
                         <tr>
                             <td><?= (int)($p['id'] ?? 0) ?></td>
                             <td><?= htmlspecialchars((string)($p['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string)($p['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <?php $pst = (string)($p['status'] ?? ''); ?>
+                            <td><?= htmlspecialchars((string)($policyStatusLabel[$pst] ?? $pst), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= (int)($p['version'] ?? 1) ?></td>
                             <td><?= htmlspecialchars((string)($p['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= (int)($p['owner_user_id'] ?? 0) ?></td>
@@ -132,9 +146,9 @@ ob_start();
                                     <input type="hidden" name="id" value="<?= (int)($p['id'] ?? 0) ?>" />
 
                                     <select class="lc-select" name="status">
-                                        <option value="draft" <?= (($p['status'] ?? '')==='draft')?'selected':'' ?>>draft</option>
-                                        <option value="active" <?= (($p['status'] ?? '')==='active')?'selected':'' ?>>active</option>
-                                        <option value="retired" <?= (($p['status'] ?? '')==='retired')?'selected':'' ?>>retired</option>
+                                        <option value="draft" <?= (($p['status'] ?? '')==='draft')?'selected':'' ?>>Rascunho</option>
+                                        <option value="active" <?= (($p['status'] ?? '')==='active')?'selected':'' ?>>Ativa</option>
+                                        <option value="retired" <?= (($p['status'] ?? '')==='retired')?'selected':'' ?>>Desativada</option>
                                     </select>
 
                                     <input class="lc-input" type="number" name="version" min="1" value="<?= (int)($p['version'] ?? 1) ?>" />
@@ -143,9 +157,9 @@ ob_start();
 
                                     <input class="lc-input" type="number" name="owner_user_id" min="0" value="<?= (int)($p['owner_user_id'] ?? 0) ?>" />
 
-                                    <input class="lc-input" type="text" name="reviewed_at" placeholder="reviewed_at" value="<?= htmlspecialchars((string)($p['reviewed_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input class="lc-input" type="text" name="reviewed_at" placeholder="Revisado em (AAAA-MM-DD HH:MM:SS)" value="<?= htmlspecialchars((string)($p['reviewed_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
-                                    <input class="lc-input" type="text" name="next_review_at" placeholder="next_review_at" value="<?= htmlspecialchars((string)($p['next_review_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input class="lc-input" type="text" name="next_review_at" placeholder="Próxima revisão (AAAA-MM-DD HH:MM:SS)" value="<?= htmlspecialchars((string)($p['next_review_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
                                     <button class="lc-btn lc-btn--secondary" type="submit">Atualizar</button>
                                 </form>
@@ -170,11 +184,11 @@ ob_start();
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Policy</th>
+                        <th>Política</th>
                         <th>Código</th>
                         <th>Status</th>
                         <th>Título</th>
-                        <th>Owner</th>
+                        <th>Responsável</th>
                         <th>Evidência</th>
                         <th>Ações</th>
                     </tr>
@@ -185,13 +199,14 @@ ob_start();
                             <td><?= (int)($c['id'] ?? 0) ?></td>
                             <td><?= (int)($c['policy_id'] ?? 0) ?></td>
                             <td><?= htmlspecialchars((string)($c['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string)($c['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <?php $cst = (string)($c['status'] ?? ''); ?>
+                            <td><?= htmlspecialchars((string)($controlStatusLabel[$cst] ?? $cst), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($c['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= (int)($c['owner_user_id'] ?? 0) ?></td>
                             <td>
                                 <?php $ev = (string)($c['evidence_url'] ?? ''); ?>
                                 <?php if ($ev !== ''): ?>
-                                    <a href="<?= htmlspecialchars($ev, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">link</a>
+                                    <a href="<?= htmlspecialchars($ev, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Abrir</a>
                                 <?php else: ?>
                                     -
                                 <?php endif; ?>
@@ -204,19 +219,19 @@ ob_start();
                                     <input class="lc-input" type="number" name="policy_id" min="0" value="<?= (int)($c['policy_id'] ?? 0) ?>" />
 
                                     <select class="lc-select" name="status">
-                                        <option value="planned" <?= (($c['status'] ?? '')==='planned')?'selected':'' ?>>planned</option>
-                                        <option value="implemented" <?= (($c['status'] ?? '')==='implemented')?'selected':'' ?>>implemented</option>
-                                        <option value="tested" <?= (($c['status'] ?? '')==='tested')?'selected':'' ?>>tested</option>
-                                        <option value="failed" <?= (($c['status'] ?? '')==='failed')?'selected':'' ?>>failed</option>
+                                        <option value="planned" <?= (($c['status'] ?? '')==='planned')?'selected':'' ?>>Planejado</option>
+                                        <option value="implemented" <?= (($c['status'] ?? '')==='implemented')?'selected':'' ?>>Implementado</option>
+                                        <option value="tested" <?= (($c['status'] ?? '')==='tested')?'selected':'' ?>>Testado</option>
+                                        <option value="failed" <?= (($c['status'] ?? '')==='failed')?'selected':'' ?>>Falhou</option>
                                     </select>
 
                                     <input class="lc-input" type="text" name="title" value="<?= htmlspecialchars((string)($c['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
                                     <input class="lc-input" type="number" name="owner_user_id" min="0" value="<?= (int)($c['owner_user_id'] ?? 0) ?>" />
 
-                                    <input class="lc-input" type="text" name="evidence_url" placeholder="evidence_url" value="<?= htmlspecialchars((string)($c['evidence_url'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input class="lc-input" type="text" name="evidence_url" placeholder="Link de evidência" value="<?= htmlspecialchars((string)($c['evidence_url'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
-                                    <input class="lc-input" type="text" name="last_tested_at" placeholder="last_tested_at" value="<?= htmlspecialchars((string)($c['last_tested_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input class="lc-input" type="text" name="last_tested_at" placeholder="Último teste em (AAAA-MM-DD HH:MM:SS)" value="<?= htmlspecialchars((string)($c['last_tested_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
                                     <button class="lc-btn lc-btn--secondary" type="submit">Atualizar</button>
                                 </form>

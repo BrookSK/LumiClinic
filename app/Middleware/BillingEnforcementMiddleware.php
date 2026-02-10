@@ -8,8 +8,10 @@ use App\Core\Container\Container;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Middleware\MiddlewareInterface;
+use App\Core\View\View;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\BillingService;
+use App\Services\System\SystemSettingsService;
 
 final class BillingEnforcementMiddleware implements MiddlewareInterface
 {
@@ -52,14 +54,22 @@ final class BillingEnforcementMiddleware implements MiddlewareInterface
 
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            return Response::html('Contexto inválido.', 403);
+            return Response::html(View::render('errors/403', ['title' => 'Acesso negado']), 403);
         }
 
         $billing = new BillingService($this->container);
         $data = $billing->getOrCreateClinicSubscription($clinicId);
 
         if ($billing->isBlocked($data['subscription'])) {
-            return Response::html('Assinatura em atraso. Entre em contato para regularizar.', 402);
+            $settings = new SystemSettingsService($this->container);
+            $supportWhatsapp = trim((string)($settings->getText('support.whatsapp_number') ?? ''));
+            $supportEmail = trim((string)($settings->getText('support.email') ?? ''));
+
+            return Response::html(View::render('errors/402', [
+                'title' => 'Assinatura pendente',
+                'support_whatsapp_number' => $supportWhatsapp,
+                'support_email' => $supportEmail,
+            ]), 402);
         }
 
         return $next($request);

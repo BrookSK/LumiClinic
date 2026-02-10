@@ -62,6 +62,10 @@ $router->get('/', [DashboardController::class, 'index']);
 
 $router->get('/login', [LoginController::class, 'show']);
 $router->post('/login', [LoginController::class, 'login']);
+$router->get('/forgot', [LoginController::class, 'showForgot']);
+$router->post('/forgot', [LoginController::class, 'forgot']);
+$router->get('/reset', [LoginController::class, 'showReset']);
+$router->post('/reset', [LoginController::class, 'reset']);
 $router->post('/logout', [LoginController::class, 'logout']);
 
 $router->get('/portal/login', [AuthPatientController::class, 'showLogin']);
@@ -281,13 +285,26 @@ $router->get('/sys/clinics/create', [SystemClinicController::class, 'create']);
 $router->post('/sys/clinics/create', [SystemClinicController::class, 'store']);
 
 $router->get('/sys/billing', [SystemBillingAdminController::class, 'index']);
+$router->get('/sys/billing/view', [SystemBillingAdminController::class, 'details']);
 $router->post('/sys/billing/set-plan', [SystemBillingAdminController::class, 'setPlan']);
 $router->post('/sys/billing/set-status', [SystemBillingAdminController::class, 'setStatus']);
 $router->post('/sys/billing/set-gateway', [SystemBillingAdminController::class, 'setGateway']);
 $router->post('/sys/billing/ensure-gateway', [SystemBillingAdminController::class, 'ensureGateway']);
+$router->post('/sys/billing/grant-month', [SystemBillingAdminController::class, 'grantMonth']);
+$router->post('/sys/billing/skip-month', [SystemBillingAdminController::class, 'skipMonth']);
 
 $router->get('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billing']);
 $router->post('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billingSubmit']);
+
+$router->get('/sys/settings/seo', [\App\Controllers\System\SystemSettingsController::class, 'seo']);
+$router->post('/sys/settings/seo', [\App\Controllers\System\SystemSettingsController::class, 'seoSubmit']);
+
+$router->get('/sys/settings/support', [\App\Controllers\System\SystemSettingsController::class, 'support']);
+$router->post('/sys/settings/support', [\App\Controllers\System\SystemSettingsController::class, 'supportSubmit']);
+
+$router->get('/sys/settings/mail', [\App\Controllers\System\SystemSettingsController::class, 'mail']);
+$router->post('/sys/settings/mail', [\App\Controllers\System\SystemSettingsController::class, 'mailSubmit']);
+$router->post('/sys/settings/mail/test', [\App\Controllers\System\SystemSettingsController::class, 'mailTest']);
 
 $router->get('/sys/queue-jobs', [SystemQueueJobController::class, 'index']);
 $router->post('/sys/queue-jobs/retry', [SystemQueueJobController::class, 'retry']);

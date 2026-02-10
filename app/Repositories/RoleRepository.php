@@ -36,6 +36,24 @@ final class RoleRepository
         return $out;
     }
 
+    public function findIdByCode(int $clinicId, string $code): ?int
+    {
+        $code = trim($code);
+        if ($clinicId <= 0 || $code === '') {
+            return null;
+        }
+
+        $stmt = $this->pdo->prepare("\n            SELECT id\n            FROM roles\n            WHERE clinic_id = :clinic_id\n              AND code = :code\n              AND deleted_at IS NULL\n            LIMIT 1\n        ");
+        $stmt->execute(['clinic_id' => $clinicId, 'code' => $code]);
+        $row = $stmt->fetch();
+
+        if (!$row || !array_key_exists('id', $row)) {
+            return null;
+        }
+
+        return (int)$row['id'];
+    }
+
     public function assignRoleToUser(int $clinicId, int $userId, int $roleId): void
     {
         $sql = "

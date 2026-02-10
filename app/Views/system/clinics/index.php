@@ -1,12 +1,13 @@
 <?php
 $title = 'Admin do Sistema';
 $items = $items ?? [];
+$q = $q ?? '';
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
     <div class="lc-badge lc-badge--primary">Gestão de clínicas</div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
-        <a class="lc-btn lc-btn--secondary" href="/sys/billing">Billing</a>
+        <a class="lc-btn lc-btn--secondary" href="/sys/billing">Assinaturas</a>
         <a class="lc-btn lc-btn--primary" href="/sys/clinics/create">Nova clínica</a>
     </div>
 </div>
@@ -14,13 +15,23 @@ ob_start();
 <div class="lc-card">
     <div class="lc-card__title">Clínicas</div>
 
+    <div class="lc-card__body" style="padding-bottom:0;">
+        <form method="get" action="/sys/clinics" class="lc-flex lc-gap-sm lc-flex--wrap" style="align-items:center;">
+            <input class="lc-input" style="width:320px;" type="text" name="q" value="<?= htmlspecialchars((string)$q, ENT_QUOTES, 'UTF-8') ?>" placeholder="Buscar por nome, identificação ou domínio" />
+            <button class="lc-btn lc-btn--secondary" type="submit">Buscar</button>
+            <?php if (trim((string)$q) !== ''): ?>
+                <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Limpar</a>
+            <?php endif; ?>
+        </form>
+    </div>
+
     <div class="lc-table-wrap">
         <table class="lc-table">
             <thead>
             <tr>
                 <th>ID</th>
                 <th>Nome</th>
-                <th>Tenant</th>
+                <th>Identificação</th>
                 <th>Domínio</th>
                 <th>Status</th>
                 <th>Criada em</th>

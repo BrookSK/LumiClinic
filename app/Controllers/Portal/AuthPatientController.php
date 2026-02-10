@@ -52,7 +52,7 @@ final class AuthPatientController extends Controller
 
         return $this->view('portal/forgot', [
             'success' => 'Se o e-mail existir, você receberá instruções para redefinir a senha.',
-            'reset_token' => $data['reset_token'],
+            'reset_token' => null,
         ]);
     }
 
