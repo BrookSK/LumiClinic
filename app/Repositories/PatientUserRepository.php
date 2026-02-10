@@ -134,6 +134,49 @@ final class PatientUserRepository
     }
 
     /** @return array<string,mixed>|null */
+    public function findByIdGlobal(int $id): ?array
+    {
+        $sql = "
+            SELECT id, clinic_id, patient_id, email, password_hash, two_factor_enabled, status
+            FROM patient_users
+            WHERE id = :id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function listActiveByEmailWithClinic(string $email, int $limit = 10): array
+    {
+        $limit = max(1, min(50, $limit));
+
+        $sql = "
+            SELECT
+                pu.id, pu.clinic_id, pu.patient_id, pu.email, pu.password_hash, pu.two_factor_enabled, pu.status,
+                c.name AS clinic_name
+            FROM patient_users pu
+            INNER JOIN clinics c ON c.id = pu.clinic_id
+            WHERE pu.email = :email
+              AND pu.deleted_at IS NULL
+              AND pu.status = 'active'
+            ORDER BY pu.id DESC
+            LIMIT {$limit}
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['email' => $email]);
+
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return array<string,mixed>|null */
     public function findById(int $clinicId, int $id): ?array
     {
         $sql = "

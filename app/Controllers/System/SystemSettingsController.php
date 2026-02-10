@@ -116,4 +116,25 @@ final class SystemSettingsController extends Controller
 
         return $this->redirect('/sys/settings/mail?test=ok&msg=' . urlencode('E-mail de teste enviado para ' . $to));
     }
+
+    public function devAlerts(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $service = new SystemSettingsService($this->container);
+
+        return $this->view('system/settings/dev_alerts', [
+            'dev_alert_emails' => (string)($service->getText('dev.alert_emails') ?? ''),
+        ]);
+    }
+
+    public function devAlertsSubmit(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $val = trim((string)$request->input('dev_alert_emails', ''));
+        (new SystemSettingsService($this->container))->setText('dev.alert_emails', $val === '' ? null : $val);
+
+        return $this->redirect('/sys/settings/dev-alerts');
+    }
 }

@@ -8,16 +8,18 @@ use App\Core\Container\Container;
 use App\Core\Http\Response;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\MedicalImageRepository;
+use App\Repositories\MedicalRecordRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Billing\PlanEntitlementsService;
 use App\Services\Storage\PrivateStorage;
 
 final class MedicalImageService
 {
     public function __construct(private readonly Container $container) {}
 
-    /** @return array{patient:array<string,mixed>,images:list<array<string,mixed>>,professionals:list<array<string,mixed>>} */
+    /** @return array{patient:array<string,mixed>,images:list<array<string,mixed>>,professionals:list<array<string,mixed>>,records:list<array<string,mixed>>} */
     public function listForPatient(int $patientId, string $ip, ?string $userAgent = null): array
     {
         $auth = new AuthService($this->container);
@@ -40,6 +42,8 @@ final class MedicalImageService
         $images = $repo->listByPatient($clinicId, $patientId, 200);
         $pairs = $repo->listComparisonPairsByPatient($clinicId, $patientId, 100);
 
+        $records = (new MedicalRecordRepository($pdo))->listByPatient($clinicId, $patientId, 200);
+
         $profRepo = new ProfessionalRepository($pdo);
         $professionals = $profRepo->listActiveByClinic($clinicId);
 
@@ -57,7 +61,7 @@ final class MedicalImageService
             $userAgent
         );
 
-        return ['patient' => $patient, 'images' => $images, 'professionals' => $professionals, 'pairs' => $pairs];
+        return ['patient' => $patient, 'images' => $images, 'professionals' => $professionals, 'pairs' => $pairs, 'records' => $records];
     }
 
     /**
@@ -89,6 +93,16 @@ final class MedicalImageService
         $bytes = file_get_contents($tmp);
         if ($bytes === false || $bytes === '') {
             throw new \RuntimeException('Arquivo inválido.');
+        }
+
+        $ent = new PlanEntitlementsService($this->container);
+        $limitBytes = $ent->storageLimitBytes($clinicId);
+        if (is_int($limitBytes)) {
+            $used = $this->sumStorageUsedBytes($clinicId);
+            $nextTotal = $used + strlen($bytes);
+            if ($nextTotal > $limitBytes) {
+                throw new \RuntimeException('Limite de armazenamento do plano atingido.');
+            }
         }
 
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
@@ -252,6 +266,16 @@ final class MedicalImageService
             throw new \RuntimeException('Arquivo inválido.');
         }
 
+        $ent = new PlanEntitlementsService($this->container);
+        $limitBytes = $ent->storageLimitBytes($clinicId);
+        if (is_int($limitBytes)) {
+            $used = $this->sumStorageUsedBytes($clinicId);
+            $nextTotal = $used + strlen($bytes);
+            if ($nextTotal > $limitBytes) {
+                throw new \RuntimeException('Limite de armazenamento do plano atingido.');
+            }
+        }
+
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mime = (string)$finfo->file($tmp);
         $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
@@ -278,7 +302,7 @@ final class MedicalImageService
         $actorId = $auth->userId();
 
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            return Response::html('Contexto inválido.', 403);
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -320,6 +344,31 @@ final class MedicalImageService
             $userAgent
         );
 
-        return Response::raw($bytes, 200, $headers);
+        return Response::raw((string)$bytes, 200, $headers);
+    }
+
+    private function sumStorageUsedBytes(int $clinicId): int
+    {
+        $pdo = $this->container->get(\PDO::class);
+
+        $stmt1 = $pdo->prepare("\n            SELECT COALESCE(SUM(size_bytes),0) AS s
+            FROM patient_uploads
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+        ");
+        $stmt1->execute(['clinic_id' => $clinicId]);
+        $r1 = $stmt1->fetch();
+        $sum1 = (int)($r1['s'] ?? 0);
+
+        $stmt2 = $pdo->prepare("\n            SELECT COALESCE(SUM(size_bytes),0) AS s
+            FROM medical_images
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+        ");
+        $stmt2->execute(['clinic_id' => $clinicId]);
+        $r2 = $stmt2->fetch();
+        $sum2 = (int)($r2['s'] ?? 0);
+
+        return max(0, $sum1) + max(0, $sum2);
     }
 }

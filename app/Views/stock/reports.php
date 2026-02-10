@@ -25,6 +25,14 @@ ob_start();
             </div>
             <div>
                 <button class="lc-btn" type="submit">Atualizar</button>
+                <?php
+                $exportQuery = [
+                    'from' => (string)$from,
+                    'to' => (string)$to,
+                ];
+                ?>
+                <a class="lc-btn lc-btn--secondary" href="/stock/reports/export.csv?<?= http_build_query($exportQuery) ?>">Exportar planilha</a>
+                <a class="lc-btn lc-btn--secondary" href="/stock/reports/export.pdf?<?= http_build_query($exportQuery) ?>">Exportar PDF</a>
                 <a class="lc-btn lc-btn--secondary" href="/stock/alerts">Alertas</a>
                 <a class="lc-btn lc-btn--secondary" href="/stock/movements">Movimentações</a>
             </div>

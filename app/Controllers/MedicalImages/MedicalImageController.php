@@ -48,6 +48,7 @@ final class MedicalImageController extends Controller
             'images' => $data['images'],
             'professionals' => $data['professionals'],
             'pairs' => $data['pairs'] ?? [],
+            'records' => $data['records'] ?? [],
         ]);
     }
 

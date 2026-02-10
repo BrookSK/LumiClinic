@@ -39,6 +39,13 @@
 
 *{box-sizing:border-box}
 
+a,
+a:visited,
+a:hover,
+a:active{
+    text-decoration:none;
+}
+
 body.lc-body{
     margin:0;
     font-family:var(--lc-font);
@@ -248,10 +255,12 @@ textarea.lc-input:focus,
 
 .lc-form.lc-grid{display:grid;flex-direction:unset}
 
+.lc-form.lc-flex{flex-direction:row}
+
 .lc-alert{
     padding:10px 12px;
-    border-radius: 12px;
-    border:1px solid var(--lc-border);
+    border-radius: 14px;
+    border: 1px solid rgba(17,24,39,0.10);
     background: var(--lc-surface-3);
     margin: 12px 0;
 }
@@ -281,7 +290,7 @@ textarea.lc-input:focus,
 .lc-badge--status-no_show{background: rgba(185,28,28,0.14); border-color: rgba(185,28,28,0.22); color: rgba(31,41,55,0.92)}
 
 .lc-link{color: var(--lc-blue-700);text-decoration:none;font-weight:650}
-.lc-link:hover{text-decoration:underline}
+.lc-link:hover{text-decoration:none}
 
 body.lc-body--auth{display:flex;min-height:100vh;align-items:center;justify-content:center;background: var(--lc-grad-auth)}
 

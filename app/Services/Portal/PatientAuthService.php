@@ -14,6 +14,38 @@ final class PatientAuthService
 {
     public function __construct(private readonly Container $container) {}
 
+    public function loginPatientUserByIdForSession(int $patientUserId, string $ip, ?string $userAgent = null): void
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $users = new PatientUserRepository($pdo);
+        $audit = new AuditLogRepository($pdo);
+
+        $user = $users->findByIdGlobal($patientUserId);
+        if ($user === null) {
+            throw new \RuntimeException('Acesso inválido.');
+        }
+
+        $clinicId = (int)$user['clinic_id'];
+
+        $_SESSION['patient_user_id'] = (int)$user['id'];
+        $_SESSION['patient_id'] = (int)$user['patient_id'];
+        $_SESSION['clinic_id'] = (int)$user['clinic_id'];
+        $_SESSION['patient_two_factor_required'] = ((int)($user['two_factor_enabled'] ?? 0) === 1) ? 1 : 0;
+
+        $users->touchLogin($clinicId, (int)$user['id'], $ip);
+
+        $audit->log(null, $clinicId, 'portal.login', ['patient_user_id' => (int)$user['id'], 'patient_id' => (int)$user['patient_id'], 'via' => 'choose_access'], $ip, null, 'patient_user', (int)$user['id'], $userAgent);
+
+        (new PatientEventRepository($pdo))->create(
+            $clinicId,
+            (int)$user['patient_id'],
+            'portal_login',
+            null,
+            null,
+            ['via' => 'choose_access']
+        );
+    }
+
     public function attempt(string $email, string $password, string $ip, ?string $userAgent = null): PatientAuthResult
     {
         $pdo = $this->container->get(\PDO::class);
@@ -25,12 +57,25 @@ final class PatientAuthService
             $audit->log(null, null, 'portal.login_failed', ['email' => $email], $ip, null, 'patient_user', null, $userAgent);
             return new PatientAuthResult(false, 'Credenciais inválidas.');
         }
-        if (count($candidates) > 1) {
-            $audit->log(null, null, 'portal.login_failed_multi_clinic', ['email' => $email], $ip, null, 'patient_user', null, $userAgent);
-            return new PatientAuthResult(false, 'Este e-mail está vinculado a mais de uma clínica. Contate a clínica para ajustar seu acesso.');
+
+        $matches = [];
+        foreach ($candidates as $cand) {
+            if (isset($cand['password_hash']) && password_verify($password, (string)$cand['password_hash'])) {
+                $matches[] = $cand;
+            }
         }
 
-        $user = $candidates[0];
+        if (count($matches) === 0) {
+            $audit->log(null, null, 'portal.login_failed', ['email' => $email], $ip, null, 'patient_user', null, $userAgent);
+            return new PatientAuthResult(false, 'Credenciais inválidas.');
+        }
+
+        if (count($matches) > 1) {
+            $audit->log(null, null, 'portal.login_failed_multi_clinic', ['email' => $email], $ip, null, 'patient_user', null, $userAgent);
+            return new PatientAuthResult(false, 'Selecione a clínica na tela de escolha de acesso.');
+        }
+
+        $user = $matches[0];
         $clinicId = (int)$user['clinic_id'];
 
         if (!password_verify($password, (string)$user['password_hash'])) {

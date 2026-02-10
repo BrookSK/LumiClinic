@@ -29,7 +29,6 @@ ob_start();
         <table class="lc-table">
             <thead>
             <tr>
-                <th>ID</th>
                 <th>Nome</th>
                 <th>Identificação</th>
                 <th>Domínio</th>
@@ -40,7 +39,6 @@ ob_start();
             <tbody>
             <?php foreach ($items as $it): ?>
                 <tr>
-                    <td><?= (int)$it['id'] ?></td>
                     <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($it['tenant_key'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($it['primary_domain'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>

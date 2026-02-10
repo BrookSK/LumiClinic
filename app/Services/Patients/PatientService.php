@@ -10,6 +10,7 @@ use App\Repositories\DataVersionRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Billing\PlanEntitlementsService;
 
 final class PatientService
 {
@@ -52,6 +53,16 @@ final class PatientService
 
         if ($clinicId === null || $actorId === null) {
             throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $ent = new PlanEntitlementsService($this->container);
+        $limit = $ent->patientsLimit($clinicId);
+        if (is_int($limit)) {
+            $repoCount = new PatientRepository($this->container->get(\PDO::class));
+            $count = $repoCount->countActiveByClinic($clinicId);
+            if ($count >= $limit) {
+                throw new \RuntimeException('Limite de pacientes do plano atingido.');
+            }
         }
 
         $cpf = null;

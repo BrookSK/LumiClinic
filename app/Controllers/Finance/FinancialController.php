@@ -6,6 +6,8 @@ namespace App\Controllers\Finance;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Core\Http\Response;
+use App\Repositories\ServiceCatalogRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Finance\FinancialService;
 use App\Services\Finance\SalesService;
@@ -188,6 +190,177 @@ final class FinancialController extends Controller
             'recurring_revenue' => $data['recurring_revenue'],
             'professionals' => $sales->listReferenceProfessionals(),
             'is_professional' => $this->isProfessionalRole(),
+        ]);
+    }
+
+    public function reportsExportCsv(Request $request): Response
+    {
+        $this->authorize('finance.reports.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::html('Contexto inválido.', 403);
+        }
+
+        $from = trim((string)$request->input('from', date('Y-m-01')));
+        $to = trim((string)$request->input('to', date('Y-m-d')));
+        $professionalId = (int)$request->input('professional_id', 0);
+        if ($this->isProfessionalRole()) {
+            $professionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
+        }
+
+        $svc = new FinancialService($this->container);
+        $data = $svc->reports($from, $to, $professionalId > 0 ? $professionalId : null);
+
+        $sales = new SalesService($this->container);
+        $professionals = $sales->listReferenceProfessionals();
+        $profNameMap = [];
+        foreach ($professionals as $p) {
+            $profNameMap[(int)$p['id']] = (string)($p['name'] ?? '');
+        }
+
+        $services = (new ServiceCatalogRepository($this->container->get(\PDO::class)))->listActiveByClinic($clinicId);
+        $svcNameMap = [];
+        foreach ($services as $s) {
+            $svcNameMap[(int)$s['id']] = (string)($s['name'] ?? '');
+        }
+
+        $out = fopen('php://temp', 'r+');
+        fputcsv($out, ['relatorio', 'de', 'ate', 'profissional_id']);
+        fputcsv($out, ['financeiro', (string)$data['from'], (string)$data['to'], (string)$professionalId]);
+        fputcsv($out, []);
+
+        fputcsv($out, ['indicador', 'valor']);
+        fputcsv($out, ['ticket_medio', (string)$data['ticket_medio']]);
+        fputcsv($out, ['agendamentos', (string)$data['appointments']]);
+        fputcsv($out, ['vendas_pagas', (string)$data['paid_sales']]);
+        fputcsv($out, ['taxa_conversao', (string)$data['conversion_rate']]);
+        fputcsv($out, ['receita_recorrente', (string)$data['recurring_revenue']]);
+        fputcsv($out, []);
+
+        fputcsv($out, ['receita_por_profissional']);
+        fputcsv($out, ['profissional', 'receita']);
+        foreach (($data['by_professional'] ?? []) as $r) {
+            $pid = $r['professional_id'] === null ? 0 : (int)$r['professional_id'];
+            $pname = $pid > 0 ? (string)($profNameMap[$pid] ?? '') : '';
+            fputcsv($out, [$pname !== '' ? $pname : ($pid > 0 ? ('Profissional #' . $pid) : ''), (string)($r['revenue'] ?? '')]);
+        }
+        fputcsv($out, []);
+
+        fputcsv($out, ['receita_por_servico']);
+        fputcsv($out, ['servico', 'receita']);
+        foreach (($data['by_service'] ?? []) as $r) {
+            $sid = (int)($r['service_id'] ?? 0);
+            $sname = $sid > 0 ? (string)($svcNameMap[$sid] ?? '') : '';
+            fputcsv($out, [$sname !== '' ? $sname : ($sid > 0 ? ('Serviço #' . $sid) : ''), (string)($r['revenue'] ?? '')]);
+        }
+
+        rewind($out);
+        $csv = stream_get_contents($out);
+        fclose($out);
+
+        $filename = 'finance_reports_' . date('Ymd_His') . '.csv';
+        return Response::raw((string)$csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function reportsExportPdf(Request $request): Response
+    {
+        $this->authorize('finance.reports.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $dompdfClass = 'Dompdf\\Dompdf';
+        if (!class_exists($dompdfClass)) {
+            return Response::html('Exportação em PDF indisponível. Instale a dependência dompdf/dompdf via Composer.', 501);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::html('Contexto inválido.', 403);
+        }
+
+        $from = trim((string)$request->input('from', date('Y-m-01')));
+        $to = trim((string)$request->input('to', date('Y-m-d')));
+        $professionalId = (int)$request->input('professional_id', 0);
+        if ($this->isProfessionalRole()) {
+            $professionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
+        }
+
+        $svc = new FinancialService($this->container);
+        $data = $svc->reports($from, $to, $professionalId > 0 ? $professionalId : null);
+
+        $sales = new SalesService($this->container);
+        $professionals = $sales->listReferenceProfessionals();
+        $profNameMap = [];
+        foreach ($professionals as $p) {
+            $profNameMap[(int)$p['id']] = (string)($p['name'] ?? '');
+        }
+
+        $services = (new ServiceCatalogRepository($this->container->get(\PDO::class)))->listActiveByClinic($clinicId);
+        $svcNameMap = [];
+        foreach ($services as $s) {
+            $svcNameMap[(int)$s['id']] = (string)($s['name'] ?? '');
+        }
+
+        $html = '<!doctype html><html><head><meta charset="utf-8" />'
+            . '<style>body{font-family:DejaVu Sans, sans-serif;font-size:12px}h1{font-size:16px;margin:0 0 8px}h2{font-size:13px;margin:14px 0 6px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px}th{background:#f5f5f5;text-align:left}</style>'
+            . '</head><body>';
+
+        $html .= '<h1>Relatório Financeiro</h1>';
+        $html .= '<div>Período: ' . htmlspecialchars((string)$data['from'], ENT_QUOTES, 'UTF-8') . ' a ' . htmlspecialchars((string)$data['to'], ENT_QUOTES, 'UTF-8') . '</div>';
+
+        $html .= '<h2>Indicadores</h2><table><thead><tr><th>Indicador</th><th>Valor</th></tr></thead><tbody>';
+        $html .= '<tr><td>Ticket médio</td><td>R$ ' . number_format((float)$data['ticket_medio'], 2, ',', '.') . '</td></tr>';
+        $html .= '<tr><td>Agendamentos</td><td>' . (int)$data['appointments'] . '</td></tr>';
+        $html .= '<tr><td>Vendas pagas</td><td>' . (int)$data['paid_sales'] . '</td></tr>';
+        $html .= '<tr><td>Taxa de conversão</td><td>' . number_format(((float)$data['conversion_rate']) * 100.0, 2, ',', '.') . '%</td></tr>';
+        $html .= '<tr><td>Receita recorrente</td><td>R$ ' . number_format((float)$data['recurring_revenue'], 2, ',', '.') . '</td></tr>';
+        $html .= '</tbody></table>';
+
+        $html .= '<h2>Receita por profissional</h2><table><thead><tr><th>Profissional</th><th>Receita</th></tr></thead><tbody>';
+        foreach (($data['by_professional'] ?? []) as $r) {
+            $pid = $r['professional_id'] === null ? 0 : (int)$r['professional_id'];
+            $pname = $pid > 0 ? (string)($profNameMap[$pid] ?? '') : '';
+            $label = $pname !== '' ? $pname : ($pid > 0 ? ('Profissional #' . $pid) : '-');
+            $html .= '<tr><td>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</td><td>R$ ' . number_format((float)($r['revenue'] ?? 0), 2, ',', '.') . '</td></tr>';
+        }
+        $html .= '</tbody></table>';
+
+        $html .= '<h2>Receita por serviço</h2><table><thead><tr><th>Serviço</th><th>Receita</th></tr></thead><tbody>';
+        foreach (($data['by_service'] ?? []) as $r) {
+            $sid = (int)($r['service_id'] ?? 0);
+            $sname = $sid > 0 ? (string)($svcNameMap[$sid] ?? '') : '';
+            $label = $sname !== '' ? $sname : ($sid > 0 ? ('Serviço #' . $sid) : '-');
+            $html .= '<tr><td>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</td><td>R$ ' . number_format((float)($r['revenue'] ?? 0), 2, ',', '.') . '</td></tr>';
+        }
+        $html .= '</tbody></table>';
+
+        $html .= '</body></html>';
+
+        /** @var object $dompdf */
+        $dompdf = new $dompdfClass();
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        $pdf = $dompdf->output();
+
+        $filename = 'finance_reports_' . date('Ymd_His') . '.pdf';
+        return Response::raw((string)$pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 }

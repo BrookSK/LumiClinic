@@ -28,6 +28,9 @@ final class AuthMiddleware implements MiddlewareInterface
 
         $public = [
             '/login',
+            '/forgot',
+            '/reset',
+            '/choose-access',
             '/private/tutorial/platform',
             '/private/tutorial/clinic',
         ];

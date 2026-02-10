@@ -18,6 +18,62 @@ final class AuthService
 {
     public function __construct(private readonly Container $container) {}
 
+    public function loginUserByIdForSession(int $userId, string $ip, ?string $userAgent = null): void
+    {
+        $users = new UserRepository($this->container->get(\PDO::class));
+        $audit = new AuditLogRepository($this->container->get(\PDO::class));
+
+        $user = $users->findById($userId);
+        if ($user === null) {
+            throw new \RuntimeException('Usuário inválido.');
+        }
+
+        $isSuperAdmin = isset($user['is_super_admin']) && (int)$user['is_super_admin'] === 1;
+        $clinicIdForAudit = (!$isSuperAdmin && isset($user['clinic_id']) && $user['clinic_id'] !== null)
+            ? (int)$user['clinic_id']
+            : null;
+
+        $hostClinicId = null;
+        if ($this->container->has('host_clinic_id')) {
+            $hostClinicId = $this->container->get('host_clinic_id');
+        }
+        if (!$isSuperAdmin && is_int($hostClinicId) && $hostClinicId !== (int)$user['clinic_id']) {
+            $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login_blocked_host_mismatch', ['host_clinic_id' => $hostClinicId], $ip, null, 'user', (int)$user['id'], $userAgent);
+            SystemEvent::dispatch($this->container, 'user.login_blocked_host_mismatch', ['host_clinic_id' => $hostClinicId], 'user', (int)$user['id'], $ip, $userAgent);
+            throw new \RuntimeException('Credenciais inválidas.');
+        }
+
+        $_SESSION['user_id'] = (int)$user['id'];
+        $_SESSION['is_super_admin'] = $isSuperAdmin ? 1 : 0;
+
+        if (!$isSuperAdmin) {
+            $_SESSION['clinic_id'] = (int)$user['clinic_id'];
+        } else {
+            unset($_SESSION['clinic_id']);
+        }
+
+        if (!$isSuperAdmin) {
+            $permissionsRepo = new PermissionRepository($this->container->get(\PDO::class));
+            $decisions = $permissionsRepo->getPermissionDecisionsForUser((int)$user['clinic_id'], (int)$user['id']);
+
+            if (is_array($decisions) && isset($decisions['allow'], $decisions['deny'])) {
+                $_SESSION['permissions'] = $decisions;
+            } else {
+                $_SESSION['permissions'] = $permissionsRepo->getPermissionCodesForUser((int)$user['clinic_id'], (int)$user['id']);
+            }
+
+            $rolesRepo = new UserRoleRepository($this->container->get(\PDO::class));
+            $_SESSION['role_codes'] = $rolesRepo->getRoleCodesForUser((int)$user['clinic_id'], (int)$user['id']);
+        } else {
+            $_SESSION['permissions'] = [];
+            $_SESSION['role_codes'] = [];
+        }
+
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login', ['via' => 'choose_access'], $ip, $roleCodes, 'user', (int)$user['id'], $userAgent);
+        SystemEvent::dispatch($this->container, 'user.login', ['is_super_admin' => $isSuperAdmin, 'via' => 'choose_access'], 'user', (int)$user['id'], $ip, $userAgent);
+    }
+
     /** @return array{reset_token:string} */
     public function createPasswordReset(string $email, string $ip): array
     {
@@ -121,23 +177,38 @@ final class AuthService
         $users = new UserRepository($this->container->get(\PDO::class));
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
 
-        $user = $users->findActiveByEmail($email);
-        if ($user === null) {
+        $candidates = $users->listActiveByEmail($email, 10);
+        if (count($candidates) === 0) {
             $audit->log(null, null, 'auth.login_failed', ['email' => $email], $ip, null, 'user', null, $userAgent);
             SystemEvent::dispatch($this->container, 'user.login_failed', ['email' => $email], 'user', null, $ip, $userAgent);
             return new AuthResult(false, 'Credenciais inválidas.');
         }
 
+        $matches = [];
+        foreach ($candidates as $cand) {
+            if (isset($cand['password_hash']) && password_verify($password, (string)$cand['password_hash'])) {
+                $matches[] = $cand;
+            }
+        }
+
+        if (count($matches) === 0) {
+            $audit->log(null, null, 'auth.login_failed', ['email' => $email], $ip, null, 'user', null, $userAgent);
+            SystemEvent::dispatch($this->container, 'user.login_failed', ['email' => $email], 'user', null, $ip, $userAgent);
+            return new AuthResult(false, 'Credenciais inválidas.');
+        }
+
+        if (count($matches) > 1) {
+            $audit->log(null, null, 'auth.login_failed_multi_clinic', ['email' => $email], $ip, null, 'user', null, $userAgent);
+            SystemEvent::dispatch($this->container, 'user.login_failed_multi_clinic', ['email' => $email], 'user', null, $ip, $userAgent);
+            return new AuthResult(false, 'Selecione a empresa na tela de escolha de acesso.');
+        }
+
+        $user = $matches[0];
+
         $isSuperAdmin = isset($user['is_super_admin']) && (int)$user['is_super_admin'] === 1;
         $clinicIdForAudit = (!$isSuperAdmin && isset($user['clinic_id']) && $user['clinic_id'] !== null)
             ? (int)$user['clinic_id']
             : null;
-
-        if (!password_verify($password, $user['password_hash'])) {
-            $audit->log((int)$user['id'], $clinicIdForAudit, 'auth.login_failed', ['email' => $email], $ip, null, 'user', (int)$user['id'], $userAgent);
-            SystemEvent::dispatch($this->container, 'user.login_failed', ['email' => $email], 'user', (int)$user['id'], $ip, $userAgent);
-            return new AuthResult(false, 'Credenciais inválidas.');
-        }
 
         $hostClinicId = null;
         if ($this->container->has('host_clinic_id')) {

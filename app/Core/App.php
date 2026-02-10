@@ -15,11 +15,13 @@ use App\Middleware\ClinicContextMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\ApiPatientAuthMiddleware;
 use App\Middleware\PatientAuthMiddleware;
+use App\Middleware\PortalPlanEnforcementMiddleware;
 use App\Middleware\RateLimitMiddleware;
 use App\Middleware\SecurityHeadersMiddleware;
 use App\Middleware\SessionMiddleware;
 use App\Middleware\BillingEnforcementMiddleware;
 use App\Middleware\PerformanceMonitoringMiddleware;
+use App\Services\System\SystemErrorLogService;
 
 final class App
 {
@@ -68,6 +70,7 @@ final class App
             new RateLimitMiddleware($container),
             new CsrfMiddleware($config['csrf']),
             new AuthMiddleware($container),
+            new PortalPlanEnforcementMiddleware($container),
             new PatientAuthMiddleware($container),
             new ApiPatientAuthMiddleware($container),
             new ClinicContextMiddleware($container),
@@ -83,10 +86,35 @@ final class App
             return $this->pipeline->handle($request, fn (Request $request) => $this->router->dispatch($request));
         } catch (\RuntimeException $e) {
             if ($e->getMessage() === 'Acesso negado.') {
+                (new SystemErrorLogService($this->container))->logHttpError(
+                    $request,
+                    403,
+                    'access_denied',
+                    'Acesso negado',
+                    $e
+                );
                 return Response::html(View::render('errors/403', ['title' => 'Acesso negado']), 403);
             }
 
-            throw $e;
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                500,
+                'runtime_exception',
+                $e->getMessage(),
+                $e
+            );
+
+            return Response::html(View::render('errors/500', ['title' => 'Algo deu errado']), 500);
+        } catch (\Throwable $e) {
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                500,
+                'exception',
+                $e->getMessage(),
+                $e
+            );
+
+            return Response::html(View::render('errors/500', ['title' => 'Algo deu errado']), 500);
         }
     }
 }

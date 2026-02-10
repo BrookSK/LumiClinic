@@ -35,8 +35,10 @@ ob_start();
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
                 <div class="lc-field">
-                    <label class="lc-label">Paciente ID (opcional)</label>
-                    <input class="lc-input" type="number" name="patient_id" min="1" step="1" />
+                    <label class="lc-label">Paciente (opcional)</label>
+                    <input class="lc-input" type="text" id="sale_patient_search" placeholder="Buscar por nome, e-mail ou telefone" autocomplete="off" />
+                    <input type="hidden" name="patient_id" id="sale_patient_id" value="" />
+                    <div class="lc-autocomplete" id="sale_patient_results" style="display:none;"></div>
                 </div>
 
                 <div class="lc-field">
@@ -65,6 +67,61 @@ ob_start();
         </div>
     </div>
 <?php endif; ?>
+
+<script>
+(function(){
+  const searchEl = document.getElementById('sale_patient_search');
+  const idEl = document.getElementById('sale_patient_id');
+  const resultsEl = document.getElementById('sale_patient_results');
+  if (!searchEl || !idEl || !resultsEl) return;
+
+  function hide(){ resultsEl.style.display='none'; resultsEl.innerHTML=''; }
+  function clear(){ idEl.value=''; }
+  async function search(q){
+    const url = `/patients/search-json?q=${encodeURIComponent(q)}&limit=10`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data && data.items) ? data.items : [];
+  }
+
+  let t = null;
+  searchEl.addEventListener('input', function(){
+    clear();
+    const q = (searchEl.value || '').trim();
+    hide();
+    if (t) window.clearTimeout(t);
+    if (q.length < 2) return;
+    t = window.setTimeout(async function(){
+      let items = [];
+      try { items = await search(q); } catch(e) { items = []; }
+      if (!Array.isArray(items) || items.length === 0) { hide(); return; }
+      resultsEl.innerHTML = '';
+      for (const it of items) {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'lc-autocomplete__item';
+        const name = (it.name || '').toString();
+        const meta = [it.phone, it.email].filter(Boolean).join(' · ');
+        row.innerHTML = `<div class="lc-autocomplete__name"></div><div class="lc-autocomplete__meta"></div>`;
+        const nameEl = row.querySelector('.lc-autocomplete__name');
+        const metaEl = row.querySelector('.lc-autocomplete__meta');
+        if (nameEl) nameEl.textContent = name;
+        if (metaEl) metaEl.textContent = meta;
+        row.addEventListener('click', function(){
+          idEl.value = String(it.id || '');
+          searchEl.value = name;
+          hide();
+        });
+        resultsEl.appendChild(row);
+      }
+      resultsEl.style.display = 'block';
+    }, 250);
+  });
+
+  searchEl.addEventListener('blur', function(){ window.setTimeout(hide, 150); });
+})();
+</script>
 
 <div class="lc-card">
     <div class="lc-card__header">Vendas</div>

@@ -104,7 +104,11 @@ ob_start();
                 ?>
                 <tr>
                     <td><?= (int)$it['id'] ?></td>
-                    <td><?= htmlspecialchars((string)($it['clinic_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                    <?php
+                    $clinicName = trim((string)($it['clinic_name'] ?? ''));
+                    $clinicId = (int)($it['clinic_id'] ?? 0);
+                    ?>
+                    <td><?= htmlspecialchars($clinicName !== '' ? $clinicName : (string)$clinicId, ENT_QUOTES, 'UTF-8') ?></td>
                     <?php
                     $queueCode = (string)($it['queue'] ?? '');
                     $jobCode = (string)($it['job_type'] ?? '');

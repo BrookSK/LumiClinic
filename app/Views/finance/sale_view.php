@@ -59,7 +59,7 @@ ob_start();
 
             <div class="lc-field">
                 <label class="lc-label">Tipo</label>
-                <select class="lc-select" name="type">
+                <select class="lc-select" name="type" id="sale_item_type">
                     <option value="procedure">Procedimento (Serviço)</option>
                     <option value="package">Pacote</option>
                     <option value="subscription">Assinatura</option>
@@ -67,11 +67,29 @@ ob_start();
             </div>
 
             <div class="lc-field">
-                <label class="lc-label">Reference ID</label>
-                <input class="lc-input" type="number" name="reference_id" min="1" step="1" required />
-                <div class="lc-muted" style="font-size: 12px; margin-top: 4px;">
-                    Serviços: <?= $services === [] ? '-' : htmlspecialchars((string)$services[0]['id'], ENT_QUOTES, 'UTF-8') ?>... | Pacotes: <?= $packages === [] ? '-' : htmlspecialchars((string)$packages[0]['id'], ENT_QUOTES, 'UTF-8') ?>... | Planos: <?= $plans === [] ? '-' : htmlspecialchars((string)$plans[0]['id'], ENT_QUOTES, 'UTF-8') ?>...
-                </div>
+                <label class="lc-label">Item</label>
+                <input type="hidden" name="reference_id" id="sale_item_reference_id" value="" />
+
+                <select class="lc-select" id="sale_item_service" data-ref-select>
+                    <option value="">Selecione um serviço</option>
+                    <?php foreach ($services as $s): ?>
+                        <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+
+                <select class="lc-select" id="sale_item_package" data-ref-select style="display:none;">
+                    <option value="">Selecione um pacote</option>
+                    <?php foreach ($packages as $p): ?>
+                        <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+
+                <select class="lc-select" id="sale_item_plan" data-ref-select style="display:none;">
+                    <option value="">Selecione um plano</option>
+                    <?php foreach ($plans as $p): ?>
+                        <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
             <div class="lc-field">
@@ -101,6 +119,52 @@ ob_start();
         </div>
     </div>
 <?php endif; ?>
+
+<script>
+(function(){
+  const typeEl = document.getElementById('sale_item_type');
+  const refIdEl = document.getElementById('sale_item_reference_id');
+  const svcEl = document.getElementById('sale_item_service');
+  const pkgEl = document.getElementById('sale_item_package');
+  const planEl = document.getElementById('sale_item_plan');
+
+  if (!typeEl || !refIdEl || !svcEl || !pkgEl || !planEl) return;
+
+  function showFor(type){
+    svcEl.style.display = type === 'procedure' ? 'block' : 'none';
+    pkgEl.style.display = type === 'package' ? 'block' : 'none';
+    planEl.style.display = type === 'subscription' ? 'block' : 'none';
+    refIdEl.value = '';
+    svcEl.value = '';
+    pkgEl.value = '';
+    planEl.value = '';
+  }
+
+  function sync(){
+    const type = typeEl.value;
+    if (type === 'procedure') refIdEl.value = svcEl.value;
+    if (type === 'package') refIdEl.value = pkgEl.value;
+    if (type === 'subscription') refIdEl.value = planEl.value;
+  }
+
+  typeEl.addEventListener('change', function(){ showFor(typeEl.value); });
+  svcEl.addEventListener('change', sync);
+  pkgEl.addEventListener('change', sync);
+  planEl.addEventListener('change', sync);
+
+  const form = typeEl.closest('form');
+  if (form) {
+    form.addEventListener('submit', function(e){
+      sync();
+      if (!String(refIdEl.value || '').trim()) {
+        e.preventDefault();
+      }
+    });
+  }
+
+  showFor(typeEl.value);
+})();
+</script>
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Itens</div>

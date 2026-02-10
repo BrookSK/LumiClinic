@@ -6,7 +6,9 @@ namespace App\Services\Stock;
 
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\MaterialCategoryRepository;
 use App\Repositories\MaterialRepository;
+use App\Repositories\MaterialUnitRepository;
 use App\Repositories\ServiceMaterialDefaultRepository;
 use App\Repositories\StockMovementRepository;
 use App\Services\Auth\AuthService;
@@ -210,6 +212,11 @@ final class StockService
             throw new \RuntimeException('Nome e unidade são obrigatórios.');
         }
 
+        $category = $category === null ? null : trim($category);
+        if ($category === '') {
+            $category = null;
+        }
+
         $min = $this->parseQty($stockMinimum);
         if ($min < 0) {
             $min = 0.0;
@@ -221,6 +228,19 @@ final class StockService
         }
 
         $pdo = $this->container->get(\PDO::class);
+
+        $unitsRepo = new MaterialUnitRepository($pdo);
+        if (!$unitsRepo->existsActiveByClinicAndCode($clinicId, $unit)) {
+            throw new \RuntimeException('Unidade inválida.');
+        }
+
+        if ($category !== null) {
+            $catRepo = new MaterialCategoryRepository($pdo);
+            if (!$catRepo->existsActiveByClinicAndName($clinicId, $category)) {
+                throw new \RuntimeException('Categoria inválida.');
+            }
+        }
+
         $repo = new MaterialRepository($pdo);
         $id = $repo->create(
             $clinicId,

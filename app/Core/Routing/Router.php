@@ -7,6 +7,8 @@ namespace App\Core\Routing;
 use App\Core\Container\Container;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
+use App\Core\View\View;
+use App\Services\System\SystemErrorLogService;
 
 final class Router
 {
@@ -39,7 +41,13 @@ final class Router
         $handler = $this->routes[$method][$path] ?? null;
 
         if ($handler === null) {
-            return Response::html('Not Found', 404);
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                404,
+                'not_found',
+                'Rota não encontrada'
+            );
+            return Response::html(View::render('errors/404', ['title' => 'Página não encontrada']), 404);
         }
 
         [$class, $action] = $handler;
@@ -47,7 +55,13 @@ final class Router
         $controller = new $class($this->container);
 
         if (!method_exists($controller, $action)) {
-            return Response::html('Not Found', 404);
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                404,
+                'not_found',
+                'Ação não encontrada'
+            );
+            return Response::html(View::render('errors/404', ['title' => 'Página não encontrada']), 404);
         }
 
         return $controller->{$action}($request);

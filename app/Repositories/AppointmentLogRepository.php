@@ -53,11 +53,14 @@ final class AppointmentLogRepository
     public function listByAppointment(int $clinicId, int $appointmentId, int $limit = 200): array
     {
         $sql = "
-            SELECT id, clinic_id, appointment_id, action, from_json, to_json, user_id, ip_address, created_at
-            FROM appointment_logs
+            SELECT l.id, l.clinic_id, l.appointment_id, l.action, l.from_json, l.to_json,
+                   l.user_id, u.name AS user_name, u.email AS user_email,
+                   l.ip_address, l.created_at
+            FROM appointment_logs l
+            LEFT JOIN users u ON u.id = l.user_id
             WHERE clinic_id = :clinic_id
               AND appointment_id = :appointment_id
-            ORDER BY id DESC
+            ORDER BY l.id DESC
             LIMIT " . (int)$limit . "
         ";
 

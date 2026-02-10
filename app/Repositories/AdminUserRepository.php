@@ -8,6 +8,18 @@ final class AdminUserRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    public function countActiveByClinic(int $clinicId): int
+    {
+        $stmt = $this->pdo->prepare("\n            SELECT COUNT(*) AS c
+            FROM users
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+        ");
+        $stmt->execute(['clinic_id' => $clinicId]);
+        $row = $stmt->fetch();
+        return (int)($row['c'] ?? 0);
+    }
+
     /** @return list<array<string, mixed>> */
     public function listByClinic(int $clinicId, int $limit = 200, int $offset = 0): array
     {

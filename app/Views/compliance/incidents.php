@@ -2,6 +2,7 @@
 $title = 'Incidentes de Segurança';
 $csrf = $_SESSION['_csrf'] ?? '';
 $items = $items ?? [];
+$users = $users ?? [];
 $error = $error ?? '';
 
 $severityLabel = [
@@ -67,7 +68,6 @@ ob_start();
                 <table class="lc-table">
                     <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Severidade</th>
                         <th>Status</th>
                         <th>Título</th>
@@ -78,7 +78,6 @@ ob_start();
                     <tbody>
                     <?php foreach ($items as $it): ?>
                         <tr>
-                            <td><?= (int)($it['id'] ?? 0) ?></td>
                             <?php $sev = (string)($it['severity'] ?? ''); ?>
                             <?php $st = (string)($it['status'] ?? ''); ?>
                             <td><?= htmlspecialchars((string)($severityLabel[$sev] ?? $sev), ENT_QUOTES, 'UTF-8') ?></td>
@@ -97,7 +96,24 @@ ob_start();
                                         <option value="resolved" <?= (($it['status'] ?? '')==='resolved')?'selected':'' ?>>Resolvido</option>
                                     </select>
 
-                                    <input class="lc-input" type="number" name="assigned_to_user_id" min="0" placeholder="ID do responsável (opcional)" />
+                                    <select class="lc-select" name="assigned_to_user_id">
+                                        <option value="">Responsável (opcional)</option>
+                                        <?php foreach ($users as $u): ?>
+                                            <?php
+                                            $uid = (int)($u['id'] ?? 0);
+                                            $uname = trim((string)($u['name'] ?? ''));
+                                            $uemail = trim((string)($u['email'] ?? ''));
+                                            $label = $uname !== '' ? $uname : ($uemail !== '' ? $uemail : ('Usuário #' . $uid));
+                                            if ($uemail !== '' && $uname !== '') {
+                                                $label .= ' (' . $uemail . ')';
+                                            }
+                                            $currentAssigned = (int)($it['assigned_to_user_id'] ?? 0);
+                                            ?>
+                                            <option value="<?= $uid ?>" <?= ($currentAssigned > 0 && $uid === $currentAssigned) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
 
                                     <input class="lc-input" type="text" name="corrective_action" placeholder="ação corretiva (opcional)" />
 

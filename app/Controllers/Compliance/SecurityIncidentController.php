@@ -6,7 +6,9 @@ namespace App\Controllers\Compliance;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Repositories\AdminUserRepository;
 use App\Services\Compliance\SecurityIncidentService;
+use App\Services\Auth\AuthService;
 
 final class SecurityIncidentController extends Controller
 {
@@ -17,8 +19,15 @@ final class SecurityIncidentController extends Controller
         $svc = new SecurityIncidentService($this->container);
         $items = $svc->list($request->ip(), $request->header('user-agent'));
 
+        $users = [];
+        $clinicId = (new AuthService($this->container))->clinicId();
+        if ($clinicId !== null) {
+            $users = (new AdminUserRepository($this->container->get(\PDO::class)))->listByClinic((int)$clinicId, 400, 0);
+        }
+
         return $this->view('compliance/incidents', [
             'items' => $items,
+            'users' => $users,
             'error' => trim((string)$request->input('error', '')),
         ]);
     }

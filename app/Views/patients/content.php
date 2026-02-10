@@ -40,10 +40,10 @@ ob_start();
             <label class="lc-label">URL (opcional)</label>
             <input class="lc-input" type="text" name="url" />
 
-            <label class="lc-label">Procedure type (opcional)</label>
+            <label class="lc-label">Procedimento (opcional)</label>
             <input class="lc-input" type="text" name="procedure_type" />
 
-            <label class="lc-label">Audience (opcional)</label>
+            <label class="lc-label">Público-alvo (opcional)</label>
             <input class="lc-input" type="text" name="audience" />
 
             <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
@@ -79,7 +79,10 @@ ob_start();
                                 <form method="post" action="/patients/content/grant" class="lc-form lc-flex" style="gap:8px; align-items:flex-end;">
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                     <input type="hidden" name="content_id" value="<?= (int)($c['id'] ?? 0) ?>" />
-                                    <input class="lc-input" type="number" name="patient_id" min="1" placeholder="patient_id" required />
+                                    <?php $cid = (int)($c['id'] ?? 0); ?>
+                                    <input class="lc-input" type="text" data-patient-search="<?= $cid ?>" placeholder="Buscar paciente" autocomplete="off" required />
+                                    <input type="hidden" name="patient_id" data-patient-id="<?= $cid ?>" value="" />
+                                    <div class="lc-autocomplete" data-patient-results="<?= $cid ?>" style="display:none;"></div>
                                     <button class="lc-btn lc-btn--secondary" type="submit">Conceder</button>
                                 </form>
                             </td>
@@ -92,6 +95,73 @@ ob_start();
     </div>
 </div>
 
+<script>
+(function(){
+  function hide(el){ if (!el) return; el.style.display='none'; el.innerHTML=''; }
+  async function search(q){
+    const url = `/patients/search-json?q=${encodeURIComponent(q)}&limit=10`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data && data.items) ? data.items : [];
+  }
+
+  const inputs = document.querySelectorAll('[data-patient-search]');
+  inputs.forEach(function(searchEl){
+    const key = searchEl.getAttribute('data-patient-search');
+    const idEl = document.querySelector('[data-patient-id="' + key + '"]');
+    const resultsEl = document.querySelector('[data-patient-results="' + key + '"]');
+    if (!idEl || !resultsEl) return;
+
+    let t = null;
+    searchEl.addEventListener('input', function(){
+      idEl.value = '';
+      const q = (searchEl.value || '').trim();
+      hide(resultsEl);
+      if (t) window.clearTimeout(t);
+      if (q.length < 2) return;
+      t = window.setTimeout(async function(){
+        let items = [];
+        try { items = await search(q); } catch(e) { items = []; }
+        if (!Array.isArray(items) || items.length === 0) { hide(resultsEl); return; }
+        resultsEl.innerHTML = '';
+        for (const it of items) {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'lc-autocomplete__item';
+          const name = (it.name || '').toString();
+          const meta = [it.phone, it.email].filter(Boolean).join(' · ');
+          row.innerHTML = `<div class="lc-autocomplete__name"></div><div class="lc-autocomplete__meta"></div>`;
+          const nameEl = row.querySelector('.lc-autocomplete__name');
+          const metaEl = row.querySelector('.lc-autocomplete__meta');
+          if (nameEl) nameEl.textContent = name;
+          if (metaEl) metaEl.textContent = meta;
+          row.addEventListener('click', function(){
+            idEl.value = String(it.id || '');
+            searchEl.value = name;
+            hide(resultsEl);
+          });
+          resultsEl.appendChild(row);
+        }
+        resultsEl.style.display = 'block';
+      }, 250);
+    });
+
+    const form = searchEl.closest('form');
+    if (form) {
+      form.addEventListener('submit', function(e){
+        if (!String(idEl.value || '').trim()) {
+          e.preventDefault();
+        }
+      });
+    }
+
+    searchEl.addEventListener('blur', function(){ window.setTimeout(function(){ hide(resultsEl); }, 150); });
+  });
+})();
+</script>
+
 <?php
 $content = (string)ob_get_clean();
 require dirname(__DIR__) . '/layout/app.php';
+?>

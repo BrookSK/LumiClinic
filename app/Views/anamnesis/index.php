@@ -3,6 +3,16 @@ $title = 'Anamnese';
 $patient = $patient ?? null;
 $templates = $templates ?? [];
 $responses = $responses ?? [];
+
+$templateMap = [];
+if (is_array($templates)) {
+    foreach ($templates as $t) {
+        $tid = isset($t['id']) ? (int)$t['id'] : 0;
+        if ($tid > 0) {
+            $templateMap[$tid] = (string)($t['name'] ?? '');
+        }
+    }
+}
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -55,7 +65,8 @@ ob_start();
             <?php foreach ($responses as $r): ?>
                 <tr>
                     <td><?= (int)$r['id'] ?></td>
-                    <td><?= (int)$r['template_id'] ?></td>
+                    <?php $tid = (int)($r['template_id'] ?? 0); ?>
+                    <td><?= htmlspecialchars(($templateMap[$tid] ?? '') !== '' ? (string)$templateMap[$tid] : ('Template #' . $tid), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>
             <?php endforeach; ?>

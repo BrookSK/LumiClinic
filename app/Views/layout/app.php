@@ -80,6 +80,8 @@ $ico = [
     <?php endif; ?>
     <?php if ($seoFaviconUrl !== ''): ?>
         <link rel="icon" href="<?= htmlspecialchars($seoFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php else: ?>
+        <link rel="icon" href="/Ícone_1.png" />
     <?php endif; ?>
     <meta property="og:title" content="<?= htmlspecialchars($computedTitle, ENT_QUOTES, 'UTF-8') ?>" />
     <?php if ($seoDescription !== ''): ?>
@@ -102,18 +104,40 @@ $ico = [
 <div class="lc-shell">
     <aside class="lc-sidebar" id="lcSidebar">
         <div class="lc-brand">
-            <div class="lc-brand__logo">LC</div>
-            <div class="lc-brand__name">LumiClinic</div>
+            <div class="lc-brand__logo" style="padding:0; background:#000;">
+                <img src="/Ícone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
+            </div>
+            <div class="lc-brand__name" style="line-height:0;">
+                <img src="/Principal_1.png" alt="LumiClinic" style="height:22px; width:auto; display:block; object-fit:contain;" />
+            </div>
         </div>
 
         <nav class="lc-nav">
             <?php if ($isSuperAdmin): ?>
                 <?= $navItem('/sys/clinics', 'Clínicas', $ico['sys'], $isActive('/sys/clinics')) ?>
                 <?= $navItem('/sys/billing', 'Assinaturas', $ico['finance'], $isActive('/sys/billing')) ?>
-                <?= $navItem('/sys/settings/billing', 'Configurações', $ico['settings'], $isActive('/sys/settings')) ?>
-                <?= $navItem('/sys/settings/seo', 'SEO', $ico['settings'], $isActive('/sys/settings/seo')) ?>
-                <?= $navItem('/sys/settings/support', 'Suporte', $ico['settings'], $isActive('/sys/settings/support')) ?>
-                <?= $navItem('/sys/settings/mail', 'E-mail', $ico['settings'], $isActive('/sys/settings/mail')) ?>
+                <?= $navItem('/sys/plans', 'Planos', $ico['finance'], $isActive('/sys/plans')) ?>
+
+                <details class="lc-navgroup" <?= $isActive('/sys/settings') ? 'open' : '' ?>>
+                    <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/sys/settings') ? ' lc-nav__item--active' : '' ?>">
+                        <span class="lc-nav__icon" aria-hidden="true"><?= $ico['settings'] ?></span>
+                        <span class="lc-nav__label">Configurações</span>
+                        <span class="lc-navgroup__chev" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </summary>
+                    <div class="lc-navgroup__children">
+                        <div class="lc-nav__sub">
+                            <?= $navItem('/sys/settings/billing', 'Assinatura', $ico['settings'], $isActive('/sys/settings/billing')) ?>
+                            <?= $navItem('/sys/settings/seo', 'SEO', $ico['settings'], $isActive('/sys/settings/seo')) ?>
+                            <?= $navItem('/sys/settings/support', 'Suporte', $ico['settings'], $isActive('/sys/settings/support')) ?>
+                            <?= $navItem('/sys/settings/mail', 'E-mail', $ico['settings'], $isActive('/sys/settings/mail')) ?>
+                            <?= $navItem('/sys/settings/dev-alerts', 'Alertas de erro', $ico['settings'], $isActive('/sys/settings/dev-alerts')) ?>
+                        </div>
+                    </div>
+                </details>
+
+                <?= $navItem('/sys/error-logs', 'Logs de erro', $ico['settings'], $isActive('/sys/error-logs')) ?>
                 <?= $navItem('/sys/queue-jobs', 'Fila', $ico['stock'], $isActive('/sys/queue-jobs')) ?>
             <?php else: ?>
                 <?= $navItem('/', 'Dashboard', $ico['dashboard'], $isActive('/')) ?>
@@ -183,6 +207,10 @@ $ico = [
                         <div class="lc-navgroup__children">
                             <div class="lc-nav__sub">
                                 <?= $navItem('/stock/materials', 'Materiais', $ico['stock'], $isActive('/stock/materials')) ?>
+                                <?php if ($can('stock.materials.manage')): ?>
+                                    <?= $navItem('/stock/categories', 'Categorias', $ico['stock'], $isActive('/stock/categories')) ?>
+                                    <?= $navItem('/stock/units', 'Unidades', $ico['stock'], $isActive('/stock/units')) ?>
+                                <?php endif; ?>
                                 <?php if ($can('stock.movements.read')): ?>
                                     <?= $navItem('/stock/movements', 'Movimentações', $ico['stock'], $isActive('/stock/movements')) ?>
                                 <?php endif; ?>

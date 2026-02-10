@@ -5,6 +5,7 @@ $patient = $patient ?? null;
 $images = $images ?? [];
 $professionals = $professionals ?? [];
 $pairs = $pairs ?? [];
+$records = $records ?? [];
 
 $kindLabel = [
     'before' => 'Antes',
@@ -62,7 +63,21 @@ ob_start();
                     </div>
                     <div>
                         <label class="lc-label">Vincular ao prontuário (opcional)</label>
-                        <input class="lc-input" type="number" name="medical_record_id" min="1" placeholder="Número do prontuário" />
+                        <select class="lc-select" name="medical_record_id">
+                            <option value="">(opcional)</option>
+                            <?php foreach ($records as $r): ?>
+                                <?php
+                                $rid = (int)($r['id'] ?? 0);
+                                $att = trim((string)($r['attended_at'] ?? ''));
+                                $proc = trim((string)($r['procedure_type'] ?? ''));
+                                $label = $att !== '' ? $att : ('Registro #' . $rid);
+                                if ($proc !== '') {
+                                    $label .= ' - ' . $proc;
+                                }
+                                ?>
+                                <option value="<?= $rid ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
 
@@ -154,8 +169,22 @@ ob_start();
             </div>
         </div>
 
-        <label class="lc-label">Vincular ao registro do prontuário (ID, opcional)</label>
-        <input class="lc-input" type="number" name="medical_record_id" min="1" />
+        <label class="lc-label">Vincular ao prontuário (opcional)</label>
+        <select class="lc-select" name="medical_record_id">
+            <option value="">(opcional)</option>
+            <?php foreach ($records as $r): ?>
+                <?php
+                $rid = (int)($r['id'] ?? 0);
+                $att = trim((string)($r['attended_at'] ?? ''));
+                $proc = trim((string)($r['procedure_type'] ?? ''));
+                $label = $att !== '' ? $att : ('Registro #' . $rid);
+                if ($proc !== '') {
+                    $label .= ' - ' . $proc;
+                }
+                ?>
+                <option value="<?= $rid ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+            <?php endforeach; ?>
+        </select>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Enviar</button>

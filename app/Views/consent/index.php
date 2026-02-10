@@ -4,6 +4,16 @@ $patient = $patient ?? null;
 $terms = $terms ?? [];
 $acceptances = $acceptances ?? [];
 $signatures = $signatures ?? [];
+
+$termTitleMap = [];
+if (is_array($terms)) {
+    foreach ($terms as $t) {
+        $tid = isset($t['id']) ? (int)$t['id'] : 0;
+        if ($tid > 0) {
+            $termTitleMap[$tid] = (string)($t['title'] ?? '');
+        }
+    }
+}
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -57,7 +67,8 @@ ob_start();
             <?php foreach ($acceptances as $a): ?>
                 <tr>
                     <td><?= (int)$a['id'] ?></td>
-                    <td><?= (int)$a['term_id'] ?></td>
+                    <?php $tid = (int)($a['term_id'] ?? 0); ?>
+                    <td><?= htmlspecialchars(($termTitleMap[$tid] ?? '') !== '' ? (string)$termTitleMap[$tid] : ('Termo #' . $tid), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$a['procedure_type'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$a['accepted_at'], ENT_QUOTES, 'UTF-8') ?></td>
                 </tr>

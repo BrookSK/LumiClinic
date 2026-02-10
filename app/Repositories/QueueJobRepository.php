@@ -23,13 +23,40 @@ final class QueueJobRepository
         }
 
         if ($status === null) {
-            $stmt = $this->pdo->prepare("\n                SELECT id, clinic_id, queue, job_type, payload_json, status, attempts, max_attempts, run_at, locked_at, locked_by, last_error, created_at, updated_at\n                FROM queue_jobs\n                ORDER BY id DESC\n                LIMIT :limit\n            ");
+            $stmt = $this->pdo->prepare("\n                SELECT q.id,
+                       q.clinic_id,
+                       c.name AS clinic_name,
+                       q.queue, q.job_type, q.payload_json, q.status,
+                       q.attempts, q.max_attempts,
+                       q.run_at,
+                       q.locked_at, q.locked_by,
+                       q.last_error,
+                       q.created_at, q.updated_at
+                FROM queue_jobs q
+                LEFT JOIN clinics c ON c.id = q.clinic_id
+                ORDER BY q.id DESC
+                LIMIT :limit
+            ");
             $stmt->bindValue('limit', $limit, \PDO::PARAM_INT);
             $stmt->execute();
             return $stmt->fetchAll();
         }
 
-        $stmt = $this->pdo->prepare("\n            SELECT id, clinic_id, queue, job_type, payload_json, status, attempts, max_attempts, run_at, locked_at, locked_by, last_error, created_at, updated_at\n            FROM queue_jobs\n            WHERE status = :status\n            ORDER BY id DESC\n            LIMIT :limit\n        ");
+        $stmt = $this->pdo->prepare("\n            SELECT q.id,
+                   q.clinic_id,
+                   c.name AS clinic_name,
+                   q.queue, q.job_type, q.payload_json, q.status,
+                   q.attempts, q.max_attempts,
+                   q.run_at,
+                   q.locked_at, q.locked_by,
+                   q.last_error,
+                   q.created_at, q.updated_at
+            FROM queue_jobs q
+            LEFT JOIN clinics c ON c.id = q.clinic_id
+            WHERE q.status = :status
+            ORDER BY q.id DESC
+            LIMIT :limit
+        ");
         $stmt->bindValue('status', $status);
         $stmt->bindValue('limit', $limit, \PDO::PARAM_INT);
         $stmt->execute();

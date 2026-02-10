@@ -45,7 +45,12 @@ ob_start();
                         <td><?= (int)$l['id'] ?></td>
                         <td><?= htmlspecialchars((string)$l['action'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)$l['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string)($l['user_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <?php
+                        $uname = trim((string)($l['user_name'] ?? ''));
+                        $uemail = trim((string)($l['user_email'] ?? ''));
+                        $ulabel = $uname !== '' ? $uname : ($uemail !== '' ? $uemail : '');
+                        ?>
+                        <td><?= htmlspecialchars($ulabel !== '' ? $ulabel : '-', ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)($l['ip_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                 <?php endforeach; ?>

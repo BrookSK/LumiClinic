@@ -7,6 +7,7 @@ namespace App\Controllers\Stock;
 use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Services\Auth\AuthService;
+use App\Services\Stock\MaterialMetaService;
 use App\Services\Stock\StockService;
 
 final class MaterialController extends Controller
@@ -36,8 +37,11 @@ final class MaterialController extends Controller
         }
 
         $svc = new StockService($this->container);
+        $meta = new MaterialMetaService($this->container);
         return $this->view('stock/materials', [
             'items' => $svc->listMaterials(),
+            'categories' => $meta->listActiveCategories(),
+            'units' => $meta->listActiveUnits(),
             'error' => trim((string)$request->input('error', '')),
         ]);
     }

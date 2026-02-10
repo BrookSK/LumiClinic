@@ -52,6 +52,16 @@ ob_start();
             <?php endif; ?>
 
             <button class="lc-btn" type="submit">Gerar</button>
+
+            <?php
+            $exportQuery = [
+                'from' => (string)$from,
+                'to' => (string)$to,
+                'professional_id' => (int)$professional_id,
+            ];
+            ?>
+            <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.csv?<?= http_build_query($exportQuery) ?>">Exportar planilha</a>
+            <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.pdf?<?= http_build_query($exportQuery) ?>">Exportar PDF</a>
         </form>
     </div>
 </div>

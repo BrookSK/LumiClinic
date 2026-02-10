@@ -12,6 +12,7 @@ use App\Core\View\View;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\BillingService;
 use App\Services\System\SystemSettingsService;
+use App\Services\System\SystemErrorLogService;
 
 final class BillingEnforcementMiddleware implements MiddlewareInterface
 {
@@ -64,6 +65,13 @@ final class BillingEnforcementMiddleware implements MiddlewareInterface
             $settings = new SystemSettingsService($this->container);
             $supportWhatsapp = trim((string)($settings->getText('support.whatsapp_number') ?? ''));
             $supportEmail = trim((string)($settings->getText('support.email') ?? ''));
+
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                402,
+                'billing_block',
+                'Assinatura pendente'
+            );
 
             return Response::html(View::render('errors/402', [
                 'title' => 'Assinatura pendente',

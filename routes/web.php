@@ -20,7 +20,9 @@ use App\Controllers\Scheduling\ServiceMaterialsController;
 use App\Controllers\Settings\SettingsController;
 use App\Controllers\System\SystemClinicController;
 use App\Controllers\System\SystemBillingAdminController;
+use App\Controllers\System\SystemPlanAdminController;
 use App\Controllers\System\SystemQueueJobController;
+use App\Controllers\System\SystemErrorLogController;
 use App\Controllers\Users\UserController;
 use App\Controllers\Patients\PatientController;
 use App\Controllers\Patients\PatientPortalAccessController;
@@ -34,8 +36,9 @@ use App\Controllers\Finance\FinancialController;
 use App\Controllers\Finance\PaymentController;
 use App\Controllers\Finance\SalesController;
 use App\Controllers\Stock\MaterialController;
-use App\Controllers\Stock\StockController;
+use App\Controllers\Stock\MaterialMetaController;
 use App\Controllers\Stock\StockAlertsController;
+use App\Controllers\Stock\StockController;
 use App\Controllers\Stock\StockReportsController;
 use App\Controllers\Portal\AuthPatientController;
 use App\Controllers\Portal\PortalController;
@@ -57,11 +60,14 @@ use App\Controllers\Dashboard\SystemHealthController;
 use App\Controllers\Ai\AiController;
 use App\Controllers\Reports\ReportsController;
 use App\Controllers\Private\PrivateTutorialController;
+use App\Controllers\Auth\AccessChoiceController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
 $router->get('/login', [LoginController::class, 'show']);
 $router->post('/login', [LoginController::class, 'login']);
+$router->get('/choose-access', [AccessChoiceController::class, 'show']);
+$router->post('/choose-access', [AccessChoiceController::class, 'choose']);
 $router->get('/forgot', [LoginController::class, 'showForgot']);
 $router->post('/forgot', [LoginController::class, 'forgot']);
 $router->get('/reset', [LoginController::class, 'showReset']);
@@ -197,14 +203,24 @@ $router->post('/finance/entries/create', [FinancialController::class, 'createEnt
 $router->post('/finance/entries/delete', [FinancialController::class, 'deleteEntry']);
 
 $router->get('/finance/reports', [FinancialController::class, 'reports']);
+$router->get('/finance/reports/export.csv', [FinancialController::class, 'reportsExportCsv']);
+$router->get('/finance/reports/export.pdf', [FinancialController::class, 'reportsExportPdf']);
 
 $router->get('/stock/materials', [MaterialController::class, 'index']);
 $router->get('/stock/materials/create', [MaterialController::class, 'createForm']);
 $router->post('/stock/materials/create', [MaterialController::class, 'create']);
+$router->get('/stock/categories', [MaterialMetaController::class, 'categories']);
+$router->post('/stock/categories/create', [MaterialMetaController::class, 'createCategory']);
+$router->post('/stock/categories/delete', [MaterialMetaController::class, 'deleteCategory']);
+$router->get('/stock/units', [MaterialMetaController::class, 'units']);
+$router->post('/stock/units/create', [MaterialMetaController::class, 'createUnit']);
+$router->post('/stock/units/delete', [MaterialMetaController::class, 'deleteUnit']);
 $router->get('/stock/movements', [StockController::class, 'movements']);
 $router->post('/stock/movements/create', [StockController::class, 'createMovement']);
 $router->get('/stock/alerts', [StockAlertsController::class, 'index']);
 $router->get('/stock/reports', [StockReportsController::class, 'index']);
+$router->get('/stock/reports/export.csv', [StockReportsController::class, 'exportCsv']);
+$router->get('/stock/reports/export.pdf', [StockReportsController::class, 'exportPdf']);
 
 $router->get('/services', [ServiceController::class, 'index']);
 $router->post('/services/create', [ServiceController::class, 'create']);
@@ -293,6 +309,11 @@ $router->post('/sys/billing/ensure-gateway', [SystemBillingAdminController::clas
 $router->post('/sys/billing/grant-month', [SystemBillingAdminController::class, 'grantMonth']);
 $router->post('/sys/billing/skip-month', [SystemBillingAdminController::class, 'skipMonth']);
 
+$router->get('/sys/plans', [SystemPlanAdminController::class, 'index']);
+$router->post('/sys/plans/create', [SystemPlanAdminController::class, 'create']);
+$router->post('/sys/plans/update', [SystemPlanAdminController::class, 'update']);
+$router->post('/sys/plans/set-status', [SystemPlanAdminController::class, 'setStatus']);
+
 $router->get('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billing']);
 $router->post('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billingSubmit']);
 
@@ -305,6 +326,12 @@ $router->post('/sys/settings/support', [\App\Controllers\System\SystemSettingsCo
 $router->get('/sys/settings/mail', [\App\Controllers\System\SystemSettingsController::class, 'mail']);
 $router->post('/sys/settings/mail', [\App\Controllers\System\SystemSettingsController::class, 'mailSubmit']);
 $router->post('/sys/settings/mail/test', [\App\Controllers\System\SystemSettingsController::class, 'mailTest']);
+
+$router->get('/sys/settings/dev-alerts', [\App\Controllers\System\SystemSettingsController::class, 'devAlerts']);
+$router->post('/sys/settings/dev-alerts', [\App\Controllers\System\SystemSettingsController::class, 'devAlertsSubmit']);
+
+$router->get('/sys/error-logs', [SystemErrorLogController::class, 'index']);
+$router->get('/sys/error-logs/view', [SystemErrorLogController::class, 'details']);
 
 $router->get('/sys/queue-jobs', [SystemQueueJobController::class, 'index']);
 $router->post('/sys/queue-jobs/retry', [SystemQueueJobController::class, 'retry']);

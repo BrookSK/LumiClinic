@@ -9,6 +9,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\PatientUploadRepository;
 use App\Services\Storage\PrivateStorage;
+use App\Services\Billing\PlanEntitlementsService;
 
 final class PortalUploadService
 {
@@ -40,6 +41,16 @@ final class PortalUploadService
         $bytes = file_get_contents($tmp);
         if ($bytes === false || $bytes === '') {
             throw new \RuntimeException('Arquivo inválido.');
+        }
+
+        $ent = new PlanEntitlementsService($this->container);
+        $limitBytes = $ent->storageLimitBytes($clinicId);
+        if (is_int($limitBytes)) {
+            $used = $this->sumStorageUsedBytes($clinicId);
+            $nextTotal = $used + strlen($bytes);
+            if ($nextTotal > $limitBytes) {
+                throw new \RuntimeException('Limite de armazenamento do plano atingido.');
+            }
         }
 
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
@@ -90,5 +101,30 @@ final class PortalUploadService
         $audit->log(null, $clinicId, 'portal.upload.create', ['patient_upload_id' => $id, 'patient_id' => $patientId, 'kind' => $kind], $ip);
 
         return $id;
+    }
+
+    private function sumStorageUsedBytes(int $clinicId): int
+    {
+        $pdo = $this->container->get(\PDO::class);
+
+        $stmt1 = $pdo->prepare("\n            SELECT COALESCE(SUM(size_bytes),0) AS s
+            FROM patient_uploads
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+        ");
+        $stmt1->execute(['clinic_id' => $clinicId]);
+        $r1 = $stmt1->fetch();
+        $sum1 = (int)($r1['s'] ?? 0);
+
+        $stmt2 = $pdo->prepare("\n            SELECT COALESCE(SUM(size_bytes),0) AS s
+            FROM medical_images
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+        ");
+        $stmt2->execute(['clinic_id' => $clinicId]);
+        $r2 = $stmt2->fetch();
+        $sum2 = (int)($r2['s'] ?? 0);
+
+        return max(0, $sum1) + max(0, $sum2);
     }
 }

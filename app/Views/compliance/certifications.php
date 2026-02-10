@@ -3,6 +3,7 @@ $title = 'Certificações (Políticas & Controles)';
 $csrf = $_SESSION['_csrf'] ?? '';
 $policies = $policies ?? [];
 $controls = $controls ?? [];
+$users = $users ?? [];
 $error = $error ?? '';
 
 $policyStatusLabel = [
@@ -57,8 +58,22 @@ ob_start();
             <label class="lc-label">Versão</label>
             <input class="lc-input" type="number" name="version" min="1" value="1" />
 
-            <label class="lc-label">Responsável (ID do usuário)</label>
-            <input class="lc-input" type="number" name="owner_user_id" min="0" placeholder="opcional" />
+            <label class="lc-label">Responsável (opcional)</label>
+            <select class="lc-select" name="owner_user_id">
+                <option value="">(opcional)</option>
+                <?php foreach ($users as $u): ?>
+                    <?php
+                    $uid = (int)($u['id'] ?? 0);
+                    $uname = trim((string)($u['name'] ?? ''));
+                    $uemail = trim((string)($u['email'] ?? ''));
+                    $label = $uname !== '' ? $uname : ($uemail !== '' ? $uemail : ('Usuário #' . $uid));
+                    if ($uemail !== '' && $uname !== '') {
+                        $label .= ' (' . $uemail . ')';
+                    }
+                    ?>
+                    <option value="<?= $uid ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+            </select>
 
             <label class="lc-label">Revisado em (AAAA-MM-DD HH:MM:SS)</label>
             <input class="lc-input" type="text" name="reviewed_at" placeholder="opcional" />
@@ -77,8 +92,22 @@ ob_start();
         <form method="post" action="/compliance/certifications/controls/create" class="lc-form">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
-            <label class="lc-label">Política (ID) (opcional)</label>
-            <input class="lc-input" type="number" name="policy_id" min="0" placeholder="opcional" />
+            <label class="lc-label">Política (opcional)</label>
+            <select class="lc-select" name="policy_id">
+                <option value="">(opcional)</option>
+                <?php foreach ($policies as $p): ?>
+                    <?php
+                    $pid = (int)($p['id'] ?? 0);
+                    $pcode = trim((string)($p['code'] ?? ''));
+                    $ptitle = trim((string)($p['title'] ?? ''));
+                    $plabel = trim(($pcode !== '' ? ($pcode . ' - ') : '') . $ptitle);
+                    if ($plabel === '') {
+                        $plabel = 'Política #' . $pid;
+                    }
+                    ?>
+                    <option value="<?= $pid ?>"><?= htmlspecialchars($plabel, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+            </select>
 
             <label class="lc-label">Código</label>
             <input class="lc-input" type="text" name="code" placeholder="ex: iso27001-a.5.1" required />
@@ -97,8 +126,22 @@ ob_start();
                 <option value="failed">Falhou</option>
             </select>
 
-            <label class="lc-label">Responsável (ID do usuário)</label>
-            <input class="lc-input" type="number" name="owner_user_id" min="0" placeholder="opcional" />
+            <label class="lc-label">Responsável (opcional)</label>
+            <select class="lc-select" name="owner_user_id">
+                <option value="">(opcional)</option>
+                <?php foreach ($users as $u): ?>
+                    <?php
+                    $uid = (int)($u['id'] ?? 0);
+                    $uname = trim((string)($u['name'] ?? ''));
+                    $uemail = trim((string)($u['email'] ?? ''));
+                    $label = $uname !== '' ? $uname : ($uemail !== '' ? $uemail : ('Usuário #' . $uid));
+                    if ($uemail !== '' && $uname !== '') {
+                        $label .= ' (' . $uemail . ')';
+                    }
+                    ?>
+                    <option value="<?= $uid ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+            </select>
 
             <label class="lc-label">Link de evidência</label>
             <input class="lc-input" type="text" name="evidence_url" placeholder="opcional" />
@@ -121,7 +164,6 @@ ob_start();
                 <table class="lc-table">
                     <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Código</th>
                         <th>Status</th>
                         <th>Versão</th>
@@ -133,13 +175,27 @@ ob_start();
                     <tbody>
                     <?php foreach ($policies as $p): ?>
                         <tr>
-                            <td><?= (int)($p['id'] ?? 0) ?></td>
                             <td><?= htmlspecialchars((string)($p['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <?php $pst = (string)($p['status'] ?? ''); ?>
                             <td><?= htmlspecialchars((string)($policyStatusLabel[$pst] ?? $pst), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= (int)($p['version'] ?? 1) ?></td>
                             <td><?= htmlspecialchars((string)($p['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= (int)($p['owner_user_id'] ?? 0) ?></td>
+                            <?php
+                            $ownerId = (int)($p['owner_user_id'] ?? 0);
+                            $ownerLabel = $ownerId > 0 ? ('Usuário #' . $ownerId) : '-';
+                            foreach ($users as $u) {
+                                if ((int)($u['id'] ?? 0) === $ownerId) {
+                                    $n = trim((string)($u['name'] ?? ''));
+                                    $e = trim((string)($u['email'] ?? ''));
+                                    $ownerLabel = $n !== '' ? $n : ($e !== '' ? $e : ('Usuário #' . $ownerId));
+                                    if ($e !== '' && $n !== '') {
+                                        $ownerLabel .= ' (' . $e . ')';
+                                    }
+                                    break;
+                                }
+                            }
+                            ?>
+                            <td><?= htmlspecialchars($ownerLabel, ENT_QUOTES, 'UTF-8') ?></td>
                             <td style="min-width:560px;">
                                 <form method="post" action="/compliance/certifications/policies/update" class="lc-form lc-flex lc-flex--wrap" style="gap:8px; align-items:flex-end;">
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
@@ -155,7 +211,24 @@ ob_start();
 
                                     <input class="lc-input" type="text" name="title" value="<?= htmlspecialchars((string)($p['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
-                                    <input class="lc-input" type="number" name="owner_user_id" min="0" value="<?= (int)($p['owner_user_id'] ?? 0) ?>" />
+                                    <select class="lc-select" name="owner_user_id">
+                                        <option value="">(opcional)</option>
+                                        <?php foreach ($users as $u): ?>
+                                            <?php
+                                            $uid = (int)($u['id'] ?? 0);
+                                            $uname = trim((string)($u['name'] ?? ''));
+                                            $uemail = trim((string)($u['email'] ?? ''));
+                                            $label = $uname !== '' ? $uname : ($uemail !== '' ? $uemail : ('Usuário #' . $uid));
+                                            if ($uemail !== '' && $uname !== '') {
+                                                $label .= ' (' . $uemail . ')';
+                                            }
+                                            $current = (int)($p['owner_user_id'] ?? 0);
+                                            ?>
+                                            <option value="<?= $uid ?>" <?= ($current > 0 && $uid === $current) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
 
                                     <input class="lc-input" type="text" name="reviewed_at" placeholder="Revisado em (AAAA-MM-DD HH:MM:SS)" value="<?= htmlspecialchars((string)($p['reviewed_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
@@ -183,7 +256,6 @@ ob_start();
                 <table class="lc-table">
                     <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Política</th>
                         <th>Código</th>
                         <th>Status</th>
@@ -196,13 +268,42 @@ ob_start();
                     <tbody>
                     <?php foreach ($controls as $c): ?>
                         <tr>
-                            <td><?= (int)($c['id'] ?? 0) ?></td>
-                            <td><?= (int)($c['policy_id'] ?? 0) ?></td>
+                            <?php
+                            $pid = (int)($c['policy_id'] ?? 0);
+                            $pLabel = $pid > 0 ? ('Política #' . $pid) : '-';
+                            foreach ($policies as $pp) {
+                                if ((int)($pp['id'] ?? 0) === $pid) {
+                                    $pc = trim((string)($pp['code'] ?? ''));
+                                    $pt = trim((string)($pp['title'] ?? ''));
+                                    $pLabel = trim(($pc !== '' ? ($pc . ' - ') : '') . $pt);
+                                    if ($pLabel === '') {
+                                        $pLabel = 'Política #' . $pid;
+                                    }
+                                    break;
+                                }
+                            }
+                            ?>
+                            <td><?= htmlspecialchars($pLabel, ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($c['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <?php $cst = (string)($c['status'] ?? ''); ?>
                             <td><?= htmlspecialchars((string)($controlStatusLabel[$cst] ?? $cst), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($c['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= (int)($c['owner_user_id'] ?? 0) ?></td>
+                            <?php
+                            $ownerId = (int)($c['owner_user_id'] ?? 0);
+                            $ownerLabel = $ownerId > 0 ? ('Usuário #' . $ownerId) : '-';
+                            foreach ($users as $u) {
+                                if ((int)($u['id'] ?? 0) === $ownerId) {
+                                    $n = trim((string)($u['name'] ?? ''));
+                                    $e = trim((string)($u['email'] ?? ''));
+                                    $ownerLabel = $n !== '' ? $n : ($e !== '' ? $e : ('Usuário #' . $ownerId));
+                                    if ($e !== '' && $n !== '') {
+                                        $ownerLabel .= ' (' . $e . ')';
+                                    }
+                                    break;
+                                }
+                            }
+                            ?>
+                            <td><?= htmlspecialchars($ownerLabel, ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
                                 <?php $ev = (string)($c['evidence_url'] ?? ''); ?>
                                 <?php if ($ev !== ''): ?>
@@ -216,7 +317,26 @@ ob_start();
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                     <input type="hidden" name="id" value="<?= (int)($c['id'] ?? 0) ?>" />
 
-                                    <input class="lc-input" type="number" name="policy_id" min="0" value="<?= (int)($c['policy_id'] ?? 0) ?>" />
+                                    <select class="lc-select" name="policy_id">
+                                        <option value="">(opcional)</option>
+                                        <?php
+                                        $currentPid = (int)($c['policy_id'] ?? 0);
+                                        ?>
+                                        <?php foreach ($policies as $p): ?>
+                                            <?php
+                                            $pid = (int)($p['id'] ?? 0);
+                                            $pcode = trim((string)($p['code'] ?? ''));
+                                            $ptitle = trim((string)($p['title'] ?? ''));
+                                            $plabel = trim(($pcode !== '' ? ($pcode . ' - ') : '') . $ptitle);
+                                            if ($plabel === '') {
+                                                $plabel = 'Política #' . $pid;
+                                            }
+                                            ?>
+                                            <option value="<?= $pid ?>" <?= ($currentPid > 0 && $pid === $currentPid) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($plabel, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
 
                                     <select class="lc-select" name="status">
                                         <option value="planned" <?= (($c['status'] ?? '')==='planned')?'selected':'' ?>>Planejado</option>
@@ -227,7 +347,26 @@ ob_start();
 
                                     <input class="lc-input" type="text" name="title" value="<?= htmlspecialchars((string)($c['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 
-                                    <input class="lc-input" type="number" name="owner_user_id" min="0" value="<?= (int)($c['owner_user_id'] ?? 0) ?>" />
+                                    <select class="lc-select" name="owner_user_id">
+                                        <option value="">(opcional)</option>
+                                        <?php
+                                        $currentOwner = (int)($c['owner_user_id'] ?? 0);
+                                        ?>
+                                        <?php foreach ($users as $u): ?>
+                                            <?php
+                                            $uid = (int)($u['id'] ?? 0);
+                                            $uname = trim((string)($u['name'] ?? ''));
+                                            $uemail = trim((string)($u['email'] ?? ''));
+                                            $label = $uname !== '' ? $uname : ($uemail !== '' ? $uemail : ('Usuário #' . $uid));
+                                            if ($uemail !== '' && $uname !== '') {
+                                                $label .= ' (' . $uemail . ')';
+                                            }
+                                            ?>
+                                            <option value="<?= $uid ?>" <?= ($currentOwner > 0 && $uid === $currentOwner) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
 
                                     <input class="lc-input" type="text" name="evidence_url" placeholder="Link de evidência" value="<?= htmlspecialchars((string)($c['evidence_url'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
 

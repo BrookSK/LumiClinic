@@ -10,16 +10,21 @@ $token = $token ?? '';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
+    <link rel="icon" href="/Ícone_1.png" />
     <link rel="stylesheet" href="/assets/css/design-system.css" />
 </head>
 <body class="lc-body lc-body--auth">
 <div class="lc-auth lc-auth--compact">
     <div class="lc-auth__panel lc-auth__panel--compact">
         <div class="lc-auth__brand">
-            <div class="lc-brand__logo">LC</div>
+            <div class="lc-brand__logo" style="padding:0; background:#000;">
+                <img src="/Ícone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
+            </div>
             <div>
-                <div class="lc-auth__title">Redefinir senha</div>
-                <div class="lc-auth__subtitle">LumiClinic</div>
+                <div class="lc-auth__title">Definir nova senha</div>
+                <div class="lc-auth__subtitle" style="line-height:0; margin-top:6px;">
+                    <img src="/Principal_1.png" alt="LumiClinic" style="height:18px; width:auto; display:block; object-fit:contain;" />
+                </div>
             </div>
         </div>
 

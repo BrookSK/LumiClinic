@@ -6,7 +6,10 @@ namespace App\Controllers\Auth;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Repositories\PatientUserRepository;
+use App\Repositories\UserRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Portal\PatientAuthService;
 
 final class LoginController extends Controller
 {
@@ -56,18 +59,70 @@ final class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $auth = new AuthService($this->container);
-
         $email = (string)$request->input('email', '');
         $password = (string)$request->input('password', '');
 
-        $result = $auth->attempt($email, $password, $request->ip(), $request->header('user-agent'));
+        $pdo = $this->container->get(\PDO::class);
+        $userRepo = new UserRepository($pdo);
+        $patientRepo = new PatientUserRepository($pdo);
 
-        if (!$result->success) {
-            return $this->view('auth/login', ['error' => $result->message]);
+        $userCandidates = $userRepo->listActiveByEmail($email, 10);
+        $patientCandidates = $patientRepo->listActiveByEmailWithClinic($email, 10);
+
+        $options = [];
+
+        foreach ($userCandidates as $u) {
+            if (!isset($u['password_hash']) || !password_verify($password, (string)$u['password_hash'])) {
+                continue;
+            }
+
+            $clinicName = (string)($u['clinic_name'] ?? '');
+            $isSuper = isset($u['is_super_admin']) && (int)$u['is_super_admin'] === 1;
+
+            $options[] = [
+                'kind' => 'user',
+                'id' => (int)$u['id'],
+                'label' => $isSuper ? 'Super Admin (Plataforma)' : ($clinicName !== '' ? $clinicName : ('Clínica #' . (int)($u['clinic_id'] ?? 0))),
+                'meta' => $isSuper ? 'Área do sistema (admin)' : 'Área do sistema (equipe)',
+            ];
         }
 
-        return $this->redirect('/');
+        foreach ($patientCandidates as $pu) {
+            if (!isset($pu['password_hash']) || !password_verify($password, (string)$pu['password_hash'])) {
+                continue;
+            }
+
+            $clinicName = (string)($pu['clinic_name'] ?? '');
+
+            $options[] = [
+                'kind' => 'patient',
+                'id' => (int)$pu['id'],
+                'label' => $clinicName !== '' ? $clinicName : ('Clínica #' . (int)($pu['clinic_id'] ?? 0)),
+                'meta' => 'Portal do paciente',
+            ];
+        }
+
+        if ($options === []) {
+            return $this->view('auth/login', ['error' => 'Credenciais inválidas.']);
+        }
+
+        if (count($options) === 1) {
+            $opt = $options[0];
+            if ((string)$opt['kind'] === 'user') {
+                (new AuthService($this->container))->loginUserByIdForSession((int)$opt['id'], $request->ip(), $request->header('user-agent'));
+                return $this->redirect('/');
+            }
+
+            (new PatientAuthService($this->container))->loginPatientUserByIdForSession((int)$opt['id'], $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/portal');
+        }
+
+        $_SESSION['pending_access'] = [
+            'email' => $email,
+            'options' => $options,
+        ];
+
+        return $this->redirect('/choose-access');
     }
 
     public function logout(Request $request)

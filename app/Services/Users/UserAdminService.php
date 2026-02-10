@@ -10,6 +10,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\RoleRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Billing\PlanEntitlementsService;
 
 final class UserAdminService
 {
@@ -53,6 +54,16 @@ final class UserAdminService
 
         if ($clinicId === null || $actorId === null) {
             throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $ent = new PlanEntitlementsService($this->container);
+        $limit = $ent->usersLimit($clinicId);
+        if (is_int($limit)) {
+            $usersRepo = new AdminUserRepository($this->container->get(\PDO::class));
+            $count = $usersRepo->countActiveByClinic($clinicId);
+            if ($count >= $limit) {
+                throw new \RuntimeException('Limite de usuários do plano atingido.');
+            }
         }
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);

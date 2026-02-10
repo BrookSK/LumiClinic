@@ -49,9 +49,6 @@ ob_start();
 
         <?php if (is_string($reset_token) && $reset_token !== ''): ?>
             <div style="margin-top: 14px;">
-                <div class="lc-alert lc-alert--info">
-                    Token (DEV): <?= htmlspecialchars((string)$reset_token, ENT_QUOTES, 'UTF-8') ?>
-                </div>
                 <div style="margin-top: 8px;">
                     <a class="lc-btn lc-btn--secondary" href="/portal/reset?token=<?= htmlspecialchars((string)$reset_token, ENT_QUOTES, 'UTF-8') ?>" target="_blank">Abrir link de redefinição</a>
                 </div>

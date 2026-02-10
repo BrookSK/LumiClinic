@@ -8,6 +8,18 @@ final class PatientRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    public function countActiveByClinic(int $clinicId): int
+    {
+        $stmt = $this->pdo->prepare("\n            SELECT COUNT(*) AS c
+            FROM patients
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+        ");
+        $stmt->execute(['clinic_id' => $clinicId]);
+        $row = $stmt->fetch();
+        return (int)($row['c'] ?? 0);
+    }
+
     public function createWithClinicalFields(
         int $clinicId,
         string $name,

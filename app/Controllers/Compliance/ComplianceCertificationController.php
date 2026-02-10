@@ -6,7 +6,9 @@ namespace App\Controllers\Compliance;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Repositories\AdminUserRepository;
 use App\Services\Compliance\ComplianceCertificationService;
+use App\Services\Auth\AuthService;
 
 final class ComplianceCertificationController extends Controller
 {
@@ -17,9 +19,16 @@ final class ComplianceCertificationController extends Controller
         $svc = new ComplianceCertificationService($this->container);
         $data = $svc->dashboard($request->ip(), $request->header('user-agent'));
 
+        $users = [];
+        $clinicId = (new AuthService($this->container))->clinicId();
+        if ($clinicId !== null) {
+            $users = (new AdminUserRepository($this->container->get(\PDO::class)))->listByClinic((int)$clinicId, 400, 0);
+        }
+
         return $this->view('compliance/certifications', [
             'policies' => $data['policies'],
             'controls' => $data['controls'],
+            'users' => $users,
             'error' => trim((string)$request->input('error', '')),
         ]);
     }
