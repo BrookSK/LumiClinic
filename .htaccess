@@ -3,6 +3,8 @@ RewriteEngine On
 # Servir assets diretamente do /public
 RewriteRule ^assets/(.*)$ public/assets/$1 [L]
 RewriteRule ^favicon\.ico$ public/favicon.ico [L]
+RewriteRule ^Principal_1\.png$ public/Principal_1.png [L]
+RewriteRule ^icone_1\.png$ public/icone_1.png [L]
 
 # Se o arquivo ou diretório existir na raiz, entrega direto
 RewriteCond %{REQUEST_FILENAME} -f [OR]
