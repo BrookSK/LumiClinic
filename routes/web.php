@@ -230,6 +230,7 @@ $router->post('/patients/create', [PatientController::class, 'store']);
 $router->get('/patients/view', [PatientController::class, 'show']);
 $router->get('/patients/edit', [PatientController::class, 'edit']);
 $router->post('/patients/edit', [PatientController::class, 'update']);
+$router->get('/patients/search-json', [PatientController::class, 'searchJson']);
 
 $router->get('/patients/portal-access', [PatientPortalAccessController::class, 'show']);
 $router->post('/patients/portal-access/ensure', [PatientPortalAccessController::class, 'ensure']);

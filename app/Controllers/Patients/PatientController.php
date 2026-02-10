@@ -6,6 +6,7 @@ namespace App\Controllers\Patients;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Core\Http\Response;
 use App\Services\Patients\PatientService;
 use App\Services\Auth\AuthService;
 
@@ -214,5 +215,34 @@ final class PatientController extends Controller
         ], $request->ip(), $request->header('user-agent'));
 
         return $this->redirect('/patients/view?id=' . $id);
+    }
+
+    public function searchJson(Request $request): Response
+    {
+        $this->authorize('patients.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return Response::json(['items' => []]);
+        }
+
+        $q = trim((string)$request->input('q', ''));
+        $limit = (int)$request->input('limit', 20);
+        $limit = max(1, min(30, $limit));
+
+        $service = new PatientService($this->container);
+        $rows = $service->search($q, $limit, 0);
+
+        $items = [];
+        foreach ($rows as $r) {
+            $items[] = [
+                'id' => (int)($r['id'] ?? 0),
+                'name' => (string)($r['name'] ?? ''),
+                'email' => (string)($r['email'] ?? ''),
+                'phone' => (string)($r['phone'] ?? ''),
+            ];
+        }
+
+        return Response::json(['items' => $items]);
     }
 }

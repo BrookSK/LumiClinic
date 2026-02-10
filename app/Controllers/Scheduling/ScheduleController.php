@@ -9,7 +9,6 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AppointmentLogRepository;
-use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Repositories\ServiceMaterialDefaultRepository;
@@ -329,8 +328,6 @@ final class ScheduleController extends Controller
         $svcRepo = new ServiceCatalogRepository($this->container->get(\PDO::class));
         $services = $svcRepo->listActiveByClinic($clinicId);
 
-        $patients = (new PatientRepository($this->container->get(\PDO::class)))->searchByClinic($clinicId, '', 200, 0);
-
         return $this->view('scheduling/index', [
             'date' => $date,
             'view' => $view,
@@ -341,7 +338,6 @@ final class ScheduleController extends Controller
             'items' => $items,
             'professionals' => $professionals,
             'services' => $services,
-            'patients' => $patients,
             'page' => $page,
             'per_page' => $perPage,
             'has_next' => $hasNext,

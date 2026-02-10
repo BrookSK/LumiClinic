@@ -3,7 +3,6 @@
 /** @var list<array<string,mixed>> $items */
 /** @var list<array<string,mixed>> $professionals */
 /** @var list<array<string,mixed>> $services */
-/** @var list<array<string,mixed>> $patients */
 /** @var string $created */
 /** @var string $error */
 $view = isset($view) ? (string)$view : 'day';
@@ -24,8 +23,6 @@ $profMap = [];
 foreach ($professionals as $p) {
     $profMap[(int)$p['id']] = $p;
 }
-
-$patients = $patients ?? [];
 
 ob_start();
 ?>
@@ -252,14 +249,12 @@ ob_start();
                 <form method="post" action="/schedule/create" class="lc-modal__body">
                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
-                    <div class="lc-field" style="grid-column: 1 / -1;">
+                    <div class="lc-field" style="grid-column: 1 / -1; position:relative;">
                         <label class="lc-label">Paciente</label>
-                        <select class="lc-select" name="patient_id" id="modal_patient_id" required>
-                            <option value="">Selecione</option>
-                            <?php foreach ($patients as $pt): ?>
-                                <option value="<?= (int)$pt['id'] ?>"><?= htmlspecialchars((string)$pt['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <input class="lc-input" type="text" id="patientSearch" placeholder="Buscar por nome, e-mail ou telefone" autocomplete="off" required />
+                        <input type="hidden" name="patient_id" id="patient_id" value="" />
+                        <div class="lc-autocomplete" id="patientResults" style="display:none;"></div>
+                        <div class="lc-muted" id="patientHint" style="margin-top:6px; display:none;">Selecione um paciente da lista.</div>
                     </div>
 
                     <div class="lc-field">
@@ -308,7 +303,10 @@ ob_start();
   const dateFilterEl = document.getElementById('filter_date');
   const openBtn = document.getElementById('openCreateAppointment');
   const modal = document.getElementById('createAppointmentModal');
-  const modalPatientEl = document.getElementById('modal_patient_id');
+  const patientSearchEl = document.getElementById('patientSearch');
+  const patientIdEl = document.getElementById('patient_id');
+  const patientResultsEl = document.getElementById('patientResults');
+  const patientHintEl = document.getElementById('patientHint');
   const modalServiceEl = document.getElementById('modal_service_id');
   const modalProfEl = document.getElementById('modal_professional_id');
   const modalStartEl = document.getElementById('modal_start_at');
@@ -351,6 +349,107 @@ ob_start();
 
   if (!modalServiceEl || !modalProfEl || !modalStartEl) {
     return;
+  }
+
+  function clearPatientSelection() {
+    if (patientIdEl) patientIdEl.value = '';
+  }
+
+  function hidePatientResults() {
+    if (!patientResultsEl) return;
+    patientResultsEl.style.display = 'none';
+    patientResultsEl.innerHTML = '';
+  }
+
+  function showPatientHint(show) {
+    if (!patientHintEl) return;
+    patientHintEl.style.display = show ? 'block' : 'none';
+  }
+
+  async function searchPatients(q) {
+    const url = `/patients/search-json?q=${encodeURIComponent(q)}&limit=10`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data && data.items) ? data.items : [];
+  }
+
+  let patientTimer = null;
+  if (patientSearchEl && patientIdEl && patientResultsEl) {
+    patientSearchEl.addEventListener('input', function() {
+      clearPatientSelection();
+      const q = (patientSearchEl.value || '').trim();
+      hidePatientResults();
+      showPatientHint(q.length > 0);
+
+      if (patientTimer) window.clearTimeout(patientTimer);
+      if (q.length < 2) {
+        return;
+      }
+      patientTimer = window.setTimeout(async function() {
+        let items = [];
+        try {
+          items = await searchPatients(q);
+        } catch (e) {
+          items = [];
+        }
+
+        if (!Array.isArray(items) || items.length === 0) {
+          hidePatientResults();
+          return;
+        }
+
+        patientResultsEl.innerHTML = '';
+        for (const it of items) {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'lc-autocomplete__item';
+          const name = (it.name || '').toString();
+          const meta = [it.phone, it.email].filter(Boolean).join(' · ');
+          row.innerHTML = `<div class="lc-autocomplete__name"></div><div class="lc-autocomplete__meta"></div>`;
+          const nameEl = row.querySelector('.lc-autocomplete__name');
+          const metaEl = row.querySelector('.lc-autocomplete__meta');
+          if (nameEl) nameEl.textContent = name;
+          if (metaEl) metaEl.textContent = meta;
+          row.addEventListener('click', function() {
+            patientIdEl.value = String(it.id || '');
+            patientSearchEl.value = name;
+            hidePatientResults();
+            showPatientHint(false);
+          });
+          patientResultsEl.appendChild(row);
+        }
+        patientResultsEl.style.display = 'block';
+      }, 250);
+    });
+
+    patientSearchEl.addEventListener('blur', function() {
+      window.setTimeout(function() {
+        if (!patientIdEl.value) {
+          showPatientHint((patientSearchEl.value || '').trim() !== '');
+        }
+        hidePatientResults();
+      }, 150);
+    });
+
+    patientSearchEl.addEventListener('focus', function() {
+      if (!patientIdEl.value && (patientSearchEl.value || '').trim() !== '') {
+        showPatientHint(true);
+      }
+    });
+  }
+
+  if (modal) {
+    const form = modal.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        if (patientIdEl && String(patientIdEl.value || '').trim() === '') {
+          e.preventDefault();
+          showPatientHint(true);
+          if (patientSearchEl) patientSearchEl.focus();
+        }
+      });
+    }
   }
 
   async function loadSlots() {
