@@ -155,6 +155,10 @@ body.lc-shell--collapsed .lc-sidebar__footer{display:none}
     box-shadow: var(--lc-shadow);
 }
 
+.space-card-lu{
+    margin:14px;
+}
+
 .lc-card__title{font-weight:700;margin-bottom:10px}
 
 .lc-card__body{color:var(--lc-muted);line-height:1.5}

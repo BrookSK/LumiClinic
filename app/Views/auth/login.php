@@ -61,12 +61,12 @@ $error = $error ?? null;
                     <div class="lc-auth__promoTitle">Gestão completa da sua clínica</div>
                     <div class="lc-auth__promoText">Agenda, pacientes, prontuário, financeiro, estoque e configurações — tudo em um só lugar.</div>
 
-                    <div class="lc-card" style="margin-top:16px; padding:14px;">
+                    <div class="lc-card space-card-lu" style="margin-top:16px; padding:24px;">
                         <div style="font-weight:700; font-size:14px; margin-bottom:4px;">Acesso para pacientes</div>
                         <div class="lc-muted" style="line-height:1.45; margin-bottom:12px;">
                             Para seus pacientes entrarem com e-mail e senha e acessarem documentos, agenda e envios.
                         </div>
-                        <a class="lc-btn lc-btn--secondary" href="/portal" style="width:100%; justify-content:center;">Entrar no Portal do Paciente</a>
+                        <a class="lc-btn lc-btn--secondary" href="/portal" style="width:100%; justify-content:center; font-size:13px;">Entrar no Portal do Paciente</a>
                     </div>
                 </div>
             </div>
