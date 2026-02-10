@@ -1,12 +1,12 @@
 <?php
-$title = 'Dias não atendidos';
+$title = 'Feriados e Recesso';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $items = $items ?? [];
 ob_start();
 ?>
 <div class="lc-card" style="margin-bottom:16px;">
-    <div class="lc-card__title">Adicionar dia não atendido</div>
+    <div class="lc-card__title">Adicionar feriado/recesso</div>
 
     <?php if ($error): ?>
         <div class="lc-alert lc-alert--danger"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
@@ -29,7 +29,7 @@ ob_start();
 </div>
 
 <div class="lc-card">
-    <div class="lc-card__title">Dias cadastrados</div>
+    <div class="lc-card__title">Datas cadastradas</div>
 
     <div class="lc-table-wrap">
         <table class="lc-table">

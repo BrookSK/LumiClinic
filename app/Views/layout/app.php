@@ -53,7 +53,7 @@ $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['ac
                 <?php if ($can('clinics.read')): ?>
                     <a class="lc-nav__item" href="/clinic">Clínica</a>
                     <a class="lc-nav__item" href="/clinic/working-hours">Horários</a>
-                    <a class="lc-nav__item" href="/clinic/closed-days">Dias não atendidos</a>
+                    <a class="lc-nav__item" href="/clinic/closed-days">Feriados e Recesso</a>
                 <?php endif; ?>
 
                 <?php if ($can('users.read')): ?>

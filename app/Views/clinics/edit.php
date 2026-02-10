@@ -25,7 +25,7 @@ ob_start();
             <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             <a class="lc-btn lc-btn--secondary" href="/">Voltar</a>
             <a class="lc-btn lc-btn--secondary" href="/clinic/working-hours">Horários</a>
-            <a class="lc-btn lc-btn--secondary" href="/clinic/closed-days">Dias não atendidos</a>
+            <a class="lc-btn lc-btn--secondary" href="/clinic/closed-days">Feriados e Recesso</a>
         </div>
     </form>
 </div>
