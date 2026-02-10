@@ -46,7 +46,6 @@ final class ClinicController extends Controller
         $this->authorize('clinics.update');
 
         $name = trim((string)$request->input('name', ''));
-        $tenantKey = trim((string)$request->input('tenant_key', ''));
         if ($name === '') {
             return $this->view('clinics/edit', ['error' => 'Nome é obrigatório.']);
         }
@@ -54,7 +53,10 @@ final class ClinicController extends Controller
         $service = new ClinicService($this->container);
         $service->updateClinicName($name, $request->ip());
 
-        $service->updateTenantKey($tenantKey, $request->ip());
+        if (isset($_POST['tenant_key'])) {
+            $tenantKey = trim((string)$request->input('tenant_key', ''));
+            $service->updateTenantKey($tenantKey, $request->ip());
+        }
 
         return $this->redirect('/clinic');
     }

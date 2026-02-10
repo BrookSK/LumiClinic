@@ -3,6 +3,7 @@
 /** @var list<array<string,mixed>> $items */
 /** @var list<array<string,mixed>> $professionals */
 /** @var list<array<string,mixed>> $services */
+/** @var list<array<string,mixed>> $patients */
 /** @var string $created */
 /** @var string $error */
 $view = isset($view) ? (string)$view : 'day';
@@ -23,6 +24,8 @@ $profMap = [];
 foreach ($professionals as $p) {
     $profMap[(int)$p['id']] = $p;
 }
+
+$patients = $patients ?? [];
 
 ob_start();
 ?>
@@ -51,7 +54,7 @@ ob_start();
             <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
 
             <?php if (!$isProfessional): ?>
-                <button class="lc-btn lc-btn--primary" type="button" id="openCreateAppointment">Novo agendamento</button>
+                <button class="lc-btn lc-btn--primary" type="button" id="openCreateAppointment" data-open-modal="createAppointmentModal">Novo agendamento</button>
             <?php endif; ?>
         </div>
     </div>
@@ -249,6 +252,16 @@ ob_start();
                 <form method="post" action="/schedule/create" class="lc-modal__body">
                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
+                    <div class="lc-field" style="grid-column: 1 / -1;">
+                        <label class="lc-label">Paciente</label>
+                        <select class="lc-select" name="patient_id" id="modal_patient_id" required>
+                            <option value="">Selecione</option>
+                            <?php foreach ($patients as $pt): ?>
+                                <option value="<?= (int)$pt['id'] ?>"><?= htmlspecialchars((string)$pt['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
                     <div class="lc-field">
                         <label class="lc-label">Serviço</label>
                         <select class="lc-select" name="service_id" id="modal_service_id" required>
@@ -295,6 +308,7 @@ ob_start();
   const dateFilterEl = document.getElementById('filter_date');
   const openBtn = document.getElementById('openCreateAppointment');
   const modal = document.getElementById('createAppointmentModal');
+  const modalPatientEl = document.getElementById('modal_patient_id');
   const modalServiceEl = document.getElementById('modal_service_id');
   const modalProfEl = document.getElementById('modal_professional_id');
   const modalStartEl = document.getElementById('modal_start_at');
@@ -324,6 +338,16 @@ ob_start();
       if (e.key === 'Escape') closeModal();
     });
   }
+
+  document.addEventListener('click', function(e) {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    const btn = t.closest('[data-open-modal]');
+    if (!btn) return;
+    const id = btn.getAttribute('data-open-modal');
+    if (id !== 'createAppointmentModal') return;
+    openModal();
+  });
 
   if (!modalServiceEl || !modalProfEl || !modalStartEl) {
     return;

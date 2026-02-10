@@ -9,6 +9,7 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AppointmentLogRepository;
+use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Repositories\ServiceMaterialDefaultRepository;
@@ -43,7 +44,7 @@ final class ScheduleController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            throw new \RuntimeException('Contexto inv?lido.');
         }
 
         if ($this->isProfessionalRole()) {
@@ -51,7 +52,7 @@ final class ScheduleController extends Controller
             $repo = new AppointmentRepository($this->container->get(\PDO::class));
             $appointment = $repo->findById($clinicId, $id);
             if ($appointment === null) {
-                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
             }
             if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
                 throw new \RuntimeException('Acesso negado.');
@@ -62,13 +63,13 @@ final class ScheduleController extends Controller
         $repo = new AppointmentRepository($pdo);
         $appointment = $repo->findById($clinicId, $id);
         if ($appointment === null) {
-            return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+            return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
         }
 
         $svcRepo = new ServiceCatalogRepository($pdo);
         $service = $svcRepo->findById($clinicId, (int)$appointment['service_id']);
         if ($service === null) {
-            return $this->redirect('/schedule?error=' . urlencode('Serviço inválido.'));
+            return $this->redirect('/schedule?error=' . urlencode('Servi?o inv?lido.'));
         }
 
         $defaultsRepo = new ServiceMaterialDefaultRepository($pdo);
@@ -108,7 +109,7 @@ final class ScheduleController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            throw new \RuntimeException('Contexto inv?lido.');
         }
 
         if ($this->isProfessionalRole()) {
@@ -116,7 +117,7 @@ final class ScheduleController extends Controller
             $repo = new AppointmentRepository($this->container->get(\PDO::class));
             $appointment = $repo->findById($clinicId, $id);
             if ($appointment === null) {
-                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
             }
             if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
                 throw new \RuntimeException('Acesso negado.');
@@ -129,7 +130,7 @@ final class ScheduleController extends Controller
             $repo = new AppointmentRepository($pdo);
             $appointment = $repo->findById($clinicId, $id);
             if ($appointment === null) {
-                throw new \RuntimeException('Agendamento inválido.');
+                throw new \RuntimeException('Agendamento inv?lido.');
             }
 
             $stock = new StockService($this->container);
@@ -149,7 +150,7 @@ final class ScheduleController extends Controller
                     number_format((float)$result['total_cost'], 2, '.', ''),
                     null,
                     null,
-                    'Custo de materiais (sessão #' . (int)$id . ') - ' . $note,
+                    'Custo de materiais (sess?o #' . (int)$id . ') - ' . $note,
                     $request->ip()
                 );
             }
@@ -164,7 +165,7 @@ final class ScheduleController extends Controller
         } catch (\RuntimeException $e) {
             return $this->redirect('/schedule/complete-materials?id=' . (int)$id . '&error=' . urlencode($e->getMessage()));
         } catch (\Throwable $e) {
-            return $this->redirect('/schedule/complete-materials?id=' . (int)$id . '&error=' . urlencode('Erro ao finalizar sessão.'));
+            return $this->redirect('/schedule/complete-materials?id=' . (int)$id . '&error=' . urlencode('Erro ao finalizar sess?o.'));
         }
     }
 
@@ -173,13 +174,13 @@ final class ScheduleController extends Controller
         $auth = new AuthService($this->container);
         $userId = $auth->userId();
         if ($userId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            throw new \RuntimeException('Contexto inv?lido.');
         }
 
         $repo = new ProfessionalRepository($this->container->get(\PDO::class));
         $prof = $repo->findByUserId($clinicId, $userId);
         if ($prof === null) {
-            throw new \RuntimeException('Profissional não vinculado ao usuário.');
+            throw new \RuntimeException('Profissional n?o vinculado ao usu?rio.');
         }
 
         return (int)$prof['id'];
@@ -212,7 +213,7 @@ final class ScheduleController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            throw new \RuntimeException('Contexto inv?lido.');
         }
 
         $view = trim((string)$request->input('view', 'day'));
@@ -231,7 +232,7 @@ final class ScheduleController extends Controller
         if ($view === 'month') {
             $start = \DateTimeImmutable::createFromFormat('Y-m-d', $date);
             if ($start === false) {
-                throw new \RuntimeException('Data inválida.');
+                throw new \RuntimeException('Data inv?lida.');
             }
 
             $monthStart = $start->modify('first day of this month');
@@ -268,7 +269,7 @@ final class ScheduleController extends Controller
         if ($view === 'week') {
             $start = \DateTimeImmutable::createFromFormat('Y-m-d', $date);
             if ($start === false) {
-                throw new \RuntimeException('Data inválida.');
+                throw new \RuntimeException('Data inv?lida.');
             }
 
             $dayOfWeek = (int)$start->format('w');
@@ -328,6 +329,8 @@ final class ScheduleController extends Controller
         $svcRepo = new ServiceCatalogRepository($this->container->get(\PDO::class));
         $services = $svcRepo->listActiveByClinic($clinicId);
 
+        $patients = (new PatientRepository($this->container->get(\PDO::class)))->searchByClinic($clinicId, '', 200, 0);
+
         return $this->view('scheduling/index', [
             'date' => $date,
             'view' => $view,
@@ -338,6 +341,7 @@ final class ScheduleController extends Controller
             'items' => $items,
             'professionals' => $professionals,
             'services' => $services,
+            'patients' => $patients,
             'page' => $page,
             'per_page' => $perPage,
             'has_next' => $hasNext,
@@ -361,7 +365,7 @@ final class ScheduleController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            throw new \RuntimeException('Contexto inv?lido.');
         }
 
         if ($this->isProfessionalRole()) {
@@ -403,8 +407,17 @@ final class ScheduleController extends Controller
         $patientId = (int)$request->input('patient_id', 0);
         $notes = trim((string)$request->input('notes', ''));
 
-        if ($serviceId <= 0 || $professionalId <= 0 || $startAt === '') {
-            return $this->redirect('/schedule');
+        if ($serviceId <= 0) {
+            return $this->redirect('/schedule?error=' . urlencode('Servi?o ? obrigat?rio.'));
+        }
+        if ($professionalId <= 0) {
+            return $this->redirect('/schedule?error=' . urlencode('Profissional ? obrigat?rio.'));
+        }
+        if ($patientId <= 0) {
+            return $this->redirect('/schedule?error=' . urlencode('Paciente ? obrigat?rio.'));
+        }
+        if ($startAt === '') {
+            return $this->redirect('/schedule?error=' . urlencode('Hor?rio ? obrigat?rio.'));
         }
 
         try {
@@ -445,14 +458,14 @@ final class ScheduleController extends Controller
             $auth = new AuthService($this->container);
             $clinicId = $auth->clinicId();
             if ($clinicId === null) {
-                throw new \RuntimeException('Contexto inválido.');
+                throw new \RuntimeException('Contexto inv?lido.');
             }
 
             $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
             $repo = new AppointmentRepository($this->container->get(\PDO::class));
             $appointment = $repo->findById($clinicId, $id);
             if ($appointment === null) {
-                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
             }
 
             if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
@@ -498,14 +511,14 @@ final class ScheduleController extends Controller
             $auth = new AuthService($this->container);
             $clinicId = $auth->clinicId();
             if ($clinicId === null) {
-                throw new \RuntimeException('Contexto inválido.');
+                throw new \RuntimeException('Contexto inv?lido.');
             }
 
             $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
             $repo = new AppointmentRepository($this->container->get(\PDO::class));
             $appointment = $repo->findById($clinicId, $id);
             if ($appointment === null) {
-                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
             }
 
             if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
@@ -519,17 +532,17 @@ final class ScheduleController extends Controller
             $auth = new AuthService($this->container);
             $clinicId = $auth->clinicId();
             if ($clinicId === null) {
-                throw new \RuntimeException('Contexto inválido.');
+                throw new \RuntimeException('Contexto inv?lido.');
             }
 
             $repo = new AppointmentRepository($this->container->get(\PDO::class));
             $appointment = $repo->findById($clinicId, $id);
             if ($appointment === null) {
-                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
             }
 
             if ((string)$appointment['status'] !== 'in_progress') {
-                return $this->redirect('/schedule?error=' . urlencode('Somente atendimentos em andamento podem ser concluídos.'));
+                return $this->redirect('/schedule?error=' . urlencode('Somente atendimentos em andamento podem ser conclu?dos.'));
             }
 
             $q = [];
@@ -566,7 +579,7 @@ final class ScheduleController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            throw new \RuntimeException('Contexto inv?lido.');
         }
 
         $id = (int)$request->input('id', 0);
@@ -577,7 +590,7 @@ final class ScheduleController extends Controller
         $repo = new AppointmentRepository($this->container->get(\PDO::class));
         $appointment = $repo->findById($clinicId, $id);
         if ($appointment === null) {
-            return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+            return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
         }
 
         if ($this->isProfessionalRole()) {
@@ -623,14 +636,14 @@ final class ScheduleController extends Controller
             $auth = new AuthService($this->container);
             $clinicId = $auth->clinicId();
             if ($clinicId === null) {
-                throw new \RuntimeException('Contexto inválido.');
+                throw new \RuntimeException('Contexto inv?lido.');
             }
 
             $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
             $repo = new AppointmentRepository($this->container->get(\PDO::class));
             $appointment = $repo->findById($clinicId, $id);
             if ($appointment === null) {
-                return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
             }
 
             if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
@@ -662,7 +675,7 @@ final class ScheduleController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            throw new \RuntimeException('Contexto inv?lido.');
         }
 
         $date = trim((string)$request->input('date', date('Y-m-d')));
@@ -711,7 +724,7 @@ final class ScheduleController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inválido.');
+            throw new \RuntimeException('Contexto inv?lido.');
         }
 
         $appointmentId = (int)$request->input('appointment_id', 0);
@@ -722,7 +735,7 @@ final class ScheduleController extends Controller
         $repo = new AppointmentRepository($this->container->get(\PDO::class));
         $appointment = $repo->findById($clinicId, $appointmentId);
         if ($appointment === null) {
-            return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
+            return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
         }
 
         if ($this->isProfessionalRole()) {

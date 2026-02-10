@@ -60,12 +60,14 @@ final class AppointmentService
             throw new \RuntimeException('Profissional inv?lido.');
         }
 
-        if ($patientId !== null) {
-            $patientRepo = new PatientRepository($pdo);
-            $patient = $patientRepo->findById($clinicId, $patientId);
-            if ($patient === null) {
-                throw new \RuntimeException('Paciente inv?lido.');
-            }
+        if ($patientId === null || $patientId <= 0) {
+            throw new \RuntimeException('Paciente é obrigatório.');
+        }
+
+        $patientRepo = new PatientRepository($pdo);
+        $patient = $patientRepo->findById($clinicId, $patientId);
+        if ($patient === null) {
+            throw new \RuntimeException('Paciente inv?lido.');
         }
 
         $start = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $startAt);
