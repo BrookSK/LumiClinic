@@ -30,20 +30,20 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title">Novo plano</div>
+<details class="lc-card" style="margin-bottom:14px;">
+    <summary class="lc-card__title" style="cursor:pointer; user-select:none;">Criar novo plano</summary>
     <div class="lc-card__body">
         <form method="post" action="/sys/plans/create" class="lc-form lc-grid lc-grid--2 lc-gap-grid">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field">
-                <label class="lc-label">Código (único)</label>
-                <input class="lc-input" type="text" name="code" placeholder="basic" required />
+                <label class="lc-label">Nome</label>
+                <input class="lc-input" type="text" name="name" placeholder="Basic" required />
             </div>
 
             <div class="lc-field">
-                <label class="lc-label">Nome</label>
-                <input class="lc-input" type="text" name="name" placeholder="Basic" required />
+                <label class="lc-label">Código</label>
+                <input class="lc-input" type="text" value="Gerado automaticamente" disabled />
             </div>
 
             <div class="lc-field">
@@ -53,7 +53,8 @@ ob_start();
 
             <div class="lc-field">
                 <label class="lc-label">Moeda</label>
-                <input class="lc-input" type="text" name="currency" value="BRL" />
+                <input type="hidden" name="currency" value="BRL" />
+                <input class="lc-input" type="text" value="BRL (Real)" disabled />
             </div>
 
             <div class="lc-field">
@@ -67,8 +68,9 @@ ob_start();
             </div>
 
             <div class="lc-field">
-                <label class="lc-label">A cada (quantidade)</label>
+                <label class="lc-label">Cobrar a cada (quantidade)</label>
                 <input class="lc-input" type="number" name="interval_count" value="1" min="1" step="1" />
+                <div class="lc-muted" style="margin-top:6px;">Ex.: Intervalo Mensal + 1 = cobrar todo mês. Intervalo Mensal + 3 = cobrar a cada 3 meses.</div>
             </div>
 
             <div class="lc-field">
@@ -85,8 +87,29 @@ ob_start();
             </div>
 
             <div class="lc-field" style="grid-column: 1 / -1;">
-                <label class="lc-label">Benefícios / Limites (JSON)</label>
-                <textarea class="lc-textarea" name="limits_json" placeholder='{"users":10,"patients":3000,"storage_mb":2048,"portal":true}'></textarea>
+                <label class="lc-label">Acesso ao Portal do Paciente</label>
+                <select class="lc-select" name="portal_enabled">
+                    <option value="1" selected>Ativo</option>
+                    <option value="0">Desativado</option>
+                </select>
+            </div>
+
+            <div class="lc-field">
+                <label class="lc-label">Limite de usuários (equipe)</label>
+                <input class="lc-input" type="number" name="limit_users" value="0" min="0" step="1" />
+                <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
+            </div>
+
+            <div class="lc-field">
+                <label class="lc-label">Limite de pacientes</label>
+                <input class="lc-input" type="number" name="limit_patients" value="0" min="0" step="1" />
+                <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
+            </div>
+
+            <div class="lc-field">
+                <label class="lc-label">Limite de armazenamento (MB)</label>
+                <input class="lc-input" type="number" name="limit_storage_mb" value="0" min="0" step="1" />
+                <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
             </div>
 
             <div class="lc-flex lc-flex--end lc-gap-sm" style="grid-column: 1 / -1;">
@@ -94,14 +117,12 @@ ob_start();
             </div>
         </form>
     </div>
-</div>
+</details>
 
 <div class="lc-card">
     <div class="lc-card__title">Planos cadastrados</div>
     <div class="lc-card__body" style="padding-bottom:0;">
-        <div class="lc-muted" style="line-height:1.55; margin-bottom:12px;">
-            Dica: os benefícios/limites ficam em <code>limits_json</code>.
-        </div>
+        <div class="lc-muted" style="line-height:1.55; margin-bottom:12px;"></div>
     </div>
 
     <div class="lc-table-wrap">
@@ -128,6 +149,15 @@ ob_start();
                     $intervalCount = (int)($it['interval_count'] ?? 1);
                     $trialDays = (int)($it['trial_days'] ?? 0);
                     $limits = (string)($it['limits_json'] ?? '{}');
+                    $limitsDecoded = [];
+                    $tmp = json_decode($limits, true);
+                    if (is_array($tmp)) {
+                        $limitsDecoded = $tmp;
+                    }
+                    $portalEnabled = array_key_exists('portal', $limitsDecoded) ? (bool)$limitsDecoded['portal'] : true;
+                    $limitUsers = (int)($limitsDecoded['users'] ?? 0);
+                    $limitPatients = (int)($limitsDecoded['patients'] ?? 0);
+                    $limitStorageMb = (int)($limitsDecoded['storage_mb'] ?? 0);
                 ?>
                 <tr>
                     <td><?= $id ?></td>
@@ -157,7 +187,8 @@ ob_start();
 
                                     <div class="lc-field">
                                         <label class="lc-label">Moeda</label>
-                                        <input class="lc-input" type="text" name="currency" value="<?= htmlspecialchars((string)($it['currency'] ?? 'BRL'), ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="currency" value="BRL" />
+                                        <input class="lc-input" type="text" value="BRL (Real)" disabled />
                                     </div>
 
                                     <div class="lc-field">
@@ -170,8 +201,9 @@ ob_start();
                                     </div>
 
                                     <div class="lc-field">
-                                        <label class="lc-label">A cada (quantidade)</label>
+                                        <label class="lc-label">Cobrar a cada (quantidade)</label>
                                         <input class="lc-input" type="number" name="interval_count" value="<?= (int)$intervalCount ?>" min="1" step="1" />
+                                        <div class="lc-muted" style="margin-top:6px;">Ex.: Mensal + 1 = todo mês. Mensal + 3 = a cada 3 meses.</div>
                                     </div>
 
                                     <div class="lc-field">
@@ -180,8 +212,29 @@ ob_start();
                                     </div>
 
                                     <div class="lc-field" style="grid-column: 1 / -1;">
-                                        <label class="lc-label">Benefícios / Limites (JSON)</label>
-                                        <textarea class="lc-textarea" name="limits_json"><?= htmlspecialchars($limits, ENT_QUOTES, 'UTF-8') ?></textarea>
+                                        <label class="lc-label">Acesso ao Portal do Paciente</label>
+                                        <select class="lc-select" name="portal_enabled">
+                                            <option value="1" <?= $portalEnabled ? 'selected' : '' ?>>Ativo</option>
+                                            <option value="0" <?= !$portalEnabled ? 'selected' : '' ?>>Desativado</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="lc-field">
+                                        <label class="lc-label">Limite de usuários (equipe)</label>
+                                        <input class="lc-input" type="number" name="limit_users" value="<?= (int)$limitUsers ?>" min="0" step="1" />
+                                        <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
+                                    </div>
+
+                                    <div class="lc-field">
+                                        <label class="lc-label">Limite de pacientes</label>
+                                        <input class="lc-input" type="number" name="limit_patients" value="<?= (int)$limitPatients ?>" min="0" step="1" />
+                                        <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
+                                    </div>
+
+                                    <div class="lc-field">
+                                        <label class="lc-label">Limite de armazenamento (MB)</label>
+                                        <input class="lc-input" type="number" name="limit_storage_mb" value="<?= (int)$limitStorageMb ?>" min="0" step="1" />
+                                        <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
                                     </div>
 
                                     <div class="lc-flex lc-flex--end lc-gap-sm" style="grid-column: 1 / -1;">

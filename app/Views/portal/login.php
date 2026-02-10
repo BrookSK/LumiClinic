@@ -20,7 +20,9 @@ $success = $success ?? null;
             <div class="lc-auth__left">
                 <div class="lc-auth__content">
                     <div class="lc-auth__brand">
-                        <div class="lc-brand__logo">LC</div>
+                        <div class="lc-brand__logo" style="padding:0; background:#000;">
+                            <img src="/icone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
+                        </div>
                         <div>
                             <div class="lc-auth__title">Portal do Paciente</div>
                             <div class="lc-auth__subtitle">Acesso seguro</div>

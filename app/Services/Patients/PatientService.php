@@ -11,6 +11,7 @@ use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\PlanEntitlementsService;
+use App\Services\Portal\PatientPortalAccessService;
 
 final class PatientService
 {
@@ -91,6 +92,14 @@ final class PatientService
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($actorId, $clinicId, 'patients.create', ['patient_id' => $id], $ip);
+
+        if ($data['email'] !== null && trim((string)$data['email']) !== '') {
+            try {
+                (new PatientPortalAccessService($this->container))->ensureAccessAndCreateReset($id, (string)$data['email'], $ip, true);
+            } catch (\RuntimeException $e) {
+                // Não bloqueia o cadastro do paciente se o portal falhar.
+            }
+        }
 
         return $id;
     }

@@ -50,8 +50,11 @@ use App\Controllers\Portal\PortalContentController;
 use App\Controllers\Portal\PortalMetricsController;
 use App\Controllers\Portal\PortalLgpdController;
 use App\Controllers\Portal\PortalApiTokensController;
+use App\Controllers\Portal\PortalProfileController;
+use App\Controllers\Portal\PortalSecurityController;
 use App\Controllers\Api\ApiV1Controller;
 use App\Controllers\Billing\WebhookController;
+use App\Controllers\Billing\ClinicSubscriptionController;
 use App\Controllers\Dashboard\ClinicDashboardController;
 use App\Controllers\Dashboard\ProfessionalDashboardController;
 use App\Controllers\Dashboard\AdminDashboardController;
@@ -98,6 +101,10 @@ $router->post('/portal/uploads', [PortalUploadController::class, 'submit']);
 $router->get('/portal/notificacoes', [PortalNotificationsController::class, 'index']);
 $router->post('/portal/notificacoes/read', [PortalNotificationsController::class, 'markRead']);
 
+$router->get('/portal/perfil', [PortalProfileController::class, 'index']);
+$router->get('/portal/seguranca', [PortalSecurityController::class, 'index']);
+$router->post('/portal/seguranca/reset', [PortalSecurityController::class, 'sendReset']);
+
 $router->get('/portal/conteudos', [PortalContentController::class, 'index']);
 $router->get('/portal/metricas', [PortalMetricsController::class, 'index']);
 $router->get('/portal/lgpd', [PortalLgpdController::class, 'index']);
@@ -112,6 +119,11 @@ $router->get('/api/v1/appointments/upcoming', [ApiV1Controller::class, 'upcoming
 
 $router->post('/webhooks/asaas', [WebhookController::class, 'asaas']);
 $router->post('/webhooks/mercadopago', [WebhookController::class, 'mercadopago']);
+
+$router->get('/billing/subscription', [ClinicSubscriptionController::class, 'index']);
+$router->post('/billing/subscription/change-plan', [ClinicSubscriptionController::class, 'changePlan']);
+$router->post('/billing/subscription/cancel', [ClinicSubscriptionController::class, 'cancel']);
+$router->post('/billing/subscription/ensure-gateway', [ClinicSubscriptionController::class, 'ensureGateway']);
 
 $router->get('/dashboard/clinic', [ClinicDashboardController::class, 'index']);
 $router->get('/dashboard/professional', [ProfessionalDashboardController::class, 'index']);
@@ -231,6 +243,9 @@ $router->post('/services/materials/delete', [ServiceMaterialsController::class, 
 
 $router->get('/professionals', [ProfessionalController::class, 'index']);
 $router->post('/professionals/create', [ProfessionalController::class, 'create']);
+$router->get('/professionals/edit', [ProfessionalController::class, 'edit']);
+$router->post('/professionals/edit', [ProfessionalController::class, 'update']);
+$router->post('/professionals/delete', [ProfessionalController::class, 'delete']);
 
 $router->get('/blocks', [BlockController::class, 'index']);
 $router->post('/blocks/create', [BlockController::class, 'create']);

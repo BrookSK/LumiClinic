@@ -9,10 +9,49 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\PatientPasswordResetRepository;
 use App\Repositories\PatientUserRepository;
 use App\Repositories\PatientEventRepository;
+use App\Services\Mail\MailerService;
+use Throwable;
 
 final class PatientAuthService
 {
     public function __construct(private readonly Container $container) {}
+
+    /** @return array{patient_user_id:int,patient_id:int,clinic_id:int,email:string,two_factor_enabled:int,status:string}|null */
+    public function me(int $clinicId, int $patientUserId): ?array
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new PatientUserRepository($pdo);
+        $row = $repo->findById($clinicId, $patientUserId);
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'patient_user_id' => (int)($row['id'] ?? 0),
+            'patient_id' => (int)($row['patient_id'] ?? 0),
+            'clinic_id' => (int)($row['clinic_id'] ?? 0),
+            'email' => (string)($row['email'] ?? ''),
+            'two_factor_enabled' => (int)($row['two_factor_enabled'] ?? 0),
+            'status' => (string)($row['status'] ?? ''),
+        ];
+    }
+
+    public function buildResetUrl(string $token): string
+    {
+        $token = trim($token);
+        $cfg = $this->container->has('config') ? $this->container->get('config') : [];
+        $baseUrl = is_array($cfg) && isset($cfg['app']) && is_array($cfg['app'])
+            ? (string)($cfg['app']['base_url'] ?? '')
+            : '';
+        $baseUrl = rtrim($baseUrl, '/');
+
+        if ($baseUrl === '' && isset($_SERVER['HTTP_HOST'])) {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $baseUrl = $scheme . '://' . (string)$_SERVER['HTTP_HOST'];
+        }
+
+        return $baseUrl . '/portal/reset?token=' . urlencode($token);
+    }
 
     public function loginPatientUserByIdForSession(int $patientUserId, string $ip, ?string $userAgent = null): void
     {
@@ -157,6 +196,34 @@ final class PatientAuthService
         }
 
         return ['reset_token' => $token];
+    }
+
+    /** @return array{reset_token:string,reset_url:string} */
+    public function createPasswordResetAndNotify(string $email, string $ip): array
+    {
+        $email = trim((string)$email);
+        $out = $this->createPasswordReset($email, $ip);
+        $token = (string)($out['reset_token'] ?? '');
+        $resetUrl = $this->buildResetUrl($token);
+
+        if ($token !== '' && $email !== '') {
+            try {
+                $subject = 'Redefinição de senha - Portal do Paciente';
+                $safeUrl = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
+                $html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#111827">'
+                    . '<p>Você solicitou a redefinição de senha do <strong>Portal do Paciente</strong>.</p>'
+                    . '<p>Para definir uma nova senha, use o link abaixo:</p>'
+                    . '<p><a href="' . $safeUrl . '">Redefinir minha senha</a></p>'
+                    . '<p style="color:rgba(17,24,39,0.65);font-size:12px;">Se não foi você, ignore este e-mail.</p>'
+                    . '</div>';
+
+                (new MailerService($this->container))->send($email, $email, $subject, $html);
+            } catch (Throwable $e) {
+                // Não bloqueia o fluxo.
+            }
+        }
+
+        return ['reset_token' => $token, 'reset_url' => $resetUrl];
     }
 
     public function resetPassword(string $token, string $newPassword, ?string $ip): PatientAuthResult

@@ -16,7 +16,7 @@ final class MaterialCategoryRepository
             FROM material_categories
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
-              AND status = 'active'
+              AND status = 'ativo'
             ORDER BY name ASC
             LIMIT " . (int)$limit . "
         ";
@@ -51,7 +51,7 @@ final class MaterialCategoryRepository
     {
         $sql = "
             INSERT INTO material_categories (clinic_id, name, status, created_at)
-            VALUES (:clinic_id, :name, 'active', NOW())
+            VALUES (:clinic_id, :name, 'ativo', NOW())
         ";
 
         $stmt = $this->pdo->prepare($sql);
@@ -70,7 +70,7 @@ final class MaterialCategoryRepository
             FROM material_categories
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
-              AND status = 'active'
+              AND status = 'ativo'
               AND name = :name
             LIMIT 1
         ";

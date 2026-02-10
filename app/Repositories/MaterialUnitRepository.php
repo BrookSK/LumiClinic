@@ -16,7 +16,7 @@ final class MaterialUnitRepository
             FROM material_units
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
-              AND status = 'active'
+              AND status = 'ativo'
             ORDER BY code ASC
             LIMIT " . (int)$limit . "
         ";
@@ -51,7 +51,7 @@ final class MaterialUnitRepository
     {
         $sql = "
             INSERT INTO material_units (clinic_id, code, name, status, created_at)
-            VALUES (:clinic_id, :code, :name, 'active', NOW())
+            VALUES (:clinic_id, :code, :name, 'ativo', NOW())
         ";
 
         $stmt = $this->pdo->prepare($sql);
@@ -71,7 +71,7 @@ final class MaterialUnitRepository
             FROM material_units
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
-              AND status = 'active'
+              AND status = 'ativo'
               AND code = :code
             LIMIT 1
         ";

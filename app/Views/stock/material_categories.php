@@ -5,6 +5,11 @@
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Estoque - Categorias';
 
+$statusLabel = [
+    'ativo' => 'Ativo',
+    'inativo' => 'Inativo',
+];
+
 ob_start();
 ?>
 
@@ -49,7 +54,8 @@ ob_start();
                 <?php foreach ($items as $it): ?>
                     <tr>
                         <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string)$it['status'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <?php $st = (string)($it['status'] ?? ''); ?>
+                        <td><?= htmlspecialchars((string)($statusLabel[$st] ?? ($st !== '' ? $st : '-')), ENT_QUOTES, 'UTF-8') ?></td>
                         <td class="lc-td-actions">
                             <form method="post" action="/stock/categories/delete" style="display:inline;">
                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />

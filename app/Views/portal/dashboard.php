@@ -1,5 +1,5 @@
 <?php
-$title = 'Portal do Paciente';
+$title = 'Início';
 $patient_id = $patient_id ?? null;
 $clinic_id = $clinic_id ?? null;
 $upcoming_appointments = $upcoming_appointments ?? [];
@@ -7,48 +7,9 @@ $packages = $packages ?? [];
 $subscriptions = $subscriptions ?? [];
 $finance = $finance ?? ['total' => 0.0, 'paid' => 0.0, 'open' => 0.0];
 $notifications = $notifications ?? [];
+ob_start();
 ?>
-<!doctype html>
-<html lang="pt-BR">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
-    <link rel="icon" href="/icone_1.png" />
-    <link rel="stylesheet" href="/assets/css/design-system.css" />
-</head>
-<body class="lc-body">
-<div class="lc-app" style="padding: 16px; max-width: 980px; margin: 0 auto;">
-    <div class="lc-page__header">
-        <div>
-            <h1 class="lc-page__title">Portal do Paciente</h1>
-            <div class="lc-page__subtitle">Em construção</div>
-        </div>
-        <div class="lc-flex lc-gap-sm">
-            <a class="lc-btn lc-btn--secondary" href="/portal/agenda">Agenda</a>
-            <a class="lc-btn lc-btn--secondary" href="/portal/documentos">Documentos</a>
-            <a class="lc-btn lc-btn--secondary" href="/portal/uploads">Uploads</a>
-            <a class="lc-btn lc-btn--secondary" href="/portal/notificacoes">Notificações</a>
-            <a class="lc-btn lc-btn--secondary" href="/portal/conteudos">Conteúdos</a>
-            <a class="lc-btn lc-btn--secondary" href="/portal/metricas">Métricas</a>
-            <a class="lc-btn lc-btn--secondary" href="/portal/lgpd">LGPD</a>
-            <a class="lc-btn lc-btn--secondary" href="/portal/api-tokens">API</a>
-            <form method="post" action="/portal/logout">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)($_SESSION['_csrf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Sair</button>
-            </form>
-        </div>
-    </div>
-
     <div class="lc-grid" style="margin-top: 16px;">
-        <div class="lc-card" style="padding: 16px;">
-            <div class="lc-card__title">Contexto</div>
-            <div class="lc-card__body">
-                <div>clinic_id: <?= htmlspecialchars((string)$clinic_id, ENT_QUOTES, 'UTF-8') ?></div>
-                <div>patient_id: <?= htmlspecialchars((string)$patient_id, ENT_QUOTES, 'UTF-8') ?></div>
-            </div>
-        </div>
-
         <div class="lc-card" style="padding: 16px;">
             <div class="lc-card__title">Próximas consultas</div>
             <div class="lc-card__body">
@@ -166,6 +127,8 @@ $notifications = $notifications ?? [];
             </div>
         </div>
     </div>
-</div>
-</body>
-</html>
+
+<?php
+$portal_content = (string)ob_get_clean();
+$portal_active = 'dashboard';
+require __DIR__ . '/_shell.php';

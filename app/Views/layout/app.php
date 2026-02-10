@@ -168,6 +168,10 @@ $ico = [
                     <?= $navItem('/settings', 'Configurações', $ico['settings'], $isActive('/settings')) ?>
                 <?php endif; ?>
 
+                <?php if (isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) && in_array('owner', $_SESSION['role_codes'], true)): ?>
+                    <?= $navItem('/billing/subscription', 'Assinatura', $ico['finance'], $isActive('/billing/subscription')) ?>
+                <?php endif; ?>
+
                 <?php if ($can('scheduling.read')): ?>
                     <?= $navItem('/schedule', 'Agenda', $ico['calendar'], $isActive('/schedule')) ?>
                 <?php endif; ?>

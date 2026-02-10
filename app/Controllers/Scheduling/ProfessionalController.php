@@ -149,4 +149,117 @@ final class ProfessionalController extends Controller
 
         return $this->redirect('/professionals');
     }
+
+    public function edit(Request $request)
+    {
+        $this->authorize('professionals.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/professionals');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $repo = new ProfessionalRepository($this->container->get(\PDO::class));
+        $row = $repo->findById($clinicId, $id);
+        if ($row === null) {
+            return $this->redirect('/professionals?error=' . urlencode('Profissional não encontrado.'));
+        }
+
+        return $this->view('scheduling/professionals-edit', [
+            'row' => $row,
+            'error' => trim((string)$request->input('error', '')),
+        ]);
+    }
+
+    public function update(Request $request)
+    {
+        $this->authorize('professionals.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        $name = trim((string)$request->input('name', ''));
+        $specialty = trim((string)$request->input('specialty', ''));
+        $allowOnline = (string)$request->input('allow_online_booking', '0') === '1';
+
+        if ($id <= 0 || $name === '') {
+            return $this->redirect('/professionals?error=' . urlencode('Preencha o nome.'));
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new ProfessionalRepository($pdo);
+        $existing = $repo->findById($clinicId, $id);
+        if ($existing === null) {
+            return $this->redirect('/professionals?error=' . urlencode('Profissional não encontrado.'));
+        }
+
+        $repo->update($clinicId, $id, $name, $specialty === '' ? null : $specialty, $allowOnline);
+
+        (new AuditLogRepository($pdo))->log($userId, $clinicId, 'scheduling.professional_update', [
+            'professional_id' => $id,
+            'name' => $name,
+            'specialty' => $specialty,
+            'allow_online_booking' => $allowOnline,
+        ], $request->ip());
+
+        return $this->redirect('/professionals');
+    }
+
+    public function delete(Request $request)
+    {
+        $this->authorize('professionals.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/professionals');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new ProfessionalRepository($pdo);
+        $existing = $repo->findById($clinicId, $id);
+        if ($existing === null) {
+            return $this->redirect('/professionals?error=' . urlencode('Profissional não encontrado.'));
+        }
+
+        $repo->softDelete($clinicId, $id);
+
+        (new AuditLogRepository($pdo))->log($userId, $clinicId, 'scheduling.professional_delete', [
+            'professional_id' => $id,
+        ], $request->ip());
+
+        return $this->redirect('/professionals');
+    }
 }

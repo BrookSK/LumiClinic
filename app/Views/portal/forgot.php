@@ -18,7 +18,9 @@ $reset_token = $reset_token ?? null;
 <div class="lc-auth lc-auth--compact">
     <div class="lc-auth__panel lc-auth__panel--compact">
         <div class="lc-auth__brand">
-            <div class="lc-brand__logo">LC</div>
+            <div class="lc-brand__logo" style="padding:0; background:#000;">
+                <img src="/icone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
+            </div>
             <div>
                 <div class="lc-auth__title">Recuperar senha</div>
                 <div class="lc-auth__subtitle">Portal do Paciente</div>

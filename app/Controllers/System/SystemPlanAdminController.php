@@ -34,16 +34,35 @@ final class SystemPlanAdminController extends Controller
     {
         $this->ensureSuperAdmin();
 
+        $limits = [];
+        $portalEnabled = (string)$request->input('portal_enabled', '1');
+        $limits['portal'] = ($portalEnabled === '1');
+
+        $users = (int)$request->input('limit_users', 0);
+        $patients = (int)$request->input('limit_patients', 0);
+        $storageMb = (int)$request->input('limit_storage_mb', 0);
+        if ($users > 0) {
+            $limits['users'] = $users;
+        }
+        if ($patients > 0) {
+            $limits['patients'] = $patients;
+        }
+        if ($storageMb > 0) {
+            $limits['storage_mb'] = $storageMb;
+        }
+
+        $limitsJson = (string)json_encode($limits, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
         try {
             (new SystemPlanService($this->container))->createPlan([
-                'code' => (string)$request->input('code', ''),
+                'code' => '',
                 'name' => (string)$request->input('name', ''),
                 'price_cents' => (string)$request->input('price_cents', ''),
-                'currency' => (string)$request->input('currency', 'BRL'),
+                'currency' => 'BRL',
                 'interval_unit' => (string)$request->input('interval_unit', 'month'),
                 'interval_count' => (string)$request->input('interval_count', '1'),
                 'trial_days' => (string)$request->input('trial_days', '0'),
-                'limits_json' => (string)$request->input('limits_json', ''),
+                'limits_json' => $limitsJson,
                 'status' => (string)$request->input('status', 'active'),
             ], $request->ip());
 
@@ -57,16 +76,35 @@ final class SystemPlanAdminController extends Controller
     {
         $this->ensureSuperAdmin();
 
+        $limits = [];
+        $portalEnabled = (string)$request->input('portal_enabled', '1');
+        $limits['portal'] = ($portalEnabled === '1');
+
+        $users = (int)$request->input('limit_users', 0);
+        $patients = (int)$request->input('limit_patients', 0);
+        $storageMb = (int)$request->input('limit_storage_mb', 0);
+        if ($users > 0) {
+            $limits['users'] = $users;
+        }
+        if ($patients > 0) {
+            $limits['patients'] = $patients;
+        }
+        if ($storageMb > 0) {
+            $limits['storage_mb'] = $storageMb;
+        }
+
+        $limitsJson = (string)json_encode($limits, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
         try {
             (new SystemPlanService($this->container))->updatePlan([
                 'id' => (string)$request->input('id', ''),
                 'name' => (string)$request->input('name', ''),
                 'price_cents' => (string)$request->input('price_cents', ''),
-                'currency' => (string)$request->input('currency', 'BRL'),
+                'currency' => 'BRL',
                 'interval_unit' => (string)$request->input('interval_unit', 'month'),
                 'interval_count' => (string)$request->input('interval_count', '1'),
                 'trial_days' => (string)$request->input('trial_days', '0'),
-                'limits_json' => (string)$request->input('limits_json', ''),
+                'limits_json' => $limitsJson,
             ], $request->ip());
 
             return $this->redirect('/sys/plans?ok=' . urlencode('Plano atualizado com sucesso.'));

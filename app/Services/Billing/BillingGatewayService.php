@@ -16,6 +16,64 @@ final class BillingGatewayService
 {
     public function __construct(private readonly Container $container) {}
 
+    /** @return list<array<string,mixed>> */
+    public function listAsaasPaymentsBySubscription(string $asaasSubscriptionId, int $limit = 50): array
+    {
+        return (new AsaasClient($this->container))->listPaymentsBySubscription($asaasSubscriptionId, $limit);
+    }
+
+    public function syncGatewaySubscriptionAmount(int $clinicId): void
+    {
+        $pdo = $this->container->get(\PDO::class);
+
+        $subsRepo = new ClinicSubscriptionRepository($pdo);
+        $sub = $subsRepo->findByClinicId($clinicId);
+        if ($sub === null) {
+            return;
+        }
+
+        $provider = (string)($sub['gateway_provider'] ?? '');
+        if ($provider !== 'asaas') {
+            return;
+        }
+
+        $asaasSubId = trim((string)($sub['asaas_subscription_id'] ?? ''));
+        if ($asaasSubId === '') {
+            return;
+        }
+
+        $planId = isset($sub['plan_id']) && $sub['plan_id'] !== null ? (int)$sub['plan_id'] : null;
+        $plan = $planId !== null ? (new SaasPlanRepository($pdo))->findById($planId) : null;
+        $priceCents = $plan !== null ? (int)($plan['price_cents'] ?? 0) : 0;
+        $amount = max(0, $priceCents) / 100;
+
+        (new AsaasClient($this->container))->updateSubscriptionValue($asaasSubId, $amount);
+    }
+
+    public function cancelGatewaySubscription(int $clinicId): void
+    {
+        $pdo = $this->container->get(\PDO::class);
+
+        $subsRepo = new ClinicSubscriptionRepository($pdo);
+        $sub = $subsRepo->findByClinicId($clinicId);
+        if ($sub === null) {
+            return;
+        }
+
+        $provider = (string)($sub['gateway_provider'] ?? '');
+        if ($provider === 'asaas') {
+            $asaasSubId = trim((string)($sub['asaas_subscription_id'] ?? ''));
+            if ($asaasSubId !== '') {
+                (new AsaasClient($this->container))->cancelSubscription($asaasSubId);
+            }
+            return;
+        }
+
+        if ($provider === 'mercadopago') {
+            throw new \RuntimeException('Cancelamento via MercadoPago ainda não implementado.');
+        }
+    }
+
     /**
      * Cria (se necessário) customer + subscription no gateway e grava IDs em clinic_subscriptions.
      * Por padrão usa Asaas (cobrança centralizada por clínica).

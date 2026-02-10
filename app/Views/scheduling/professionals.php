@@ -147,6 +147,7 @@ ob_start();
                     <th>Especialidade</th>
                     <th>Usuário</th>
                     <th>Online</th>
+                    <th></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -157,6 +158,14 @@ ob_start();
                         <?php $uid = (int)($it['user_id'] ?? 0); ?>
                         <td><?= $uid > 0 ? htmlspecialchars((string)($userLabel[$uid] ?? ('Usuário #' . $uid)), ENT_QUOTES, 'UTF-8') : '-' ?></td>
                         <td><?= ((int)$it['allow_online_booking'] === 1) ? 'Sim' : 'Não' ?></td>
+                        <td class="lc-td-actions">
+                            <a class="lc-btn lc-btn--secondary" href="/professionals/edit?id=<?= (int)$it['id'] ?>">Editar</a>
+                            <form method="post" action="/professionals/delete" style="display:inline;" onsubmit="return confirm('Excluir (inativar) este profissional?');">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
+                            </form>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

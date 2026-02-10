@@ -16,7 +16,7 @@ final class ProfessionalRepository
             FROM professionals
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
-              AND status = 'active'
+              AND status = 'ativo'
             ORDER BY name ASC
         ";
 
@@ -69,7 +69,7 @@ final class ProfessionalRepository
     {
         $sql = "
             INSERT INTO professionals (clinic_id, user_id, name, specialty, allow_online_booking, status, created_at)
-            VALUES (:clinic_id, :user_id, :name, :specialty, :allow_online_booking, 'active', NOW())
+            VALUES (:clinic_id, :user_id, :name, :specialty, :allow_online_booking, 'ativo', NOW())
         ";
 
         $stmt = $this->pdo->prepare($sql);
@@ -82,5 +82,28 @@ final class ProfessionalRepository
         ]);
 
         return (int)$this->pdo->lastInsertId();
+    }
+
+    public function update(int $clinicId, int $professionalId, string $name, ?string $specialty, bool $allowOnlineBooking): void
+    {
+        $stmt = $this->pdo->prepare("\n            UPDATE professionals\n            SET name = :name,\n                specialty = :specialty,\n                allow_online_booking = :allow_online_booking,\n                updated_at = NOW()\n            WHERE id = :id\n              AND clinic_id = :clinic_id\n              AND deleted_at IS NULL\n            LIMIT 1\n        ");
+
+        $stmt->execute([
+            'id' => $professionalId,
+            'clinic_id' => $clinicId,
+            'name' => $name,
+            'specialty' => ($specialty === '' ? null : $specialty),
+            'allow_online_booking' => $allowOnlineBooking ? 1 : 0,
+        ]);
+    }
+
+    public function softDelete(int $clinicId, int $professionalId): void
+    {
+        $stmt = $this->pdo->prepare("\n            UPDATE professionals\n            SET status = 'inativo',\n                deleted_at = NOW(),\n                updated_at = NOW()\n            WHERE id = :id\n              AND clinic_id = :clinic_id\n              AND deleted_at IS NULL\n            LIMIT 1\n        ");
+
+        $stmt->execute([
+            'id' => $professionalId,
+            'clinic_id' => $clinicId,
+        ]);
     }
 }

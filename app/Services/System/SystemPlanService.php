@@ -31,11 +31,21 @@ final class SystemPlanService
         $limitsJson = trim($data['limits_json'] ?? '');
         $status = trim($data['status'] ?? 'active');
 
-        if ($code === '' || !preg_match('/^[a-z0-9_\-]{2,64}$/', $code)) {
-            throw new \RuntimeException('Código inválido. Use letras minúsculas, números, _ ou -');
-        }
         if ($name === '') {
             throw new \RuntimeException('Nome é obrigatório.');
+        }
+
+        if ($code === '') {
+            $base = strtolower($name);
+            $base = preg_replace('/[^a-z0-9]+/i', '-', $base) ?? '';
+            $base = trim($base, '-');
+            $base = substr($base, 0, 48);
+            $base = $base !== '' ? $base : 'plano';
+            $code = $base;
+        }
+
+        if ($code === '' || !preg_match('/^[a-z0-9_\-]{2,64}$/', $code)) {
+            throw new \RuntimeException('Código inválido.');
         }
 
         $allowedIntervals = ['day', 'week', 'month', 'year'];
@@ -67,6 +77,17 @@ final class SystemPlanService
         }
 
         $repo = new SaasPlanRepository($this->container->get(\PDO::class));
+
+        if ($repo->codeExists($code)) {
+            $suffix = substr(bin2hex(random_bytes(4)), 0, 6);
+            $candidate = substr($code, 0, 57) . '-' . $suffix;
+            if (!$repo->codeExists($candidate)) {
+                $code = $candidate;
+            } else {
+                throw new \RuntimeException('Já existe um plano com este código.');
+            }
+        }
+
         $id = $repo->create($code, $name, $priceCents, $currency, $intervalUnit, $intervalCount, $trialDays, $limitsJson, $status);
 
         (new AuditLogRepository($this->container->get(\PDO::class)))->log(

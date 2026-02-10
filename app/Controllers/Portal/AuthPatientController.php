@@ -104,7 +104,7 @@ final class AuthPatientController extends Controller
         $email = (string)$request->input('email', '');
 
         $auth = new PatientAuthService($this->container);
-        $data = $auth->createPasswordReset($email, $request->ip());
+        $auth->createPasswordResetAndNotify($email, $request->ip());
 
         return $this->view('portal/forgot', [
             'success' => 'Se o e-mail existir, você receberá instruções para redefinir a senha.',

@@ -1,34 +1,10 @@
 <?php
-$title = 'Uploads';
+$title = 'Enviar fotos';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $uploads = $uploads ?? [];
+ob_start();
 ?>
-<!doctype html>
-<html lang="pt-BR">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
-    <link rel="icon" href="/icone_1.png" />
-    <link rel="stylesheet" href="/assets/css/design-system.css" />
-</head>
-<body class="lc-body">
-<div class="lc-app" style="padding: 16px; max-width: 980px; margin: 0 auto;">
-    <div class="lc-page__header">
-        <div>
-            <h1 class="lc-page__title">Enviar fotos</h1>
-            <div class="lc-page__subtitle">Portal do Paciente</div>
-        </div>
-        <div class="lc-flex lc-gap-sm">
-            <a class="lc-btn lc-btn--secondary" href="/portal">Dashboard</a>
-            <a class="lc-btn lc-btn--secondary" href="/portal/documentos">Documentos</a>
-            <form method="post" action="/portal/logout">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Sair</button>
-            </form>
-        </div>
-    </div>
 
     <?php if ($error): ?>
         <div class="lc-alert lc-alert--danger" style="margin-top:12px;">
@@ -107,6 +83,8 @@ $uploads = $uploads ?? [];
             <?php endif; ?>
         </div>
     </div>
-</div>
-</body>
-</html>
+
+<?php
+$portal_content = (string)ob_get_clean();
+$portal_active = 'uploads';
+require __DIR__ . '/_shell.php';

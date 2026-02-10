@@ -41,7 +41,7 @@ final class PatientPortalAccessController extends Controller
 
         try {
             $svc = new PatientPortalAccessService($this->container);
-            $out = $svc->ensureAccessAndCreateReset($patientId, $email, $request->ip());
+            $out = $svc->ensureAccessAndCreateReset($patientId, $email, $request->ip(), true);
 
             $data = $svc->getAccess($patientId);
 
@@ -50,6 +50,7 @@ final class PatientPortalAccessController extends Controller
                 'patient_user' => $data['patient_user'],
                 'success' => 'Acesso criado/atualizado. Envie o link de redefinição ao paciente.',
                 'reset_token' => $out['reset_token'],
+                'reset_url' => $out['reset_url'] ?? null,
             ]);
         } catch (\RuntimeException $e) {
             $svc = new PatientPortalAccessService($this->container);

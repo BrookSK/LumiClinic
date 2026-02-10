@@ -8,6 +8,19 @@ final class SaasPlanRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    public function codeExists(string $code): bool
+    {
+        $code = trim($code);
+        if ($code === '') {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare("\n            SELECT 1\n            FROM saas_plans\n            WHERE code = :code\n            LIMIT 1\n        ");
+        $stmt->execute(['code' => $code]);
+        $row = $stmt->fetch();
+        return $row ? true : false;
+    }
+
     /** @return array<string,mixed>|null */
     public function findActiveByCode(string $code): ?array
     {
