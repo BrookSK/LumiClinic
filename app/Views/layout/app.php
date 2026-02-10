@@ -81,7 +81,7 @@ $ico = [
     <?php if ($seoFaviconUrl !== ''): ?>
         <link rel="icon" href="<?= htmlspecialchars($seoFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" />
     <?php else: ?>
-        <link rel="icon" href="/Ícone_1.png" />
+        <link rel="icon" href="/icone_1.png" />
     <?php endif; ?>
     <meta property="og:title" content="<?= htmlspecialchars($computedTitle, ENT_QUOTES, 'UTF-8') ?>" />
     <?php if ($seoDescription !== ''): ?>
@@ -105,7 +105,7 @@ $ico = [
     <aside class="lc-sidebar" id="lcSidebar">
         <div class="lc-brand">
             <div class="lc-brand__logo" style="padding:0; background:#000;">
-                <img src="/Ícone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
+                <img src="/icone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
             </div>
             <div class="lc-brand__name" style="line-height:0;">
                 <img src="/Principal_1.png" alt="LumiClinic" style="height:22px; width:auto; display:block; object-fit:contain;" />

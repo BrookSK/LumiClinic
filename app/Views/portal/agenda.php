@@ -14,6 +14,7 @@ $hasNext = isset($has_next) ? (bool)$has_next : false;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
+    <link rel="icon" href="/icone_1.png" />
     <link rel="stylesheet" href="/assets/css/design-system.css" />
 </head>
 <body class="lc-body">

@@ -1,6 +1,215 @@
-# LumiClinic — Tutorial de Testes (Checklist Completo)
 
-Este documento é um roteiro **prático** para testar o sistema ponta‑a‑ponta (funcionalidades, permissões e visualizações) em ambiente local/staging/produção.
+# LumiClinic
+
+Sistema de gestão para clínicas (multi-clínica) com módulos de:
+
+- **Agenda**
+- **Pacientes**
+- **Prontuário / Imagens / Uploads**
+- **Financeiro**
+- **Estoque**
+- **Portal do Paciente**
+- **Super Admin** (plataforma SaaS)
+
+---
+
+## 1) Requisitos
+
+- PHP (com extensões comuns: `pdo_mysql`, `mbstring`, `openssl`)
+- MySQL/MariaDB
+- Servidor web (Apache/Nginx) apontando a **DocumentRoot para `public/`**
+- Composer
+
+---
+
+## 2) Instalação (ambiente local)
+
+### 2.1 Configurar variáveis de ambiente
+
+1. Copie o exemplo:
+
+   - `.env.example` -> `.env`
+
+2. Preencha no `.env` (mínimo):
+
+   - Credenciais do banco
+   - URL/base do app (conforme ambiente)
+
+### 2.2 Instalar dependências
+
+```bash
+composer install
+```
+
+### 2.3 Criar banco e aplicar migrations
+
+As migrations ficam em `database/migrations/*.sql`.
+
+- **Importante:** aplique em ordem (por número).
+
+Sugestão de fluxo (MySQL/MariaDB):
+
+1. Crie o banco vazio.
+2. Aplique os arquivos `database/migrations/*.sql` em ordem crescente.
+3. Após atualizar o repositório, reaplique apenas as migrations novas.
+
+Novidades relevantes:
+
+- `0086_users_email_per_clinic.sql`
+  - e-mail de usuário agora é **único por clínica** (multi-clínica)
+- `0087_stock_material_categories_and_units.sql`
+  - cria `material_categories` e `material_units`
+
+### 2.4 Subir o servidor
+
+O projeto é servido via `public/index.php`.
+
+- Em Apache, configure o VirtualHost com DocumentRoot `.../public`
+- Em Nginx, configure a raiz para `.../public` e `try_files` apontando para `index.php`
+
+---
+
+## 3) Acessos e Contexto (clínica / portal / super admin)
+
+### 3.1 Área da Clínica (staff)
+
+- Login:
+  - `GET /login`
+- Recuperar senha:
+  - `GET /forgot`
+- Reset:
+  - `GET /reset`
+
+### 3.2 Portal do Paciente
+
+- Login:
+  - `GET /portal/login`
+
+### 3.3 Super Admin (plataforma)
+
+- Área do sistema para administrar clínicas, assinaturas e planos.
+- Se o usuário for Super Admin e estiver **sem contexto de clínica ativo**, algumas telas redirecionam para seleção de clínica.
+
+### 3.4 Primeiros passos (passo a passo de uso)
+
+1. **Acesse como Super Admin** (se aplicável) e crie/ative uma clínica.
+2. **Selecione o contexto da clínica** (Super Admin -> lista de clínicas).
+3. **Crie usuários da clínica** (Owner/Admin/Recepção/Profissional) e faça login na área staff:
+
+   - `GET /login`
+
+4. **Configure a clínica**:
+
+   - Horários de funcionamento
+   - Feriados/recesso
+
+5. **Cadastre profissionais** e configure:
+
+   - Regras de agenda (`/schedule-rules`)
+
+6. **Cadastre serviços** e (opcional) materiais padrão do serviço.
+7. **Use a Agenda** (`/schedule`) para criar e gerenciar agendamentos.
+8. **Estoque**:
+
+   - Cadastre **Unidades** (`/stock/units`)
+   - Cadastre **Categorias** (`/stock/categories`)
+   - Cadastre **Materiais** (`/stock/materials`)
+   - Lance movimentações (`/stock/movements`)
+
+9. **Portal do Paciente**:
+
+   - Login em `GET /portal/login`
+   - A disponibilidade pode ser bloqueada por plano (ver seção de Planos).
+
+---
+
+## 4) Planos SaaS e enforcement (limits_json)
+
+O sistema lê os benefícios/limites do plano ativo da clínica a partir de `limits_json`.
+
+Pontos principais:
+
+- **Portal** pode ser bloqueado por plano.
+- Limites de:
+  - **usuários**
+  - **pacientes**
+  - **armazenamento** (uploads/imagens)
+
+Configuração de planos (Super Admin):
+
+- `GET /sys/plans`
+
+---
+
+## 5) Estoque: Categorias e Unidades de Materiais
+
+Para melhorar consistência, categorias e unidades são gerenciadas em listas por clínica.
+
+### 5.1 Telas de gerenciamento
+
+- Categorias:
+  - `GET /stock/categories`
+- Unidades:
+  - `GET /stock/units`
+
+### 5.2 Cadastro de materiais
+
+- `GET /stock/materials`
+
+O cadastro de material usa **select** de:
+
+- Categoria (opcional)
+- Unidade (obrigatória)
+
+E o backend valida que:
+
+- unidade existe e está ativa
+- categoria (quando informada) existe e está ativa
+
+---
+
+## 6) Branding (logo / favicon)
+
+Arquivos esperados em `public/`:
+
+- `Principal_1.png` (logo)
+- `icone_1.png` (ícone / favicon)
+
+Se o favicon/ícone não carregar em produção, confira:
+
+- DocumentRoot apontando para `public/`
+- Se os arquivos estão sendo publicados no deploy
+
+---
+
+## 7) Segurança: CSP e scripts `blob:`
+
+Existe uma política de segurança via header `Content-Security-Policy`.
+
+Se você vir erro do tipo:
+
+- `Loading the script 'blob:...' violates Content Security Policy`
+
+verifique o middleware:
+
+- `app/Middleware/SecurityHeadersMiddleware.php`
+
+---
+
+## 8) Troubleshooting rápido
+
+- **404 em assets (png/css/js)**
+  - confirme DocumentRoot em `public/`
+
+- **Mudou permissões e não refletiu**
+  - faça logout/login (permissões ficam na sessão)
+  - em produção, reinicie PHP-FPM/Apache (OPcache)
+
+---
+
+## 9) Checklist de Testes (QA)
+
+Este documento também contém um roteiro **prático** para testar o sistema ponta‑a‑ponta (funcionalidades, permissões e visualizações) em ambiente local/staging/produção.
 
 ---
 

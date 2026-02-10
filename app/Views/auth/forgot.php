@@ -11,7 +11,7 @@ $reset_token = $reset_token ?? null;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
-    <link rel="icon" href="/Ícone_1.png" />
+    <link rel="icon" href="/icone_1.png" />
     <link rel="stylesheet" href="/assets/css/design-system.css" />
 </head>
 <body class="lc-body lc-body--auth">
@@ -19,7 +19,7 @@ $reset_token = $reset_token ?? null;
     <div class="lc-auth__panel lc-auth__panel--compact">
         <div class="lc-auth__brand">
             <div class="lc-brand__logo" style="padding:0; background:#000;">
-                <img src="/Ícone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
+                <img src="/icone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
             </div>
             <div>
                 <div class="lc-auth__title">Recuperar senha</div>
