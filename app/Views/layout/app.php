@@ -108,7 +108,7 @@ $ico = [
                 <img src="/icone_1.png" alt="LumiClinic" style="width:100%; height:100%; object-fit:contain; border-radius:12px; display:block;" />
             </div>
             <div class="lc-brand__name" style="line-height:0;">
-                <img src="/Principal_1.png" alt="LumiClinic" style="height:22px; width:auto; display:block; object-fit:contain;" />
+                <span style="display:block; font-weight:800; font-size:16px; letter-spacing:0.2px; line-height:1;">LumiClinic</span>
             </div>
         </div>
 

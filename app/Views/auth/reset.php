@@ -23,7 +23,7 @@ $token = $token ?? '';
             <div>
                 <div class="lc-auth__title">Definir nova senha</div>
                 <div class="lc-auth__subtitle" style="line-height:0; margin-top:6px;">
-                    <img src="/Principal_1.png" alt="LumiClinic" style="height:18px; width:auto; display:block; object-fit:contain;" />
+                    <span style="display:block; font-weight:900; font-size:16px; letter-spacing:0.2px; line-height:1;">LumiClinic</span>
                 </div>
             </div>
         </div>

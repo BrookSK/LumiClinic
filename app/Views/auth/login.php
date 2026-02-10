@@ -24,7 +24,7 @@ $error = $error ?? null;
                         </div>
                         <div>
                             <div class="lc-auth__title" style="line-height:0;">
-                                <img src="/Principal_1.png" alt="LumiClinic" style="height:28px; width:auto; display:block; object-fit:contain;" />
+                                <span style="display:block; font-weight:900; font-size:20px; letter-spacing:0.2px; line-height:1;">LumiClinic</span>
                             </div>
                             <div class="lc-auth__subtitle">Acesso seguro</div>
                         </div>
