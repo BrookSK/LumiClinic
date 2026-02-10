@@ -34,6 +34,17 @@ final class SystemPlanAdminController extends Controller
     {
         $this->ensureSuperAdmin();
 
+        $billingPeriod = (string)$request->input('billing_period', 'monthly');
+        $intervalUnit = 'month';
+        $intervalCount = '1';
+        if ($billingPeriod === 'annual') {
+            $intervalUnit = 'year';
+            $intervalCount = '1';
+        } elseif ($billingPeriod === 'semiannual') {
+            $intervalUnit = 'month';
+            $intervalCount = '6';
+        }
+
         $limits = [];
         $portalEnabled = (string)$request->input('portal_enabled', '1');
         $limits['portal'] = ($portalEnabled === '1');
@@ -59,8 +70,8 @@ final class SystemPlanAdminController extends Controller
                 'name' => (string)$request->input('name', ''),
                 'price_cents' => (string)$request->input('price_cents', ''),
                 'currency' => 'BRL',
-                'interval_unit' => (string)$request->input('interval_unit', 'month'),
-                'interval_count' => (string)$request->input('interval_count', '1'),
+                'interval_unit' => $intervalUnit,
+                'interval_count' => $intervalCount,
                 'trial_days' => (string)$request->input('trial_days', '0'),
                 'limits_json' => $limitsJson,
                 'status' => (string)$request->input('status', 'active'),
@@ -75,6 +86,17 @@ final class SystemPlanAdminController extends Controller
     public function update(Request $request)
     {
         $this->ensureSuperAdmin();
+
+        $billingPeriod = (string)$request->input('billing_period', 'monthly');
+        $intervalUnit = 'month';
+        $intervalCount = '1';
+        if ($billingPeriod === 'annual') {
+            $intervalUnit = 'year';
+            $intervalCount = '1';
+        } elseif ($billingPeriod === 'semiannual') {
+            $intervalUnit = 'month';
+            $intervalCount = '6';
+        }
 
         $limits = [];
         $portalEnabled = (string)$request->input('portal_enabled', '1');
@@ -101,8 +123,8 @@ final class SystemPlanAdminController extends Controller
                 'name' => (string)$request->input('name', ''),
                 'price_cents' => (string)$request->input('price_cents', ''),
                 'currency' => 'BRL',
-                'interval_unit' => (string)$request->input('interval_unit', 'month'),
-                'interval_count' => (string)$request->input('interval_count', '1'),
+                'interval_unit' => $intervalUnit,
+                'interval_count' => $intervalCount,
                 'trial_days' => (string)$request->input('trial_days', '0'),
                 'limits_json' => $limitsJson,
             ], $request->ip());

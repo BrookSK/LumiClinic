@@ -9,6 +9,7 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Repositories\BillingEventRepository;
 use App\Services\Queue\QueueService;
+use App\Services\System\SystemSettingsService;
 
 final class WebhookController
 {
@@ -29,21 +30,61 @@ final class WebhookController
         $config = $this->container->get('config');
         $appEnv = (string)($config['app']['env'] ?? 'local');
 
-        $secret = '';
-        if ($provider === 'asaas') {
-            $secret = (string)($config['billing']['asaas']['webhook_secret'] ?? '');
-        } elseif ($provider === 'mercadopago') {
-            $secret = (string)($config['billing']['mercadopago']['webhook_secret'] ?? '');
-        }
-
-        $provided = $request->header('x-webhook-secret');
-        if ($provided === null) {
-            $provided = $request->header('x-signature');
-        }
+        $settings = new SystemSettingsService($this->container);
 
         if ($appEnv !== 'local') {
-            if ($secret === '' || $provided === null || !hash_equals($secret, $provided)) {
-                return Response::html('Invalid signature.', 401);
+            if ($provider === 'asaas') {
+                $secret = (string)($settings->getText('billing.asaas.webhook_secret') ?? (string)($config['billing']['asaas']['webhook_secret'] ?? ''));
+                $provided = $request->header('x-webhook-secret');
+                if ($secret === '' || $provided === null || !hash_equals($secret, $provided)) {
+                    return Response::html('Invalid signature.', 401);
+                }
+            }
+
+            if ($provider === 'mercadopago') {
+                $secret = (string)($settings->getText('billing.mercadopago.webhook_secret') ?? (string)($config['billing']['mercadopago']['webhook_secret'] ?? ''));
+                if ($secret === '') {
+                    return Response::html('Invalid signature.', 401);
+                }
+
+                $xSignature = $request->header('x-signature');
+                $xRequestId = $request->header('x-request-id');
+                if ($xSignature === null || $xRequestId === null) {
+                    return Response::html('Invalid signature.', 401);
+                }
+
+                $ts = null;
+                $v1 = null;
+                foreach (explode(',', (string)$xSignature) as $part) {
+                    $part = trim($part);
+                    if (str_starts_with($part, 'ts=')) {
+                        $ts = substr($part, 3);
+                    } elseif (str_starts_with($part, 'v1=')) {
+                        $v1 = substr($part, 3);
+                    }
+                }
+
+                $dataId = (string)($request->input('data.id', '') ?? '');
+                if ($dataId === '') {
+                    $dataId = (string)($request->input('data_id', '') ?? '');
+                }
+                if ($dataId === '') {
+                    $dataId = (string)($request->input('id', '') ?? '');
+                }
+                $dataId = trim($dataId);
+                if ($dataId !== '' && preg_match('/^[a-z0-9]+$/i', $dataId)) {
+                    $dataId = strtolower($dataId);
+                }
+
+                if ($ts === null || $v1 === null || $dataId === '') {
+                    return Response::html('Invalid signature.', 401);
+                }
+
+                $template = 'id:' . $dataId . ';request-id:' . $xRequestId . ';ts:' . $ts . ';';
+                $expected = hash_hmac('sha256', $template, $secret);
+                if (!hash_equals($expected, $v1)) {
+                    return Response::html('Invalid signature.', 401);
+                }
             }
         }
 

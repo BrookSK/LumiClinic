@@ -57,20 +57,14 @@ ob_start();
                 <input class="lc-input" type="text" value="BRL (Real)" disabled />
             </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Intervalo</label>
-                <select class="lc-select" name="interval_unit">
-                    <option value="month">Mensal</option>
-                    <option value="year">Anual</option>
-                    <option value="week">Semanal</option>
-                    <option value="day">Diário</option>
+            <div class="lc-field" style="grid-column: 1 / -1;">
+                <label class="lc-label">Período de cobrança</label>
+                <select class="lc-select" name="billing_period">
+                    <option value="monthly" selected>Mensal</option>
+                    <option value="semiannual">Semestral</option>
+                    <option value="annual">Anual</option>
                 </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Cobrar a cada (quantidade)</label>
-                <input class="lc-input" type="number" name="interval_count" value="1" min="1" step="1" />
-                <div class="lc-muted" style="margin-top:6px;">Ex.: Intervalo Mensal + 1 = cobrar todo mês. Intervalo Mensal + 3 = cobrar a cada 3 meses.</div>
+                <div class="lc-muted" style="margin-top:6px;">Define com que frequência a clínica será cobrada.</div>
             </div>
 
             <div class="lc-field">
@@ -191,19 +185,23 @@ ob_start();
                                         <input class="lc-input" type="text" value="BRL (Real)" disabled />
                                     </div>
 
-                                    <div class="lc-field">
-                                        <label class="lc-label">Intervalo</label>
-                                        <select class="lc-select" name="interval_unit">
-                                            <?php foreach (['day'=>'Diário','week'=>'Semanal','month'=>'Mensal','year'=>'Anual'] as $k=>$lbl): ?>
-                                                <option value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>" <?= ($intervalUnit === $k) ? 'selected' : '' ?>><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
+                                    <?php
+                                        $billingPeriod = 'monthly';
+                                        if ($intervalUnit === 'year' && $intervalCount === 1) {
+                                            $billingPeriod = 'annual';
+                                        } elseif ($intervalUnit === 'month' && $intervalCount === 6) {
+                                            $billingPeriod = 'semiannual';
+                                        }
+                                    ?>
 
-                                    <div class="lc-field">
-                                        <label class="lc-label">Cobrar a cada (quantidade)</label>
-                                        <input class="lc-input" type="number" name="interval_count" value="<?= (int)$intervalCount ?>" min="1" step="1" />
-                                        <div class="lc-muted" style="margin-top:6px;">Ex.: Mensal + 1 = todo mês. Mensal + 3 = a cada 3 meses.</div>
+                                    <div class="lc-field" style="grid-column: 1 / -1;">
+                                        <label class="lc-label">Período de cobrança</label>
+                                        <select class="lc-select" name="billing_period">
+                                            <option value="monthly" <?= ($billingPeriod === 'monthly') ? 'selected' : '' ?>>Mensal</option>
+                                            <option value="semiannual" <?= ($billingPeriod === 'semiannual') ? 'selected' : '' ?>>Semestral</option>
+                                            <option value="annual" <?= ($billingPeriod === 'annual') ? 'selected' : '' ?>>Anual</option>
+                                        </select>
+                                        <div class="lc-muted" style="margin-top:6px;">Define com que frequência a clínica será cobrada.</div>
                                     </div>
 
                                     <div class="lc-field">
