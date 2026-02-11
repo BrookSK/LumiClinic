@@ -50,7 +50,10 @@ final class ConsentController extends Controller
             return $redirect;
         }
 
-        return $this->view('consent/terms-create');
+        $service = new ConsentService($this->container);
+        return $this->view('consent/terms-create', [
+            'procedure_types' => $service->listProcedureTypes(),
+        ]);
     }
 
     public function storeTerm(Request $request)
@@ -96,7 +99,10 @@ final class ConsentController extends Controller
             return $this->redirect('/consent-terms');
         }
 
-        return $this->view('consent/terms-edit', ['term' => $term]);
+        return $this->view('consent/terms-edit', [
+            'term' => $term,
+            'procedure_types' => $service->listProcedureTypes(),
+        ]);
     }
 
     public function updateTerm(Request $request)

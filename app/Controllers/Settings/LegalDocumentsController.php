@@ -7,6 +7,7 @@ namespace App\Controllers\Settings;
 use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Repositories\LegalDocumentRepository;
+use App\Repositories\RoleRepository;
 use App\Services\Auth\AuthService;
 
 final class LegalDocumentsController extends Controller
@@ -43,6 +44,7 @@ final class LegalDocumentsController extends Controller
 
         $pdo = $this->container->get(\PDO::class);
         $repo = new LegalDocumentRepository($pdo);
+        $roles = (new RoleRepository($pdo))->listByClinic($clinicId);
 
         $doc = null;
         if ($id > 0) {
@@ -54,6 +56,7 @@ final class LegalDocumentsController extends Controller
 
         return $this->view('settings/legal_documents_edit', [
             'doc' => $doc,
+            'roles' => $roles,
         ]);
     }
 

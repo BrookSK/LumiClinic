@@ -107,4 +107,33 @@ final class ConsentTermRepository
         /** @var list<array<string, mixed>> */
         return $stmt->fetchAll();
     }
+
+    /** @return list<string> */
+    public function listDistinctProcedureTypesByClinic(int $clinicId, int $limit = 200): array
+    {
+        $limit = max(1, min(500, $limit));
+
+        $sql = "
+            SELECT DISTINCT procedure_type
+            FROM consent_terms
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            ORDER BY procedure_type ASC
+            LIMIT {$limit}
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId]);
+        $rows = $stmt->fetchAll();
+
+        $out = [];
+        foreach ($rows as $r) {
+            $v = trim((string)($r['procedure_type'] ?? ''));
+            if ($v !== '') {
+                $out[] = $v;
+            }
+        }
+
+        return array_values(array_unique($out));
+    }
 }

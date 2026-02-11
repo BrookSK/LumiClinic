@@ -72,4 +72,4 @@ ob_start();
 </div>
 <?php
 $content = (string)ob_get_clean();
-require dirname(__DIR__, 2) . '/layout/app.php';
+require dirname(__DIR__) . '/layout/app.php';

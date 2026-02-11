@@ -2,6 +2,7 @@
 $title = 'Editar documento legal (Equipe)';
 $csrf = $_SESSION['_csrf'] ?? '';
 $doc = $doc ?? null;
+$roles = $roles ?? [];
 $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
@@ -23,7 +24,15 @@ ob_start();
         <input type="hidden" name="id" value="<?= (int)($doc['id'] ?? 0) ?>" />
 
         <label class="lc-label">Papel alvo (opcional)</label>
-        <input class="lc-input" type="text" name="target_role_code" value="<?= htmlspecialchars((string)($doc['target_role_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="Ex: professional, reception, admin, owner" />
+        <select class="lc-input" name="target_role_code">
+            <?php $tr = trim((string)($doc['target_role_code'] ?? '')); ?>
+            <option value="" <?= $tr==='' ? 'selected' : '' ?>>Todos os papéis</option>
+            <?php foreach ($roles as $r): ?>
+                <?php $code = (string)($r['code'] ?? ''); ?>
+                <?php if ($code === '') { continue; } ?>
+                <option value="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>" <?= $tr===$code ? 'selected' : '' ?>><?= htmlspecialchars((string)($r['name'] ?? $code), ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>)</option>
+            <?php endforeach; ?>
+        </select>
 
         <label class="lc-label">Título</label>
         <input class="lc-input" type="text" name="title" value="<?= htmlspecialchars((string)($doc['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />

@@ -18,6 +18,19 @@ final class ConsentService
 {
     public function __construct(private readonly Container $container) {}
 
+    /** @return list<string> */
+    public function listProcedureTypes(): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $repo = new ConsentTermRepository($this->container->get(\PDO::class));
+        return $repo->listDistinctProcedureTypesByClinic($clinicId, 200);
+    }
+
     /** @return list<array<string, mixed>> */
     public function listTerms(): array
     {
