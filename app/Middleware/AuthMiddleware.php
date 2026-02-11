@@ -33,6 +33,7 @@ final class AuthMiddleware implements MiddlewareInterface
             '/choose-access',
             '/private/tutorial/platform',
             '/private/tutorial/clinic',
+            '/tutorial/api-tokens/paciente',
         ];
 
         if (in_array($path, $public, true)) {
