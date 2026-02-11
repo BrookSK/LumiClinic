@@ -26,6 +26,10 @@ final class AuthMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        if (str_starts_with($path, '/tutorial')) {
+            return $next($request);
+        }
+
         $public = [
             '/login',
             '/forgot',

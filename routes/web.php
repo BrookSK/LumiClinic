@@ -151,6 +151,20 @@ $router->post('/private/tutorial/clinic', [PrivateTutorialController::class, 'cl
 $router->get('/tutorial/api-tokens/paciente', [ApiTokensTutorialController::class, 'patient']);
 
 $router->get('/tutorial/sistema', [SystemTutorialController::class, 'index']);
+$router->get('/tutorial/sistema/primeiros-passos', [SystemTutorialController::class, 'primeirosPassos']);
+$router->get('/tutorial/sistema/dashboard', [SystemTutorialController::class, 'dashboard']);
+$router->get('/tutorial/sistema/agenda', [SystemTutorialController::class, 'agenda']);
+$router->get('/tutorial/sistema/pacientes', [SystemTutorialController::class, 'pacientes']);
+$router->get('/tutorial/sistema/prontuarios', [SystemTutorialController::class, 'prontuarios']);
+$router->get('/tutorial/sistema/imagens', [SystemTutorialController::class, 'imagens']);
+$router->get('/tutorial/sistema/financeiro', [SystemTutorialController::class, 'financeiro']);
+$router->get('/tutorial/sistema/estoque', [SystemTutorialController::class, 'estoque']);
+$router->get('/tutorial/sistema/servicos', [SystemTutorialController::class, 'servicos']);
+$router->get('/tutorial/sistema/profissionais', [SystemTutorialController::class, 'profissionais']);
+$router->get('/tutorial/sistema/configuracoes', [SystemTutorialController::class, 'configuracoes']);
+$router->get('/tutorial/sistema/seguranca', [SystemTutorialController::class, 'seguranca']);
+$router->get('/tutorial/sistema/portal-paciente', [SystemTutorialController::class, 'portalPaciente']);
+$router->get('/tutorial/sistema/integracoes-api', [SystemTutorialController::class, 'integracoesApi']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);
