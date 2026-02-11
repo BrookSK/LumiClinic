@@ -9,6 +9,7 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Middleware\MiddlewareInterface;
 use App\Services\Auth\AuthService;
+use App\Services\Legal\LegalDocumentService;
 
 final class AuthMiddleware implements MiddlewareInterface
 {
@@ -53,6 +54,18 @@ final class AuthMiddleware implements MiddlewareInterface
                 $_SESSION['auth_next'] = $uri;
             }
             return Response::redirect('/login');
+        }
+
+        $pending = (new LegalDocumentService($this->container))->listPendingRequiredForCurrentUser();
+        $_SESSION['required_legal_docs'] = $pending;
+
+        $enforced = [
+            '/logout',
+            '/legal/required',
+            '/legal/accept',
+        ];
+        if ($pending !== [] && !in_array($path, $enforced, true) && $request->method() !== 'GET') {
+            return Response::redirect('/legal/required');
         }
 
         return $next($request);

@@ -1,10 +1,10 @@
 <?php
-$title = 'Termos de consentimento';
+$title = 'Consentimento (Assinaturas) - Legado';
 $terms = $terms ?? [];
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
-    <div class="lc-badge lc-badge--primary">Termos</div>
+    <div class="lc-badge lc-badge--primary">Consentimento (Legado)</div>
     <div>
         <a class="lc-btn lc-btn--primary" href="/consent-terms/create">Novo termo</a>
     </div>

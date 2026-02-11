@@ -9,6 +9,8 @@ use App\Controllers\Compliance\ComplianceCertificationController;
 use App\Controllers\Compliance\SecurityIncidentController;
 use App\Controllers\Bi\BiController;
 use App\Controllers\Clinics\ClinicController;
+use App\Controllers\Clinics\ClinicLegalDocumentsController;
+use App\Controllers\Clinics\ClinicLegalAcceptancesController;
 use App\Controllers\DashboardController;
 use App\Controllers\Rbac\RbacController;
 use App\Controllers\Scheduling\BlockController;
@@ -18,11 +20,14 @@ use App\Controllers\Scheduling\ScheduleController;
 use App\Controllers\Scheduling\ServiceController;
 use App\Controllers\Scheduling\ServiceMaterialsController;
 use App\Controllers\Settings\SettingsController;
+use App\Controllers\Settings\LegalDocumentsController as SettingsLegalDocumentsController;
 use App\Controllers\System\SystemClinicController;
 use App\Controllers\System\SystemBillingAdminController;
 use App\Controllers\System\SystemPlanAdminController;
 use App\Controllers\System\SystemQueueJobController;
 use App\Controllers\System\SystemErrorLogController;
+use App\Controllers\System\SystemLegalOwnerDocumentsController;
+use App\Controllers\System\SystemLegalOwnerAcceptancesController;
 use App\Controllers\Users\UserController;
 use App\Controllers\Patients\PatientController;
 use App\Controllers\Patients\PatientPortalAccessController;
@@ -33,6 +38,7 @@ use App\Controllers\MedicalImages\MedicalImageController;
 use App\Controllers\MedicalImages\PatientUploadModerationController;
 use App\Controllers\Anamnesis\AnamnesisController;
 use App\Controllers\Consent\ConsentController;
+use App\Controllers\Legal\LegalDocumentsController;
 use App\Controllers\Finance\FinancialController;
 use App\Controllers\Finance\PaymentController;
 use App\Controllers\Finance\SalesController;
@@ -54,6 +60,7 @@ use App\Controllers\Portal\PortalApiTokensController;
 use App\Controllers\Portal\PortalProfileController;
 use App\Controllers\Portal\PortalSecurityController;
 use App\Controllers\Portal\PortalSearchController;
+use App\Controllers\Portal\PortalLegalDocumentsController;
 use App\Controllers\Api\ApiV1Controller;
 use App\Controllers\Billing\WebhookController;
 use App\Controllers\Billing\ClinicSubscriptionController;
@@ -83,6 +90,9 @@ $router->get('/reset', [LoginController::class, 'showReset']);
 $router->post('/reset', [LoginController::class, 'reset']);
 $router->post('/logout', [LoginController::class, 'logout']);
 
+$router->get('/legal/required', [LegalDocumentsController::class, 'required']);
+$router->post('/legal/accept', [LegalDocumentsController::class, 'accept']);
+
 $router->get('/portal/login', [AuthPatientController::class, 'showLogin']);
 $router->post('/portal/login', [AuthPatientController::class, 'login']);
 $router->post('/portal/logout', [AuthPatientController::class, 'logout']);
@@ -111,6 +121,9 @@ $router->post('/portal/notificacoes/read', [PortalNotificationsController::class
 
 $router->get('/portal/perfil', [PortalProfileController::class, 'index']);
 $router->post('/portal/perfil/request-change', [PortalProfileController::class, 'requestChange']);
+$router->get('/portal/required-consents', [PortalLegalDocumentsController::class, 'required']);
+$router->get('/portal/legal/read', [PortalLegalDocumentsController::class, 'read']);
+$router->post('/portal/legal/accept', [PortalLegalDocumentsController::class, 'accept']);
 $router->get('/portal/seguranca', [PortalSecurityController::class, 'index']);
 $router->post('/portal/seguranca/reset', [PortalSecurityController::class, 'sendReset']);
 
@@ -187,6 +200,10 @@ $router->post('/me', [MeController::class, 'update']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);
+$router->get('/clinic/legal-documents', [ClinicLegalDocumentsController::class, 'index']);
+$router->get('/clinic/legal-documents/edit', [ClinicLegalDocumentsController::class, 'edit']);
+$router->post('/clinic/legal-documents/save', [ClinicLegalDocumentsController::class, 'save']);
+$router->get('/clinic/legal-acceptances/portal', [ClinicLegalAcceptancesController::class, 'portal']);
 
 $router->get('/clinic/working-hours', [ClinicController::class, 'workingHours']);
 $router->post('/clinic/working-hours', [ClinicController::class, 'storeWorkingHour']);
@@ -206,6 +223,10 @@ $router->post('/users/disable', [UserController::class, 'disable']);
 
 $router->get('/settings', [SettingsController::class, 'index']);
 $router->post('/settings', [SettingsController::class, 'update']);
+
+$router->get('/settings/legal-documents', [SettingsLegalDocumentsController::class, 'index']);
+$router->get('/settings/legal-documents/edit', [SettingsLegalDocumentsController::class, 'edit']);
+$router->post('/settings/legal-documents/save', [SettingsLegalDocumentsController::class, 'save']);
 
 $router->get('/settings/terminology', [SettingsController::class, 'terminology']);
 $router->post('/settings/terminology', [SettingsController::class, 'updateTerminology']);
@@ -401,3 +422,9 @@ $router->get('/sys/error-logs/view', [SystemErrorLogController::class, 'details'
 $router->get('/sys/queue-jobs', [SystemQueueJobController::class, 'index']);
 $router->post('/sys/queue-jobs/retry', [SystemQueueJobController::class, 'retry']);
 $router->post('/sys/queue-jobs/enqueue-test', [SystemQueueJobController::class, 'enqueueTest']);
+
+$router->get('/sys/legal-owner-documents', [SystemLegalOwnerDocumentsController::class, 'index']);
+$router->get('/sys/legal-owner-documents/edit', [SystemLegalOwnerDocumentsController::class, 'edit']);
+$router->post('/sys/legal-owner-documents/save', [SystemLegalOwnerDocumentsController::class, 'save']);
+
+$router->get('/sys/legal-owner-acceptances', [SystemLegalOwnerAcceptancesController::class, 'index']);

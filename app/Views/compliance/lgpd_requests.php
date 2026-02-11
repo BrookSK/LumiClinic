@@ -1,14 +1,25 @@
 <?php
-$title = 'LGPD (Backoffice)';
+$title = 'LGPD (Solicitações)';
 $csrf = $_SESSION['_csrf'] ?? '';
 $items = $items ?? [];
 $status = $status ?? 'pending';
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
-    <div class="lc-badge lc-badge--primary">LGPD</div>
+    <div class="lc-badge lc-badge--primary">LGPD (Solicitações)</div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/">Dashboard</a>
+    </div>
+</div>
+
+<div class="lc-card" style="margin-bottom:14px;">
+    <div class="lc-card__title">Sobre esta página</div>
+    <div class="lc-card__body">
+        <div>
+            Aqui você gerencia <strong>solicitações LGPD</strong> dos pacientes (ex.: exportação de dados, exclusão/anonymização).
+            <br />
+            <strong>Termos e políticas</strong> (aceite obrigatório) são gerenciados separadamente em <strong>LGPD &amp; Termos</strong>.
+        </div>
     </div>
 </div>
 

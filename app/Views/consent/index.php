@@ -1,5 +1,5 @@
 <?php
-$title = 'Consentimento';
+$title = 'Consentimento (Assinaturas) - Legado';
 $patient = $patient ?? null;
 $terms = $terms ?? [];
 $acceptances = $acceptances ?? [];
@@ -17,7 +17,7 @@ if (is_array($terms)) {
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
-    <div class="lc-badge lc-badge--primary">Consentimento</div>
+    <div class="lc-badge lc-badge--primary">Consentimento (Legado)</div>
     <div>
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar ao paciente</a>
     </div>

@@ -40,6 +40,11 @@ $can = function (string $permissionCode): bool {
 $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
 $hasClinicContext = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['active_clinic_id']);
 
+$requiredLegalDocs = $_SESSION['required_legal_docs'] ?? [];
+if (!is_array($requiredLegalDocs)) {
+    $requiredLegalDocs = [];
+}
+
 $path = (string)parse_url((string)($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
 $isActive = function (string $prefix) use ($path): bool {
     if ($prefix === '/') {
@@ -118,6 +123,7 @@ $ico = [
                 <?= $navItem('/sys/clinics', 'Clínicas', $ico['sys'], $isActive('/sys/clinics')) ?>
                 <?= $navItem('/sys/billing', 'Assinaturas', $ico['finance'], $isActive('/sys/billing')) ?>
                 <?= $navItem('/sys/plans', 'Planos', $ico['finance'], $isActive('/sys/plans')) ?>
+                <?= $navItem('/sys/legal-owner-documents', 'LGPD & Termos (Owners)', $ico['shield'], $isActive('/sys/legal-owner-documents') || $isActive('/sys/legal-owner-acceptances')) ?>
 
                 <details class="lc-navgroup" <?= $isActive('/sys/settings') ? 'open' : '' ?>>
                     <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/sys/settings') ? ' lc-nav__item--active' : '' ?>">
@@ -157,6 +163,8 @@ $ico = [
                             <div class="lc-nav__sub">
                                 <?= $navItem('/clinic/working-hours', 'Horários', $ico['calendar'], $isActive('/clinic/working-hours')) ?>
                                 <?= $navItem('/clinic/closed-days', 'Feriados e Recesso', $ico['calendar'], $isActive('/clinic/closed-days')) ?>
+                                <?= $navItem('/clinic/legal-documents', 'LGPD & Termos (Portal)', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
+                                <?= $navItem('/clinic/legal-acceptances/portal', 'Aceites (Portal)', $ico['shield'], $isActive('/clinic/legal-acceptances/portal')) ?>
                             </div>
                         </div>
                     </details>
@@ -168,6 +176,10 @@ $ico = [
 
                 <?php if ($can('settings.read')): ?>
                     <?= $navItem('/settings', 'Configurações', $ico['settings'], $isActive('/settings')) ?>
+                <?php endif; ?>
+
+                <?php if ($can('settings.read')): ?>
+                    <?= $navItem('/settings/legal-documents', 'LGPD & Termos (Equipe)', $ico['shield'], $isActive('/settings/legal-documents')) ?>
                 <?php endif; ?>
 
                 <?php if (isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) && in_array('owner', $_SESSION['role_codes'], true)): ?>
@@ -244,7 +256,7 @@ $ico = [
                 <?php endif; ?>
 
                 <?php if ($can('consent_terms.manage') && $hasClinicContext): ?>
-                    <?= $navItem('/consent-terms', 'Termos', $ico['shield'], $isActive('/consent-terms')) ?>
+                    <?= $navItem('/consent-terms', 'Consentimento (Assinaturas) - Legado', $ico['shield'], $isActive('/consent-terms')) ?>
                 <?php endif; ?>
 
                 <?php if ($can('anamnesis.manage') && $hasClinicContext): ?>
@@ -276,7 +288,7 @@ $ico = [
                 <?php endif; ?>
 
                 <?php if ($can('compliance.lgpd.read') && $hasClinicContext): ?>
-                    <?= $navItem('/compliance/lgpd-requests', 'LGPD', $ico['shield'], $isActive('/compliance/lgpd-requests')) ?>
+                    <?= $navItem('/compliance/lgpd-requests', 'LGPD (Solicitações)', $ico['shield'], $isActive('/compliance/lgpd-requests')) ?>
                 <?php endif; ?>
 
                 <?php if ($can('compliance.policies.read') && $hasClinicContext): ?>
@@ -338,6 +350,113 @@ $ico = [
         </section>
     </main>
 </div>
+
+<?php if ($requiredLegalDocs !== []): ?>
+    <style>
+        .lc-modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; display:flex; align-items:center; justify-content:center; padding:18px;}
+        .lc-modal{width:100%; max-width:820px; background:#fff; border-radius:14px; box-shadow:0 16px 50px rgba(0,0,0,.35); overflow:hidden;}
+        .lc-modal__hd{padding:14px 16px; border-bottom:1px solid rgba(0,0,0,.08); font-weight:800;}
+        .lc-modal__bd{padding:14px 16px;}
+        .lc-modal__ft{padding:14px 16px; border-top:1px solid rgba(0,0,0,.08); display:flex; gap:10px; justify-content:flex-end;}
+        .lc-modal__list{margin-top:10px; display:grid; gap:10px;}
+        .lc-modal__item{padding:12px; border:1px solid rgba(0,0,0,.08); border-radius:12px; display:flex; gap:12px; align-items:flex-start; justify-content:space-between;}
+        .lc-modal__item-title{font-weight:700;}
+        .lc-modal__read-overlay{position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:10000; display:none; align-items:center; justify-content:center; padding:18px;}
+        .lc-modal__read{width:100%; max-width:900px; max-height:86vh; background:#fff; border-radius:14px; overflow:hidden; display:flex; flex-direction:column;}
+        .lc-modal__read-body{padding:14px 16px; overflow:auto; white-space:pre-wrap; line-height:1.6;}
+    </style>
+
+    <div class="lc-modal-overlay" id="lcReqOverlay" aria-modal="true" role="dialog">
+        <div class="lc-modal">
+            <div class="lc-modal__hd">Antes de continuar</div>
+            <div class="lc-modal__bd">
+                <div class="lc-alert lc-alert--info">Para usar o sistema, você precisa aceitar os termos obrigatórios.</div>
+
+                <div class="lc-modal__list">
+                    <?php foreach ($requiredLegalDocs as $d): ?>
+                        <div class="lc-modal__item">
+                            <div style="min-width:0;">
+                                <div class="lc-modal__item-title"><?= htmlspecialchars((string)($d['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+                            </div>
+                            <div class="lc-flex lc-gap-sm" style="flex-shrink:0;">
+                                <button class="lc-btn lc-btn--secondary" type="button" data-lc-read-doc="<?= (int)($d['id'] ?? 0) ?>">Ler</button>
+
+                                <form method="post" action="/legal/accept" style="display:inline-block;">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="id" value="<?= (int)($d['id'] ?? 0) ?>" />
+                                    <button class="lc-btn lc-btn--primary" type="submit">Aceitar</button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="lc-alert lc-alert--danger" style="margin-top:12px;">Você não pode mexer no sistema enquanto houver termos obrigatórios pendentes.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lc-modal__read-overlay" id="lcReqRead" aria-modal="true" role="dialog">
+        <div class="lc-modal__read">
+            <div class="lc-modal__hd" id="lcReqReadTitle">Documento</div>
+            <div class="lc-modal__read-body" id="lcReqReadBody"></div>
+            <div class="lc-modal__ft">
+                <button class="lc-btn lc-btn--secondary" type="button" id="lcReqReadClose">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            try {
+                var docs = <?php echo (string)json_encode($requiredLegalDocs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+                var docsMap = {};
+                if (Array.isArray(docs)) {
+                    for (var i=0; i<docs.length; i++) {
+                        var it = docs[i] || {};
+                        var id = parseInt(it.id || 0, 10);
+                        if (id > 0) docsMap[id] = it;
+                    }
+                }
+
+                var readOverlay = document.getElementById('lcReqRead');
+                var readTitle = document.getElementById('lcReqReadTitle');
+                var readBody = document.getElementById('lcReqReadBody');
+                var closeBtn = document.getElementById('lcReqReadClose');
+
+                function openRead(t,b){
+                    if (!readOverlay) return;
+                    if (readTitle) readTitle.textContent = t || 'Documento';
+                    if (readBody) readBody.textContent = b || '';
+                    readOverlay.style.display = 'flex';
+                }
+                function closeRead(){
+                    if (!readOverlay) return;
+                    readOverlay.style.display = 'none';
+                }
+
+                document.addEventListener('click', function(e){
+                    var el = e && e.target ? e.target : null;
+                    if (!el) return;
+                    var btn = el.closest ? el.closest('[data-lc-read-doc]') : null;
+                    if (btn) {
+                        e.preventDefault();
+                        var id = parseInt(btn.getAttribute('data-lc-read-doc') || '0', 10);
+                        var d = docsMap[id] || null;
+                        openRead(d && d.title ? String(d.title) : 'Documento', d && d.body ? String(d.body) : '');
+                    }
+                });
+
+                if (closeBtn) closeBtn.addEventListener('click', closeRead);
+                if (readOverlay) {
+                    readOverlay.addEventListener('click', function(e){
+                        if (e && e.target === readOverlay) closeRead();
+                    });
+                }
+            } catch (e) {}
+        })();
+    </script>
+<?php endif; ?>
 
 <script>
 (function(){

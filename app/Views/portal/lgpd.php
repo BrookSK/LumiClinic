@@ -1,10 +1,21 @@
 <?php
-$title = 'LGPD';
+$title = 'LGPD (Solicitações)';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $requests = $requests ?? [];
 ob_start();
 ?>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Sobre esta página</div>
+        <div class="lc-card__body">
+            <div>
+                Aqui você pode criar <strong>solicitações LGPD</strong> (ex.: exportar dados, solicitar exclusão).
+                <br />
+                <strong>Termos e políticas obrigatórias</strong> são solicitados separadamente (pop-up de aceite) quando necessário.
+            </div>
+        </div>
+    </div>
 
     <?php if ($error): ?>
         <div class="lc-alert lc-alert--danger" style="margin-top:12px;">

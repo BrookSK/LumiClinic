@@ -7,6 +7,9 @@ namespace App\Controllers\Patients;
 use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
+use App\Repositories\LegalDocumentAcceptanceRepository;
+use App\Repositories\LegalDocumentRepository;
+use App\Repositories\PatientUserRepository;
 use App\Services\Patients\PatientService;
 use App\Services\Auth\AuthService;
 
@@ -162,8 +165,29 @@ final class PatientController extends Controller
             return $this->redirect('/patients');
         }
 
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+
+        $portalDocs = [];
+        $portalAcceptances = [];
+        $patientUser = null;
+
+        if ($clinicId !== null) {
+            $pdo = $this->container->get(\PDO::class);
+            $patientUser = (new PatientUserRepository($pdo))->findByPatientId($clinicId, $id);
+
+            $portalDocs = (new LegalDocumentRepository($pdo))->listActiveForPatientPortal($clinicId);
+
+            if ($patientUser !== null && isset($patientUser['id'])) {
+                $portalAcceptances = (new LegalDocumentAcceptanceRepository($pdo))->listByPatientUser($clinicId, (int)$patientUser['id'], 500);
+            }
+        }
+
         return $this->view('patients/view', [
             'patient' => $patient,
+            'patient_user' => $patientUser,
+            'portal_legal_docs' => $portalDocs,
+            'portal_legal_acceptances' => $portalAcceptances,
         ]);
     }
 
