@@ -52,8 +52,12 @@ final class ClinicSubscriptionController extends Controller
         $planId = (int)$request->input('plan_id', 0);
 
         try {
-            (new ClinicSubscriptionSelfService($this->container))->changePlan($planId, $request->ip());
-            return $this->redirect('/billing/subscription?ok=' . urlencode('Plano atualizado.'));
+            $res = (new ClinicSubscriptionSelfService($this->container))->changePlan($planId, $request->ip());
+            if (($res['gateway_synced'] ?? false) === true) {
+                return $this->redirect('/billing/subscription?ok=' . urlencode('Plano atualizado e cobrança sincronizada.'));
+            }
+
+            return $this->redirect('/billing/subscription?error=' . urlencode('Não foi possível atualizar o plano.'));
         } catch (\RuntimeException $e) {
             return $this->redirect('/billing/subscription?error=' . urlencode($e->getMessage()));
         }

@@ -63,7 +63,6 @@ $fieldsJson = json_encode($fieldsForJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPE
                         <thead>
                         <tr>
                             <th>Ordem</th>
-                            <th>Chave</th>
                             <th>Rótulo</th>
                             <th>Tipo</th>
                             <th>Opções (select)</th>
@@ -100,9 +99,17 @@ $fieldsJson = json_encode($fieldsForJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPE
 
     return ''
       + '<tr>'
-      + '  <td style="width:90px;"><input class="lc-input" type="number" name="sort_order" value="' + esc(field.sort_order ?? 0) + '" min="0" /></td>'
-      + '  <td><input class="lc-input" type="text" name="field_key" value="' + esc(field.field_key ?? '') + '" required /></td>'
-      + '  <td><input class="lc-input" type="text" name="label" value="' + esc(field.label ?? '') + '" required /></td>'
+      + '  <td style="width:120px;">'
+      + '    <div class="lc-flex" style="gap:6px; align-items:center;">'
+      + '      <button class="lc-btn lc-btn--secondary" type="button" data-action="move-up" aria-label="Subir">↑</button>'
+      + '      <button class="lc-btn lc-btn--secondary" type="button" data-action="move-down" aria-label="Descer">↓</button>'
+      + '      <span class="lc-muted" data-role="order-label"></span>'
+      + '    </div>'
+      + '  </td>'
+      + '  <td>'
+      + '    <input type="hidden" name="field_key" value="' + esc(field.field_key ?? '') + '" />'
+      + '    <input class="lc-input" type="text" name="label" value="' + esc(field.label ?? '') + '" required />'
+      + '  </td>'
       + '  <td style="width:160px;">'
       + '    <select class="lc-select" name="field_type">'
       + '      <option value="text"' + (type==='text'?' selected':'') + '>Texto</option>'
@@ -122,33 +129,51 @@ $fieldsJson = json_encode($fieldsForJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPE
     var tr = document.createElement('tr');
     tr.innerHTML = rowTemplate(field).replace(/^<tr>|<\/tr>$/g,'');
     tableBody.appendChild(tr);
+    refreshOrderLabels();
+  }
+
+  function slugify(s){
+    return String(s ?? '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9]+/g,'_')
+      .replace(/^_+|_+$/g,'')
+      .substring(0, 64);
+  }
+
+  function refreshOrderLabels(){
+    var rows = Array.prototype.slice.call(tableBody.querySelectorAll('tr'));
+    rows.forEach(function(r, idx){
+      var el = r.querySelector('[data-role="order-label"]');
+      if (el) el.textContent = String(idx + 1);
+    });
   }
 
   function collect(){
     var rows = Array.prototype.slice.call(tableBody.querySelectorAll('tr'));
-    var out = rows.map(function(r){
+    var out = rows.map(function(r, idx){
       var fieldKey = (r.querySelector('input[name="field_key"]') || {}).value || '';
       var label = (r.querySelector('input[name="label"]') || {}).value || '';
       var fieldType = (r.querySelector('select[name="field_type"]') || {}).value || 'text';
-      var sortOrderRaw = (r.querySelector('input[name="sort_order"]') || {}).value || '0';
-      var sortOrder = parseInt(sortOrderRaw, 10);
-      if (!Number.isFinite(sortOrder)) sortOrder = 0;
       var optionsRaw = (r.querySelector('textarea[name="options"]') || {}).value || '';
       var options = optionsRaw.split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean);
+
+      fieldKey = String(fieldKey || '').trim();
+      if (fieldKey === '') {
+        fieldKey = slugify(label);
+      }
 
       var obj = {
         field_key: fieldKey.trim(),
         label: label.trim(),
         field_type: fieldType,
-        sort_order: sortOrder
+        sort_order: idx
       };
       if (fieldType === 'select') {
         obj.options = options;
       }
       return obj;
     });
-
-    out.sort(function(a,b){ return (a.sort_order||0) - (b.sort_order||0); });
     return out;
   }
 
@@ -163,6 +188,44 @@ $fieldsJson = json_encode($fieldsForJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPE
     if (el.getAttribute('data-action') === 'remove') {
       var tr = el.closest('tr');
       if (tr) tr.remove();
+      refreshOrderLabels();
+      return;
+    }
+
+    if (el.getAttribute('data-action') === 'move-up') {
+      var trUp = el.closest('tr');
+      if (!trUp) return;
+      var prev = trUp.previousElementSibling;
+      if (prev) {
+        tableBody.insertBefore(trUp, prev);
+        refreshOrderLabels();
+      }
+      return;
+    }
+
+    if (el.getAttribute('data-action') === 'move-down') {
+      var trDown = el.closest('tr');
+      if (!trDown) return;
+      var next = trDown.nextElementSibling;
+      if (next) {
+        tableBody.insertBefore(next, trDown);
+        refreshOrderLabels();
+      }
+      return;
+    }
+  });
+
+  tableBody.addEventListener('input', function(e){
+    var el = e.target;
+    if (!el) return;
+    if (el.matches('input[name="label"]')) {
+      var tr = el.closest('tr');
+      if (!tr) return;
+      var keyInput = tr.querySelector('input[name="field_key"]');
+      if (!keyInput) return;
+      if (String(keyInput.value || '').trim() === '') {
+        keyInput.value = slugify(el.value);
+      }
     }
   });
 
@@ -170,6 +233,7 @@ $fieldsJson = json_encode($fieldsForJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPE
     var initial = JSON.parse(hidden.value || '[]');
     if (Array.isArray(initial) && initial.length) {
       initial.forEach(function(f){ addField(f); });
+      refreshOrderLabels();
     }
   } catch (e) {}
 

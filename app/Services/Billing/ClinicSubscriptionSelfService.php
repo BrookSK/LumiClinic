@@ -68,7 +68,8 @@ final class ClinicSubscriptionSelfService
         (new AuditLogRepository($this->container->get(\PDO::class)))->log($userId, $clinicId, 'billing.self_service.ensure_gateway', [], $ip);
     }
 
-    public function changePlan(int $planId, string $ip): void
+    /** @return array{gateway_synced:bool,gateway_error:?string} */
+    public function changePlan(int $planId, string $ip): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -100,19 +101,34 @@ final class ClinicSubscriptionSelfService
 
         $currentPlanId = (int)($sub['plan_id'] ?? 0);
         if ($currentPlanId === $planId) {
-            return;
+            return ['gateway_synced' => true, 'gateway_error' => null];
         }
 
-        $stmt = $pdo->prepare("\n            UPDATE clinic_subscriptions\n            SET plan_id = :plan_id,\n                updated_at = NOW()\n            WHERE clinic_id = :clinic_id\n            LIMIT 1\n        ");
-        $stmt->execute(['plan_id' => $planId, 'clinic_id' => $clinicId]);
-
         try {
-            (new BillingGatewayService($this->container))->syncGatewaySubscriptionAmount($clinicId);
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare("\n                UPDATE clinic_subscriptions\n                SET plan_id = :plan_id,\n                    updated_at = NOW()\n                WHERE clinic_id = :clinic_id\n                LIMIT 1\n            ");
+            $stmt->execute(['plan_id' => $planId, 'clinic_id' => $clinicId]);
+
+            $gw = new BillingGatewayService($this->container);
+            $gw->ensureGatewaySubscription($clinicId);
+            $gw->syncGatewaySubscriptionAmount($clinicId);
+
+            $pdo->commit();
         } catch (\RuntimeException $e) {
-            // Não bloqueia a troca de plano no banco; pode ser sincronizado depois.
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw new \RuntimeException('Não foi possível sincronizar a cobrança no provedor. ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
 
         (new AuditLogRepository($pdo))->log($userId, $clinicId, 'billing.self_service.change_plan', ['from_plan_id' => $currentPlanId, 'to_plan_id' => $planId], $ip);
+        return ['gateway_synced' => true, 'gateway_error' => null];
     }
 
     public function cancel(string $ip): void

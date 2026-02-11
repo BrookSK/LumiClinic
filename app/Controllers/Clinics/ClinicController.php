@@ -63,15 +63,58 @@ final class ClinicController extends Controller
             isset($_POST['contact_phone']) ||
             isset($_POST['contact_whatsapp']) ||
             isset($_POST['contact_address']) ||
+            isset($_POST['contact_address_street']) ||
+            isset($_POST['contact_address_number']) ||
+            isset($_POST['contact_address_complement']) ||
+            isset($_POST['contact_address_district']) ||
+            isset($_POST['contact_address_city']) ||
+            isset($_POST['contact_address_state']) ||
+            isset($_POST['contact_address_zip']) ||
             isset($_POST['contact_website']) ||
             isset($_POST['contact_instagram']) ||
             isset($_POST['contact_facebook'])
         ) {
+            $contactAddress = trim((string)$request->input('contact_address', ''));
+
+            $street = trim((string)$request->input('contact_address_street', ''));
+            $number = trim((string)$request->input('contact_address_number', ''));
+            $complement = trim((string)$request->input('contact_address_complement', ''));
+            $district = trim((string)$request->input('contact_address_district', ''));
+            $city = trim((string)$request->input('contact_address_city', ''));
+            $state = strtoupper(trim((string)$request->input('contact_address_state', '')));
+            $zip = trim((string)$request->input('contact_address_zip', ''));
+
+            if ($street !== '' || $number !== '' || $complement !== '' || $district !== '' || $city !== '' || $state !== '' || $zip !== '') {
+                $line1 = $street;
+                if ($number !== '') {
+                    $line1 = ($line1 !== '' ? ($line1 . ', ' . $number) : $number);
+                }
+                if ($complement !== '') {
+                    $line1 = ($line1 !== '' ? ($line1 . ' - ' . $complement) : $complement);
+                }
+
+                $line2 = $district;
+                if ($city !== '') {
+                    $line2 = ($line2 !== '' ? ($line2 . ' - ' . $city) : $city);
+                }
+                if ($state !== '') {
+                    $line2 = ($line2 !== '' ? ($line2 . '/' . $state) : $state);
+                }
+
+                $lines = array_values(array_filter([
+                    trim($line1),
+                    trim($line2),
+                    ($zip !== '' ? ('CEP: ' . $zip) : ''),
+                ], static fn($v) => is_string($v) && trim($v) !== ''));
+
+                $contactAddress = implode("\n", $lines);
+            }
+
             $service->updateContactFields([
                 'contact_email' => trim((string)$request->input('contact_email', '')),
                 'contact_phone' => trim((string)$request->input('contact_phone', '')),
                 'contact_whatsapp' => trim((string)$request->input('contact_whatsapp', '')),
-                'contact_address' => trim((string)$request->input('contact_address', '')),
+                'contact_address' => $contactAddress,
                 'contact_website' => trim((string)$request->input('contact_website', '')),
                 'contact_instagram' => trim((string)$request->input('contact_instagram', '')),
                 'contact_facebook' => trim((string)$request->input('contact_facebook', '')),
