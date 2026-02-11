@@ -18,6 +18,39 @@ ob_start();
         <label class="lc-label">Nome</label>
         <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($clinic['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
 
+        <div style="margin-top:16px; font-weight:600;">Contato da clínica</div>
+
+        <label class="lc-label">E-mail</label>
+        <input class="lc-input" type="email" name="contact_email" value="<?= htmlspecialchars((string)($clinic['contact_email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+
+        <div class="lc-grid lc-grid--2 lc-gap-grid">
+            <div>
+                <label class="lc-label">Telefone</label>
+                <input class="lc-input" type="text" name="contact_phone" value="<?= htmlspecialchars((string)($clinic['contact_phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
+            <div>
+                <label class="lc-label">WhatsApp</label>
+                <input class="lc-input" type="text" name="contact_whatsapp" value="<?= htmlspecialchars((string)($clinic['contact_whatsapp'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
+        </div>
+
+        <label class="lc-label">Endereço</label>
+        <input class="lc-input" type="text" name="contact_address" value="<?= htmlspecialchars((string)($clinic['contact_address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+
+        <label class="lc-label">Site</label>
+        <input class="lc-input" type="url" name="contact_website" value="<?= htmlspecialchars((string)($clinic['contact_website'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+
+        <div class="lc-grid lc-grid--2 lc-gap-grid">
+            <div>
+                <label class="lc-label">Instagram</label>
+                <input class="lc-input" type="url" name="contact_instagram" value="<?= htmlspecialchars((string)($clinic['contact_instagram'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
+            <div>
+                <label class="lc-label">Facebook</label>
+                <input class="lc-input" type="url" name="contact_facebook" value="<?= htmlspecialchars((string)($clinic['contact_facebook'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
+        </div>
+
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             <a class="lc-btn lc-btn--secondary" href="/">Voltar</a>

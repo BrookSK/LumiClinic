@@ -6,6 +6,7 @@ namespace App\Services\Portal;
 
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\PatientRepository;
 use App\Repositories\PatientPasswordResetRepository;
 use App\Repositories\PatientUserRepository;
 use App\Repositories\PatientEventRepository;
@@ -71,6 +72,11 @@ final class PatientAuthService
         $_SESSION['clinic_id'] = (int)$user['clinic_id'];
         $_SESSION['patient_two_factor_required'] = ((int)($user['two_factor_enabled'] ?? 0) === 1) ? 1 : 0;
 
+        $patient = (new PatientRepository($pdo))->findClinicalById($clinicId, (int)$user['patient_id']);
+        if ($patient !== null) {
+            $_SESSION['patient_name'] = (string)($patient['name'] ?? '');
+        }
+
         $users->touchLogin($clinicId, (int)$user['id'], $ip);
 
         $audit->log(null, $clinicId, 'portal.login', ['patient_user_id' => (int)$user['id'], 'patient_id' => (int)$user['patient_id'], 'via' => 'choose_access'], $ip, null, 'patient_user', (int)$user['id'], $userAgent);
@@ -127,6 +133,11 @@ final class PatientAuthService
         $_SESSION['clinic_id'] = (int)$user['clinic_id'];
         $_SESSION['patient_two_factor_required'] = ((int)($user['two_factor_enabled'] ?? 0) === 1) ? 1 : 0;
 
+        $patient = (new PatientRepository($pdo))->findClinicalById($clinicId, (int)$user['patient_id']);
+        if ($patient !== null) {
+            $_SESSION['patient_name'] = (string)($patient['name'] ?? '');
+        }
+
         $users->touchLogin($clinicId, (int)$user['id'], $ip);
 
         $audit->log(null, $clinicId, 'portal.login', ['patient_user_id' => (int)$user['id'], 'patient_id' => (int)$user['patient_id']], $ip, null, 'patient_user', (int)$user['id'], $userAgent);
@@ -153,7 +164,7 @@ final class PatientAuthService
         $audit = new AuditLogRepository($pdo);
         $audit->log(null, $clinicId, 'portal.logout', ['patient_user_id' => $patientUserId, 'patient_id' => $patientId], $ip, null, 'patient_user', $patientUserId, $userAgent);
 
-        unset($_SESSION['patient_user_id'], $_SESSION['patient_id'], $_SESSION['clinic_id'], $_SESSION['patient_two_factor_required']);
+        unset($_SESSION['patient_user_id'], $_SESSION['patient_id'], $_SESSION['clinic_id'], $_SESSION['patient_two_factor_required'], $_SESSION['patient_name']);
         session_regenerate_id(true);
     }
 

@@ -58,6 +58,26 @@ final class ClinicController extends Controller
             $service->updateTenantKey($tenantKey, $request->ip());
         }
 
+        if (
+            isset($_POST['contact_email']) ||
+            isset($_POST['contact_phone']) ||
+            isset($_POST['contact_whatsapp']) ||
+            isset($_POST['contact_address']) ||
+            isset($_POST['contact_website']) ||
+            isset($_POST['contact_instagram']) ||
+            isset($_POST['contact_facebook'])
+        ) {
+            $service->updateContactFields([
+                'contact_email' => trim((string)$request->input('contact_email', '')),
+                'contact_phone' => trim((string)$request->input('contact_phone', '')),
+                'contact_whatsapp' => trim((string)$request->input('contact_whatsapp', '')),
+                'contact_address' => trim((string)$request->input('contact_address', '')),
+                'contact_website' => trim((string)$request->input('contact_website', '')),
+                'contact_instagram' => trim((string)$request->input('contact_instagram', '')),
+                'contact_facebook' => trim((string)$request->input('contact_facebook', '')),
+            ], $request->ip());
+        }
+
         return $this->redirect('/clinic');
     }
 

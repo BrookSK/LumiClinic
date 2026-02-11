@@ -52,6 +52,7 @@ use App\Controllers\Portal\PortalLgpdController;
 use App\Controllers\Portal\PortalApiTokensController;
 use App\Controllers\Portal\PortalProfileController;
 use App\Controllers\Portal\PortalSecurityController;
+use App\Controllers\Portal\PortalSearchController;
 use App\Controllers\Api\ApiV1Controller;
 use App\Controllers\Billing\WebhookController;
 use App\Controllers\Billing\ClinicSubscriptionController;
@@ -94,6 +95,8 @@ $router->post('/portal/agenda/reschedule-request', [PortalAgendaController::clas
 $router->get('/portal/documentos', [PortalDocumentsController::class, 'index']);
 $router->get('/portal/signatures/file', [PortalDocumentsController::class, 'signatureFile']);
 $router->get('/portal/medical-images/file', [PortalDocumentsController::class, 'medicalImageFile']);
+
+$router->get('/portal/busca', [PortalSearchController::class, 'index']);
 
 $router->get('/portal/uploads', [PortalUploadController::class, 'index']);
 $router->post('/portal/uploads', [PortalUploadController::class, 'submit']);
@@ -314,6 +317,10 @@ $router->get('/signatures/file', [ConsentController::class, 'signatureFile']);
 $router->get('/sys/clinics', [SystemClinicController::class, 'index']);
 $router->get('/sys/clinics/create', [SystemClinicController::class, 'create']);
 $router->post('/sys/clinics/create', [SystemClinicController::class, 'store']);
+$router->get('/sys/clinics/edit', [SystemClinicController::class, 'edit']);
+$router->post('/sys/clinics/update', [SystemClinicController::class, 'update']);
+$router->post('/sys/clinics/set-status', [SystemClinicController::class, 'setStatus']);
+$router->post('/sys/clinics/delete', [SystemClinicController::class, 'delete']);
 
 $router->get('/sys/billing', [SystemBillingAdminController::class, 'index']);
 $router->get('/sys/billing/view', [SystemBillingAdminController::class, 'details']);

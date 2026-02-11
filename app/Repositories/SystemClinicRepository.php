@@ -39,7 +39,6 @@ final class SystemClinicRepository
                       FROM clinic_domains d
                       WHERE d.clinic_id = clinics.id
                         AND d.domain LIKE :like
-                        AND d.deleted_at IS NULL
                   )
               )
             ORDER BY id DESC
@@ -51,6 +50,33 @@ final class SystemClinicRepository
 
         /** @var list<array<string, mixed>> */
         return $stmt->fetchAll();
+    }
+
+    /** @return array<string,mixed>|null */
+    public function findById(int $id): ?array
+    {
+        $sql = "
+            SELECT
+                id, name, tenant_key, status, created_at,
+                (
+                    SELECT d.domain
+                    FROM clinic_domains d
+                    WHERE d.clinic_id = clinics.id
+                      AND d.is_primary = 1
+                    ORDER BY d.id DESC
+                    LIMIT 1
+                ) AS primary_domain
+            FROM clinics
+            WHERE id = :id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
     }
 
     /** @return list<array<string, mixed>> */
@@ -92,6 +118,78 @@ final class SystemClinicRepository
         ]);
 
         return (int)$this->pdo->lastInsertId();
+    }
+
+    public function updateClinic(int $id, string $name, ?string $tenantKey): void
+    {
+        $sql = "
+            UPDATE clinics
+            SET name = :name,
+                tenant_key = :tenant_key,
+                updated_at = NOW()
+            WHERE id = :id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $id,
+            'name' => $name,
+            'tenant_key' => $tenantKey,
+        ]);
+    }
+
+    public function setStatus(int $id, string $status): void
+    {
+        $sql = "
+            UPDATE clinics
+            SET status = :status,
+                updated_at = NOW()
+            WHERE id = :id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $id, 'status' => $status]);
+    }
+
+    public function softDelete(int $id): void
+    {
+        $sql = "
+            UPDATE clinics
+            SET deleted_at = NOW(),
+                updated_at = NOW()
+            WHERE id = :id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $id]);
+    }
+
+    public function updatePrimaryDomain(int $clinicId, string $domain): void
+    {
+        $sqlUpdate = "
+            UPDATE clinic_domains
+            SET domain = :domain,
+                updated_at = NOW()
+            WHERE clinic_id = :clinic_id
+              AND is_primary = 1
+            ORDER BY id DESC
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sqlUpdate);
+        $stmt->execute(['clinic_id' => $clinicId, 'domain' => $domain]);
+
+        if ($stmt->rowCount() > 0) {
+            return;
+        }
+
+        $this->createPrimaryDomain($clinicId, $domain);
     }
 
     public function createPrimaryDomain(int $clinicId, string $domain): int

@@ -29,21 +29,55 @@ ob_start();
         <table class="lc-table">
             <thead>
             <tr>
+                <th>ID</th>
                 <th>Nome</th>
                 <th>Identificação</th>
                 <th>Domínio</th>
                 <th>Status</th>
                 <th>Criada em</th>
+                <th>Ações</th>
             </tr>
             </thead>
             <tbody>
             <?php foreach ($items as $it): ?>
+                <?php
+                    $id = (int)($it['id'] ?? 0);
+                    $status = (string)($it['status'] ?? '');
+                    $statusLabel = match ($status) {
+                        'active' => 'Ativo',
+                        'inactive' => 'Inativo',
+                        default => ($status !== '' ? $status : '-'),
+                    };
+                ?>
                 <tr>
-                    <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= (int)$id ?></td>
+                    <td>
+                        <a class="lc-link" href="/sys/clinics/edit?id=<?= (int)$id ?>">
+                            <?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                    </td>
                     <td><?= htmlspecialchars((string)($it['tenant_key'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($it['primary_domain'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)$it['status'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)$statusLabel, ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$it['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>
+                        <div class="lc-flex lc-gap-sm lc-flex--wrap">
+                            <a class="lc-btn lc-btn--secondary" href="/sys/clinics/edit?id=<?= (int)$id ?>">Ver / Editar</a>
+
+                            <form method="post" action="/sys/clinics/set-status">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)($_SESSION['_csrf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="id" value="<?= (int)$id ?>" />
+                                <input type="hidden" name="status" value="<?= ($status === 'active') ? 'inactive' : 'active' ?>" />
+                                <button class="lc-btn lc-btn--secondary" type="submit"><?= ($status === 'active') ? 'Desativar' : 'Ativar' ?></button>
+                            </form>
+
+                            <form method="post" action="/sys/clinics/delete" onsubmit="return confirm('Tem certeza que deseja excluir esta clínica?');">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)($_SESSION['_csrf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="id" value="<?= (int)$id ?>" />
+                                <button class="lc-btn lc-btn--danger" type="submit">Excluir</button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

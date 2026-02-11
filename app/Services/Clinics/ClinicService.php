@@ -68,6 +68,42 @@ final class ClinicService
         $audit->log($userId, $clinicId, 'clinics.update', ['fields' => ['tenant_key']], $ip);
     }
 
+    /** @param array<string, string|null> $fields */
+    public function updateContactFields(array $fields, string $ip): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $normalized = [];
+        foreach ([
+            'contact_email',
+            'contact_phone',
+            'contact_whatsapp',
+            'contact_address',
+            'contact_website',
+            'contact_instagram',
+            'contact_facebook',
+        ] as $key) {
+            $value = array_key_exists($key, $fields) ? $fields[$key] : null;
+            $value = $value !== null ? trim((string)$value) : null;
+            if ($value === '') {
+                $value = null;
+            }
+            $normalized[$key] = $value;
+        }
+
+        $repo = new ClinicRepository($this->container->get(\PDO::class));
+        $repo->updateContactFields($clinicId, $normalized);
+
+        $audit = new AuditLogRepository($this->container->get(\PDO::class));
+        $audit->log($userId, $clinicId, 'clinics.update', ['fields' => array_keys($normalized)], $ip);
+    }
+
     /** @return list<array<string, mixed>> */
     public function listWorkingHours(): array
     {

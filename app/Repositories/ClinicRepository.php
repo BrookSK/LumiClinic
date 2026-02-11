@@ -12,7 +12,10 @@ final class ClinicRepository
     public function findById(int $clinicId): ?array
     {
         $sql = "
-            SELECT id, name, tenant_key, status, created_at, updated_at
+            SELECT id, name, tenant_key,
+                   contact_email, contact_phone, contact_whatsapp, contact_address,
+                   contact_website, contact_instagram, contact_facebook,
+                   status, created_at, updated_at
             FROM clinics
             WHERE id = :id
               AND deleted_at IS NULL
@@ -54,6 +57,36 @@ final class ClinicRepository
         $stmt->execute([
             'id' => $clinicId,
             'tenant_key' => $tenantKey,
+        ]);
+    }
+
+    /** @param array<string, string|null> $fields */
+    public function updateContactFields(int $clinicId, array $fields): void
+    {
+        $sql = "
+            UPDATE clinics
+               SET contact_email = :contact_email,
+                   contact_phone = :contact_phone,
+                   contact_whatsapp = :contact_whatsapp,
+                   contact_address = :contact_address,
+                   contact_website = :contact_website,
+                   contact_instagram = :contact_instagram,
+                   contact_facebook = :contact_facebook,
+                   updated_at = NOW()
+             WHERE id = :id
+               AND deleted_at IS NULL
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $clinicId,
+            'contact_email' => $fields['contact_email'] ?? null,
+            'contact_phone' => $fields['contact_phone'] ?? null,
+            'contact_whatsapp' => $fields['contact_whatsapp'] ?? null,
+            'contact_address' => $fields['contact_address'] ?? null,
+            'contact_website' => $fields['contact_website'] ?? null,
+            'contact_instagram' => $fields['contact_instagram'] ?? null,
+            'contact_facebook' => $fields['contact_facebook'] ?? null,
         ]);
     }
 

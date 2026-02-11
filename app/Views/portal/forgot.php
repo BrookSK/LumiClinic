@@ -4,14 +4,51 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $success = $success ?? null;
 $reset_token = $reset_token ?? null;
+
+$seo = isset($seo) && is_array($seo) ? $seo : [];
+$seoSiteName = trim((string)($seo['site_name'] ?? ''));
+$seoDefaultTitle = trim((string)($seo['default_title'] ?? ''));
+$seoDescription = trim((string)($seo['meta_description'] ?? ''));
+$seoOgImageUrl = trim((string)($seo['og_image_url'] ?? ''));
+$seoFaviconUrl = trim((string)($seo['favicon_url'] ?? ''));
+
+$computedTitle = trim((string)($title ?? ''));
+if ($computedTitle === '') {
+    $computedTitle = $seoDefaultTitle !== '' ? $seoDefaultTitle : 'Portal do Paciente';
+}
+if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
+    $computedTitle = $computedTitle . ' - ' . $seoSiteName;
+}
 ?>
 <!doctype html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
-    <link rel="icon" href="/icone_1.png" />
+    <title><?= htmlspecialchars($computedTitle, ENT_QUOTES, 'UTF-8') ?></title>
+    <?php if ($seoDescription !== ''): ?>
+        <meta name="description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <?php if ($seoFaviconUrl !== ''): ?>
+        <link rel="icon" href="<?= htmlspecialchars($seoFaviconUrl, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php else: ?>
+        <link rel="icon" href="/icone_1.png" />
+    <?php endif; ?>
+    <meta property="og:title" content="<?= htmlspecialchars($computedTitle, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php if ($seoDescription !== ''): ?>
+        <meta property="og:description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <?php if ($seoOgImageUrl !== ''): ?>
+        <meta property="og:image" content="<?= htmlspecialchars($seoOgImageUrl, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="<?= htmlspecialchars($computedTitle, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php if ($seoDescription !== ''): ?>
+        <meta name="twitter:description" content="<?= htmlspecialchars($seoDescription, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+    <?php if ($seoOgImageUrl !== ''): ?>
+        <meta name="twitter:image" content="<?= htmlspecialchars($seoOgImageUrl, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
     <link rel="stylesheet" href="/assets/css/design-system.css" />
 </head>
 <body class="lc-body lc-body--auth">
