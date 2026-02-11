@@ -205,6 +205,9 @@ $ico = [
                                 <?php if ($can('finance.entries.read')): ?>
                                     <?= $navItem('/finance/cashflow', 'Caixa', $ico['finance'], $isActive('/finance/cashflow')) ?>
                                 <?php endif; ?>
+                                <?php if ($can('finance.cost_centers.manage')): ?>
+                                    <?= $navItem('/finance/cost-centers', 'Centros de custo', $ico['finance'], $isActive('/finance/cost-centers')) ?>
+                                <?php endif; ?>
                                 <?php if ($can('finance.reports.read')): ?>
                                     <?= $navItem('/finance/reports', 'Relatórios', $ico['finance'], $isActive('/finance/reports')) ?>
                                 <?php endif; ?>

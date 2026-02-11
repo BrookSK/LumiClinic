@@ -146,7 +146,7 @@ final class SalesController extends Controller
 
     public function patientSearchJson(Request $request): Response
     {
-        $this->authorize('finance.sales.create');
+        $this->authorize('finance.sales.read');
 
         if ($this->isProfessionalRole()) {
             return Response::json(['items' => []]);

@@ -34,7 +34,7 @@ ob_start();
             <form method="post" action="/finance/sales/create" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 1fr 1fr 1fr 2fr;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
-                <div class="lc-field">
+                <div class="lc-field" style="position:relative;">
                     <label class="lc-label">Paciente</label>
                     <input class="lc-input" type="text" id="sale_patient_search" placeholder="Buscar por nome, e-mail ou telefone" autocomplete="off" />
                     <input type="hidden" name="patient_id" id="sale_patient_id" value="" />
@@ -80,8 +80,17 @@ ob_start();
   async function search(q){
     const url = `/finance/sales/patients/search-json?q=${encodeURIComponent(q)}&limit=10`;
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) return [];
-    const data = await res.json();
+    if (!res.ok) {
+      try { console.warn('Patient search failed:', res.status, await res.text()); } catch (e) {}
+      return [];
+    }
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (e) {
+      try { console.warn('Patient search invalid JSON:', await res.text()); } catch (e2) {}
+      return [];
+    }
     return (data && data.items) ? data.items : [];
   }
 
@@ -126,6 +135,7 @@ ob_start();
     form.addEventListener('submit', function(e){
       if (!String(idEl.value || '').trim()) {
         e.preventDefault();
+        alert('Selecione um paciente da lista.');
       }
     });
   }
