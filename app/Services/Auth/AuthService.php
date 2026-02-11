@@ -264,8 +264,13 @@ final class AuthService
         $audit->log($userId, $clinicId, 'auth.logout', [], $ip, $roleCodes, 'user', $userId, $userAgent);
         SystemEvent::dispatch($this->container, 'user.logout', [], 'user', $userId, $ip, $userAgent);
 
-        unset($_SESSION['user_id'], $_SESSION['clinic_id'], $_SESSION['active_clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
-        unset($_SESSION['role_codes']);
+        $hasPatientSession = isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0;
+
+        unset($_SESSION['user_id'], $_SESSION['active_clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
+        unset($_SESSION['role_codes'], $_SESSION['pending_access']);
+        if (!$hasPatientSession) {
+            unset($_SESSION['clinic_id']);
+        }
         session_regenerate_id(true);
     }
 

@@ -15,11 +15,19 @@ final class AuthPatientController extends Controller
 {
     public function showLogin(Request $request)
     {
+        if (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
+            return $this->view('portal/login', ['error' => 'Você está logado na área da clínica. Saia do sistema para entrar no Portal do Paciente.']);
+        }
+
         return $this->view('portal/login');
     }
 
     public function login(Request $request)
     {
+        if (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
+            return $this->view('portal/login', ['error' => 'Você está logado na área da clínica. Saia do sistema para entrar no Portal do Paciente.']);
+        }
+
         $email = (string)$request->input('email', '');
         $password = (string)$request->input('password', '');
 

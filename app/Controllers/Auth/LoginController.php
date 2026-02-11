@@ -15,6 +15,10 @@ final class LoginController extends Controller
 {
     public function show(Request $request)
     {
+        if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0) {
+            return $this->view('auth/login', ['error' => 'Você está logado no Portal do Paciente. Saia do portal para entrar na área da clínica.']);
+        }
+
         return $this->view('auth/login');
     }
 
@@ -59,6 +63,10 @@ final class LoginController extends Controller
 
     public function login(Request $request)
     {
+        if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0) {
+            return $this->view('auth/login', ['error' => 'Você está logado no Portal do Paciente. Saia do portal para entrar na área da clínica.']);
+        }
+
         $email = (string)$request->input('email', '');
         $password = (string)$request->input('password', '');
 

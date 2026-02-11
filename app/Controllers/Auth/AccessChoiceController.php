@@ -14,6 +14,10 @@ final class AccessChoiceController extends Controller
 {
     public function show(Request $request): Response
     {
+        if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0) {
+            return $this->redirect('/login?error=' . urlencode('Você está logado no Portal do Paciente. Saia do portal para entrar na área da clínica.'));
+        }
+
         $pending = $_SESSION['pending_access'] ?? null;
         if (!is_array($pending) || !isset($pending['options']) || !is_array($pending['options'])) {
             return $this->redirect('/login');
@@ -28,6 +32,10 @@ final class AccessChoiceController extends Controller
 
     public function choose(Request $request): Response
     {
+        if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0) {
+            return $this->redirect('/login?error=' . urlencode('Você está logado no Portal do Paciente. Saia do portal para entrar na área da clínica.'));
+        }
+
         $pending = $_SESSION['pending_access'] ?? null;
         if (!is_array($pending) || !isset($pending['options']) || !is_array($pending['options'])) {
             return $this->redirect('/login');

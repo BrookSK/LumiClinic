@@ -164,7 +164,12 @@ final class PatientAuthService
         $audit = new AuditLogRepository($pdo);
         $audit->log(null, $clinicId, 'portal.logout', ['patient_user_id' => $patientUserId, 'patient_id' => $patientId], $ip, null, 'patient_user', $patientUserId, $userAgent);
 
-        unset($_SESSION['patient_user_id'], $_SESSION['patient_id'], $_SESSION['clinic_id'], $_SESSION['patient_two_factor_required'], $_SESSION['patient_name']);
+        $hasStaffSession = isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0;
+
+        unset($_SESSION['patient_user_id'], $_SESSION['patient_id'], $_SESSION['patient_two_factor_required'], $_SESSION['patient_name']);
+        if (!$hasStaffSession) {
+            unset($_SESSION['clinic_id']);
+        }
         session_regenerate_id(true);
     }
 
