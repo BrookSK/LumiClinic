@@ -49,6 +49,13 @@ final class PortalProfileController extends Controller
                 'email' => $request->input('email', ''),
                 'phone' => $request->input('phone', ''),
                 'birth_date' => $request->input('birth_date', ''),
+                'address_street' => $request->input('address_street', ''),
+                'address_number' => $request->input('address_number', ''),
+                'address_complement' => $request->input('address_complement', ''),
+                'address_district' => $request->input('address_district', ''),
+                'address_city' => $request->input('address_city', ''),
+                'address_state' => $request->input('address_state', ''),
+                'address_zip' => $request->input('address_zip', ''),
             ], $request->ip());
 
             return $this->redirect('/portal/perfil?success=' . urlencode('Solicitação enviada para revisão da clínica.'));

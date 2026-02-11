@@ -65,6 +65,7 @@ final class PatientProfileChangeRequestService
         $email = array_key_exists('email', $payload) ? trim((string)$payload['email']) : (string)($patient['email'] ?? '');
         $phone = array_key_exists('phone', $payload) ? trim((string)$payload['phone']) : (string)($patient['phone'] ?? '');
         $birthDate = array_key_exists('birth_date', $payload) ? trim((string)$payload['birth_date']) : (string)($patient['birth_date'] ?? '');
+        $address = array_key_exists('address', $payload) ? trim((string)$payload['address']) : (string)($patient['address'] ?? '');
 
         // Apply using existing method, keeping unchanged fields
         $patientRepo->updateClinicalFields(
@@ -76,7 +77,7 @@ final class PatientProfileChangeRequestService
             ($birthDate === '' ? null : $birthDate),
             (string)($patient['sex'] ?? ''),
             (string)($patient['cpf'] ?? ''),
-            (string)($patient['address'] ?? ''),
+            ($address === '' ? null : $address),
             (string)($patient['notes'] ?? ''),
             isset($patient['reference_professional_id']) ? (int)$patient['reference_professional_id'] : null,
             (string)($patient['status'] ?? 'active')

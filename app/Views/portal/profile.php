@@ -7,6 +7,19 @@ $pending = $pending_request ?? null;
 $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
+$pendingPayload = [];
+if (!empty($pending) && isset($pending['requested_fields_json'])) {
+    $decoded = json_decode((string)$pending['requested_fields_json'], true);
+    if (is_array($decoded)) {
+        $pendingPayload = $decoded;
+    }
+}
+
+$pendingAddressParts = [];
+if (isset($pendingPayload['address_parts']) && is_array($pendingPayload['address_parts'])) {
+    $pendingAddressParts = $pendingPayload['address_parts'];
+}
+
 $clinicContact = array_filter([
     'contact_whatsapp' => $clinic['contact_whatsapp'] ?? null,
     'contact_phone' => $clinic['contact_phone'] ?? null,
@@ -66,16 +79,47 @@ ob_start();
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
                 <label class="lc-label">Nome</label>
-                <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
+                <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($pendingPayload['name'] ?? ($patient['name'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" required />
 
                 <label class="lc-label">E-mail</label>
-                <input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($pendingPayload['email'] ?? ($patient['email'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" />
 
                 <label class="lc-label">Telefone</label>
-                <input class="lc-input" type="text" name="phone" value="<?= htmlspecialchars((string)($patient['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="phone" value="<?= htmlspecialchars((string)($pendingPayload['phone'] ?? ($patient['phone'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" />
 
                 <label class="lc-label">Data de nascimento</label>
-                <input class="lc-input" type="text" name="birth_date" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="birth_date" value="<?= htmlspecialchars((string)($pendingPayload['birth_date'] ?? ($patient['birth_date'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" />
+
+                <div class="lc-grid lc-grid--2 lc-gap-grid" style="margin-top:12px;">
+                    <div>
+                        <label class="lc-label">Rua</label>
+                        <input class="lc-input" type="text" name="address_street" value="<?= htmlspecialchars((string)($pendingAddressParts['street'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                    </div>
+                    <div>
+                        <label class="lc-label">Número</label>
+                        <input class="lc-input" type="text" name="address_number" value="<?= htmlspecialchars((string)($pendingAddressParts['number'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                    </div>
+                    <div>
+                        <label class="lc-label">Complemento</label>
+                        <input class="lc-input" type="text" name="address_complement" value="<?= htmlspecialchars((string)($pendingAddressParts['complement'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                    </div>
+                    <div>
+                        <label class="lc-label">Bairro</label>
+                        <input class="lc-input" type="text" name="address_district" value="<?= htmlspecialchars((string)($pendingAddressParts['district'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                    </div>
+                    <div>
+                        <label class="lc-label">Cidade</label>
+                        <input class="lc-input" type="text" name="address_city" value="<?= htmlspecialchars((string)($pendingAddressParts['city'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                    </div>
+                    <div>
+                        <label class="lc-label">Estado</label>
+                        <input class="lc-input" type="text" name="address_state" value="<?= htmlspecialchars((string)($pendingAddressParts['state'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                    </div>
+                    <div>
+                        <label class="lc-label">CEP</label>
+                        <input class="lc-input" type="text" name="address_zip" value="<?= htmlspecialchars((string)($pendingAddressParts['zip'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                    </div>
+                </div>
 
                 <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:12px; align-items:center;">
                     <button class="lc-btn lc-btn--primary" type="submit">Enviar solicitação</button>

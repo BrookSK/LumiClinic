@@ -56,7 +56,16 @@ ob_start();
                         <td><?= htmlspecialchars((string)($r['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td style="max-width:420px;">
                             <?php foreach ($payload as $k => $v): ?>
-                                <div><strong><?= htmlspecialchars((string)$k, ENT_QUOTES, 'UTF-8') ?>:</strong> <?= htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8') ?></div>
+                                <?php if (is_array($v)): ?>
+                                    <div><strong><?= htmlspecialchars((string)$k, ENT_QUOTES, 'UTF-8') ?>:</strong></div>
+                                    <div style="padding-left:10px; opacity:.9;">
+                                        <?php foreach ($v as $kk => $vv): ?>
+                                            <div><strong><?= htmlspecialchars((string)$kk, ENT_QUOTES, 'UTF-8') ?>:</strong> <?= htmlspecialchars((string)$vv, ENT_QUOTES, 'UTF-8') ?></div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div><strong><?= htmlspecialchars((string)$k, ENT_QUOTES, 'UTF-8') ?>:</strong> <?= htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8') ?></div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </td>
                         <td>
