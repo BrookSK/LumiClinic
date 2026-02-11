@@ -86,4 +86,24 @@ final class UserRepository
             'password_hash' => $passwordHash,
         ]);
     }
+
+    public function updateSelfProfile(int $userId, string $name, string $email): void
+    {
+        $sql = "
+            UPDATE users
+               SET name = :name,
+                   email = :email,
+                   updated_at = NOW()
+             WHERE id = :id
+               AND deleted_at IS NULL
+             LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $userId,
+            'name' => $name,
+            'email' => $email,
+        ]);
+    }
 }

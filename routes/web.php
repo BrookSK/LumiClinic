@@ -27,6 +27,7 @@ use App\Controllers\Users\UserController;
 use App\Controllers\Patients\PatientController;
 use App\Controllers\Patients\PatientPortalAccessController;
 use App\Controllers\Patients\PatientContentController;
+use App\Controllers\Patients\PatientProfileChangeRequestController;
 use App\Controllers\MedicalRecords\MedicalRecordController;
 use App\Controllers\MedicalImages\MedicalImageController;
 use App\Controllers\MedicalImages\PatientUploadModerationController;
@@ -67,6 +68,7 @@ use App\Controllers\Private\PrivateTutorialController;
 use App\Controllers\Tutorial\ApiTokensTutorialController;
 use App\Controllers\Tutorial\SystemTutorialController;
 use App\Controllers\Tutorial\PatientTutorialController;
+use App\Controllers\Account\MeController;
 use App\Controllers\Auth\AccessChoiceController;
 
 $router->get('/', [DashboardController::class, 'index']);
@@ -108,6 +110,7 @@ $router->get('/portal/notificacoes', [PortalNotificationsController::class, 'ind
 $router->post('/portal/notificacoes/read', [PortalNotificationsController::class, 'markRead']);
 
 $router->get('/portal/perfil', [PortalProfileController::class, 'index']);
+$router->post('/portal/perfil/request-change', [PortalProfileController::class, 'requestChange']);
 $router->get('/portal/seguranca', [PortalSecurityController::class, 'index']);
 $router->post('/portal/seguranca/reset', [PortalSecurityController::class, 'sendReset']);
 
@@ -178,6 +181,9 @@ $router->get('/tutorial/paciente/perfil', [PatientTutorialController::class, 'pe
 $router->get('/tutorial/paciente/seguranca', [PatientTutorialController::class, 'seguranca']);
 $router->get('/tutorial/paciente/lgpd', [PatientTutorialController::class, 'lgpd']);
 $router->get('/tutorial/paciente/api-tokens', [PatientTutorialController::class, 'apiTokens']);
+
+$router->get('/me', [MeController::class, 'index']);
+$router->post('/me', [MeController::class, 'update']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);
@@ -305,6 +311,10 @@ $router->get('/patients/search-json', [PatientController::class, 'searchJson']);
 
 $router->get('/patients/portal-access', [PatientPortalAccessController::class, 'show']);
 $router->post('/patients/portal-access/ensure', [PatientPortalAccessController::class, 'ensure']);
+
+$router->get('/patients/profile-requests', [PatientProfileChangeRequestController::class, 'index']);
+$router->post('/patients/profile-requests/approve', [PatientProfileChangeRequestController::class, 'approve']);
+$router->post('/patients/profile-requests/reject', [PatientProfileChangeRequestController::class, 'reject']);
 
 $router->get('/patients/content', [PatientContentController::class, 'index']);
 $router->post('/patients/content/create', [PatientContentController::class, 'create']);

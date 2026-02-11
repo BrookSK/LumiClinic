@@ -239,6 +239,10 @@ $ico = [
                     <?= $navItem('/patients', 'Pacientes', $ico['patients'], $isActive('/patients')) ?>
                 <?php endif; ?>
 
+                <?php if ($can('patients.update') && $hasClinicContext): ?>
+                    <?= $navItem('/patients/profile-requests', 'Solicitações de perfil', $ico['patients'], $isActive('/patients/profile-requests')) ?>
+                <?php endif; ?>
+
                 <?php if ($can('consent_terms.manage') && $hasClinicContext): ?>
                     <?= $navItem('/consent-terms', 'Termos', $ico['shield'], $isActive('/consent-terms')) ?>
                 <?php endif; ?>
@@ -318,6 +322,7 @@ $ico = [
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         </summary>
                         <div class="lc-actions__menu">
+                            <a class="lc-btn lc-btn--secondary" href="/me">Perfil</a>
                             <form method="post" action="/logout">
                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                 <button class="lc-btn lc-btn--secondary" type="submit">Sair</button>
