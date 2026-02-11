@@ -267,6 +267,7 @@ $router->get('/schedule/logs', [ScheduleController::class, 'logs']);
 $router->get('/finance/sales', [SalesController::class, 'index']);
 $router->post('/finance/sales/create', [SalesController::class, 'create']);
 $router->get('/finance/sales/view', [SalesController::class, 'show']);
+$router->get('/finance/sales/patients/search-json', [SalesController::class, 'patientSearchJson']);
 $router->post('/finance/sales/items/add', [SalesController::class, 'addItem']);
 $router->post('/finance/sales/cancel', [SalesController::class, 'cancel']);
 
@@ -276,6 +277,13 @@ $router->post('/finance/payments/refund', [PaymentController::class, 'refund']);
 $router->get('/finance/cashflow', [FinancialController::class, 'cashflow']);
 $router->post('/finance/entries/create', [FinancialController::class, 'createEntry']);
 $router->post('/finance/entries/delete', [FinancialController::class, 'deleteEntry']);
+
+$router->get('/finance/cost-centers', [FinancialController::class, 'costCenters']);
+$router->post('/finance/cost-centers/create', [FinancialController::class, 'createCostCenter']);
+$router->get('/finance/cost-centers/edit', [FinancialController::class, 'editCostCenter']);
+$router->post('/finance/cost-centers/update', [FinancialController::class, 'updateCostCenter']);
+$router->post('/finance/cost-centers/status', [FinancialController::class, 'setCostCenterStatus']);
+$router->post('/finance/cost-centers/delete', [FinancialController::class, 'deleteCostCenter']);
 
 $router->get('/finance/reports', [FinancialController::class, 'reports']);
 $router->get('/finance/reports/export.csv', [FinancialController::class, 'reportsExportCsv']);

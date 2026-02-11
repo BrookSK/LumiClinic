@@ -6,8 +6,10 @@ namespace App\Controllers\Finance;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Core\Http\Response;
 use App\Services\Auth\AuthService;
 use App\Services\Finance\SalesService;
+use App\Services\Patients\PatientService;
 
 final class SalesController extends Controller
 {
@@ -129,13 +131,50 @@ final class SalesController extends Controller
         $desconto = trim((string)$request->input('desconto', '0'));
         $notes = trim((string)$request->input('notes', ''));
 
+        if ($patientId <= 0) {
+            return $this->redirect('/finance/sales?error=' . urlencode('Paciente é obrigatório.'));
+        }
+
         try {
             $service = new SalesService($this->container);
-            $saleId = $service->createSale($patientId > 0 ? $patientId : null, $origin, $desconto, $notes === '' ? null : $notes, $request->ip(), $request->header('user-agent'));
+            $saleId = $service->createSale($patientId, $origin, $desconto, $notes === '' ? null : $notes, $request->ip(), $request->header('user-agent'));
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales?error=' . urlencode($e->getMessage()));
         }
+    }
+
+    public function patientSearchJson(Request $request): Response
+    {
+        $this->authorize('finance.sales.create');
+
+        if ($this->isProfessionalRole()) {
+            return Response::json(['items' => []]);
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return Response::json(['items' => []]);
+        }
+
+        $q = trim((string)$request->input('q', ''));
+        $limit = (int)$request->input('limit', 20);
+        $limit = max(1, min(30, $limit));
+
+        $service = new PatientService($this->container);
+        $rows = $service->search($q, $limit, 0);
+
+        $items = [];
+        foreach ($rows as $r) {
+            $items[] = [
+                'id' => (int)($r['id'] ?? 0),
+                'name' => (string)($r['name'] ?? ''),
+                'email' => (string)($r['email'] ?? ''),
+                'phone' => (string)($r['phone'] ?? ''),
+            ];
+        }
+
+        return Response::json(['items' => $items]);
     }
 
     public function show(Request $request)

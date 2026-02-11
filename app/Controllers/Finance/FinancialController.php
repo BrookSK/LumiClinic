@@ -126,6 +126,150 @@ final class FinancialController extends Controller
         }
     }
 
+    public function costCenters(Request $request)
+    {
+        $this->authorize('finance.cost_centers.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $svc = new FinancialService($this->container);
+        return $this->view('finance/cost_centers', [
+            'rows' => $svc->listAllCostCenters(),
+            'error' => trim((string)$request->input('error', '')),
+            'success' => trim((string)$request->input('success', '')),
+        ]);
+    }
+
+    public function createCostCenter(Request $request)
+    {
+        $this->authorize('finance.cost_centers.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $name = trim((string)$request->input('name', ''));
+        try {
+            (new FinancialService($this->container))->createCostCenter($name, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/cost-centers?success=' . urlencode('Criado.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/cost-centers?error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function editCostCenter(Request $request)
+    {
+        $this->authorize('finance.cost_centers.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/finance/cost-centers');
+        }
+
+        $svc = new FinancialService($this->container);
+        $row = $svc->getCostCenter($id);
+        if ($row === null) {
+            return $this->redirect('/finance/cost-centers?error=' . urlencode('Centro de custo inválido.'));
+        }
+
+        return $this->view('finance/cost_centers_edit', [
+            'row' => $row,
+            'error' => trim((string)$request->input('error', '')),
+            'success' => trim((string)$request->input('success', '')),
+        ]);
+    }
+
+    public function updateCostCenter(Request $request)
+    {
+        $this->authorize('finance.cost_centers.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $id = (int)$request->input('id', 0);
+        $name = trim((string)$request->input('name', ''));
+
+        try {
+            (new FinancialService($this->container))->updateCostCenter($id, $name, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/cost-centers/edit?id=' . $id . '&success=' . urlencode('Salvo.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/cost-centers/edit?id=' . $id . '&error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function setCostCenterStatus(Request $request)
+    {
+        $this->authorize('finance.cost_centers.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $id = (int)$request->input('id', 0);
+        $status = trim((string)$request->input('status', ''));
+
+        try {
+            (new FinancialService($this->container))->setCostCenterStatus($id, $status, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/cost-centers?success=' . urlencode('Status atualizado.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/cost-centers?error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function deleteCostCenter(Request $request)
+    {
+        $this->authorize('finance.cost_centers.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $id = (int)$request->input('id', 0);
+        try {
+            (new FinancialService($this->container))->deleteCostCenter($id, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/cost-centers?success=' . urlencode('Excluído.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/cost-centers?error=' . urlencode($e->getMessage()));
+        }
+    }
+
     public function deleteEntry(Request $request)
     {
         $this->authorize('finance.entries.delete');

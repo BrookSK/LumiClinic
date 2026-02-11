@@ -58,6 +58,116 @@ final class FinancialService
         return $id;
     }
 
+    /** @return list<array<string,mixed>> */
+    public function listAllCostCenters(): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $repo = new CostCenterRepository($this->container->get(\PDO::class));
+        return $repo->listByClinic($clinicId);
+    }
+
+    /** @return array<string,mixed>|null */
+    public function getCostCenter(int $id): ?array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $repo = new CostCenterRepository($this->container->get(\PDO::class));
+        return $repo->findById($clinicId, $id);
+    }
+
+    public function updateCostCenter(int $id, string $name, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $name = trim($name);
+        if ($id <= 0 || $name === '') {
+            throw new \RuntimeException('Preencha os campos obrigatórios.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new CostCenterRepository($pdo);
+        if ($repo->findById($clinicId, $id) === null) {
+            throw new \RuntimeException('Centro de custo inválido.');
+        }
+
+        $repo->update($clinicId, $id, $name);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.cost_centers.update', ['cost_center_id' => $id], $ip, $roleCodes, 'cost_center', $id, $userAgent);
+    }
+
+    public function setCostCenterStatus(int $id, string $status, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($id <= 0) {
+            throw new \RuntimeException('Centro de custo inválido.');
+        }
+
+        $status = trim($status);
+        if (!in_array($status, ['active', 'disabled'], true)) {
+            throw new \RuntimeException('Status inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new CostCenterRepository($pdo);
+        if ($repo->findById($clinicId, $id) === null) {
+            throw new \RuntimeException('Centro de custo inválido.');
+        }
+
+        $repo->setStatus($clinicId, $id, $status);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.cost_centers.set_status', ['cost_center_id' => $id, 'status' => $status], $ip, $roleCodes, 'cost_center', $id, $userAgent);
+    }
+
+    public function deleteCostCenter(int $id, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($id <= 0) {
+            throw new \RuntimeException('Centro de custo inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new CostCenterRepository($pdo);
+        if ($repo->findById($clinicId, $id) === null) {
+            throw new \RuntimeException('Centro de custo inválido.');
+        }
+
+        $repo->softDelete($clinicId, $id);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.cost_centers.delete', ['cost_center_id' => $id], $ip, $roleCodes, 'cost_center', $id, $userAgent);
+    }
+
     /** @return array{from:string,to:string,entries:list<array<string,mixed>>,totals:array{in:float,out:float,balance:float}} */
     public function listEntries(string $from, string $to, int $limit = 200, int $offset = 0): array
     {

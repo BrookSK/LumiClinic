@@ -52,6 +52,10 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Novo lançamento</div>
     <div class="lc-card__body">
+        <div class="lc-flex lc-flex--between lc-flex--wrap" style="gap:10px; margin-bottom:10px;">
+            <div></div>
+            <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers">Centros de custo</a>
+        </div>
         <form method="post" action="/finance/entries/create" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 1fr 1fr 1fr 1fr 2fr;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
             <input type="hidden" name="from" value="<?= htmlspecialchars($from, ENT_QUOTES, 'UTF-8') ?>" />

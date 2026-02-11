@@ -35,7 +35,7 @@ ob_start();
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
                 <div class="lc-field">
-                    <label class="lc-label">Paciente (opcional)</label>
+                    <label class="lc-label">Paciente</label>
                     <input class="lc-input" type="text" id="sale_patient_search" placeholder="Buscar por nome, e-mail ou telefone" autocomplete="off" />
                     <input type="hidden" name="patient_id" id="sale_patient_id" value="" />
                     <div class="lc-autocomplete" id="sale_patient_results" style="display:none;"></div>
@@ -78,7 +78,7 @@ ob_start();
   function hide(){ resultsEl.style.display='none'; resultsEl.innerHTML=''; }
   function clear(){ idEl.value=''; }
   async function search(q){
-    const url = `/patients/search-json?q=${encodeURIComponent(q)}&limit=10`;
+    const url = `/finance/sales/patients/search-json?q=${encodeURIComponent(q)}&limit=10`;
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) return [];
     const data = await res.json();
@@ -120,6 +120,15 @@ ob_start();
   });
 
   searchEl.addEventListener('blur', function(){ window.setTimeout(hide, 150); });
+
+  const form = searchEl.closest('form');
+  if (form) {
+    form.addEventListener('submit', function(e){
+      if (!String(idEl.value || '').trim()) {
+        e.preventDefault();
+      }
+    });
+  }
 })();
 </script>
 
