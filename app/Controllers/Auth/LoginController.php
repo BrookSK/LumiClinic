@@ -118,6 +118,11 @@ final class LoginController extends Controller
             $opt = $options[0];
             if ((string)$opt['kind'] === 'user') {
                 (new AuthService($this->container))->loginUserByIdForSession((int)$opt['id'], $request->ip(), $request->header('user-agent'));
+                $next = isset($_SESSION['auth_next']) ? (string)$_SESSION['auth_next'] : '';
+                unset($_SESSION['auth_next']);
+                if ($next !== '' && str_starts_with($next, '/') && !str_starts_with($next, '/login') && !str_starts_with($next, '/logout')) {
+                    return $this->redirect($next);
+                }
                 return $this->redirect('/');
             }
 

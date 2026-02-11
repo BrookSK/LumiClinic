@@ -33,6 +33,10 @@ final class PatientAuthMiddleware implements MiddlewareInterface
 
         $auth = new PatientAuthService($this->container);
         if ($auth->patientUserId() === null) {
+            $uri = (string)($_SERVER['REQUEST_URI'] ?? '/portal');
+            if ($uri !== '' && $uri !== '/portal/login') {
+                $_SESSION['portal_next'] = $uri;
+            }
             return Response::redirect('/portal/login');
         }
 

@@ -48,6 +48,10 @@ final class AuthMiddleware implements MiddlewareInterface
         $auth = new AuthService($this->container);
 
         if ($auth->userId() === null) {
+            $uri = (string)($_SERVER['REQUEST_URI'] ?? '/');
+            if ($uri !== '' && $uri !== '/login' && $uri !== '/choose-access') {
+                $_SESSION['auth_next'] = $uri;
+            }
             return Response::redirect('/login');
         }
 

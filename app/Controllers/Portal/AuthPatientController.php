@@ -79,6 +79,11 @@ final class AuthPatientController extends Controller
             $opt = $options[0];
             if ((string)$opt['kind'] === 'patient') {
                 (new PatientAuthService($this->container))->loginPatientUserByIdForSession((int)$opt['id'], $request->ip(), $request->header('user-agent'));
+                $next = isset($_SESSION['portal_next']) ? (string)$_SESSION['portal_next'] : '';
+                unset($_SESSION['portal_next']);
+                if ($next !== '' && str_starts_with($next, '/') && str_starts_with($next, '/portal') && !str_starts_with($next, '/portal/login') && !str_starts_with($next, '/portal/logout')) {
+                    return $this->redirect($next);
+                }
                 return $this->redirect('/portal');
             }
 

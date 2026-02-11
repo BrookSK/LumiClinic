@@ -52,6 +52,11 @@ final class AccessChoiceController extends Controller
         if ($kind === 'user') {
             try {
                 (new AuthService($this->container))->loginUserByIdForSession($id, $request->ip(), $request->header('user-agent'));
+                $next = isset($_SESSION['auth_next']) ? (string)$_SESSION['auth_next'] : '';
+                unset($_SESSION['auth_next']);
+                if ($next !== '' && str_starts_with($next, '/') && !str_starts_with($next, '/login') && !str_starts_with($next, '/logout')) {
+                    return $this->redirect($next);
+                }
                 return $this->redirect('/');
             } catch (\RuntimeException $e) {
                 return $this->redirect('/login?error=' . urlencode($e->getMessage()));
@@ -61,6 +66,11 @@ final class AccessChoiceController extends Controller
         if ($kind === 'patient') {
             try {
                 (new PatientAuthService($this->container))->loginPatientUserByIdForSession($id, $request->ip(), $request->header('user-agent'));
+                $next = isset($_SESSION['portal_next']) ? (string)$_SESSION['portal_next'] : '';
+                unset($_SESSION['portal_next']);
+                if ($next !== '' && str_starts_with($next, '/') && str_starts_with($next, '/portal') && !str_starts_with($next, '/portal/login') && !str_starts_with($next, '/portal/logout')) {
+                    return $this->redirect($next);
+                }
                 return $this->redirect('/portal');
             } catch (\RuntimeException $e) {
                 return $this->redirect('/portal/login?error=' . urlencode($e->getMessage()));
