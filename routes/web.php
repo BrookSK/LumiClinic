@@ -65,6 +65,7 @@ use App\Controllers\Ai\AiController;
 use App\Controllers\Reports\ReportsController;
 use App\Controllers\Private\PrivateTutorialController;
 use App\Controllers\Tutorial\ApiTokensTutorialController;
+use App\Controllers\Tutorial\SystemTutorialController;
 use App\Controllers\Auth\AccessChoiceController;
 
 $router->get('/', [DashboardController::class, 'index']);
@@ -148,6 +149,8 @@ $router->get('/private/tutorial/clinic', [PrivateTutorialController::class, 'cli
 $router->post('/private/tutorial/clinic', [PrivateTutorialController::class, 'clinic']);
 
 $router->get('/tutorial/api-tokens/paciente', [ApiTokensTutorialController::class, 'patient']);
+
+$router->get('/tutorial/sistema', [SystemTutorialController::class, 'index']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);
