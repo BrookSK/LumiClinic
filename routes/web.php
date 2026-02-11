@@ -66,6 +66,7 @@ use App\Controllers\Reports\ReportsController;
 use App\Controllers\Private\PrivateTutorialController;
 use App\Controllers\Tutorial\ApiTokensTutorialController;
 use App\Controllers\Tutorial\SystemTutorialController;
+use App\Controllers\Tutorial\PatientTutorialController;
 use App\Controllers\Auth\AccessChoiceController;
 
 $router->get('/', [DashboardController::class, 'index']);
@@ -165,6 +166,18 @@ $router->get('/tutorial/sistema/configuracoes', [SystemTutorialController::class
 $router->get('/tutorial/sistema/seguranca', [SystemTutorialController::class, 'seguranca']);
 $router->get('/tutorial/sistema/portal-paciente', [SystemTutorialController::class, 'portalPaciente']);
 $router->get('/tutorial/sistema/integracoes-api', [SystemTutorialController::class, 'integracoesApi']);
+
+$router->get('/tutorial/paciente', [PatientTutorialController::class, 'index']);
+$router->get('/tutorial/paciente/portal', [PatientTutorialController::class, 'portal']);
+$router->get('/tutorial/paciente/busca', [PatientTutorialController::class, 'busca']);
+$router->get('/tutorial/paciente/agenda', [PatientTutorialController::class, 'agenda']);
+$router->get('/tutorial/paciente/documentos', [PatientTutorialController::class, 'documentos']);
+$router->get('/tutorial/paciente/uploads', [PatientTutorialController::class, 'uploads']);
+$router->get('/tutorial/paciente/notificacoes', [PatientTutorialController::class, 'notificacoes']);
+$router->get('/tutorial/paciente/perfil', [PatientTutorialController::class, 'perfil']);
+$router->get('/tutorial/paciente/seguranca', [PatientTutorialController::class, 'seguranca']);
+$router->get('/tutorial/paciente/lgpd', [PatientTutorialController::class, 'lgpd']);
+$router->get('/tutorial/paciente/api-tokens', [PatientTutorialController::class, 'apiTokens']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);

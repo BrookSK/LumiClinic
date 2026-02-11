@@ -1,10 +1,35 @@
 <?php
 $title = 'Tutorial do Sistema';
 
-$perfil = isset($_GET['perfil']) ? strtolower(trim((string)$_GET['perfil'])) : 'admin';
-$allowedPerfis = ['admin', 'recepcao', 'profissional'];
-if (!in_array($perfil, $allowedPerfis, true)) {
-    $perfil = 'admin';
+$perfil = 'guest';
+$perfilLabel = 'Geral';
+
+if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0) {
+    $perfil = 'patient';
+    $perfilLabel = 'Paciente';
+} elseif (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
+    $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+    $roles = $_SESSION['role_codes'] ?? [];
+
+    if ($isSuperAdmin) {
+        $perfil = 'admin';
+        $perfilLabel = 'Admin';
+    } elseif (is_array($roles) && (in_array('owner', $roles, true) || in_array('admin', $roles, true))) {
+        $perfil = 'admin';
+        $perfilLabel = 'Admin';
+    } elseif (is_array($roles) && in_array('reception', $roles, true)) {
+        $perfil = 'recepcao';
+        $perfilLabel = 'Recepção';
+    } elseif (is_array($roles) && in_array('professional', $roles, true)) {
+        $perfil = 'profissional';
+        $perfilLabel = 'Profissional';
+    } elseif (is_array($roles) && in_array('finance', $roles, true)) {
+        $perfil = 'financeiro';
+        $perfilLabel = 'Financeiro';
+    } else {
+        $perfil = 'admin';
+        $perfilLabel = 'Admin';
+    }
 }
 
 $modules = [
@@ -12,28 +37,28 @@ $modules = [
         'key' => 'primeiros-passos',
         'label' => 'Primeiros passos',
         'href' => '/tutorial/sistema/primeiros-passos',
-        'perfils' => ['admin', 'recepcao', 'profissional'],
+        'perfils' => ['admin', 'recepcao', 'profissional', 'guest'],
         'desc' => 'Visão geral do menu, navegação e atalhos do sistema.',
     ],
     [
         'key' => 'dashboard',
         'label' => 'Dashboard',
         'href' => '/tutorial/sistema/dashboard',
-        'perfils' => ['admin', 'recepcao', 'profissional'],
+        'perfils' => ['admin', 'recepcao', 'profissional', 'guest'],
         'desc' => 'Entenda indicadores, atalhos e leitura rápida do dia.',
     ],
     [
         'key' => 'agenda',
         'label' => 'Agenda',
         'href' => '/tutorial/sistema/agenda',
-        'perfils' => ['admin', 'recepcao', 'profissional'],
+        'perfils' => ['admin', 'recepcao', 'profissional', 'guest'],
         'desc' => 'Criar, editar, cancelar e operar atendimentos.',
     ],
     [
         'key' => 'pacientes',
         'label' => 'Pacientes',
         'href' => '/tutorial/sistema/pacientes',
-        'perfils' => ['admin', 'recepcao', 'profissional'],
+        'perfils' => ['admin', 'recepcao', 'profissional', 'guest'],
         'desc' => 'Cadastro, busca, histórico e portal do paciente.',
     ],
     [
@@ -54,7 +79,7 @@ $modules = [
         'key' => 'financeiro',
         'label' => 'Financeiro',
         'href' => '/tutorial/sistema/financeiro',
-        'perfils' => ['admin', 'recepcao'],
+        'perfils' => ['admin', 'recepcao', 'financeiro'],
         'desc' => 'Vendas, pagamentos, caixa e relatórios.',
     ],
     [
@@ -96,7 +121,7 @@ $modules = [
         'key' => 'portal-paciente',
         'label' => 'Portal do Paciente',
         'href' => '/tutorial/sistema/portal-paciente',
-        'perfils' => ['admin', 'recepcao', 'profissional'],
+        'perfils' => ['admin', 'recepcao', 'profissional', 'guest', 'patient'],
         'desc' => 'Como funciona o portal e o que o paciente consegue ver.',
     ],
     [
@@ -105,6 +130,13 @@ $modules = [
         'href' => '/tutorial/sistema/integracoes-api',
         'perfils' => ['admin'],
         'desc' => 'Integrações, API Tokens e boas práticas.',
+    ],
+    [
+        'key' => 'api-token-paciente',
+        'label' => 'API Token (Paciente)',
+        'href' => '/tutorial/api-tokens/paciente',
+        'perfils' => ['patient', 'guest', 'admin'],
+        'desc' => 'Como gerar e usar o API Token no Portal do Paciente.',
     ],
 ];
 
@@ -163,7 +195,7 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
             </div>
             <div>
                 <div class="lc-page__title" style="margin:0;">Ajuda</div>
-                <div class="lc-page__subtitle" style="margin-top:2px;">Tutorial completo do sistema</div>
+                <div class="lc-page__subtitle" style="margin-top:2px;">Tutorial (perfil: <?= htmlspecialchars($perfilLabel, ENT_QUOTES, 'UTF-8') ?>)</div>
             </div>
         </div>
 
@@ -186,27 +218,12 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Escolha seu perfil</div>
-        <div class="lc-card__body" style="line-height:1.6;">
-            <div class="lc-muted">
-                O índice pode ser filtrado por perfil para facilitar. O perfil <strong>Admin</strong> mostra tudo.
-            </div>
-
-            <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:12px;">
-                <a class="lc-btn <?= $perfil === 'admin' ? '' : 'lc-btn--secondary' ?>" href="/tutorial/sistema?perfil=admin">Admin</a>
-                <a class="lc-btn <?= $perfil === 'recepcao' ? '' : 'lc-btn--secondary' ?>" href="/tutorial/sistema?perfil=recepcao">Recepção</a>
-                <a class="lc-btn <?= $perfil === 'profissional' ? '' : 'lc-btn--secondary' ?>" href="/tutorial/sistema?perfil=profissional">Profissional</a>
-            </div>
-        </div>
-    </div>
-
-    <div class="lc-card" style="margin-top:16px; padding:16px;">
         <div class="lc-card__title">Módulos</div>
         <div class="lc-card__body" style="line-height:1.6;">
             <div class="lc-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
                 <?php foreach ($modules as $m): ?>
                     <?php if ($perfil !== 'admin' && !in_array($perfil, $m['perfils'], true)) continue; ?>
-                    <a class="lc-card" href="<?= htmlspecialchars($m['href'] . '?perfil=' . urlencode($perfil), ENT_QUOTES, 'UTF-8') ?>" style="display:block; padding:14px; text-decoration:none;">
+                    <a class="lc-card" href="<?= htmlspecialchars($m['href'], ENT_QUOTES, 'UTF-8') ?>" style="display:block; padding:14px; text-decoration:none;">
                         <div style="font-weight:800; color:#0f172a;">
                             <?= htmlspecialchars($m['label'], ENT_QUOTES, 'UTF-8') ?>
                         </div>

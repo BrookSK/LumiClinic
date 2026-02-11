@@ -1,8 +1,25 @@
 <?php
 $title = 'Tutorial do Sistema - Portal do Paciente';
-$perfil = isset($_GET['perfil']) ? strtolower(trim((string)$_GET['perfil'])) : 'admin';
-if (!in_array($perfil, ['admin', 'recepcao', 'profissional'], true)) {
-    $perfil = 'admin';
+$perfilLabel = 'Geral';
+if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0) {
+    $perfilLabel = 'Paciente';
+} elseif (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
+    $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+    $roles = $_SESSION['role_codes'] ?? [];
+
+    if ($isSuperAdmin) {
+        $perfilLabel = 'Admin';
+    } elseif (is_array($roles) && (in_array('owner', $roles, true) || in_array('admin', $roles, true))) {
+        $perfilLabel = 'Admin';
+    } elseif (is_array($roles) && in_array('reception', $roles, true)) {
+        $perfilLabel = 'Recepção';
+    } elseif (is_array($roles) && in_array('professional', $roles, true)) {
+        $perfilLabel = 'Profissional';
+    } elseif (is_array($roles) && in_array('finance', $roles, true)) {
+        $perfilLabel = 'Recepção';
+    } else {
+        $perfilLabel = 'Admin';
+    }
 }
 
 $seo = isset($seo) && is_array($seo) ? $seo : [];
@@ -60,12 +77,12 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
             </div>
             <div>
                 <div class="lc-page__title" style="margin:0;">Ajuda</div>
-                <div class="lc-page__subtitle" style="margin-top:2px;">Portal do Paciente (perfil: <?= htmlspecialchars($perfil, ENT_QUOTES, 'UTF-8') ?>)</div>
+                <div class="lc-page__subtitle" style="margin-top:2px;">Portal do Paciente (perfil: <?= htmlspecialchars($perfilLabel, ENT_QUOTES, 'UTF-8') ?>)</div>
             </div>
         </div>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="align-items:center; justify-content:flex-end;">
-            <a class="lc-btn lc-btn--secondary" href="/tutorial/sistema?perfil=<?= urlencode($perfil) ?>">Voltar para o índice</a>
+            <a class="lc-btn lc-btn--secondary" href="/tutorial/sistema">Voltar para o índice</a>
             <a class="lc-btn lc-btn--secondary" href="/portal">Abrir Portal</a>
         </div>
     </div>

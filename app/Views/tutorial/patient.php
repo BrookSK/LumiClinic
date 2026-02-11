@@ -1,26 +1,5 @@
 <?php
-$title = 'Tutorial do Sistema - Financeiro';
-$perfilLabel = 'Geral';
-if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0) {
-    $perfilLabel = 'Paciente';
-} elseif (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
-    $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
-    $roles = $_SESSION['role_codes'] ?? [];
-
-    if ($isSuperAdmin) {
-        $perfilLabel = 'Admin';
-    } elseif (is_array($roles) && (in_array('owner', $roles, true) || in_array('admin', $roles, true))) {
-        $perfilLabel = 'Admin';
-    } elseif (is_array($roles) && in_array('reception', $roles, true)) {
-        $perfilLabel = 'Recepção';
-    } elseif (is_array($roles) && in_array('professional', $roles, true)) {
-        $perfilLabel = 'Profissional';
-    } elseif (is_array($roles) && in_array('finance', $roles, true)) {
-        $perfilLabel = 'Recepção';
-    } else {
-        $perfilLabel = 'Admin';
-    }
-}
+$title = 'Ajuda do Paciente';
 
 $seo = isset($seo) && is_array($seo) ? $seo : [];
 $seoSiteName = trim((string)($seo['site_name'] ?? ''));
@@ -36,6 +15,22 @@ if ($computedTitle === '') {
 if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     $computedTitle = $computedTitle . ' - ' . $seoSiteName;
 }
+
+$isPatientLogged = isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0;
+$patientName = isset($_SESSION['patient_name']) ? trim((string)$_SESSION['patient_name']) : '';
+
+$modules = [
+    ['label' => 'Visão geral do Portal', 'href' => '/tutorial/paciente/portal', 'desc' => 'Entenda o que é o portal e como navegar.'],
+    ['label' => 'Busca', 'href' => '/tutorial/paciente/busca', 'desc' => 'Como pesquisar conteúdos e informações no portal.'],
+    ['label' => 'Agenda', 'href' => '/tutorial/paciente/agenda', 'desc' => 'Como confirmar, cancelar e solicitar reagendamento.'],
+    ['label' => 'Documentos', 'href' => '/tutorial/paciente/documentos', 'desc' => 'Como visualizar documentos e assinaturas.'],
+    ['label' => 'Enviar fotos', 'href' => '/tutorial/paciente/uploads', 'desc' => 'Como enviar arquivos e acompanhar status.'],
+    ['label' => 'Notificações', 'href' => '/tutorial/paciente/notificacoes', 'desc' => 'Como ler e marcar notificações como lidas.'],
+    ['label' => 'Perfil', 'href' => '/tutorial/paciente/perfil', 'desc' => 'Como revisar seus dados e preferências.'],
+    ['label' => 'Segurança', 'href' => '/tutorial/paciente/seguranca', 'desc' => 'Senha, recuperação e boas práticas.'],
+    ['label' => 'LGPD', 'href' => '/tutorial/paciente/lgpd', 'desc' => 'Solicitações LGPD e privacidade.'],
+    ['label' => 'API Tokens', 'href' => '/tutorial/paciente/api-tokens', 'desc' => 'Como criar, revogar e usar tokens.'],
+];
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -77,23 +72,38 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
             </div>
             <div>
                 <div class="lc-page__title" style="margin:0;">Ajuda</div>
-                <div class="lc-page__subtitle" style="margin-top:2px;">Financeiro (perfil: <?= htmlspecialchars($perfilLabel, ENT_QUOTES, 'UTF-8') ?>)</div>
+                <div class="lc-page__subtitle" style="margin-top:2px;">Portal do Paciente<?= ($isPatientLogged && $patientName !== '') ? (': ' . htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8')) : '' ?></div>
             </div>
         </div>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="align-items:center; justify-content:flex-end;">
-            <a class="lc-btn lc-btn--secondary" href="/tutorial/sistema">Voltar para o índice</a>
-            <a class="lc-btn lc-btn--secondary" href="/finance/sales">Abrir Financeiro</a>
+            <a class="lc-btn lc-btn--secondary" href="/portal">Ir para o Portal</a>
+            <a class="lc-btn lc-btn--secondary" href="/tutorial/sistema">Ajuda do Sistema</a>
         </div>
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Visão geral</div>
+        <div class="lc-card__title">Como usar esta central</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            - Vendas e itens
-            <br />- Pagamentos e reembolsos
-            <br />- Caixa e entradas
-            <br />- Relatórios
+            Este tutorial explica as funções do <strong>Portal do Paciente</strong>.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Módulos</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            <div class="lc-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                <?php foreach ($modules as $m): ?>
+                    <a class="lc-card" href="<?= htmlspecialchars($m['href'], ENT_QUOTES, 'UTF-8') ?>" style="display:block; padding:14px; text-decoration:none;">
+                        <div style="font-weight:800; color:#0f172a;">
+                            <?= htmlspecialchars($m['label'], ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                        <div class="lc-muted" style="margin-top:6px;">
+                            <?= htmlspecialchars($m['desc'], ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 
