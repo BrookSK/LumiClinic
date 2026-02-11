@@ -33,12 +33,28 @@ $isActive = function (string $prefix) use ($path): bool {
     return str_starts_with($path, $prefix);
 };
 
-$navItem = function (string $href, string $label, bool $active): string {
+$navItem = function (string $href, string $label, string $iconSvg, bool $active): string {
     $cls = 'lc-nav__item' . ($active ? ' lc-nav__item--active' : '');
     return '<a class="' . $cls . '" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">' .
+        '<span class="lc-nav__icon" aria-hidden="true">' . $iconSvg . '</span>' .
         '<span class="lc-nav__label">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>' .
     '</a>';
 };
+
+$ico = [
+    'home' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7"/><path d="M9 22V12h6v10"/><path d="M21 22H3"/></svg>',
+    'search' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+    'calendar' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>',
+    'docs' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>',
+    'upload' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>',
+    'bell' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+    'book' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    'user' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    'shield' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    'filetext' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>',
+    'key' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2"/><path d="M7 11a4 4 0 1 1 7.87 1"/><path d="M3 21l6-6"/><path d="M9 15l2 2"/><path d="M13 11l6-6"/></svg>',
+    'chart' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M11 10v8"/><path d="M15 6v12"/><path d="M19 9v9"/></svg>',
+];
 
 $portalTitle = $patientName !== '' ? ('Olá, ' . $patientName) : 'Portal do Paciente';
 ?>
@@ -86,10 +102,13 @@ $portalTitle = $patientName !== '' ? ('Olá, ' . $patientName) : 'Portal do Paci
         </div>
 
         <nav class="lc-nav">
-            <?= $navItem('/portal', 'Início', $isActive('/portal')) ?>
+            <?= $navItem('/portal', 'Início', $ico['home'], $isActive('/portal')) ?>
+
+            <?= $navItem('/portal/busca', 'Busca', $ico['search'], $isActive('/portal/busca')) ?>
 
             <details class="lc-navgroup" <?= $isActive('/portal/agenda') || $isActive('/portal/documentos') || $isActive('/portal/uploads') || $isActive('/portal/notificacoes') || $isActive('/portal/conteudos') ? 'open' : '' ?>>
                 <summary class="lc-nav__item lc-navgroup__summary<?= ($isActive('/portal/agenda') || $isActive('/portal/documentos') || $isActive('/portal/uploads') || $isActive('/portal/notificacoes') || $isActive('/portal/conteudos')) ? ' lc-nav__item--active' : '' ?>">
+                    <span class="lc-nav__icon" aria-hidden="true"><?= $ico['docs'] ?></span>
                     <span class="lc-nav__label">Meu Portal</span>
                     <span class="lc-navgroup__chev" aria-hidden="true">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -97,17 +116,18 @@ $portalTitle = $patientName !== '' ? ('Olá, ' . $patientName) : 'Portal do Paci
                 </summary>
                 <div class="lc-navgroup__children">
                     <div class="lc-nav__sub">
-                        <?= $navItem('/portal/agenda', 'Agenda', $isActive('/portal/agenda')) ?>
-                        <?= $navItem('/portal/documentos', 'Documentos', $isActive('/portal/documentos')) ?>
-                        <?= $navItem('/portal/uploads', 'Enviar fotos', $isActive('/portal/uploads')) ?>
-                        <?= $navItem('/portal/notificacoes', 'Notificações', $isActive('/portal/notificacoes')) ?>
-                        <?= $navItem('/portal/conteudos', 'Conteúdos', $isActive('/portal/conteudos')) ?>
+                        <?= $navItem('/portal/agenda', 'Agenda', $ico['calendar'], $isActive('/portal/agenda')) ?>
+                        <?= $navItem('/portal/documentos', 'Documentos', $ico['docs'], $isActive('/portal/documentos')) ?>
+                        <?= $navItem('/portal/uploads', 'Enviar fotos', $ico['upload'], $isActive('/portal/uploads')) ?>
+                        <?= $navItem('/portal/notificacoes', 'Notificações', $ico['bell'], $isActive('/portal/notificacoes')) ?>
+                        <?= $navItem('/portal/conteudos', 'Conteúdos', $ico['book'], $isActive('/portal/conteudos')) ?>
                     </div>
                 </div>
             </details>
 
             <details class="lc-navgroup" <?= $isActive('/portal/perfil') || $isActive('/portal/seguranca') || $isActive('/portal/lgpd') || $isActive('/portal/api-tokens') || $isActive('/portal/metricas') ? 'open' : '' ?>>
                 <summary class="lc-nav__item lc-navgroup__summary<?= ($isActive('/portal/perfil') || $isActive('/portal/seguranca') || $isActive('/portal/lgpd') || $isActive('/portal/api-tokens') || $isActive('/portal/metricas')) ? ' lc-nav__item--active' : '' ?>">
+                    <span class="lc-nav__icon" aria-hidden="true"><?= $ico['user'] ?></span>
                     <span class="lc-nav__label">Conta</span>
                     <span class="lc-navgroup__chev" aria-hidden="true">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -115,11 +135,11 @@ $portalTitle = $patientName !== '' ? ('Olá, ' . $patientName) : 'Portal do Paci
                 </summary>
                 <div class="lc-navgroup__children">
                     <div class="lc-nav__sub">
-                        <?= $navItem('/portal/perfil', 'Perfil', $isActive('/portal/perfil')) ?>
-                        <?= $navItem('/portal/seguranca', 'Segurança', $isActive('/portal/seguranca')) ?>
-                        <?= $navItem('/portal/lgpd', 'LGPD', $isActive('/portal/lgpd')) ?>
-                        <?= $navItem('/portal/api-tokens', 'API Tokens', $isActive('/portal/api-tokens')) ?>
-                        <?= $navItem('/portal/metricas', 'Métricas', $isActive('/portal/metricas')) ?>
+                        <?= $navItem('/portal/perfil', 'Perfil', $ico['user'], $isActive('/portal/perfil')) ?>
+                        <?= $navItem('/portal/seguranca', 'Segurança', $ico['shield'], $isActive('/portal/seguranca')) ?>
+                        <?= $navItem('/portal/lgpd', 'LGPD', $ico['filetext'], $isActive('/portal/lgpd')) ?>
+                        <?= $navItem('/portal/api-tokens', 'API Tokens', $ico['key'], $isActive('/portal/api-tokens')) ?>
+                        <?= $navItem('/portal/metricas', 'Métricas', $ico['chart'], $isActive('/portal/metricas')) ?>
                     </div>
                 </div>
             </details>
