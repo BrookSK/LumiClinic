@@ -13,6 +13,16 @@ ob_start();
     <?php endif; ?>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Como usar seu token</div>
+        <div class="lc-card__body">
+            <div class="lc-muted" style="margin-bottom:10px; line-height:1.5;">
+                Aprenda para que serve o token, boas práticas de segurança e exemplos prontos de requisições (cURL/JavaScript/PHP).
+            </div>
+            <a class="lc-btn lc-btn--secondary" href="/tutorial/api-tokens/paciente" target="_blank">Abrir tutorial</a>
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
         <div class="lc-card__title">Criar token</div>
         <div class="lc-card__body">
             <form method="post" action="/portal/api-tokens/create" class="lc-form">
