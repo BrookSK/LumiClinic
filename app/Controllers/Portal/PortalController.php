@@ -27,9 +27,6 @@ final class PortalController extends Controller
             'patient_id' => $patientId,
             'clinic_id' => $clinicId,
             'upcoming_appointments' => $data['upcoming_appointments'],
-            'packages' => $data['packages'],
-            'subscriptions' => $data['subscriptions'],
-            'finance' => $data['finance'],
             'notifications' => $data['notifications'],
         ]);
     }
