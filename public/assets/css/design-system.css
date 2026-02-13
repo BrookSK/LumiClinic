@@ -133,7 +133,7 @@ body.lc-body--auth .lc-auth__title img{height:34px}
 .lc-navgroup > summary::-webkit-details-marker{display:none}
 .lc-navgroup__summary{cursor:pointer}
 .lc-navgroup__chev{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;color: rgba(31,41,55,0.55);transform: rotate(0deg);transition: transform 160ms ease}
-.lc-navgroup[open] .lc-navgroup__chev{transform: rotate(180deg)}
+.lc-navgroup[open] > summary .lc-navgroup__chev{transform: rotate(180deg)}
 .lc-navgroup__children{margin-top:6px;display:flex;flex-direction:column;gap:6px}
 .lc-nav__sub{margin-left:12px;padding-left:10px;border-left:1px solid rgba(17,24,39,0.10);display:flex;flex-direction:column;gap:6px}
 .lc-nav__sub .lc-nav__item{padding:9px 12px}
