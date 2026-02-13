@@ -149,38 +149,76 @@ $ico = [
                 <?= $navItem('/tutorial/sistema', 'Ajuda', $ico['help'], $isActive('/tutorial/sistema')) ?>
             <?php else: ?>
                 <?= $navItem('/', 'Dashboard', $ico['dashboard'], $isActive('/')) ?>
-                <?php if ($can('clinics.read')): ?>
-                    <details class="lc-navgroup" <?= $isActive('/clinic') ? 'open' : '' ?>>
-                        <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/clinic') ? ' lc-nav__item--active' : '' ?>">
-                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['clinic'] ?></span>
-                            <span class="lc-nav__label">Clínica</span>
-                            <span class="lc-navgroup__chev" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                            </span>
-                        </summary>
-                        <div class="lc-navgroup__children">
-                            <?= $navItem('/clinic', 'Dados da clínica', $ico['clinic'], $isActive('/clinic') && !$isActive('/clinic/working-hours') && !$isActive('/clinic/closed-days')) ?>
-                            <div class="lc-nav__sub">
-                                <?= $navItem('/clinic/working-hours', 'Horários', $ico['calendar'], $isActive('/clinic/working-hours')) ?>
-                                <?= $navItem('/clinic/closed-days', 'Feriados e Recesso', $ico['calendar'], $isActive('/clinic/closed-days')) ?>
-                                <?= $navItem('/clinic/legal-documents', 'LGPD & Termos (Portal)', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
-                                <?= $navItem('/clinic/legal-acceptances/portal', 'Aceites (Portal)', $ico['shield'], $isActive('/clinic/legal-acceptances/portal')) ?>
-                            </div>
+
+                <?php
+                    $cfgActive = $isActive('/settings')
+                        || $isActive('/clinic')
+                        || $isActive('/users')
+                        || $isActive('/professionals')
+                        || $isActive('/rbac')
+                        || $isActive('/services')
+                        || $isActive('/anamnesis')
+                        || $isActive('/blocks')
+                        || $isActive('/schedule-rules')
+                        || $isActive('/consent-terms');
+                ?>
+                <details class="lc-navgroup" <?= $cfgActive ? 'open' : '' ?>>
+                    <summary class="lc-nav__item lc-navgroup__summary<?= $cfgActive ? ' lc-nav__item--active' : '' ?>">
+                        <span class="lc-nav__icon" aria-hidden="true"><?= $ico['settings'] ?></span>
+                        <span class="lc-nav__label">Configurações</span>
+                        <span class="lc-navgroup__chev" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </summary>
+                    <div class="lc-navgroup__children">
+                        <div class="lc-nav__sub">
+                            <?php if ($can('settings.read')): ?>
+                                <?= $navItem('/settings', 'Geral', $ico['settings'], $isActive('/settings') && !$isActive('/settings/legal-documents')) ?>
+                            <?php endif; ?>
+
+                            <?php if ($can('clinics.read') && $hasClinicContext): ?>
+                                <?= $navItem('/clinic', 'Clínica', $ico['clinic'], $isActive('/clinic') && !$isActive('/clinic/working-hours') && !$isActive('/clinic/closed-days') && !$isActive('/clinic/legal-documents') && !$isActive('/clinic/legal-acceptances/portal')) ?>
+                                <div class="lc-nav__sub">
+                                    <?= $navItem('/clinic/working-hours', 'Agenda: horários', $ico['calendar'], $isActive('/clinic/working-hours')) ?>
+                                    <?= $navItem('/clinic/closed-days', 'Agenda: feriados', $ico['calendar'], $isActive('/clinic/closed-days')) ?>
+                                    <?= $navItem('/schedule-rules', 'Agenda: regras', $ico['calendar'], $isActive('/schedule-rules')) ?>
+                                    <?= $navItem('/blocks', 'Agenda: bloqueios', $ico['calendar'], $isActive('/blocks')) ?>
+                                    <?= $navItem('/clinic/legal-documents', 'Documentos (Portal)', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
+                                    <?= $navItem('/clinic/legal-acceptances/portal', 'Aceites (Portal)', $ico['shield'], $isActive('/clinic/legal-acceptances/portal')) ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if ($can('users.read') && $hasClinicContext): ?>
+                                <?= $navItem('/users', 'Usuários & Acesso', $ico['users'], $isActive('/users') || $isActive('/rbac')) ?>
+                                <div class="lc-nav__sub">
+                                    <?php if ($can('professionals.manage')): ?>
+                                        <?= $navItem('/professionals', 'Profissionais', $ico['users'], $isActive('/professionals')) ?>
+                                    <?php endif; ?>
+                                    <?php if ($can('rbac.manage')): ?>
+                                        <?= $navItem('/rbac', 'Papéis & Permissões', $ico['shield'], $isActive('/rbac')) ?>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if ($can('settings.read')): ?>
+                                <?= $navItem('/settings/legal-documents', 'Documentos & Termos (Equipe)', $ico['shield'], $isActive('/settings/legal-documents')) ?>
+                            <?php endif; ?>
+
+                            <?php if ($can('anamnesis.manage') && $hasClinicContext): ?>
+                                <?= $navItem('/anamnesis/templates', 'Anamnese', $ico['shield'], $isActive('/anamnesis')) ?>
+                            <?php endif; ?>
+
+                            <?php if ($can('services.manage') && $hasClinicContext): ?>
+                                <?= $navItem('/services', 'Serviços', $ico['clinic'], $isActive('/services')) ?>
+                                <?= $navItem('/services/materials', 'Serviços: vínculo com estoque', $ico['stock'], $isActive('/services/materials')) ?>
+                            <?php endif; ?>
+
+                            <?php if ($can('consent_terms.manage') && $hasClinicContext): ?>
+                                <?= $navItem('/consent-terms', 'Consentimento (Legado)', $ico['shield'], $isActive('/consent-terms')) ?>
+                            <?php endif; ?>
                         </div>
-                    </details>
-                <?php endif; ?>
-
-                <?php if ($can('users.read')): ?>
-                    <?= $navItem('/users', 'Usuários', $ico['users'], $isActive('/users')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('settings.read')): ?>
-                    <?= $navItem('/settings', 'Configurações', $ico['settings'], $isActive('/settings')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('settings.read')): ?>
-                    <?= $navItem('/settings/legal-documents', 'LGPD & Termos (Equipe)', $ico['shield'], $isActive('/settings/legal-documents')) ?>
-                <?php endif; ?>
+                    </div>
+                </details>
 
                 <?php if (isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) && in_array('owner', $_SESSION['role_codes'], true)): ?>
                     <?= $navItem('/billing/subscription', 'Assinatura', $ico['finance'], $isActive('/billing/subscription')) ?>
@@ -258,30 +296,6 @@ $ico = [
                     <?= $navItem('/patients/profile-requests', 'Solicitações de perfil', $ico['patients'], $isActive('/patients/profile-requests')) ?>
                 <?php endif; ?>
 
-                <?php if ($can('consent_terms.manage') && $hasClinicContext): ?>
-                    <?= $navItem('/consent-terms', 'Consentimento (Assinaturas) - Legado', $ico['shield'], $isActive('/consent-terms')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('anamnesis.manage') && $hasClinicContext): ?>
-                    <?= $navItem('/anamnesis/templates', 'Anamnese', $ico['shield'], $isActive('/anamnesis')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('services.manage') && $hasClinicContext): ?>
-                    <?= $navItem('/services', 'Serviços', $ico['clinic'], $isActive('/services')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('professionals.manage') && $hasClinicContext): ?>
-                    <?= $navItem('/professionals', 'Profissionais', $ico['users'], $isActive('/professionals')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('blocks.manage') && $hasClinicContext): ?>
-                    <?= $navItem('/blocks', 'Bloqueios', $ico['calendar'], $isActive('/blocks')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('schedule_rules.manage') && $hasClinicContext): ?>
-                    <?= $navItem('/schedule-rules', 'Regras de Agenda', $ico['calendar'], $isActive('/schedule-rules')) ?>
-                <?php endif; ?>
-
                 <?php if ($can('audit.read') && $hasClinicContext): ?>
                     <?= $navItem('/audit-logs', 'Auditoria', $ico['shield'], $isActive('/audit-logs')) ?>
                 <?php endif; ?>
@@ -300,10 +314,6 @@ $ico = [
 
                 <?php if ($can('compliance.incidents.read') && $hasClinicContext): ?>
                     <?= $navItem('/compliance/incidents', 'Incidentes', $ico['shield'], $isActive('/compliance/incidents')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('rbac.manage') && $hasClinicContext): ?>
-                    <?= $navItem('/rbac', 'Papéis & Permissões', $ico['shield'], $isActive('/rbac')) ?>
                 <?php endif; ?>
 
                 <?= $navItem('/tutorial/sistema', 'Ajuda', $ico['help'], $isActive('/tutorial/sistema')) ?>
