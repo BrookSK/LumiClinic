@@ -3,11 +3,9 @@ $title = 'Dashboard';
 $has_clinic_context = $has_clinic_context ?? false;
 $can_schedule = $can_schedule ?? false;
 $can_patients = $can_patients ?? false;
-$can_finance = $can_finance ?? false;
-$can_stock_alerts = $can_stock_alerts ?? false;
 $kpis = $kpis ?? [];
 $upcoming_appointments = $upcoming_appointments ?? [];
-$stock_alerts = $stock_alerts ?? [];
+$today_patients = $today_patients ?? [];
 ob_start();
 ?>
 <?php if (!$has_clinic_context): ?>
@@ -36,43 +34,58 @@ ob_start();
             </div>
         <?php endif; ?>
 
-        <div class="lc-card">
-            <div class="lc-card__title">Resumo do mês</div>
-            <div class="lc-card__body">
-                <?php if ($can_patients): ?>
-                    <div><strong><?= (int)($kpis['new_patients_month'] ?? 0) ?></strong> novos pacientes</div>
-                <?php else: ?>
-                    <div>Novos pacientes: <span class="lc-badge">sem permissão</span></div>
-                <?php endif; ?>
-
-                <?php if ($can_finance): ?>
-                    <div class="lc-mt-sm"><strong>R$ <?= number_format((float)($kpis['revenue_paid_month'] ?? 0.0), 2, ',', '.') ?></strong> recebido</div>
-                <?php else: ?>
-                    <div class="lc-mt-sm">Recebido: <span class="lc-badge">sem permissão</span></div>
-                <?php endif; ?>
-
-                <div class="lc-mt-sm">
-                    <?php if ($can_patients): ?>
-                        <a class="lc-link" href="/patients">Pacientes</a>
-                    <?php endif; ?>
-                    <?php if ($can_patients && $can_finance): ?>
-                        <span class="lc-sep">|</span>
-                    <?php endif; ?>
-                    <?php if ($can_finance): ?>
-                        <a class="lc-link" href="/finance/sales">Financeiro</a>
-                    <?php endif; ?>
+        <?php if ($can_patients): ?>
+            <div class="lc-card">
+                <div class="lc-card__title">Pacientes do dia</div>
+                <div class="lc-card__body">
+                    <div><strong><?= (int)($kpis['today_unique_patients'] ?? 0) ?></strong> pacientes</div>
+                    <div class="lc-mt-sm">
+                        <a class="lc-link" href="/patients">Abrir pacientes</a>
+                    </div>
                 </div>
             </div>
-        </div>
+        <?php endif; ?>
     </div>
 
     <div class="lc-grid lc-mt-md">
+        <?php if ($can_patients): ?>
+            <div class="lc-card">
+                <div class="lc-card__title">Pacientes (hoje)</div>
+                <div class="lc-card__body">
+                    <?php if (!is_array($today_patients) || $today_patients === []): ?>
+                        Nenhum paciente com atendimento hoje.
+                    <?php else: ?>
+                        <div class="lc-table-wrap">
+                            <table class="lc-table">
+                                <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>Primeiro horário</th>
+                                    <th>Atendimentos</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($today_patients as $p): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars((string)($p['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                        <td><?= htmlspecialchars((string)($p['first_start_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                        <td><?= (int)($p['appointments_count'] ?? 0) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <?php if ($can_schedule): ?>
             <div class="lc-card">
-                <div class="lc-card__title">Próximos atendimentos</div>
+                <div class="lc-card__title">Próximos atendimentos (hoje)</div>
                 <div class="lc-card__body">
                     <?php if (!is_array($upcoming_appointments) || $upcoming_appointments === []): ?>
-                        Nenhum atendimento futuro encontrado.
+                        Nenhum atendimento restante hoje.
                     <?php else: ?>
                         <div class="lc-table-wrap">
                             <table class="lc-table">
@@ -99,24 +112,6 @@ ob_start();
                             </table>
                         </div>
                     <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($can_stock_alerts): ?>
-            <div class="lc-card">
-                <div class="lc-card__title">Alertas de estoque</div>
-                <div class="lc-card__body">
-                    <div class="lc-flex lc-flex--wrap lc-gap-sm">
-                        <div class="lc-badge">Baixo: <?= (int)($stock_alerts['low_stock'] ?? 0) ?></div>
-                        <div class="lc-badge">Zerado: <?= (int)($stock_alerts['out_of_stock'] ?? 0) ?></div>
-                        <div class="lc-badge">Vencendo: <?= (int)($stock_alerts['expiring_soon'] ?? 0) ?></div>
-                        <div class="lc-badge">Vencido: <?= (int)($stock_alerts['expired'] ?? 0) ?></div>
-                    </div>
-
-                    <div class="lc-mt-sm">
-                        <a class="lc-link" href="/stock/alerts">Ver alertas</a>
-                    </div>
                 </div>
             </div>
         <?php endif; ?>
