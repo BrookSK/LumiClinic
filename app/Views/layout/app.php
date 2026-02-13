@@ -151,6 +151,10 @@ $ico = [
                 <?= $navItem('/', 'Dashboard', $ico['dashboard'], $isActive('/')) ?>
 
                 <?php
+                    $configNav = '';
+                    ob_start();
+                ?>
+                <?php
                     $cfgActive = $isActive('/settings')
                         || $isActive('/clinic')
                         || $isActive('/users')
@@ -285,17 +289,51 @@ $ico = [
                         </div>
                     </div>
                 </details>
-
+                <?php $configNav = (string)ob_get_clean(); ?>
                 <?php if (isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) && in_array('owner', $_SESSION['role_codes'], true)): ?>
                     <?= $navItem('/billing/subscription', 'Assinatura', $ico['finance'], $isActive('/billing/subscription')) ?>
                 <?php endif; ?>
 
+                <?php $agendaActive = $isActive('/schedule') || $isActive('/schedule/ops'); ?>
                 <?php if ($can('scheduling.read')): ?>
-                    <?= $navItem('/schedule', 'Agenda', $ico['calendar'], $isActive('/schedule')) ?>
+                    <details class="lc-navgroup" <?= $agendaActive ? 'open' : '' ?>>
+                        <summary class="lc-nav__item lc-navgroup__summary<?= $agendaActive ? ' lc-nav__item--active' : '' ?>">
+                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['calendar'] ?></span>
+                            <span class="lc-nav__label">Agenda</span>
+                            <span class="lc-navgroup__chev" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </span>
+                        </summary>
+                        <div class="lc-navgroup__children">
+                            <div class="lc-nav__sub">
+                                <?= $navItem('/schedule', 'Agenda', $ico['calendar'], $isActive('/schedule')) ?>
+                                <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
+                                    <?= $navItem('/schedule/ops', 'Operação da Agenda', $ico['calendar'], $isActive('/schedule/ops')) ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </details>
                 <?php endif; ?>
 
-                <?php if ($can('marketing.calendar.read') && $hasClinicContext): ?>
-                    <?= $navItem('/marketing/calendar', 'Agenda de Marketing', $ico['calendar'], $isActive('/marketing/calendar')) ?>
+                <?php $patientsActive = $isActive('/patients') || $isActive('/patients/profile-requests'); ?>
+                <?php if ($can('patients.read') && $hasClinicContext): ?>
+                    <details class="lc-navgroup" <?= $patientsActive ? 'open' : '' ?>>
+                        <summary class="lc-nav__item lc-navgroup__summary<?= $patientsActive ? ' lc-nav__item--active' : '' ?>">
+                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['patients'] ?></span>
+                            <span class="lc-nav__label">Pacientes</span>
+                            <span class="lc-navgroup__chev" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </span>
+                        </summary>
+                        <div class="lc-navgroup__children">
+                            <div class="lc-nav__sub">
+                                <?= $navItem('/patients', 'Pacientes', $ico['patients'], $isActive('/patients')) ?>
+                                <?php if ($can('patients.update') && $hasClinicContext): ?>
+                                    <?= $navItem('/patients/profile-requests', 'Solicitações de perfil', $ico['patients'], $isActive('/patients/profile-requests')) ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </details>
                 <?php endif; ?>
 
                 <?php if ($can('finance.sales.read') && $hasClinicContext): ?>
@@ -318,9 +356,6 @@ $ico = [
                                 <?php endif; ?>
                                 <?php if ($can('finance.cost_centers.manage')): ?>
                                     <?= $navItem('/finance/cost-centers', 'Centros de custo', $ico['finance'], $isActive('/finance/cost-centers')) ?>
-                                <?php endif; ?>
-                                <?php if ($can('finance.reports.read')): ?>
-                                    <?= $navItem('/finance/reports', 'Relatórios', $ico['finance'], $isActive('/finance/reports')) ?>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -349,44 +384,76 @@ $ico = [
                                 <?php if ($can('stock.alerts.read')): ?>
                                     <?= $navItem('/stock/alerts', 'Alertas', $ico['stock'], $isActive('/stock/alerts')) ?>
                                 <?php endif; ?>
+                            </div>
+                        </div>
+                    </details>
+                <?php endif; ?>
+
+                <?php $marketingActive = $isActive('/marketing'); ?>
+                <?php if ($can('marketing.calendar.read') && $hasClinicContext): ?>
+                    <details class="lc-navgroup" <?= $marketingActive ? 'open' : '' ?>>
+                        <summary class="lc-nav__item lc-navgroup__summary<?= $marketingActive ? ' lc-nav__item--active' : '' ?>">
+                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['calendar'] ?></span>
+                            <span class="lc-nav__label">Marketing</span>
+                            <span class="lc-navgroup__chev" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </span>
+                        </summary>
+                        <div class="lc-navgroup__children">
+                            <div class="lc-nav__sub">
+                                <?= $navItem('/marketing/calendar', 'Agenda de Marketing', $ico['calendar'], $isActive('/marketing/calendar')) ?>
+                            </div>
+                        </div>
+                    </details>
+                <?php endif; ?>
+
+                <?php
+                    $reportsActive =
+                        $isActive('/finance/reports') ||
+                        $isActive('/stock/reports') ||
+                        $isActive('/audit-logs') ||
+                        $isActive('/bi') ||
+                        $isActive('/compliance');
+                ?>
+                <?php if ($hasClinicContext && ($can('finance.reports.read') || $can('stock.reports.read') || $can('audit.read') || $can('bi.read') || $can('compliance.lgpd.read') || $can('compliance.policies.read') || $can('compliance.incidents.read'))): ?>
+                    <details class="lc-navgroup" <?= $reportsActive ? 'open' : '' ?>>
+                        <summary class="lc-nav__item lc-navgroup__summary<?= $reportsActive ? ' lc-nav__item--active' : '' ?>">
+                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['dashboard'] ?></span>
+                            <span class="lc-nav__label">Relatórios</span>
+                            <span class="lc-navgroup__chev" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </span>
+                        </summary>
+                        <div class="lc-navgroup__children">
+                            <div class="lc-nav__sub">
+                                <?php if ($can('finance.reports.read')): ?>
+                                    <?= $navItem('/finance/reports', 'Financeiro', $ico['finance'], $isActive('/finance/reports')) ?>
+                                <?php endif; ?>
                                 <?php if ($can('stock.reports.read')): ?>
-                                    <?= $navItem('/stock/reports', 'Relatórios', $ico['stock'], $isActive('/stock/reports')) ?>
+                                    <?= $navItem('/stock/reports', 'Estoque', $ico['stock'], $isActive('/stock/reports')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('audit.read')): ?>
+                                    <?= $navItem('/audit-logs', 'Auditoria', $ico['shield'], $isActive('/audit-logs')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('bi.read')): ?>
+                                    <?= $navItem('/bi', 'BI', $ico['dashboard'], $isActive('/bi')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('compliance.lgpd.read')): ?>
+                                    <?= $navItem('/compliance/lgpd-requests', 'LGPD (Solicitações)', $ico['shield'], $isActive('/compliance/lgpd-requests')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('compliance.policies.read')): ?>
+                                    <?= $navItem('/compliance/certifications', 'Certificações', $ico['shield'], $isActive('/compliance/certifications')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('compliance.incidents.read')): ?>
+                                    <?= $navItem('/compliance/incidents', 'Incidentes', $ico['shield'], $isActive('/compliance/incidents')) ?>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </details>
                 <?php endif; ?>
 
-                <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
-                    <?= $navItem('/schedule/ops', 'Operação da Agenda', $ico['calendar'], $isActive('/schedule/ops')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('patients.read') && $hasClinicContext): ?>
-                    <?= $navItem('/patients', 'Pacientes', $ico['patients'], $isActive('/patients')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('patients.update') && $hasClinicContext): ?>
-                    <?= $navItem('/patients/profile-requests', 'Solicitações de perfil', $ico['patients'], $isActive('/patients/profile-requests')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('audit.read') && $hasClinicContext): ?>
-                    <?= $navItem('/audit-logs', 'Auditoria', $ico['shield'], $isActive('/audit-logs')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('bi.read') && $hasClinicContext): ?>
-                    <?= $navItem('/bi', 'BI', $ico['dashboard'], $isActive('/bi')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('compliance.lgpd.read') && $hasClinicContext): ?>
-                    <?= $navItem('/compliance/lgpd-requests', 'LGPD (Solicitações)', $ico['shield'], $isActive('/compliance/lgpd-requests')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('compliance.policies.read') && $hasClinicContext): ?>
-                    <?= $navItem('/compliance/certifications', 'Certificações', $ico['shield'], $isActive('/compliance/certifications')) ?>
-                <?php endif; ?>
-
-                <?php if ($can('compliance.incidents.read') && $hasClinicContext): ?>
-                    <?= $navItem('/compliance/incidents', 'Incidentes', $ico['shield'], $isActive('/compliance/incidents')) ?>
+                <?php if ($configNav !== ''): ?>
+                    <?= $configNav ?>
                 <?php endif; ?>
 
                 <?= $navItem('/tutorial/sistema', 'Ajuda', $ico['help'], $isActive('/tutorial/sistema')) ?>
