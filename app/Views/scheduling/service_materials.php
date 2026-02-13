@@ -1,6 +1,7 @@
 <?php
 
 /** @var array<string,mixed> $service */
+/** @var list<array<string,mixed>> $services */
 /** @var list<array<string,mixed>> $materials */
 /** @var list<array<string,mixed>> $defaults */
 
@@ -19,15 +20,47 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Serviço</div>
     <div class="lc-card__body lc-flex lc-flex--between lc-flex--wrap lc-gap-md">
-        <div>
-            <div><strong><?= htmlspecialchars((string)$service['name'], ENT_QUOTES, 'UTF-8') ?></strong></div>
-            <div class="lc-muted">Padrões de consumo por sessão</div>
-        </div>
-        <div>
-            <a class="lc-btn lc-btn--secondary" href="/services">Voltar</a>
-        </div>
+        <?php if (!isset($service) || !is_array($service) || $service === []): ?>
+            <div style="flex:1; min-width:260px;">
+                <form method="get" action="/services/materials" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
+                    <div class="lc-field" style="min-width: 320px;">
+                        <label class="lc-label">Selecione um serviço</label>
+                        <select class="lc-select" name="service_id" required>
+                            <option value="">Selecione</option>
+                            <?php foreach (($services ?? []) as $s): ?>
+                                <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div>
+                        <button class="lc-btn" type="submit">Abrir</button>
+                    </div>
+                </form>
+                <div class="lc-muted" style="margin-top:10px;">Defina os materiais padrão consumidos por sessão para cada serviço.</div>
+            </div>
+            <div>
+                <a class="lc-btn lc-btn--secondary" href="/services">Voltar</a>
+            </div>
+        <?php else: ?>
+            <div>
+                <div><strong><?= htmlspecialchars((string)$service['name'], ENT_QUOTES, 'UTF-8') ?></strong></div>
+                <div class="lc-muted">Padrões de consumo por sessão</div>
+            </div>
+            <div>
+                <a class="lc-btn lc-btn--secondary" href="/services">Voltar</a>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
+
+<?php if (!isset($service) || !is_array($service) || $service === []): ?>
+    <?php
+    $content = (string)ob_get_clean();
+    require dirname(__DIR__) . '/layout/app.php';
+    return;
+    ?>
+<?php endif; ?>
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Adicionar material padrão</div>

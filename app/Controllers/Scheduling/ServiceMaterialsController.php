@@ -37,8 +37,6 @@ final class ServiceMaterialsController extends Controller
             return $redirect;
         }
 
-        $serviceId = (int)$request->input('service_id', 0);
-
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
@@ -47,10 +45,24 @@ final class ServiceMaterialsController extends Controller
 
         $pdo = $this->container->get(\PDO::class);
 
+        $serviceId = (int)$request->input('service_id', 0);
+
         $svcRepo = new ServiceCatalogRepository($pdo);
-        $service = $serviceId > 0 ? $svcRepo->findById($clinicId, $serviceId) : null;
+        $services = $svcRepo->listActiveByClinic($clinicId);
+
+        if ($serviceId <= 0) {
+            return $this->view('scheduling/service_materials', [
+                'service' => null,
+                'services' => $services,
+                'materials' => [],
+                'defaults' => [],
+                'error' => trim((string)$request->input('error', '')),
+            ]);
+        }
+
+        $service = $svcRepo->findById($clinicId, $serviceId);
         if ($service === null) {
-            return $this->redirect('/services');
+            return $this->redirect('/services/materials?error=' . urlencode('Serviço inválido.'));
         }
 
         $matRepo = new MaterialRepository($pdo);
@@ -61,6 +73,7 @@ final class ServiceMaterialsController extends Controller
 
         return $this->view('scheduling/service_materials', [
             'service' => $service,
+            'services' => $services,
             'materials' => $materials,
             'defaults' => $defaults,
             'error' => trim((string)$request->input('error', '')),

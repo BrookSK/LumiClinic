@@ -69,7 +69,7 @@ ob_start();
 
             <div class="lc-field">
                 <label class="lc-label">Mês de</label>
-                <input class="lc-input" type="date" name="date" value="<?= htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" id="filter_date" type="date" name="date" value="<?= htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') ?>" />
             </div>
 
             <?php if (!$isProfessional): ?>
@@ -125,7 +125,10 @@ ob_start();
                         $border = $ymd === $today ? '4px solid #2563eb' : '1px solid rgba(17,24,39,0.08)';
                         $opacity = $inMonth ? '1' : '0.45';
                     ?>
-                    <a href="/schedule?view=day&date=<?= urlencode($ymd) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>" style="text-decoration:none; color:inherit;">
+                    <button type="button"
+                        style="display:block; width:100%; padding:0; border:0; background:transparent; text-align:left; cursor: <?= (!$isProfessional ? 'pointer' : 'default') ?>;"
+                        <?= !$isProfessional ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
+                    >
                         <div class="lc-card" style="margin:0; border-left: <?= htmlspecialchars($border, ENT_QUOTES, 'UTF-8') ?>; opacity: <?= htmlspecialchars($opacity, ENT_QUOTES, 'UTF-8') ?>;">
                             <div class="lc-card__body lc-flex" style="padding:12px; min-height:88px; flex-direction:column; gap:8px;">
                                 <div class="lc-flex lc-flex--between" style="align-items:baseline;">
@@ -172,11 +175,259 @@ ob_start();
                                 <?php endif; ?>
                             </div>
                         </div>
-                    </a>
+                    </button>
                 <?php endfor; ?>
             </div>
         </div>
     </div>
+<?php endif; ?>
+
+<?php if (!$isProfessional): ?>
+    <div class="lc-modal" id="createAppointmentModal" aria-hidden="true">
+        <div class="lc-modal__backdrop" data-close-modal></div>
+        <div class="lc-modal__panel" role="dialog" aria-modal="true" aria-label="Novo agendamento">
+            <div class="lc-modal__header">
+                <div>
+                    <div class="lc-modal__title">Novo agendamento</div>
+                    <div class="lc-modal__subtitle">Preencha os dados para agendar.</div>
+                </div>
+                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="button" data-close-modal>Fechar</button>
+            </div>
+
+            <form method="post" action="/schedule/create" class="lc-modal__body">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+
+                <div class="lc-field" style="grid-column: 1 / -1; position:relative;">
+                    <label class="lc-label">Paciente</label>
+                    <input class="lc-input" type="text" id="patientSearch" placeholder="Buscar por nome, e-mail ou telefone" autocomplete="off" required />
+                    <input type="hidden" name="patient_id" id="patient_id" value="" />
+                    <div class="lc-autocomplete" id="patientResults" style="display:none;"></div>
+                    <div class="lc-muted" id="patientHint" style="margin-top:6px; display:none;">Selecione um paciente da lista.</div>
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Serviço</label>
+                    <select class="lc-select" name="service_id" id="modal_service_id" required>
+                        <option value="">Selecione</option>
+                        <?php foreach (($services ?? []) as $s): ?>
+                            <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Profissional</label>
+                    <select class="lc-select" name="professional_id" id="modal_professional_id" required>
+                        <option value="">Selecione</option>
+                        <?php foreach (($professionals ?? []) as $p): ?>
+                            <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Horário</label>
+                    <select class="lc-select" name="start_at" id="modal_start_at" required>
+                        <option value="">Selecione um serviço + profissional + data</option>
+                    </select>
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Observações (opcional)</label>
+                    <input class="lc-input" type="text" name="notes" placeholder="" />
+                </div>
+
+                <div class="lc-modal__footer">
+                    <button class="lc-btn lc-btn--primary" type="submit">Agendar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+      const dateFilterEl = document.getElementById('filter_date');
+      const createModal = document.getElementById('createAppointmentModal');
+      const patientSearchEl = document.getElementById('patientSearch');
+      const patientIdEl = document.getElementById('patient_id');
+      const patientResultsEl = document.getElementById('patientResults');
+      const patientHintEl = document.getElementById('patientHint');
+      const modalServiceEl = document.getElementById('modal_service_id');
+      const modalProfEl = document.getElementById('modal_professional_id');
+      const modalStartEl = document.getElementById('modal_start_at');
+
+      let createDate = '';
+
+      function openModal(modal) {
+        if (!modal) return;
+        modal.setAttribute('aria-hidden', 'false');
+        modal.classList.add('lc-modal--open');
+      }
+
+      function closeModal(modal) {
+        if (!modal) return;
+        modal.setAttribute('aria-hidden', 'true');
+        modal.classList.remove('lc-modal--open');
+      }
+
+      function wireClose(modal) {
+        if (!modal) return;
+        modal.addEventListener('click', function(e) {
+          const t = e.target;
+          if (!(t instanceof HTMLElement)) return;
+          if (t.hasAttribute('data-close-modal')) {
+            closeModal(modal);
+          }
+        });
+      }
+
+      wireClose(createModal);
+      document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        closeModal(createModal);
+      });
+
+      function clearPatientSelection() {
+        if (patientIdEl) patientIdEl.value = '';
+      }
+
+      function hidePatientResults() {
+        if (!patientResultsEl) return;
+        patientResultsEl.style.display = 'none';
+        patientResultsEl.innerHTML = '';
+      }
+
+      function showPatientHint(show) {
+        if (!patientHintEl) return;
+        patientHintEl.style.display = show ? 'block' : 'none';
+      }
+
+      async function searchPatients(q) {
+        const url = `/patients/search-json?q=${encodeURIComponent(q)}&limit=10`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data && data.items) ? data.items : [];
+      }
+
+      let patientTimer = null;
+      if (patientSearchEl && patientIdEl && patientResultsEl) {
+        patientSearchEl.addEventListener('input', function() {
+          clearPatientSelection();
+          const q = (patientSearchEl.value || '').trim();
+          hidePatientResults();
+          showPatientHint(q.length > 0);
+          if (patientTimer) window.clearTimeout(patientTimer);
+          if (q.length < 2) return;
+          patientTimer = window.setTimeout(async function() {
+            let items = [];
+            try {
+              items = await searchPatients(q);
+            } catch (e) {
+              items = [];
+            }
+            if (!Array.isArray(items) || items.length === 0) {
+              hidePatientResults();
+              return;
+            }
+            patientResultsEl.innerHTML = '';
+            for (const it of items) {
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'lc-autocomplete__item';
+              const name = (it.name || '').toString();
+              const meta = [it.phone, it.email].filter(Boolean).join(' · ');
+              btn.innerHTML = `<div class="lc-autocomplete__name"></div><div class="lc-autocomplete__meta"></div>`;
+              const nameEl = btn.querySelector('.lc-autocomplete__name');
+              const metaEl = btn.querySelector('.lc-autocomplete__meta');
+              if (nameEl) nameEl.textContent = name;
+              if (metaEl) metaEl.textContent = meta;
+              btn.addEventListener('click', function() {
+                patientSearchEl.value = name;
+                patientIdEl.value = String(it.id || '');
+                hidePatientResults();
+                showPatientHint(false);
+              });
+              patientResultsEl.appendChild(btn);
+            }
+            patientResultsEl.style.display = 'block';
+          }, 250);
+        });
+      }
+
+      if (createModal) {
+        const form = createModal.querySelector('form');
+        if (form) {
+          form.addEventListener('submit', function(e) {
+            if (patientIdEl && String(patientIdEl.value || '').trim() === '') {
+              e.preventDefault();
+              showPatientHint(true);
+            }
+          });
+        }
+      }
+
+      async function loadSlots() {
+        if (!modalServiceEl || !modalProfEl || !modalStartEl) return;
+        const serviceId = modalServiceEl.value;
+        const profId = modalProfEl.value;
+        const date = createDate || (dateFilterEl ? dateFilterEl.value : '');
+        modalStartEl.innerHTML = '<option value="">Carregando...</option>';
+
+        if (!serviceId || !profId || !date) {
+          modalStartEl.innerHTML = '<option value="">Selecione um serviço + profissional + data</option>';
+          return;
+        }
+
+        const url = `/schedule/available?service_id=${encodeURIComponent(serviceId)}&professional_id=${encodeURIComponent(profId)}&date=${encodeURIComponent(date)}`;
+        let data = null;
+        try {
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          if (!res.ok) {
+            modalStartEl.innerHTML = '<option value="">Erro ao carregar horários</option>';
+            return;
+          }
+          data = await res.json();
+        } catch (e) {
+          modalStartEl.innerHTML = '<option value="">Erro ao carregar horários</option>';
+          return;
+        }
+
+        const slots = data.slots || [];
+        if (slots.length === 0) {
+          modalStartEl.innerHTML = '<option value="">Sem horários disponíveis</option>';
+          return;
+        }
+
+        modalStartEl.innerHTML = '<option value="">Selecione</option>';
+        for (const s of slots) {
+          const t = (s.start_at || '').slice(11, 16);
+          const opt = document.createElement('option');
+          opt.value = s.start_at;
+          opt.textContent = t;
+          modalStartEl.appendChild(opt);
+        }
+      }
+
+      if (modalServiceEl) modalServiceEl.addEventListener('change', loadSlots);
+      if (modalProfEl) modalProfEl.addEventListener('change', loadSlots);
+      if (dateFilterEl) dateFilterEl.addEventListener('change', loadSlots);
+
+      document.addEventListener('click', function(e) {
+        const t = e.target;
+        if (!(t instanceof HTMLElement)) return;
+        const createCell = t.closest('[data-open-create]');
+        if (!createCell || !createModal) return;
+        const d = createCell.getAttribute('data-create-date') || '';
+        createDate = d;
+        if (dateFilterEl && d) {
+          dateFilterEl.value = d;
+        }
+        openModal(createModal);
+        loadSlots();
+      });
+    })();
+    </script>
 <?php endif; ?>
 
 </div>
