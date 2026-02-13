@@ -494,6 +494,37 @@ body.lc-body--auth{display:flex;min-height:100vh;align-items:center;justify-cont
 .lc-modal__backdrop{position:absolute;inset:0;background: rgba(17,24,39,0.35)}
 
 .lc-statusbar{border-left:4px solid rgba(17,24,39,0.12);padding-left:10px}
+
+button.lc-statusbar{
+    display:block;
+    width:100%;
+    border-radius: 12px;
+    background: var(--lc-surface);
+    border: 1px solid rgba(17,24,39,0.10);
+    box-shadow: 0 6px 18px rgba(17,24,39,0.10);
+    color: var(--lc-text);
+    cursor:pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+button.lc-statusbar:hover{
+    border-color: rgba(0,176,240,0.28);
+    box-shadow: 0 10px 24px rgba(17,24,39,0.12);
+    transform: translateY(-1px);
+}
+
+button.lc-statusbar:active{
+    transform: translateY(0);
+    box-shadow: 0 6px 18px rgba(17,24,39,0.10);
+}
+
+button.lc-statusbar:focus-visible{
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(0,176,240,0.16), 0 10px 24px rgba(17,24,39,0.12);
+    border-color: rgba(0,176,240,0.40);
+}
+
+button.lc-statusbar .lc-muted{color: rgba(31,41,55,0.72)}
 .lc-statusbar--scheduled{border-left-color: rgba(0,176,240,0.70)}
 .lc-statusbar--confirmed{border-left-color: var(--lc-status-blue)}
 .lc-statusbar--in_progress{border-left-color: var(--lc-status-amber)}
