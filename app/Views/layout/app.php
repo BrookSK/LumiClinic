@@ -178,43 +178,109 @@ $ico = [
 
                             <?php if ($can('clinics.read') && $hasClinicContext): ?>
                                 <?= $navItem('/clinic', 'Clínica', $ico['clinic'], $isActive('/clinic') && !$isActive('/clinic/working-hours') && !$isActive('/clinic/closed-days') && !$isActive('/clinic/legal-documents') && !$isActive('/clinic/legal-acceptances/portal')) ?>
-                                <div class="lc-nav__sub">
-                                    <?= $navItem('/clinic/working-hours', 'Agenda: horários', $ico['calendar'], $isActive('/clinic/working-hours')) ?>
-                                    <?= $navItem('/clinic/closed-days', 'Agenda: feriados', $ico['calendar'], $isActive('/clinic/closed-days')) ?>
-                                    <?= $navItem('/schedule-rules', 'Agenda: regras', $ico['calendar'], $isActive('/schedule-rules')) ?>
-                                    <?= $navItem('/blocks', 'Agenda: bloqueios', $ico['calendar'], $isActive('/blocks')) ?>
-                                    <?= $navItem('/clinic/legal-documents', 'Documentos (Portal)', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
-                                    <?= $navItem('/clinic/legal-acceptances/portal', 'Aceites (Portal)', $ico['shield'], $isActive('/clinic/legal-acceptances/portal')) ?>
-                                </div>
                             <?php endif; ?>
 
+                            <?php if ($hasClinicContext): ?>
+                                <?php $agendaCfgActive = $isActive('/clinic/working-hours') || $isActive('/clinic/closed-days') || $isActive('/schedule-rules') || $isActive('/blocks'); ?>
+                                <?php if ($can('clinics.read') || $can('schedule_rules.manage') || $can('blocks.manage')): ?>
+                                    <details class="lc-navgroup" <?= $agendaCfgActive ? 'open' : '' ?> style="margin-left:10px;">
+                                        <summary class="lc-nav__item lc-navgroup__summary<?= $agendaCfgActive ? ' lc-nav__item--active' : '' ?>">
+                                            <span class="lc-nav__icon" aria-hidden="true"><?= $ico['calendar'] ?></span>
+                                            <span class="lc-nav__label">Agenda</span>
+                                            <span class="lc-navgroup__chev" aria-hidden="true">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                            </span>
+                                        </summary>
+                                        <div class="lc-navgroup__children">
+                                            <div class="lc-nav__sub">
+                                                <?php if ($can('clinics.read')): ?>
+                                                    <?= $navItem('/clinic/working-hours', 'Horários', $ico['calendar'], $isActive('/clinic/working-hours')) ?>
+                                                    <?= $navItem('/clinic/closed-days', 'Feriados', $ico['calendar'], $isActive('/clinic/closed-days')) ?>
+                                                <?php endif; ?>
+                                                <?php if ($can('schedule_rules.manage')): ?>
+                                                    <?= $navItem('/schedule-rules', 'Regras', $ico['calendar'], $isActive('/schedule-rules')) ?>
+                                                <?php endif; ?>
+                                                <?php if ($can('blocks.manage')): ?>
+                                                    <?= $navItem('/blocks', 'Bloqueios', $ico['calendar'], $isActive('/blocks')) ?>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </details>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <?php $accessActive = $isActive('/users') || $isActive('/professionals') || $isActive('/rbac'); ?>
                             <?php if ($can('users.read') && $hasClinicContext): ?>
-                                <?= $navItem('/users', 'Usuários & Acesso', $ico['users'], $isActive('/users') || $isActive('/rbac')) ?>
-                                <div class="lc-nav__sub">
-                                    <?php if ($can('professionals.manage')): ?>
-                                        <?= $navItem('/professionals', 'Profissionais', $ico['users'], $isActive('/professionals')) ?>
-                                    <?php endif; ?>
-                                    <?php if ($can('rbac.manage')): ?>
-                                        <?= $navItem('/rbac', 'Papéis & Permissões', $ico['shield'], $isActive('/rbac')) ?>
-                                    <?php endif; ?>
-                                </div>
+                                <details class="lc-navgroup" <?= $accessActive ? 'open' : '' ?> style="margin-left:10px;">
+                                    <summary class="lc-nav__item lc-navgroup__summary<?= $accessActive ? ' lc-nav__item--active' : '' ?>">
+                                        <span class="lc-nav__icon" aria-hidden="true"><?= $ico['users'] ?></span>
+                                        <span class="lc-nav__label">Usuários & Acesso</span>
+                                        <span class="lc-navgroup__chev" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                        </span>
+                                    </summary>
+                                    <div class="lc-navgroup__children">
+                                        <div class="lc-nav__sub">
+                                            <?= $navItem('/users', 'Usuários', $ico['users'], $isActive('/users')) ?>
+                                            <?php if ($can('professionals.manage')): ?>
+                                                <?= $navItem('/professionals', 'Profissionais', $ico['users'], $isActive('/professionals')) ?>
+                                            <?php endif; ?>
+                                            <?php if ($can('rbac.manage')): ?>
+                                                <?= $navItem('/rbac', 'Papéis & Permissões', $ico['shield'], $isActive('/rbac')) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </details>
                             <?php endif; ?>
 
-                            <?php if ($can('settings.read')): ?>
-                                <?= $navItem('/settings/legal-documents', 'Documentos & Termos (Equipe)', $ico['shield'], $isActive('/settings/legal-documents')) ?>
+                            <?php $docsActive = $isActive('/settings/legal-documents') || $isActive('/clinic/legal-documents') || $isActive('/clinic/legal-acceptances/portal') || $isActive('/consent-terms'); ?>
+                            <?php if (($can('settings.read') || $can('clinics.read') || $can('consent_terms.manage')) && $hasClinicContext): ?>
+                                <details class="lc-navgroup" <?= $docsActive ? 'open' : '' ?> style="margin-left:10px;">
+                                    <summary class="lc-nav__item lc-navgroup__summary<?= $docsActive ? ' lc-nav__item--active' : '' ?>">
+                                        <span class="lc-nav__icon" aria-hidden="true"><?= $ico['shield'] ?></span>
+                                        <span class="lc-nav__label">Documentos & Termos</span>
+                                        <span class="lc-navgroup__chev" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                        </span>
+                                    </summary>
+                                    <div class="lc-navgroup__children">
+                                        <div class="lc-nav__sub">
+                                            <?php if ($can('settings.read')): ?>
+                                                <?= $navItem('/settings/legal-documents', 'Equipe', $ico['shield'], $isActive('/settings/legal-documents')) ?>
+                                            <?php endif; ?>
+                                            <?php if ($can('clinics.read')): ?>
+                                                <?= $navItem('/clinic/legal-documents', 'Portal (modelos)', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
+                                                <?= $navItem('/clinic/legal-acceptances/portal', 'Portal (aceites)', $ico['shield'], $isActive('/clinic/legal-acceptances/portal')) ?>
+                                            <?php endif; ?>
+                                            <?php if ($can('consent_terms.manage')): ?>
+                                                <?= $navItem('/consent-terms', 'Consentimento (Legado)', $ico['shield'], $isActive('/consent-terms')) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </details>
                             <?php endif; ?>
 
                             <?php if ($can('anamnesis.manage') && $hasClinicContext): ?>
                                 <?= $navItem('/anamnesis/templates', 'Anamnese', $ico['shield'], $isActive('/anamnesis')) ?>
                             <?php endif; ?>
 
+                            <?php $servicesActive = $isActive('/services') || $isActive('/services/materials'); ?>
                             <?php if ($can('services.manage') && $hasClinicContext): ?>
-                                <?= $navItem('/services', 'Serviços', $ico['clinic'], $isActive('/services')) ?>
-                                <?= $navItem('/services/materials', 'Serviços: vínculo com estoque', $ico['stock'], $isActive('/services/materials')) ?>
-                            <?php endif; ?>
-
-                            <?php if ($can('consent_terms.manage') && $hasClinicContext): ?>
-                                <?= $navItem('/consent-terms', 'Consentimento (Legado)', $ico['shield'], $isActive('/consent-terms')) ?>
+                                <details class="lc-navgroup" <?= $servicesActive ? 'open' : '' ?> style="margin-left:10px;">
+                                    <summary class="lc-nav__item lc-navgroup__summary<?= $servicesActive ? ' lc-nav__item--active' : '' ?>">
+                                        <span class="lc-nav__icon" aria-hidden="true"><?= $ico['clinic'] ?></span>
+                                        <span class="lc-nav__label">Serviços</span>
+                                        <span class="lc-navgroup__chev" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                        </span>
+                                    </summary>
+                                    <div class="lc-navgroup__children">
+                                        <div class="lc-nav__sub">
+                                            <?= $navItem('/services', 'Cadastro', $ico['clinic'], $isActive('/services')) ?>
+                                            <?= $navItem('/services/materials', 'Vínculo com estoque', $ico['stock'], $isActive('/services/materials')) ?>
+                                        </div>
+                                    </div>
+                                </details>
                             <?php endif; ?>
                         </div>
                     </div>
