@@ -77,6 +77,12 @@ $fromMinutes = static function (int $mins): string {
     return str_pad((string)$h, 2, '0', STR_PAD_LEFT) . ':' . str_pad((string)$m, 2, '0', STR_PAD_LEFT);
 };
 
+/** @return int */
+$dtToMinutes = static function (string $dt) use ($toMinutes): int {
+    $t = substr($dt, 11, 5);
+    return $toMinutes($t);
+};
+
 // Determine week window
 $weekStart = \DateTimeImmutable::createFromFormat('Y-m-d', $week_start);
 
@@ -93,7 +99,7 @@ if ($weekStart !== false) {
             if ($endM <= $startM) {
                 continue;
             }
-            for ($m = $startM; $m < $endM; $m += 30) {
+            for ($m = $startM; $m < $endM; $m += 15) {
                 $slotMinutes[$m] = true;
             }
         }
@@ -178,6 +184,7 @@ ob_start();
 <?php if ($weekStart !== false): ?>
     <?php
         $today = date('Y-m-d');
+        $rowHeight = 42;
         $days = [];
         for ($i=0; $i<7; $i++) {
             $d = $weekStart->modify('+' . $i . ' days');
@@ -196,11 +203,16 @@ ob_start();
                 'has_appointments' => $hasAppointments,
             ];
         }
+
+        $minuteIndex = [];
+        foreach ($slotMinutes as $idx => $m) {
+            $minuteIndex[(int)$m] = (int)$idx;
+        }
     ?>
 
     <div class="lc-card">
         <div class="lc-card__header">Semana</div>
-        <div class="lc-card__body" style="padding:0; overflow:auto;">
+        <div class="lc-card__body" style="padding:0; overflow:auto; max-height: calc(100vh - 320px);">
             <div style="min-width: 980px;">
                 <div class="lc-grid" style="grid-template-columns: 90px repeat(7, minmax(0, 1fr)); gap:10px; padding:12px;">
                     <div></div>
@@ -239,76 +251,91 @@ ob_start();
                         </div>
                     <?php endforeach; ?>
 
-                    <?php foreach ($slotMinutes as $mins): ?>
-                        <div class="lc-muted" style="font-size:12px; padding:8px 0; position:sticky; left:0; background: var(--lc-surface);">
-                            <?= htmlspecialchars($fromMinutes((int)$mins), ENT_QUOTES, 'UTF-8') ?>
-                        </div>
-
-                        <?php foreach ($days as $day): ?>
-                            <?php
-                                $ymd = (string)$day['ymd'];
-                                $slotTime = $fromMinutes((int)$mins);
-                                $slotKey = $ymd . ' ' . $slotTime;
-
-                                $dayItems = $byDay[$ymd] ?? [];
-                                $apptsAtSlot = [];
-                                if (is_array($dayItems) && $dayItems !== []) {
-                                    foreach ($dayItems as $it) {
-                                        $st = (string)($it['start_at'] ?? '');
-                                        if (substr($st, 0, 16) === $slotKey) {
-                                            $apptsAtSlot[] = $it;
-                                        }
-                                    }
-                                }
-
-                                $cellBg = 'transparent';
-                                if ((bool)$day['is_closed']) {
-                                    $cellBg = 'rgba(239,68,68,0.05)';
-                                } elseif (!(bool)$day['has_working']) {
-                                    $cellBg = 'rgba(17,24,39,0.03)';
-                                }
-                            ?>
-                            <div style="min-height:52px; border:1px solid rgba(17,24,39,0.08); border-radius:10px; padding:6px; background: <?= htmlspecialchars($cellBg, ENT_QUOTES, 'UTF-8') ?>; <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working'] && $apptsAtSlot === []) ? 'cursor:pointer;' : '' ?>" <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working'] && $apptsAtSlot === []) ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '" data-create-time="' . htmlspecialchars($slotTime, ENT_QUOTES, 'UTF-8') . '"') : '' ?>>
-                                <?php if ($apptsAtSlot === []): ?>
-                                    <div class="lc-muted" style="font-size:12px;">&nbsp;</div>
-                                <?php else: ?>
-                                    <?php foreach ($apptsAtSlot as $it): ?>
-                                        <?php
-                                            $status = (string)($it['status'] ?? '');
-                                            $statusClass = 'scheduled';
-                                            if ($status === 'cancelled') $statusClass = 'cancelled';
-                                            if ($status === 'confirmed') $statusClass = 'confirmed';
-                                            if ($status === 'in_progress') $statusClass = 'in_progress';
-                                            if ($status === 'completed') $statusClass = 'completed';
-                                            if ($status === 'no_show') $statusClass = 'no_show';
-                                            $patientName = (string)($it['patient_name'] ?? '');
-                                            $serviceName = (string)($it['service_name'] ?? '');
-                                            $professionalName = (string)($it['professional_name'] ?? '');
-                                        ?>
-                                        <button type="button" class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>" style="padding-left:8px; margin:0; width:100%; text-align:left; cursor:pointer;" data-open-appointment="1"
-                                            data-appt-id="<?= (int)$it['id'] ?>"
-                                            data-appt-patient="<?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"
-                                            data-appt-service="<?= htmlspecialchars($serviceName, ENT_QUOTES, 'UTF-8') ?>"
-                                            data-appt-professional="<?= htmlspecialchars($professionalName, ENT_QUOTES, 'UTF-8') ?>"
-                                            data-appt-start="<?= htmlspecialchars((string)($it['start_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                                            data-appt-end="<?= htmlspecialchars((string)($it['end_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                                            data-appt-status="<?= htmlspecialchars((string)($it['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                                            data-appt-origin="<?= htmlspecialchars((string)($it['origin'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                                            >
-                                            <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                                <?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>
-                                            </div>
-                                            <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                                <?= htmlspecialchars(substr((string)($it['start_at'] ?? ''), 11, 5), ENT_QUOTES, 'UTF-8') ?>
-                                                -
-                                                <?= htmlspecialchars(substr((string)($it['end_at'] ?? ''), 11, 5), ENT_QUOTES, 'UTF-8') ?>
-                                                <?= $serviceName !== '' ? (' • ' . htmlspecialchars($serviceName, ENT_QUOTES, 'UTF-8')) : '' ?>
-                                            </div>
-                                        </button>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                    <div style="position: sticky; left: 0; background: var(--lc-surface);">
+                        <?php foreach ($slotMinutes as $mins): ?>
+                            <div class="lc-muted" style="font-size:12px; height: <?= (int)$rowHeight ?>px; display:flex; align-items:center;">
+                                <?= htmlspecialchars($fromMinutes((int)$mins), ENT_QUOTES, 'UTF-8') ?>
                             </div>
                         <?php endforeach; ?>
+                    </div>
+
+                    <?php foreach ($days as $day): ?>
+                        <?php
+                            $ymd = (string)$day['ymd'];
+                            $dayItems = $byDay[$ymd] ?? [];
+                            $cellBg = 'transparent';
+                            if ((bool)$day['is_closed']) {
+                                $cellBg = 'rgba(239,68,68,0.05)';
+                            } elseif (!(bool)$day['has_working']) {
+                                $cellBg = 'rgba(17,24,39,0.03)';
+                            }
+                        ?>
+                        <div style="position:relative; background: <?= htmlspecialchars($cellBg, ENT_QUOTES, 'UTF-8') ?>; border-radius: 10px;">
+                            <?php foreach ($slotMinutes as $mins): ?>
+                                <?php $slotTime = $fromMinutes((int)$mins); ?>
+                                <div style="height: <?= (int)$rowHeight ?>px; border:1px solid rgba(17,24,39,0.06); border-radius:10px; margin-bottom:10px; padding:6px; <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working']) ? 'cursor:pointer;' : '' ?>"
+                                    <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working']) ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '" data-create-time="' . htmlspecialchars($slotTime, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
+                                ></div>
+                            <?php endforeach; ?>
+
+                            <?php if (is_array($dayItems) && $dayItems !== []): ?>
+                                <?php foreach ($dayItems as $it): ?>
+                                    <?php
+                                        $st = (string)($it['start_at'] ?? '');
+                                        $en = (string)($it['end_at'] ?? '');
+                                        if ($st === '' || $en === '') {
+                                            continue;
+                                        }
+                                        $apptStart = $dtToMinutes($st);
+                                        $apptEnd = $dtToMinutes($en);
+                                        if ($apptEnd <= $apptStart) {
+                                            continue;
+                                        }
+                                        if (!isset($minuteIndex[$apptStart])) {
+                                            continue;
+                                        }
+                                        $startIdx = (int)$minuteIndex[$apptStart];
+                                        $span = (int)ceil(($apptEnd - $apptStart) / 15);
+                                        $top = $startIdx * ($rowHeight + 10);
+                                        $height = max(36, ($span * $rowHeight) + (($span - 1) * 10));
+
+                                        $status = (string)($it['status'] ?? '');
+                                        $statusClass = 'scheduled';
+                                        if ($status === 'cancelled') $statusClass = 'cancelled';
+                                        if ($status === 'confirmed') $statusClass = 'confirmed';
+                                        if ($status === 'in_progress') $statusClass = 'in_progress';
+                                        if ($status === 'completed') $statusClass = 'completed';
+                                        if ($status === 'no_show') $statusClass = 'no_show';
+                                        $patientName = (string)($it['patient_name'] ?? '');
+                                        $serviceName = (string)($it['service_name'] ?? '');
+                                        $professionalName = (string)($it['professional_name'] ?? '');
+                                    ?>
+                                    <button type="button"
+                                        class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
+                                        style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding-left:8px; margin:0; width:auto; text-align:left; cursor:pointer; overflow:hidden;"
+                                        data-open-appointment="1"
+                                        data-appt-id="<?= (int)$it['id'] ?>"
+                                        data-appt-patient="<?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-appt-service="<?= htmlspecialchars($serviceName, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-appt-professional="<?= htmlspecialchars($professionalName, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-appt-start="<?= htmlspecialchars((string)($it['start_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-appt-end="<?= htmlspecialchars((string)($it['end_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-appt-status="<?= htmlspecialchars((string)($it['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-appt-origin="<?= htmlspecialchars((string)($it['origin'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+                                        <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                            <?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>
+                                        </div>
+                                        <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                            <?= htmlspecialchars(substr((string)($it['start_at'] ?? ''), 11, 5), ENT_QUOTES, 'UTF-8') ?>
+                                            -
+                                            <?= htmlspecialchars(substr((string)($it['end_at'] ?? ''), 11, 5), ENT_QUOTES, 'UTF-8') ?>
+                                            <?= $serviceName !== '' ? (' • ' . htmlspecialchars($serviceName, ENT_QUOTES, 'UTF-8')) : '' ?>
+                                        </div>
+                                    </button>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -602,7 +629,7 @@ ob_start();
       return;
     }
 
-    const url = `/schedule/available-slots?service_id=${encodeURIComponent(serviceId)}&professional_id=${encodeURIComponent(profId)}&date=${encodeURIComponent(date)}`;
+    const url = `/schedule/available?service_id=${encodeURIComponent(serviceId)}&professional_id=${encodeURIComponent(profId)}&date=${encodeURIComponent(date)}`;
     let data = null;
     try {
       const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
