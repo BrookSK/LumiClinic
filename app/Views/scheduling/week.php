@@ -650,6 +650,7 @@ ob_start();
     }
 
     modalStartEl.innerHTML = '<option value="">Selecione</option>';
+    let foundDesired = false;
     for (const s of slots) {
       const t = (s.start_at || '').slice(11, 16);
       const opt = document.createElement('option');
@@ -657,8 +658,23 @@ ob_start();
       opt.textContent = t;
       if (desiredSlotTime && t === desiredSlotTime) {
         opt.selected = true;
+        foundDesired = true;
       }
       modalStartEl.appendChild(opt);
+    }
+
+    if (desiredSlotTime && !foundDesired) {
+      for (const opt of Array.from(modalStartEl.options)) {
+        if ((opt.textContent || '').trim() === desiredSlotTime) {
+          modalStartEl.value = opt.value;
+          foundDesired = true;
+          break;
+        }
+      }
+    }
+
+    if (foundDesired) {
+      desiredSlotTime = '';
     }
   }
 
