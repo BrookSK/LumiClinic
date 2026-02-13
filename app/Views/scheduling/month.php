@@ -3,6 +3,7 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $isProfessional = isset($is_professional) ? (bool)$is_professional : false;
 $professionalId = isset($professional_id) ? (int)$professional_id : 0;
 $title = 'Agenda (Mês)';
+$statusClassMap = isset($status_class_map) && is_array($status_class_map) ? $status_class_map : [];
 
 $svcMap = [];
 foreach (($services ?? []) as $s) {
@@ -14,14 +15,7 @@ foreach (($professionals ?? []) as $p) {
     $profMap[(int)$p['id']] = $p;
 }
 
-$byDay = [];
-foreach (($items ?? []) as $it) {
-    $d = substr((string)$it['start_at'], 0, 10);
-    if (!isset($byDay[$d])) {
-        $byDay[$d] = [];
-    }
-    $byDay[$d][] = $it;
-}
+$byDay = isset($by_day) && is_array($by_day) ? $by_day : [];
 
 $monthStart = \DateTimeImmutable::createFromFormat('Y-m-d', (string)($month_start ?? ($date ?? date('Y-m-d'))));
 if ($monthStart !== false) {
@@ -159,12 +153,7 @@ ob_start();
                                                 $pname = isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : ('#' . $pid);
                                                 $sname = isset($svcMap[$sid]) ? (string)$svcMap[$sid]['name'] : ('#' . $sid);
                                                 $status = (string)$it['status'];
-                                                $statusClass = 'scheduled';
-                                                if ($status === 'cancelled') $statusClass = 'cancelled';
-                                                if ($status === 'confirmed') $statusClass = 'confirmed';
-                                                if ($status === 'in_progress') $statusClass = 'in_progress';
-                                                if ($status === 'completed') $statusClass = 'completed';
-                                                if ($status === 'no_show') $statusClass = 'no_show';
+                                                $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
                                             ?>
                                             <div class="lc-flex lc-gap-sm" style="align-items:center;">
                                                 <span class="lc-dot lc-dot--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"></span>

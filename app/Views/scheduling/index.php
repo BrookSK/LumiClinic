@@ -5,6 +5,7 @@
 /** @var list<array<string,mixed>> $services */
 /** @var string $created */
 /** @var string $error */
+$statusClassMap = isset($status_class_map) && is_array($status_class_map) ? $status_class_map : [];
 $view = isset($view) ? (string)$view : 'day';
 $professionalId = isset($professional_id) ? (int)$professional_id : 0;
 $isProfessional = isset($is_professional) ? (bool)$is_professional : false;
@@ -137,12 +138,7 @@ ob_start();
                         $pname = isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : ('#' . $pid);
                         $sname = isset($svcMap[$sid]) ? (string)$svcMap[$sid]['name'] : ('#' . $sid);
                         $status = (string)$it['status'];
-                        $statusClass = 'scheduled';
-                        if ($status === 'cancelled') $statusClass = 'cancelled';
-                        if ($status === 'confirmed') $statusClass = 'confirmed';
-                        if ($status === 'in_progress') $statusClass = 'in_progress';
-                        if ($status === 'completed') $statusClass = 'completed';
-                        if ($status === 'no_show') $statusClass = 'no_show';
+                        $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
                     ?>
                     <tr>
                         <td><?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>

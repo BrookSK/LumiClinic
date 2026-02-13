@@ -28,24 +28,30 @@ final class SaleRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function listByClinic(int $clinicId, int $limit = 200, ?int $professionalId = null, int $offset = 0): array
+    public function listByClinic(int $clinicId, int $limit = 200, ?int $professionalId = null, int $offset = 0, ?int $patientId = null): array
     {
         $offset = max(0, $offset);
         $where = " s.clinic_id = :clinic_id AND s.deleted_at IS NULL ";
-        $join = '';
+        $join = " LEFT JOIN patients p ON p.id = s.patient_id AND p.clinic_id = s.clinic_id AND p.deleted_at IS NULL ";
         $params = ['clinic_id' => $clinicId];
 
         if ($professionalId !== null && $professionalId > 0) {
-            $join = " INNER JOIN sale_items si ON si.sale_id = s.id AND si.deleted_at IS NULL ";
+            $join .= " INNER JOIN sale_items si ON si.sale_id = s.id AND si.deleted_at IS NULL ";
             $where .= " AND si.professional_id = :professional_id ";
             $params['professional_id'] = $professionalId;
+        }
+
+        if ($patientId !== null && $patientId > 0) {
+            $where .= " AND s.patient_id = :patient_id ";
+            $params['patient_id'] = $patientId;
         }
 
         $sql = "
             SELECT DISTINCT
                    s.id, s.clinic_id, s.patient_id,
+                   COALESCE(p.name, '') AS patient_name,
                    s.total_bruto, s.desconto, s.total_liquido,
-                   s.status, s.origin, s.notes,
+                   s.status, s.budget_status, s.origin, s.notes,
                    s.created_by_user_id,
                    s.created_at, s.updated_at
             FROM sales s
@@ -69,7 +75,7 @@ final class SaleRepository
         $sql = "
             SELECT id, clinic_id, patient_id,
                    total_bruto, desconto, total_liquido,
-                   status, origin, notes,
+                   status, budget_status, origin, notes,
                    created_by_user_id,
                    created_at, updated_at
             FROM sales
@@ -84,6 +90,26 @@ final class SaleRepository
         $row = $stmt->fetch();
 
         return $row ?: null;
+    }
+
+    public function updateBudgetStatus(int $clinicId, int $saleId, string $budgetStatus): void
+    {
+        $sql = "
+            UPDATE sales
+            SET budget_status = :budget_status,
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $saleId,
+            'clinic_id' => $clinicId,
+            'budget_status' => $budgetStatus,
+        ]);
     }
 
     public function create(

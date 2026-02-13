@@ -7,6 +7,7 @@
 /** @var list<array<string,mixed>> $services */
 /** @var list<array<string,mixed>> $packages */
 /** @var list<array<string,mixed>> $plans */
+/** @var list<array<string,mixed>> $procedures */
 /** @var string $error */
 /** @var bool $is_professional */
 
@@ -39,15 +40,99 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<?php if (isset($procedures) && is_array($procedures) && $procedures !== []): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Planejamento (procedimentos)</div>
+        <div class="lc-card__body">
+            <table class="lc-table">
+                <thead>
+                <tr>
+                    <th>Serviço</th>
+                    <th>Profissional</th>
+                    <th>Sessões</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($procedures as $pp): ?>
+                    <tr>
+                        <td><?= htmlspecialchars((string)($pp['service_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars((string)($pp['professional_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= (int)($pp['used_sessions'] ?? 0) ?> / <?= (int)($pp['total_sessions'] ?? 0) ?></td>
+                        <td><?= htmlspecialchars((string)($pp['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td>
+                            <?php if (($sale['patient_id'] ?? null) !== null): ?>
+                                <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode(date('Y-m-d')) ?>">Agendar</a>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>
+
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Resumo</div>
     <div class="lc-card__body lc-grid lc-grid--4 lc-gap-grid">
         <div><strong>Status:</strong> <?= htmlspecialchars((string)$sale['status'], ENT_QUOTES, 'UTF-8') ?></div>
+        <div><strong>Orçamento:</strong> <?= htmlspecialchars((string)($sale['budget_status'] ?? 'draft'), ENT_QUOTES, 'UTF-8') ?></div>
         <div><strong>Paciente:</strong> <?= $sale['patient_id'] === null ? '-' : (int)$sale['patient_id'] ?></div>
         <div><strong>Total líquido:</strong> R$ <?= number_format((float)$sale['total_liquido'], 2, ',', '.') ?></div>
         <div><strong>Criada em:</strong> <?= htmlspecialchars((string)$sale['created_at'], ENT_QUOTES, 'UTF-8') ?></div>
     </div>
 </div>
+
+<?php if (!isset($is_professional) || !$is_professional): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Status do orçamento</div>
+        <div class="lc-card__body">
+            <form method="post" action="/finance/sales/budget-status" class="lc-form lc-flex lc-gap-sm lc-flex--wrap" style="align-items:end; margin:0;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+
+                <div class="lc-field">
+                    <label class="lc-label">Novo status</label>
+                    <select class="lc-select" name="budget_status">
+                        <?php $cur = (string)($sale['budget_status'] ?? 'draft'); ?>
+                        <option value="draft" <?= $cur === 'draft' ? 'selected' : '' ?>>Rascunho</option>
+                        <option value="sent" <?= $cur === 'sent' ? 'selected' : '' ?>>Enviado</option>
+                        <option value="approved" <?= $cur === 'approved' ? 'selected' : '' ?>>Aprovado</option>
+                        <option value="rejected" <?= $cur === 'rejected' ? 'selected' : '' ?>>Recusado</option>
+                    </select>
+                </div>
+
+                <button class="lc-btn lc-btn--secondary" type="submit" <?= ((string)$sale['status'] === 'cancelled') ? 'disabled' : '' ?>>Atualizar</button>
+            </form>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php if (!isset($is_professional) || !$is_professional): ?>
+    <?php if (isset($procedures) && is_array($procedures) && $procedures !== [] && (string)($sale['budget_status'] ?? 'draft') === 'approved'): ?>
+        <div class="lc-card" style="margin-bottom: 16px;">
+            <div class="lc-card__header">Agendamentos automáticos</div>
+            <div class="lc-card__body">
+                <form method="post" action="/finance/sales/generate-appointments" class="lc-form lc-flex lc-gap-sm lc-flex--wrap" style="align-items:end; margin:0;" onsubmit="return confirm('Gerar agendamentos automaticamente a partir do planejamento?');">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+
+                    <div class="lc-field">
+                        <label class="lc-label">Data inicial</label>
+                        <input class="lc-input" type="date" name="start_date" value="<?= htmlspecialchars(date('Y-m-d'), ENT_QUOTES, 'UTF-8') ?>" required />
+                    </div>
+
+                    <button class="lc-btn lc-btn--secondary" type="submit">Gerar agendamentos</button>
+                </form>
+                <div class="lc-muted" style="margin-top:8px;">
+                    O sistema tentará agendar cada sessão no primeiro horário disponível (até 90 dias por sessão).
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+<?php endif; ?>
 
 <?php if (!isset($is_professional) || !$is_professional): ?>
     <div class="lc-card" style="margin-bottom: 16px;">

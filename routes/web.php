@@ -264,11 +264,19 @@ $router->post('/schedule/reschedule', [ScheduleController::class, 'rescheduleSub
 $router->get('/schedule/ops', [ScheduleController::class, 'ops']);
 $router->get('/schedule/logs', [ScheduleController::class, 'logs']);
 
+$router->get('/marketing/calendar', [\App\Controllers\Marketing\MarketingCalendarController::class, 'index']);
+$router->post('/marketing/calendar/create', [\App\Controllers\Marketing\MarketingCalendarController::class, 'create']);
+$router->get('/marketing/calendar/edit', [\App\Controllers\Marketing\MarketingCalendarController::class, 'edit']);
+$router->post('/marketing/calendar/update', [\App\Controllers\Marketing\MarketingCalendarController::class, 'update']);
+$router->post('/marketing/calendar/delete', [\App\Controllers\Marketing\MarketingCalendarController::class, 'delete']);
+
 $router->get('/finance/sales', [SalesController::class, 'index']);
+$router->get('/finance/sales/view', [SalesController::class, 'view']);
 $router->post('/finance/sales/create', [SalesController::class, 'create']);
-$router->get('/finance/sales/view', [SalesController::class, 'show']);
 $router->get('/finance/sales/patients/search-json', [SalesController::class, 'patientSearchJson']);
 $router->post('/finance/sales/items/add', [SalesController::class, 'addItem']);
+$router->post('/finance/sales/budget-status', [SalesController::class, 'setBudgetStatus']);
+$router->post('/finance/sales/generate-appointments', [SalesController::class, 'generateAppointments']);
 $router->post('/finance/sales/cancel', [SalesController::class, 'cancel']);
 
 $router->post('/finance/payments/create', [PaymentController::class, 'create']);
@@ -277,6 +285,10 @@ $router->post('/finance/payments/refund', [PaymentController::class, 'refund']);
 $router->get('/finance/cashflow', [FinancialController::class, 'cashflow']);
 $router->post('/finance/entries/create', [FinancialController::class, 'createEntry']);
 $router->post('/finance/entries/delete', [FinancialController::class, 'deleteEntry']);
+
+$router->get('/finance/accounts-payable', [\App\Controllers\Finance\AccountsPayableController::class, 'index']);
+$router->post('/finance/accounts-payable/create', [\App\Controllers\Finance\AccountsPayableController::class, 'create']);
+$router->post('/finance/accounts-payable/pay', [\App\Controllers\Finance\AccountsPayableController::class, 'pay']);
 
 $router->get('/finance/cost-centers', [FinancialController::class, 'costCenters']);
 $router->post('/finance/cost-centers/create', [FinancialController::class, 'createCostCenter']);
@@ -337,6 +349,13 @@ $router->get('/patients/view', [PatientController::class, 'show']);
 $router->get('/patients/edit', [PatientController::class, 'edit']);
 $router->post('/patients/edit', [PatientController::class, 'update']);
 $router->get('/patients/search-json', [PatientController::class, 'searchJson']);
+
+$router->get('/patients/appointments', [\App\Controllers\Patients\PatientAppointmentsController::class, 'index']);
+
+$router->get('/patients/consultation', [\App\Controllers\Patients\ConsultationController::class, 'show']);
+$router->post('/patients/consultation/save', [\App\Controllers\Patients\ConsultationController::class, 'save']);
+$router->post('/patients/consultation/attachments/upload', [\App\Controllers\Patients\ConsultationController::class, 'upload']);
+$router->get('/patients/consultation/attachments/file', [\App\Controllers\Patients\ConsultationController::class, 'file']);
 
 $router->get('/patients/portal-access', [PatientPortalAccessController::class, 'show']);
 $router->post('/patients/portal-access/ensure', [PatientPortalAccessController::class, 'ensure']);

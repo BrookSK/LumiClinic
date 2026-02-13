@@ -86,13 +86,18 @@ final class SalesController extends Controller
             $professionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
         }
 
+        $patientId = (int)$request->input('patient_id', 0);
+        if ($patientId <= 0) {
+            $patientId = null;
+        }
+
         $page = (int)$request->input('page', 1);
         $perPage = (int)$request->input('per_page', 50);
         $page = max(1, $page);
         $perPage = max(25, min(200, $perPage));
         $offset = ($page - 1) * $perPage;
 
-        $sales = $service->listSales($professionalId, $perPage + 1, $offset);
+        $sales = $service->listSales($professionalId, $perPage + 1, $offset, $patientId);
         $hasNext = count($sales) > $perPage;
         if ($hasNext) {
             $sales = array_slice($sales, 0, $perPage);
@@ -110,6 +115,7 @@ final class SalesController extends Controller
             'page' => $page,
             'per_page' => $perPage,
             'has_next' => $hasNext,
+            'patient_id' => $patientId,
         ]);
     }
 
@@ -210,6 +216,7 @@ final class SalesController extends Controller
             'items' => $data['items'],
             'payments' => $data['payments'],
             'logs' => $data['logs'],
+            'procedures' => $data['procedures'] ?? [],
             'professionals' => $service->listReferenceProfessionals(),
             'services' => $service->listServices(),
             'packages' => $service->listPackages(),
@@ -282,6 +289,68 @@ final class SalesController extends Controller
         try {
             $service = new SalesService($this->container);
             $service->cancelSale($saleId, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/sales/view?id=' . $saleId);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function setBudgetStatus(Request $request)
+    {
+        $this->authorize('finance.sales.update');
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $saleId = (int)$request->input('sale_id', 0);
+        $budgetStatus = trim((string)$request->input('budget_status', ''));
+        if ($saleId <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        try {
+            $service = new SalesService($this->container);
+            $service->setBudgetStatus($saleId, $budgetStatus, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/sales/view?id=' . $saleId);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function generateAppointments(Request $request)
+    {
+        $this->authorize('finance.sales.update');
+        $this->authorize('scheduling.create');
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $saleId = (int)$request->input('sale_id', 0);
+        $startDate = trim((string)$request->input('start_date', ''));
+        if ($saleId <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        try {
+            $service = new SalesService($this->container);
+            $result = $service->generateAppointmentsFromApprovedBudget($saleId, $startDate, $request->ip(), $request->header('user-agent'));
+
+            if ($result['errors'] !== []) {
+                return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode(implode(' | ', $result['errors'])));
+            }
+
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));

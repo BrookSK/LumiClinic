@@ -19,6 +19,7 @@ use App\Services\Finance\FinancialService;
 use App\Services\Auth\AuthService;
 use App\Services\Scheduling\AppointmentService;
 use App\Services\Scheduling\AvailabilityService;
+use App\Services\Scheduling\ScheduleIndicatorsService;
 use App\Services\Stock\StockService;
 
 final class ScheduleController extends Controller
@@ -254,6 +255,9 @@ final class ScheduleController extends Controller
             $svcRepo = new ServiceCatalogRepository($this->container->get(\PDO::class));
             $services = $svcRepo->listActiveByClinic($clinicId);
 
+            $indicators = new ScheduleIndicatorsService();
+            $byDay = $indicators->groupAppointmentsByDay($items);
+
             return $this->view('scheduling/month', [
                 'date' => $date,
                 'view' => $view,
@@ -262,6 +266,8 @@ final class ScheduleController extends Controller
                 'created' => $created,
                 'error' => $error,
                 'items' => $items,
+                'by_day' => $byDay,
+                'status_class_map' => $indicators->statusClassMap(),
                 'professionals' => $professionals,
                 'services' => $services,
                 'month_start' => $monthStart->format('Y-m-d'),
@@ -306,6 +312,12 @@ final class ScheduleController extends Controller
             $svcRepo = new ServiceCatalogRepository($this->container->get(\PDO::class));
             $services = $svcRepo->listActiveByClinic($clinicId);
 
+            $indicators = new ScheduleIndicatorsService();
+            $byDay = $indicators->groupAppointmentsByDay($items);
+            $whByWeekday = $indicators->workingHoursByWeekday($workingHours);
+            $closedMap = $indicators->closedDaysMap($closedDays);
+            $slotMinutes = $indicators->buildWeekSlotMinutes($weekStart, $whByWeekday);
+
             return $this->view('scheduling/week', [
                 'date' => $date,
                 'view' => $view,
@@ -314,6 +326,11 @@ final class ScheduleController extends Controller
                 'created' => $created,
                 'error' => $error,
                 'items' => $items,
+                'by_day' => $byDay,
+                'slot_minutes' => $slotMinutes,
+                'wh_by_weekday' => $whByWeekday,
+                'closed_map' => $closedMap,
+                'status_class_map' => $indicators->statusClassMap(),
                 'professionals' => $professionals,
                 'services' => $services,
                 'week_start' => $weekStart->format('Y-m-d'),
@@ -348,6 +365,8 @@ final class ScheduleController extends Controller
         $svcRepo = new ServiceCatalogRepository($this->container->get(\PDO::class));
         $services = $svcRepo->listActiveByClinic($clinicId);
 
+        $indicators = new ScheduleIndicatorsService();
+
         return $this->view('scheduling/index', [
             'date' => $date,
             'view' => $view,
@@ -356,6 +375,7 @@ final class ScheduleController extends Controller
             'created' => $created,
             'error' => $error,
             'items' => $items,
+            'status_class_map' => $indicators->statusClassMap(),
             'professionals' => $professionals,
             'services' => $services,
             'page' => $page,

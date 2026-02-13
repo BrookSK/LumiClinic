@@ -21,6 +21,8 @@ ob_start();
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients">Voltar</a>
         <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Prontuário</a>
+        <a class="lc-btn lc-btn--secondary" href="/finance/sales?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Orçamentos</a>
+        <a class="lc-btn lc-btn--secondary" href="/patients/appointments?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Consultas</a>
         <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Imagens</a>
         <a class="lc-btn lc-btn--secondary" href="/anamnesis?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Anamnese</a>
         <a class="lc-btn lc-btn--secondary" href="/consent?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Termos</a>

@@ -10,6 +10,7 @@
 /** @var int $page */
 /** @var int $per_page */
 /** @var bool $has_next */
+/** @var int|null $patient_id */
 
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Financeiro - Vendas';
@@ -17,6 +18,8 @@ $title = 'Financeiro - Vendas';
 $page = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 50;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
+$patientId = isset($patient_id) ? (int)$patient_id : null;
+$patientId = $patientId !== null && $patientId > 0 ? $patientId : null;
 
 ob_start();
 ?>
@@ -166,7 +169,13 @@ ob_start();
                     <tr>
                         <td><?= (int)$s['id'] ?></td>
                         <td><?= htmlspecialchars((string)$s['status'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= $s['patient_id'] === null ? '-' : (int)$s['patient_id'] ?></td>
+                        <td>
+                            <?php if ($s['patient_id'] === null): ?>
+                                -
+                            <?php else: ?>
+                                <?= htmlspecialchars((string)($s['patient_name'] ?? ('#' . (int)$s['patient_id'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?php endif; ?>
+                        </td>
                         <td><?= number_format((float)$s['total_bruto'], 2, ',', '.') ?></td>
                         <td><?= number_format((float)$s['desconto'], 2, ',', '.') ?></td>
                         <td><?= number_format((float)$s['total_liquido'], 2, ',', '.') ?></td>
@@ -182,10 +191,10 @@ ob_start();
             <div class="lc-muted">Página <?= (int)$page ?></div>
             <div class="lc-flex lc-gap-sm">
                 <?php if ($page > 1): ?>
-                    <a class="lc-btn lc-btn--secondary" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
+                    <a class="lc-btn lc-btn--secondary" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?><?= $patientId !== null ? ('&patient_id=' . (int)$patientId) : '' ?>">Anterior</a>
                 <?php endif; ?>
                 <?php if ($hasNext): ?>
-                    <a class="lc-btn lc-btn--secondary" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?>">Próxima</a>
+                    <a class="lc-btn lc-btn--secondary" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?><?= $patientId !== null ? ('&patient_id=' . (int)$patientId) : '' ?>">Próxima</a>
                 <?php endif; ?>
             </div>
         </div>

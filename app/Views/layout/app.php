@@ -294,6 +294,10 @@ $ico = [
                     <?= $navItem('/schedule', 'Agenda', $ico['calendar'], $isActive('/schedule')) ?>
                 <?php endif; ?>
 
+                <?php if ($can('marketing.calendar.read') && $hasClinicContext): ?>
+                    <?= $navItem('/marketing/calendar', 'Agenda de Marketing', $ico['calendar'], $isActive('/marketing/calendar')) ?>
+                <?php endif; ?>
+
                 <?php if ($can('finance.sales.read') && $hasClinicContext): ?>
                     <details class="lc-navgroup" <?= $isActive('/finance') ? 'open' : '' ?>>
                         <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/finance') ? ' lc-nav__item--active' : '' ?>">
@@ -308,6 +312,9 @@ $ico = [
                                 <?= $navItem('/finance/sales', 'Vendas', $ico['finance'], $isActive('/finance/sales')) ?>
                                 <?php if ($can('finance.entries.read')): ?>
                                     <?= $navItem('/finance/cashflow', 'Caixa', $ico['finance'], $isActive('/finance/cashflow')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('finance.ap.read')): ?>
+                                    <?= $navItem('/finance/accounts-payable', 'Contas a Pagar', $ico['finance'], $isActive('/finance/accounts-payable')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('finance.cost_centers.manage')): ?>
                                     <?= $navItem('/finance/cost-centers', 'Centros de custo', $ico['finance'], $isActive('/finance/cost-centers')) ?>

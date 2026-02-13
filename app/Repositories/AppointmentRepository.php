@@ -46,6 +46,112 @@ final class AppointmentRepository
         return $stmt->fetchAll();
     }
 
+    public function setPatientProcedureId(int $clinicId, int $appointmentId, ?int $patientProcedureId): void
+    {
+        $sql = "
+            UPDATE appointments
+            SET patient_procedure_id = :patient_procedure_id,
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $appointmentId,
+            'clinic_id' => $clinicId,
+            'patient_procedure_id' => $patientProcedureId,
+        ]);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function listByClinicPatientDetailed(
+        int $clinicId,
+        int $patientId,
+        int $limit = 200,
+        int $offset = 0,
+        ?string $status = null,
+        ?string $startDateYmd = null,
+        ?string $endDateYmd = null
+    ): array
+    {
+        $limit = max(1, min($limit, 500));
+        $offset = max(0, $offset);
+
+        $where = " a.clinic_id = :clinic_id AND a.patient_id = :patient_id AND a.deleted_at IS NULL ";
+        $params = ['clinic_id' => $clinicId, 'patient_id' => $patientId];
+
+        if ($status !== null && trim($status) !== '' && trim($status) !== 'all') {
+            $allowed = ['scheduled', 'confirmed', 'in_progress', 'completed', 'no_show', 'cancelled'];
+            $status = trim($status);
+            if (in_array($status, $allowed, true)) {
+                $where .= " AND a.status = :status ";
+                $params['status'] = $status;
+            }
+        }
+
+        if ($startDateYmd !== null && trim($startDateYmd) !== '') {
+            $d = \DateTimeImmutable::createFromFormat('Y-m-d', trim($startDateYmd));
+            if ($d !== false) {
+                $where .= " AND a.start_at >= :start_at_from ";
+                $params['start_at_from'] = $d->format('Y-m-d 00:00:00');
+            }
+        }
+
+        if ($endDateYmd !== null && trim($endDateYmd) !== '') {
+            $d = \DateTimeImmutable::createFromFormat('Y-m-d', trim($endDateYmd));
+            if ($d !== false) {
+                $where .= " AND a.start_at <= :start_at_to ";
+                $params['start_at_to'] = $d->format('Y-m-d 23:59:59');
+            }
+        }
+
+        $sql = "
+            SELECT
+                a.id,
+                a.clinic_id,
+                a.professional_id,
+                a.service_id,
+                a.patient_id,
+                a.patient_procedure_id,
+                a.start_at,
+                a.end_at,
+                a.status,
+                a.origin,
+                a.notes,
+                pp.total_sessions AS plan_total_sessions,
+                pp.used_sessions AS plan_used_sessions,
+                pp.sale_id AS plan_sale_id,
+                COALESCE(s.name, '') AS service_name,
+                COALESCE(pro.name, '') AS professional_name
+            FROM appointments a
+            LEFT JOIN patient_procedures pp
+                   ON pp.id = a.patient_procedure_id
+                  AND pp.clinic_id = a.clinic_id
+                  AND pp.deleted_at IS NULL
+            LEFT JOIN services s
+                   ON s.id = a.service_id
+                  AND s.clinic_id = a.clinic_id
+                  AND s.deleted_at IS NULL
+            LEFT JOIN professionals pro
+                   ON pro.id = a.professional_id
+                  AND pro.clinic_id = a.clinic_id
+                  AND pro.deleted_at IS NULL
+            WHERE " . $where . "
+            ORDER BY a.start_at DESC
+            LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
     /** @return list<array<string, mixed>> */
     public function listByClinicRangeDetailed(int $clinicId, string $startAt, string $endAt, ?int $professionalId = null): array
     {
@@ -207,7 +313,7 @@ final class AppointmentRepository
     public function findById(int $clinicId, int $id): ?array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, patient_procedure_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
             FROM appointments
             WHERE id = :id
               AND clinic_id = :clinic_id

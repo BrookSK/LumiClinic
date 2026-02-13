@@ -12,6 +12,7 @@
 /** @var list<array<string,mixed>> $professionals */
 /** @var list<array<string,mixed>> $services */
 $isProfessional = isset($is_professional) ? (bool)$is_professional : false;
+$statusClassMap = isset($status_class_map) && is_array($status_class_map) ? $status_class_map : [];
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Agenda (Semana)';
 
@@ -27,39 +28,11 @@ foreach ($professionals as $p) {
     $profMap[(int)$p['id']] = $p;
 }
 
-$byDay = [];
-foreach ($items as $it) {
-    $d = substr((string)$it['start_at'], 0, 10);
-    if (!isset($byDay[$d])) {
-        $byDay[$d] = [];
-    }
-    $byDay[$d][] = $it;
-}
+$byDay = isset($by_day) && is_array($by_day) ? $by_day : [];
 
-$whByWeekday = [];
-if (isset($working_hours) && is_array($working_hours)) {
-    foreach ($working_hours as $wh) {
-        $wd = (int)($wh['weekday'] ?? -1);
-        if ($wd < 0 || $wd > 6) {
-            continue;
-        }
-        if (!isset($whByWeekday[$wd])) {
-            $whByWeekday[$wd] = [];
-        }
-        $whByWeekday[$wd][] = $wh;
-    }
-}
+$whByWeekday = isset($wh_by_weekday) && is_array($wh_by_weekday) ? $wh_by_weekday : [];
 
-$closedMap = [];
-if (isset($closed_days) && is_array($closed_days)) {
-    foreach ($closed_days as $cd) {
-        $ymd = (string)($cd['closed_date'] ?? '');
-        if ($ymd === '') {
-            continue;
-        }
-        $closedMap[$ymd] = (string)($cd['reason'] ?? '');
-    }
-}
+$closedMap = isset($closed_map) && is_array($closed_map) ? $closed_map : [];
 
 /** @return int */
 $toMinutes = static function (string $hhmm): int {
@@ -83,30 +56,8 @@ $dtToMinutes = static function (string $dt) use ($toMinutes): int {
     return $toMinutes($t);
 };
 
-// Determine week window
 $weekStart = \DateTimeImmutable::createFromFormat('Y-m-d', $week_start);
-
-// Build a global slot list based on working hours for the 7 days
-$slotMinutes = [];
-if ($weekStart !== false) {
-    for ($i = 0; $i < 7; $i++) {
-        $d = $weekStart->modify('+' . $i . ' days');
-        $wd = (int)$d->format('w');
-        $windows = $whByWeekday[$wd] ?? [];
-        foreach ($windows as $w) {
-            $startM = $toMinutes((string)($w['start_time'] ?? ''));
-            $endM = $toMinutes((string)($w['end_time'] ?? ''));
-            if ($endM <= $startM) {
-                continue;
-            }
-            for ($m = $startM; $m < $endM; $m += 15) {
-                $slotMinutes[$m] = true;
-            }
-        }
-    }
-}
-$slotMinutes = array_keys($slotMinutes);
-sort($slotMinutes);
+$slotMinutes = isset($slot_minutes) && is_array($slot_minutes) ? $slot_minutes : [];
 
 ob_start();
 ?>
@@ -300,12 +251,7 @@ ob_start();
                                         $height = max(36, ($span * $rowHeight) + (($span - 1) * 10));
 
                                         $status = (string)($it['status'] ?? '');
-                                        $statusClass = 'scheduled';
-                                        if ($status === 'cancelled') $statusClass = 'cancelled';
-                                        if ($status === 'confirmed') $statusClass = 'confirmed';
-                                        if ($status === 'in_progress') $statusClass = 'in_progress';
-                                        if ($status === 'completed') $statusClass = 'completed';
-                                        if ($status === 'no_show') $statusClass = 'no_show';
+                                        $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
                                         $patientName = (string)($it['patient_name'] ?? '');
                                         $serviceName = (string)($it['service_name'] ?? '');
                                         $professionalName = (string)($it['professional_name'] ?? '');

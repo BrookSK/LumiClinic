@@ -10,15 +10,19 @@ use App\Repositories\DataVersionRepository;
 use App\Repositories\PackageRepository;
 use App\Repositories\PatientPackageRepository;
 use App\Repositories\PatientRepository;
+use App\Repositories\PatientProcedureRepository;
 use App\Repositories\PatientSubscriptionRepository;
 use App\Repositories\PaymentRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Repositories\SaleItemRepository;
 use App\Repositories\SaleLogRepository;
 use App\Repositories\SaleRepository;
+use App\Repositories\AppointmentRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Repositories\SubscriptionPlanRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Scheduling\AppointmentService;
+use App\Services\Scheduling\AvailabilityService;
 use App\Services\Observability\SystemEvent;
 
 final class SalesService
@@ -26,7 +30,7 @@ final class SalesService
     public function __construct(private readonly Container $container) {}
 
     /** @return list<array<string,mixed>> */
-    public function listSales(?int $professionalId = null, int $limit = 200, int $offset = 0): array
+    public function listSales(?int $professionalId = null, int $limit = 200, int $offset = 0, ?int $patientId = null): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -38,7 +42,7 @@ final class SalesService
         $offset = max(0, $offset);
 
         $repo = new SaleRepository($this->container->get(\PDO::class));
-        return $repo->listByClinic($clinicId, $limit, $professionalId, $offset);
+        return $repo->listByClinic($clinicId, $limit, $professionalId, $offset, $patientId);
     }
 
     /** @return array{sale:array<string,mixed>,items:list<array<string,mixed>>,payments:list<array<string,mixed>>,logs:list<array<string,mixed>>}|null */
@@ -61,12 +65,14 @@ final class SalesService
         $itemsRepo = new SaleItemRepository($pdo);
         $payRepo = new PaymentRepository($pdo);
         $logRepo = new SaleLogRepository($pdo);
+        $pprocRepo = new PatientProcedureRepository($pdo);
 
         return [
             'sale' => $sale,
             'items' => $itemsRepo->listBySale($clinicId, $saleId),
             'payments' => $payRepo->listBySale($clinicId, $saleId),
             'logs' => $logRepo->listBySale($clinicId, $saleId, 200),
+            'procedures' => $pprocRepo->listBySale($clinicId, $saleId, 200),
         ];
     }
 
@@ -445,6 +451,226 @@ final class SalesService
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log($actorId, $clinicId, 'finance.sales.cancel', ['sale_id' => $saleId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+    }
+
+    public function setBudgetStatus(int $saleId, string $budgetStatus, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inv?lido.');
+        }
+
+        $budgetStatus = trim($budgetStatus);
+        $allowed = ['draft', 'sent', 'approved', 'rejected'];
+        if (!in_array($budgetStatus, $allowed, true)) {
+            throw new \RuntimeException('Status inv?lido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $saleRepo = new SaleRepository($pdo);
+        $sale = $saleRepo->findById($clinicId, $saleId);
+        if ($sale === null) {
+            throw new \RuntimeException('Venda inv?lida.');
+        }
+
+        if ((string)$sale['status'] === 'cancelled') {
+            throw new \RuntimeException('Venda cancelada.');
+        }
+
+        $from = (string)($sale['budget_status'] ?? 'draft');
+        if ($from === $budgetStatus) {
+            return;
+        }
+
+        $saleRepo->updateBudgetStatus($clinicId, $saleId, $budgetStatus);
+
+        $saleLog = new SaleLogRepository($pdo);
+        $saleLog->log($clinicId, $saleId, 'sales.budget_status', ['from' => $from, 'to' => $budgetStatus], $actorId, $ip);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.sales.update', ['sale_id' => $saleId, 'budget_status' => $budgetStatus], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
+        SystemEvent::dispatch($this->container, 'sale.budget_status_updated', [
+            'sale_id' => $saleId,
+            'from' => $from,
+            'to' => $budgetStatus,
+        ], 'sale', $saleId, $ip, $userAgent);
+
+        if ($budgetStatus === 'approved') {
+            $this->ensurePatientProcedurePlanFromSale($clinicId, $saleId, $actorId, $ip);
+        }
+    }
+
+    private function ensurePatientProcedurePlanFromSale(int $clinicId, int $saleId, int $actorId, string $ip): void
+    {
+        $pdo = $this->container->get(\PDO::class);
+
+        $saleRepo = new SaleRepository($pdo);
+        $sale = $saleRepo->findById($clinicId, $saleId);
+        if ($sale === null) {
+            return;
+        }
+
+        $patientId = $sale['patient_id'] !== null ? (int)$sale['patient_id'] : null;
+        if ($patientId === null) {
+            return;
+        }
+
+        $itemsRepo = new SaleItemRepository($pdo);
+        $items = $itemsRepo->listBySale($clinicId, $saleId);
+
+        $pprocRepo = new PatientProcedureRepository($pdo);
+        $created = 0;
+
+        foreach ($items as $it) {
+            if ((string)($it['type'] ?? '') !== 'procedure') {
+                continue;
+            }
+
+            $serviceId = (int)($it['reference_id'] ?? 0);
+            $saleItemId = (int)($it['id'] ?? 0);
+            if ($serviceId <= 0 || $saleItemId <= 0) {
+                continue;
+            }
+
+            $professionalId = isset($it['professional_id']) && $it['professional_id'] !== null ? (int)$it['professional_id'] : null;
+            $totalSessions = (int)($it['quantity'] ?? 1);
+
+            $pprocRepo->createIfNotExists($clinicId, $patientId, $serviceId, $professionalId, $saleId, $saleItemId, $totalSessions);
+            $created++;
+        }
+
+        if ($created > 0) {
+            $saleLog = new SaleLogRepository($pdo);
+            $saleLog->log($clinicId, $saleId, 'patient_procedures.ensure_from_sale', ['count' => $created], $actorId, $ip);
+        }
+    }
+
+    /** @return array{created:int,skipped:int,errors:list<string>} */
+    public function generateAppointmentsFromApprovedBudget(int $saleId, string $startDateYmd, string $ip, ?string $userAgent = null): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inv?lido.');
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $startDateYmd);
+        if ($date === false) {
+            throw new \RuntimeException('Data inv?lida.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+
+        $saleRepo = new SaleRepository($pdo);
+        $sale = $saleRepo->findById($clinicId, $saleId);
+        if ($sale === null) {
+            throw new \RuntimeException('Venda inv?lida.');
+        }
+
+        if ((string)$sale['status'] === 'cancelled') {
+            throw new \RuntimeException('Venda cancelada.');
+        }
+
+        if ((string)($sale['budget_status'] ?? 'draft') !== 'approved') {
+            throw new \RuntimeException('Orçamento precisa estar aprovado.');
+        }
+
+        $patientId = $sale['patient_id'] !== null ? (int)$sale['patient_id'] : null;
+        if ($patientId === null) {
+            throw new \RuntimeException('Paciente é obrigatório.');
+        }
+
+        $pprocRepo = new PatientProcedureRepository($pdo);
+        $procedures = $pprocRepo->listBySale($clinicId, $saleId, 500);
+        if ($procedures === []) {
+            return ['created' => 0, 'skipped' => 0, 'errors' => []];
+        }
+
+        $availability = new AvailabilityService($this->container);
+        $apptSvc = new AppointmentService($this->container);
+        $apptRepo = new AppointmentRepository($pdo);
+
+        $created = 0;
+        $skipped = 0;
+        $errors = [];
+
+        foreach ($procedures as $pp) {
+            $ppId = (int)($pp['id'] ?? 0);
+            $serviceId = (int)($pp['service_id'] ?? 0);
+            $professionalId = isset($pp['professional_id']) && $pp['professional_id'] !== null ? (int)$pp['professional_id'] : 0;
+            $total = (int)($pp['total_sessions'] ?? 0);
+            $used = (int)($pp['used_sessions'] ?? 0);
+
+            if ($ppId <= 0 || $serviceId <= 0 || $total <= 0) {
+                $skipped++;
+                continue;
+            }
+
+            if ($professionalId <= 0) {
+                $errors[] = 'Procedimento planejado #' . $ppId . ': profissional não definido.';
+                continue;
+            }
+
+            $remaining = max(0, $total - $used);
+            if ($remaining === 0) {
+                $skipped++;
+                continue;
+            }
+
+            $cursor = $date;
+            for ($i = 0; $i < $remaining; $i++) {
+                $scheduled = false;
+
+                for ($attemptDay = 0; $attemptDay < 90; $attemptDay++) {
+                    $ymd = $cursor->format('Y-m-d');
+
+                    $slots = $availability->listAvailableSlots($serviceId, $ymd, $professionalId, 15, null);
+                    if ($slots !== []) {
+                        $startAt = (string)($slots[0]['start_at'] ?? '');
+                        if ($startAt !== '') {
+                            try {
+                                $apptId = $apptSvc->create($serviceId, $professionalId, $startAt, 'system', $patientId, 'Gerado do orçamento #' . (int)$saleId, $ip);
+                                $apptRepo->setPatientProcedureId($clinicId, $apptId, $ppId);
+                                $pprocRepo->addUsedSessions($clinicId, $ppId, 1);
+                                $created++;
+                                $scheduled = true;
+
+                                $cursor = $cursor->modify('+1 day');
+                                break;
+                            } catch (\RuntimeException $e) {
+                                $errors[] = 'Falha ao criar agendamento (procedimento #' . $ppId . '): ' . $e->getMessage();
+                            }
+                        }
+                    }
+
+                    $cursor = $cursor->modify('+1 day');
+                }
+
+                if (!$scheduled) {
+                    $errors[] = 'Sem disponibilidade para procedimento #' . $ppId . ' (até 90 dias).';
+                    break;
+                }
+            }
+        }
+
+        $saleLog = new SaleLogRepository($pdo);
+        $saleLog->log($clinicId, $saleId, 'appointments.generate_from_budget', ['created' => $created, 'skipped' => $skipped, 'errors' => $errors], $actorId, $ip);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.sales.update', ['sale_id' => $saleId, 'generated_appointments' => $created], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
+        SystemEvent::dispatch($this->container, 'sale.appointments_generated', [
+            'sale_id' => $saleId,
+            'created' => $created,
+        ], 'sale', $saleId, $ip, $userAgent);
+
+        return ['created' => $created, 'skipped' => $skipped, 'errors' => $errors];
     }
 
     /** @return list<array<string,mixed>> */
