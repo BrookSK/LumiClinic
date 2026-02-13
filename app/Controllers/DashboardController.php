@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Http\Request;
 use App\Services\Auth\AuthService;
+use App\Services\Stock\StockService;
 
 final class DashboardController extends Controller
 {
@@ -38,15 +39,24 @@ final class DashboardController extends Controller
             'has_clinic_context' => $clinicId !== null,
             'can_schedule' => $can('scheduling.read'),
             'can_patients' => $can('patients.read'),
+            'can_finance' => $can('finance.sales.read'),
+            'can_stock_alerts' => $can('stock.alerts.read'),
             'kpis' => [
                 'today_total' => 0,
                 'today_confirmed' => 0,
                 'today_in_progress' => 0,
                 'today_completed' => 0,
                 'today_unique_patients' => 0,
+                'revenue_paid_month' => 0.0,
             ],
             'upcoming_appointments' => [],
             'today_patients' => [],
+            'stock_alerts' => [
+                'low_stock' => 0,
+                'out_of_stock' => 0,
+                'expiring_soon' => 0,
+                'expired' => 0,
+            ],
         ];
 
         if ($clinicId !== null) {
@@ -140,6 +150,37 @@ final class DashboardController extends Controller
                 $rowsPatients = $stmtTodayPatients->fetchAll() ?: [];
                 $data['today_patients'] = $rowsPatients;
                 $data['kpis']['today_unique_patients'] = count($rowsPatients);
+            }
+
+            $monthStart = date('Y-m-01');
+            $monthEnd = date('Y-m-d');
+
+            if ($can('finance.sales.read')) {
+                $sqlRevenuePaid = "
+                    SELECT COALESCE(SUM(s.total_liquido), 0) AS revenue_paid
+                    FROM sales s
+                    WHERE s.clinic_id = :clinic_id
+                      AND s.deleted_at IS NULL
+                      AND s.status = 'paid'
+                      AND DATE(s.created_at) BETWEEN :start AND :end
+                ";
+                $stmtRev = $pdo->prepare($sqlRevenuePaid);
+                $stmtRev->execute(['clinic_id' => $clinicId, 'start' => $monthStart, 'end' => $monthEnd]);
+                $rowRev = $stmtRev->fetch() ?: [];
+                $data['kpis']['revenue_paid_month'] = (float)($rowRev['revenue_paid'] ?? 0.0);
+            }
+
+            if ($can('stock.alerts.read')) {
+                try {
+                    $alerts = (new StockService($this->container))->alerts(30);
+                    $data['stock_alerts'] = [
+                        'low_stock' => count($alerts['low_stock'] ?? []),
+                        'out_of_stock' => count($alerts['out_of_stock'] ?? []),
+                        'expiring_soon' => count($alerts['expiring_soon'] ?? []),
+                        'expired' => count($alerts['expired'] ?? []),
+                    ];
+                } catch (\Throwable $e) {
+                }
             }
         }
 
