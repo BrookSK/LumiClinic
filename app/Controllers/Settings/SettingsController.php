@@ -27,6 +27,8 @@ final class SettingsController extends Controller
 
         $timezone = trim((string)$request->input('timezone', ''));
         $language = trim((string)$request->input('language', ''));
+        $weekStartWeekday = (int)$request->input('week_start_weekday', 1);
+        $weekEndWeekday = (int)$request->input('week_end_weekday', 0);
 
         if ($timezone === '' || $language === '') {
             $service = new SettingsService($this->container);
@@ -36,8 +38,25 @@ final class SettingsController extends Controller
             ]);
         }
 
+        if ($weekStartWeekday < 0 || $weekStartWeekday > 6 || $weekEndWeekday < 0 || $weekEndWeekday > 6) {
+            $service = new SettingsService($this->container);
+            return $this->view('settings/index', [
+                'settings' => $service->getSettings(),
+                'error' => 'Semana inválida.',
+            ]);
+        }
+
+        $expectedEnd = ($weekStartWeekday + 6) % 7;
+        if ($weekEndWeekday !== $expectedEnd) {
+            $service = new SettingsService($this->container);
+            return $this->view('settings/index', [
+                'settings' => $service->getSettings(),
+                'error' => 'O fim da semana deve ser o dia anterior ao início (ex.: início Seg => fim Dom).',
+            ]);
+        }
+
         $service = new SettingsService($this->container);
-        $service->updateSettings($timezone, $language, $request->ip());
+        $service->updateSettings($timezone, $language, $weekStartWeekday, $weekEndWeekday, $request->ip());
 
         return $this->redirect('/settings');
     }

@@ -46,6 +46,65 @@ final class AppointmentRepository
         return $stmt->fetchAll();
     }
 
+    /** @return list<array<string, mixed>> */
+    public function listByClinicRangeDetailed(int $clinicId, string $startAt, string $endAt, ?int $professionalId = null): array
+    {
+        $sql = "
+            SELECT
+                a.id,
+                a.clinic_id,
+                a.professional_id,
+                a.service_id,
+                a.patient_id,
+                a.start_at,
+                a.end_at,
+                a.buffer_before_minutes,
+                a.buffer_after_minutes,
+                a.status,
+                a.origin,
+                a.notes,
+                COALESCE(pat.name, '') AS patient_name,
+                COALESCE(s.name, '') AS service_name,
+                COALESCE(pro.name, '') AS professional_name
+            FROM appointments a
+            LEFT JOIN patients pat
+                   ON pat.id = a.patient_id
+                  AND pat.clinic_id = a.clinic_id
+                  AND pat.deleted_at IS NULL
+            LEFT JOIN services s
+                   ON s.id = a.service_id
+                  AND s.clinic_id = a.clinic_id
+                  AND s.deleted_at IS NULL
+            LEFT JOIN professionals pro
+                   ON pro.id = a.professional_id
+                  AND pro.clinic_id = a.clinic_id
+                  AND pro.deleted_at IS NULL
+            WHERE a.clinic_id = :clinic_id
+              AND a.deleted_at IS NULL
+              AND a.start_at >= :start_at
+              AND a.start_at < :end_at
+        ";
+
+        $params = [
+            'clinic_id' => $clinicId,
+            'start_at' => $startAt,
+            'end_at' => $endAt,
+        ];
+
+        if ($professionalId !== null) {
+            $sql .= " AND a.professional_id = :professional_id ";
+            $params['professional_id'] = $professionalId;
+        }
+
+        $sql .= " ORDER BY a.start_at ASC ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
     /** @return array<string, mixed>|null */
     public function findByIdForPatient(int $clinicId, int $patientId, int $appointmentId): ?array
     {

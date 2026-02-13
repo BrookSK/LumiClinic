@@ -12,7 +12,7 @@ final class ClinicSettingsRepository
     public function findByClinicId(int $clinicId): ?array
     {
         $sql = "
-            SELECT clinic_id, timezone, language, encryption_key
+            SELECT clinic_id, timezone, language, week_start_weekday, week_end_weekday, encryption_key
             FROM clinic_settings
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -26,12 +26,14 @@ final class ClinicSettingsRepository
         return $row ?: null;
     }
 
-    public function update(int $clinicId, string $timezone, string $language): void
+    public function update(int $clinicId, string $timezone, string $language, ?int $weekStartWeekday = null, ?int $weekEndWeekday = null): void
     {
         $sql = "
             UPDATE clinic_settings
                SET timezone = :timezone,
                    language = :language,
+                   week_start_weekday = :week_start_weekday,
+                   week_end_weekday = :week_end_weekday,
                    updated_at = NOW()
              WHERE clinic_id = :clinic_id
                AND deleted_at IS NULL
@@ -42,6 +44,8 @@ final class ClinicSettingsRepository
             'clinic_id' => $clinicId,
             'timezone' => $timezone,
             'language' => $language,
+            'week_start_weekday' => $weekStartWeekday,
+            'week_end_weekday' => $weekEndWeekday,
         ]);
     }
 }

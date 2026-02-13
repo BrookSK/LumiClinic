@@ -9,6 +9,9 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AppointmentLogRepository;
+use App\Repositories\ClinicClosedDaysRepository;
+use App\Repositories\ClinicSettingsRepository;
+use App\Repositories\ClinicWorkingHoursRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Repositories\ServiceMaterialDefaultRepository;
@@ -271,17 +274,31 @@ final class ScheduleController extends Controller
                 throw new \RuntimeException('Data inv?lida.');
             }
 
+            $settingsRepo = new ClinicSettingsRepository($this->container->get(\PDO::class));
+            $settings = $settingsRepo->findByClinicId($clinicId);
+            $weekStartWeekday = isset($settings['week_start_weekday']) ? (int)$settings['week_start_weekday'] : 1;
+            if ($weekStartWeekday < 0 || $weekStartWeekday > 6) {
+                $weekStartWeekday = 1;
+            }
+
             $dayOfWeek = (int)$start->format('w');
-            $weekStart = $start->modify('-' . $dayOfWeek . ' days');
+            $delta = ($dayOfWeek - $weekStartWeekday + 7) % 7;
+            $weekStart = $start->modify('-' . $delta . ' days');
             $weekEnd = $weekStart->modify('+7 days');
 
             $apptRepo = new AppointmentRepository($this->container->get(\PDO::class));
-            $items = $apptRepo->listByClinicRange(
+            $items = $apptRepo->listByClinicRangeDetailed(
                 $clinicId,
                 $weekStart->format('Y-m-d 00:00:00'),
                 $weekEnd->format('Y-m-d 00:00:00'),
                 $professionalId > 0 ? $professionalId : null
             );
+
+            $whRepo = new ClinicWorkingHoursRepository($this->container->get(\PDO::class));
+            $workingHours = $whRepo->listByClinic($clinicId);
+
+            $cdRepo = new ClinicClosedDaysRepository($this->container->get(\PDO::class));
+            $closedDays = $cdRepo->listByClinic($clinicId);
 
             $profRepo = new ProfessionalRepository($this->container->get(\PDO::class));
             $professionals = $profRepo->listActiveByClinic($clinicId);
@@ -300,6 +317,9 @@ final class ScheduleController extends Controller
                 'professionals' => $professionals,
                 'services' => $services,
                 'week_start' => $weekStart->format('Y-m-d'),
+                'week_start_weekday' => $weekStartWeekday,
+                'working_hours' => $workingHours,
+                'closed_days' => $closedDays,
             ]);
         }
 
