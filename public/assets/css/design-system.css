@@ -198,6 +198,9 @@ body.lc-body--auth .lc-auth__title img{height:34px}
 /* Espaçamento padrão quando botões aparecem lado a lado sem wrapper com gap */
 .lc-btn + .lc-btn{margin-left:10px}
 
+.lc-form__actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.lc-form__actions .lc-btn + .lc-btn{margin-left:0}
+
 /* Links com classe lc-btn devem se comportar como botões */
 a.lc-btn{display:inline-flex}
 

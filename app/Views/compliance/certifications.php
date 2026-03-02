@@ -34,10 +34,11 @@ ob_start();
 <?php endif; ?>
 
 <div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title">Cadastrar política</div>
-    <div class="lc-card__body">
-        <form method="post" action="/compliance/certifications/policies/create" class="lc-form">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+    <details class="lc-collapse" <?= $error !== '' ? 'open' : '' ?>>
+        <summary class="lc-card__title">Cadastrar nova política</summary>
+        <div class="lc-card__body">
+            <form method="post" action="/compliance/certifications/policies/create" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Código</label>
             <input class="lc-input" type="text" name="code" placeholder="ex: iso27001-a.5" required />
@@ -81,16 +82,18 @@ ob_start();
             <label class="lc-label">Próxima revisão (AAAA-MM-DD HH:MM:SS)</label>
             <input class="lc-input" type="text" name="next_review_at" placeholder="opcional" />
 
-            <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
-        </form>
-    </div>
+                <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
+            </form>
+        </div>
+    </details>
 </div>
 
 <div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title">Cadastrar controle</div>
-    <div class="lc-card__body">
-        <form method="post" action="/compliance/certifications/controls/create" class="lc-form">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+    <details class="lc-collapse" <?= $error !== '' ? 'open' : '' ?>>
+        <summary class="lc-card__title">Cadastrar novo controle</summary>
+        <div class="lc-card__body">
+            <form method="post" action="/compliance/certifications/controls/create" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Política (opcional)</label>
             <select class="lc-select" name="policy_id">
@@ -151,7 +154,8 @@ ob_start();
 
             <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
         </form>
-    </div>
+        </div>
+    </details>
 </div>
 
 <div class="lc-card" style="margin-bottom:14px;">

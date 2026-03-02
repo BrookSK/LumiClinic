@@ -51,17 +51,19 @@ ob_start();
                 <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
             <?php endif; ?>
 
-            <button class="lc-btn" type="submit">Gerar</button>
+            <div class="lc-flex lc-gap-sm lc-flex--wrap">
+                <button class="lc-btn" type="submit">Gerar</button>
 
-            <?php
-            $exportQuery = [
-                'from' => (string)$from,
-                'to' => (string)$to,
-                'professional_id' => (int)$professional_id,
-            ];
-            ?>
-            <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.csv?<?= http_build_query($exportQuery) ?>">Exportar planilha</a>
-            <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.pdf?<?= http_build_query($exportQuery) ?>">Exportar PDF</a>
+                <?php
+                $exportQuery = [
+                    'from' => (string)$from,
+                    'to' => (string)$to,
+                    'professional_id' => (int)$professional_id,
+                ];
+                ?>
+                <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.csv?<?= http_build_query($exportQuery) ?>">Exportar planilha</a>
+                <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.pdf?<?= http_build_query($exportQuery) ?>">Exportar PDF</a>
+            </div>
         </form>
     </div>
 </div>

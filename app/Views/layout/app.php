@@ -336,7 +336,7 @@ $ico = [
                     <?= $navItem('/billing/subscription', 'Assinatura', $ico['finance'], $isActive('/billing/subscription')) ?>
                 <?php endif; ?>
 
-                <?php $agendaActive = $isActive('/schedule') || $isActive('/schedule/ops'); ?>
+                <?php $agendaActive = $isActiveSegment('/schedule'); ?>
                 <?php if ($can('scheduling.read')): ?>
                     <details class="lc-navgroup" <?= $agendaActive ? 'open' : '' ?>>
                         <summary class="lc-nav__item lc-navgroup__summary<?= $agendaActive ? ' lc-nav__item--active' : '' ?>">
@@ -348,9 +348,9 @@ $ico = [
                         </summary>
                         <div class="lc-navgroup__children">
                             <div class="lc-nav__sub">
-                                <?= $navItem('/schedule', 'Agenda', $ico['calendar'], $isActive('/schedule')) ?>
+                                <?= $navItem('/schedule', 'Agenda', $ico['calendar'], $isExact('/schedule')) ?>
                                 <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
-                                    <?= $navItem('/schedule/ops', 'Operação da Agenda', $ico['calendar'], $isActive('/schedule/ops')) ?>
+                                    <?= $navItem('/schedule/ops', 'Operação da Agenda', $ico['calendar'], $isExact('/schedule/ops')) ?>
                                 <?php endif; ?>
                             </div>
                         </div>
