@@ -14,6 +14,7 @@ final class AdminUserRepository
             FROM users
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
+              AND status = 'active'
         ");
         $stmt->execute(['clinic_id' => $clinicId]);
         $row = $stmt->fetch();
@@ -133,11 +134,10 @@ final class AdminUserRepository
         $sql = "
             UPDATE users
                SET status = 'disabled',
-                   deleted_at = NOW(),
+                   deleted_at = NULL,
                    updated_at = NOW()
              WHERE id = :id
                AND clinic_id = :clinic_id
-               AND deleted_at IS NULL
         ";
 
         $stmt = $this->pdo->prepare($sql);

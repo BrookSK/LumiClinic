@@ -46,7 +46,7 @@ final class DataVersionRepository
                 :entity_type,
                 :entity_id,
                 :action,
-                CAST(:snapshot_json AS JSON),
+                :snapshot_json,
                 :snapshot_hash,
                 :created_by_user_id,
                 :ip_address,

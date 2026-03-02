@@ -6,6 +6,31 @@ $status = (string)($status ?? 'pending');
 $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
+$statusLabelMap = [
+    'pending' => 'Pendente',
+    'approved' => 'Aprovada',
+    'rejected' => 'Rejeitada',
+];
+
+$fieldLabelMap = [
+    'name' => 'Nome',
+    'email' => 'E-mail',
+    'phone' => 'Telefone',
+    'birth_date' => 'Data de nascimento',
+    'sex' => 'Sexo',
+    'cpf' => 'CPF',
+    'address' => 'Endereço',
+    'address_parts' => 'Endereço (partes)',
+    'street' => 'Rua',
+    'number' => 'Número',
+    'complement' => 'Complemento',
+    'district' => 'Bairro',
+    'city' => 'Cidade',
+    'state' => 'UF',
+    'zip' => 'CEP',
+    'notes' => 'Observações',
+];
+
 ob_start();
 ?>
 <div class="lc-card">
@@ -53,18 +78,21 @@ ob_start();
                                 <a href="/patients/view?id=<?= (int)$r['patient_id'] ?>">Ver paciente</a>
                             </div>
                         </td>
-                        <td><?= htmlspecialchars((string)($r['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <?php $st = (string)($r['status'] ?? ''); ?>
+                        <td><?= htmlspecialchars((string)($statusLabelMap[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></td>
                         <td style="max-width:420px;">
                             <?php foreach ($payload as $k => $v): ?>
+                                <?php $labelK = (string)($fieldLabelMap[(string)$k] ?? (string)$k); ?>
                                 <?php if (is_array($v)): ?>
-                                    <div><strong><?= htmlspecialchars((string)$k, ENT_QUOTES, 'UTF-8') ?>:</strong></div>
+                                    <div><strong><?= htmlspecialchars($labelK, ENT_QUOTES, 'UTF-8') ?>:</strong></div>
                                     <div style="padding-left:10px; opacity:.9;">
                                         <?php foreach ($v as $kk => $vv): ?>
-                                            <div><strong><?= htmlspecialchars((string)$kk, ENT_QUOTES, 'UTF-8') ?>:</strong> <?= htmlspecialchars((string)$vv, ENT_QUOTES, 'UTF-8') ?></div>
+                                            <?php $labelKK = (string)($fieldLabelMap[(string)$kk] ?? (string)$kk); ?>
+                                            <div><strong><?= htmlspecialchars($labelKK, ENT_QUOTES, 'UTF-8') ?>:</strong> <?= htmlspecialchars((string)$vv, ENT_QUOTES, 'UTF-8') ?></div>
                                         <?php endforeach; ?>
                                     </div>
                                 <?php else: ?>
-                                    <div><strong><?= htmlspecialchars((string)$k, ENT_QUOTES, 'UTF-8') ?>:</strong> <?= htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8') ?></div>
+                                    <div><strong><?= htmlspecialchars($labelK, ENT_QUOTES, 'UTF-8') ?>:</strong> <?= htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8') ?></div>
                                 <?php endif; ?>
                             <?php endforeach; ?>
                         </td>

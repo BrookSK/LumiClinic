@@ -70,13 +70,17 @@ final class ConsentController extends Controller
         $body = trim((string)$request->input('body', ''));
 
         if ($procedureType === '' || $title === '' || $body === '') {
-            return $this->view('consent/terms-create', ['error' => 'Preencha todos os campos.']);
+            return $this->redirect('/consent-terms/create?error=' . urlencode('Preencha todos os campos.'));
         }
 
         $service = new ConsentService($this->container);
-        $id = $service->createTerm($procedureType, $title, $body, $request->ip());
+        try {
+            $id = $service->createTerm($procedureType, $title, $body, $request->ip());
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/consent-terms/create?error=' . urlencode($e->getMessage()));
+        }
 
-        return $this->redirect('/consent-terms/edit?id=' . $id);
+        return $this->redirect('/consent-terms/edit?id=' . $id . '&success=' . urlencode('Criado.'));
     }
 
     public function editTerm(Request $request)
@@ -121,11 +125,7 @@ final class ConsentController extends Controller
         $status = trim((string)$request->input('status', 'active'));
 
         if ($id <= 0 || $procedureType === '' || $title === '' || $body === '') {
-            $service = new ConsentService($this->container);
-            return $this->view('consent/terms-edit', [
-                'term' => $service->getTerm($id),
-                'error' => 'Preencha os campos obrigatórios.',
-            ]);
+            return $this->redirect('/consent-terms/edit?id=' . $id . '&error=' . urlencode('Preencha os campos obrigatórios.'));
         }
 
         if (!in_array($status, ['active', 'disabled'], true)) {
@@ -133,9 +133,13 @@ final class ConsentController extends Controller
         }
 
         $service = new ConsentService($this->container);
-        $service->updateTerm($id, $procedureType, $title, $body, $status, $request->ip());
+        try {
+            $service->updateTerm($id, $procedureType, $title, $body, $status, $request->ip());
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/consent-terms/edit?id=' . $id . '&error=' . urlencode($e->getMessage()));
+        }
 
-        return $this->redirect('/consent-terms/edit?id=' . $id);
+        return $this->redirect('/consent-terms/edit?id=' . $id . '&success=' . urlencode('Salvo.'));
     }
 
     public function index(Request $request)

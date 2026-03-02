@@ -34,7 +34,8 @@ final class AnamnesisFieldRepository
     {
         $sql = "
             UPDATE anamnesis_template_fields
-            SET deleted_at = NOW()
+            SET deleted_at = NOW(),
+                field_key = CONCAT(LEFT(field_key, 40), '__del__', id)
             WHERE clinic_id = :clinic_id
               AND template_id = :template_id
               AND deleted_at IS NULL

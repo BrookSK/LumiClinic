@@ -184,7 +184,22 @@ body.lc-body--auth .lc-auth__title img{height:34px}
     border:1px solid transparent;
     cursor:pointer;
     font-weight:650;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    vertical-align: middle;
+    gap:8px;
+    min-height: 40px;
 }
+
+/* Espaçamento padrão quando botões aparecem lado a lado sem wrapper com gap */
+.lc-btn + .lc-btn{margin-left:10px}
+
+/* Links com classe lc-btn devem se comportar como botões */
+a.lc-btn{display:inline-flex}
 
 .lc-btn--sm{padding:7px 10px;border-radius:10px;font-weight:650;font-size:12px}
 
@@ -261,7 +276,10 @@ textarea.lc-input:focus,
 
 .lc-form.lc-grid{display:grid;flex-direction:unset}
 
-.lc-form.lc-flex{flex-direction:row}
+.lc-form.lc-flex{flex-direction:row;gap:12px;align-items:flex-end;flex-wrap:wrap}
+
+/* Wrapper de campo para formulários em linha (label + input) */
+.lc-field{display:block;min-width:0}
 
 .lc-alert{
     padding:10px 12px;

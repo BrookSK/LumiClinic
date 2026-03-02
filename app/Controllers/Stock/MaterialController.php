@@ -64,6 +64,7 @@ final class MaterialController extends Controller
         $category = trim((string)$request->input('category', ''));
         $unit = trim((string)$request->input('unit', ''));
         $stockMin = trim((string)$request->input('stock_minimum', '0'));
+        $initialStock = trim((string)$request->input('initial_stock', '0'));
         $unitCost = trim((string)$request->input('unit_cost', '0'));
         $validity = trim((string)$request->input('validity_date', ''));
 
@@ -74,6 +75,7 @@ final class MaterialController extends Controller
                 $category === '' ? null : $category,
                 $unit,
                 $stockMin,
+                $initialStock,
                 $unitCost,
                 $validity === '' ? null : $validity,
                 $request->ip()

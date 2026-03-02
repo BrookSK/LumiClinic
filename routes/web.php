@@ -271,7 +271,7 @@ $router->post('/marketing/calendar/update', [\App\Controllers\Marketing\Marketin
 $router->post('/marketing/calendar/delete', [\App\Controllers\Marketing\MarketingCalendarController::class, 'delete']);
 
 $router->get('/finance/sales', [SalesController::class, 'index']);
-$router->get('/finance/sales/view', [SalesController::class, 'view']);
+$router->get('/finance/sales/view', [SalesController::class, 'show']);
 $router->post('/finance/sales/create', [SalesController::class, 'create']);
 $router->get('/finance/sales/patients/search-json', [SalesController::class, 'patientSearchJson']);
 $router->post('/finance/sales/items/add', [SalesController::class, 'addItem']);
@@ -393,6 +393,7 @@ $router->post('/anamnesis/templates/edit', [AnamnesisController::class, 'updateT
 $router->get('/anamnesis', [AnamnesisController::class, 'index']);
 $router->get('/anamnesis/fill', [AnamnesisController::class, 'fill']);
 $router->post('/anamnesis/fill', [AnamnesisController::class, 'submit']);
+$router->get('/anamnesis/response', [AnamnesisController::class, 'response']);
 
 $router->get('/consent-terms', [ConsentController::class, 'terms']);
 $router->get('/consent-terms/create', [ConsentController::class, 'createTerm']);

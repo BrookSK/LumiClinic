@@ -9,6 +9,30 @@ final class SchedulingBlockRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string, mixed>> */
+    public function listByClinicRange(int $clinicId, string $startAt, string $endAt): array
+    {
+        $sql = "
+            SELECT id, clinic_id, professional_id, start_at, end_at, reason, type
+            FROM scheduling_blocks
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+              AND start_at < :end_at
+              AND end_at > :start_at
+            ORDER BY start_at ASC
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'start_at' => $startAt,
+            'end_at' => $endAt,
+        ]);
+
+        /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array<string, mixed>> */
     public function listOverlapping(
         int $clinicId,
         ?int $professionalId,

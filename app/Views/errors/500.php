@@ -1,6 +1,5 @@
 <?php
 $title = 'Algo deu errado';
-$csrf = $_SESSION['_csrf'] ?? '';
 ob_start();
 ?>
 <div class="lc-card">
@@ -13,10 +12,7 @@ ob_start();
 
     <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
         <a class="lc-btn lc-btn--primary" href="/">Voltar ao início</a>
-        <form method="post" action="/logout" style="margin:0;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <button class="lc-btn lc-btn--secondary" type="submit">Sair</button>
-        </form>
+        <a class="lc-btn lc-btn--secondary" href="javascript:history.back()">Voltar</a>
     </div>
 </div>
 <?php

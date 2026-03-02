@@ -13,6 +13,7 @@ use App\Repositories\ClinicClosedDaysRepository;
 use App\Repositories\ClinicSettingsRepository;
 use App\Repositories\ClinicWorkingHoursRepository;
 use App\Repositories\ProfessionalRepository;
+use App\Repositories\SchedulingBlockRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Repositories\ServiceMaterialDefaultRepository;
 use App\Services\Finance\FinancialService;
@@ -318,6 +319,26 @@ final class ScheduleController extends Controller
             $closedMap = $indicators->closedDaysMap($closedDays);
             $slotMinutes = $indicators->buildWeekSlotMinutes($weekStart, $whByWeekday);
 
+            $blockRepo = new SchedulingBlockRepository($this->container->get(\PDO::class));
+            $blocks = $blockRepo->listByClinicRange(
+                $clinicId,
+                $weekStart->format('Y-m-d 00:00:00'),
+                $weekEnd->format('Y-m-d 00:00:00')
+            );
+
+            $blocksByDay = [];
+            foreach ($blocks as $b) {
+                $st = (string)($b['start_at'] ?? '');
+                $ymd = $st !== '' ? substr($st, 0, 10) : '';
+                if ($ymd === '') {
+                    continue;
+                }
+                if (!isset($blocksByDay[$ymd])) {
+                    $blocksByDay[$ymd] = [];
+                }
+                $blocksByDay[$ymd][] = $b;
+            }
+
             return $this->view('scheduling/week', [
                 'date' => $date,
                 'view' => $view,
@@ -337,6 +358,7 @@ final class ScheduleController extends Controller
                 'week_start_weekday' => $weekStartWeekday,
                 'working_hours' => $workingHours,
                 'closed_days' => $closedDays,
+                'blocks_by_day' => $blocksByDay,
             ]);
         }
 
@@ -367,6 +389,13 @@ final class ScheduleController extends Controller
 
         $indicators = new ScheduleIndicatorsService();
 
+        $blockRepo = new SchedulingBlockRepository($this->container->get(\PDO::class));
+        $blocks = $blockRepo->listByClinicRange(
+            $clinicId,
+            $date . ' 00:00:00',
+            $date . ' 23:59:59'
+        );
+
         return $this->view('scheduling/index', [
             'date' => $date,
             'view' => $view,
@@ -381,6 +410,7 @@ final class ScheduleController extends Controller
             'page' => $page,
             'per_page' => $perPage,
             'has_next' => $hasNext,
+            'blocks' => $blocks,
         ]);
     }
 
@@ -715,6 +745,7 @@ final class ScheduleController extends Controller
         }
 
         $date = trim((string)$request->input('date', date('Y-m-d')));
+        $category = trim((string)$request->input('category', 'all'));
         $repo = new AppointmentRepository($this->container->get(\PDO::class));
 
         $professionalId = null;
@@ -732,6 +763,8 @@ final class ScheduleController extends Controller
             'cancelled' => 0,
             'no_show' => 0,
             'total' => 0,
+            'pending' => 0,
+            'finalized' => 0,
         ];
 
         foreach ($items as $it) {
@@ -740,11 +773,33 @@ final class ScheduleController extends Controller
             if (isset($counts[$st])) {
                 $counts[$st]++;
             }
+
+            if (in_array($st, ['scheduled', 'confirmed', 'in_progress'], true)) {
+                $counts['pending']++;
+            }
+            if (in_array($st, ['completed', 'cancelled', 'no_show'], true)) {
+                $counts['finalized']++;
+            }
         }
+
+        $filteredItems = $items;
+        if ($category === 'pending') {
+            $filteredItems = array_values(array_filter($items, static fn ($it) => in_array((string)($it['status'] ?? ''), ['scheduled', 'confirmed', 'in_progress'], true)));
+        } elseif ($category === 'finalized') {
+            $filteredItems = array_values(array_filter($items, static fn ($it) => in_array((string)($it['status'] ?? ''), ['completed', 'cancelled', 'no_show'], true)));
+        } else {
+            $category = 'all';
+        }
+
+        $reqRepo = new \App\Repositories\PatientAppointmentRequestRepository($this->container->get(\PDO::class));
+        $pendingRequests = $reqRepo->listPendingByClinicDetailed($clinicId, 50, 0, $professionalId);
 
         return $this->view('scheduling/ops', [
             'date' => $date,
             'counts' => $counts,
+            'category' => $category,
+            'items' => $filteredItems,
+            'pending_requests' => $pendingRequests,
         ]);
     }
 

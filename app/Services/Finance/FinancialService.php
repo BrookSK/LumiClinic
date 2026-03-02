@@ -49,7 +49,19 @@ final class FinancialService
 
         $pdo = $this->container->get(\PDO::class);
         $repo = new CostCenterRepository($pdo);
-        $id = $repo->create($clinicId, $name);
+
+        $existing = $repo->findByNameIncludingDeleted($clinicId, $name);
+        if ($existing !== null) {
+            $deletedAt = $existing['deleted_at'] ?? null;
+            if ($deletedAt !== null && trim((string)$deletedAt) !== '') {
+                $id = (int)$existing['id'];
+                $repo->restore($clinicId, $id);
+            } else {
+                throw new \RuntimeException('Já existe um centro de custo com este nome.');
+            }
+        } else {
+            $id = $repo->create($clinicId, $name);
+        }
 
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;

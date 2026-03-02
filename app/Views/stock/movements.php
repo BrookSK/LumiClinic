@@ -11,6 +11,26 @@
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Estoque - Movimentações';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $page = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 100;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
@@ -49,7 +69,7 @@ ob_start();
     </div>
 </div>
 
-<?php if (isset($can) && $can('stock.movements.create')): ?>
+<?php if ($can('stock.movements.create')): ?>
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Nova movimentação</div>
         <div class="lc-card__body">
@@ -129,14 +149,33 @@ ob_start();
                         $mid = (int)$mv['material_id'];
                         $mname = isset($matMap[$mid]) ? (string)$matMap[$mid]['name'] : ('#' . $mid);
                         $munit = isset($matMap[$mid]) ? (string)$matMap[$mid]['unit'] : '';
+
+                        $type = (string)($mv['type'] ?? '');
+                        $typeLabelMap = [
+                            'entry' => 'Entrada',
+                            'exit' => 'Saída',
+                            'adjustment' => 'Ajuste',
+                            'loss' => 'Perda',
+                            'expiration' => 'Vencimento',
+                        ];
+                        $typeLabel = (string)($typeLabelMap[$type] ?? $type);
+
+                        $reason = (string)($mv['loss_reason'] ?? '');
+                        $reasonLabelMap = [
+                            'expiration' => 'Vencimento',
+                            'breakage' => 'Quebra',
+                            'contamination' => 'Contaminação',
+                            'operational_error' => 'Erro operacional',
+                        ];
+                        $reasonLabel = $reason !== '' ? (string)($reasonLabelMap[$reason] ?? $reason) : '';
                     ?>
                     <tr>
                         <td><?= htmlspecialchars((string)$mv['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($mname, ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string)$mv['type'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= number_format((float)$mv['quantity'], 3, ',', '.') ?> <?= htmlspecialchars($munit, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= number_format((float)$mv['total_cost_snapshot'], 2, ',', '.') ?></td>
-                        <td><?= htmlspecialchars((string)($mv['loss_reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($reasonLabel, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)($mv['notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                 <?php endforeach; ?>

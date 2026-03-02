@@ -25,6 +25,8 @@ foreach ($professionals as $p) {
     $profMap[(int)$p['id']] = $p;
 }
 
+$blocks = $blocks ?? [];
+
 ob_start();
 ?>
 
@@ -108,12 +110,34 @@ ob_start();
     </div>
 
     <div class="lc-card lc-card--soft">
-        <div class="lc-card__header">
+        <div class="lc-card" style="margin-bottom:14px;">
             <div class="lc-card__title">Agendamentos</div>
             <div class="lc-card__actions">
                 <span class="lc-muted">Página <?= (int)$page ?></span>
             </div>
         </div>
+
+        <?php if (is_array($blocks) && $blocks !== []): ?>
+            <div class="lc-card" style="margin-bottom:14px;">
+                <div class="lc-card__title">Bloqueios do dia</div>
+                <div class="lc-card__body">
+                    <?php foreach ($blocks as $b): ?>
+                        <?php
+                            $bst = (string)($b['start_at'] ?? '');
+                            $ben = (string)($b['end_at'] ?? '');
+                            $reason = trim((string)($b['reason'] ?? ''));
+                            $type = trim((string)($b['type'] ?? ''));
+                        ?>
+                        <div class="lc-muted" style="margin-bottom:6px;">
+                            <strong><?= htmlspecialchars($bst !== '' ? substr($bst, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars($ben !== '' ? substr($ben, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?></strong>
+                            <?= $reason !== '' ? (' • ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8')) : '' ?>
+                            <?= $type !== '' ? (' (' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . ')') : '' ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <div class="lc-card__body">
         <?php if ($items === []): ?>
             <div class="lc-muted">Nenhum agendamento.</div>
@@ -139,6 +163,21 @@ ob_start();
                         $sname = isset($svcMap[$sid]) ? (string)$svcMap[$sid]['name'] : ('#' . $sid);
                         $status = (string)$it['status'];
                         $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
+
+                        $statusLabelMap = [
+                            'scheduled' => 'Agendado',
+                            'confirmed' => 'Confirmado',
+                            'in_progress' => 'Em atendimento',
+                            'completed' => 'Concluído',
+                            'no_show' => 'Faltou',
+                            'cancelled' => 'Cancelado',
+                        ];
+                        $statusLabel = $statusLabelMap[$status] ?? $status;
+
+                        $canConfirm = in_array($status, ['scheduled'], true);
+                        $canInProgress = in_array($status, ['scheduled', 'confirmed', 'completed'], true);
+                        $canComplete = in_array($status, ['in_progress'], true);
+                        $canNoShow = in_array($status, ['scheduled', 'confirmed', 'in_progress'], true);
                     ?>
                     <tr>
                         <td><?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>
@@ -147,7 +186,7 @@ ob_start();
                         <td><?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
                             <span class="lc-badge lc-badge--status lc-badge--status-<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>
+                                <?= htmlspecialchars((string)$statusLabel, ENT_QUOTES, 'UTF-8') ?>
                             </span>
                         </td>
                         <td class="lc-td-actions">
@@ -158,45 +197,53 @@ ob_start();
                                 <details class="lc-actions__more">
                                     <summary class="lc-btn lc-btn--secondary lc-btn--sm">Ações</summary>
                                     <div class="lc-actions__menu">
-                                        <form method="post" action="/schedule/status">
-                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                            <input type="hidden" name="status" value="confirmed" />
-                                            <input type="hidden" name="view" value="day" />
-                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Confirmar</button>
-                                        </form>
+                                        <?php if ($canConfirm): ?>
+                                            <form method="post" action="/schedule/status">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                                <input type="hidden" name="status" value="confirmed" />
+                                                <input type="hidden" name="view" value="day" />
+                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Confirmar</button>
+                                            </form>
+                                        <?php endif; ?>
 
-                                        <form method="post" action="/schedule/status">
-                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                            <input type="hidden" name="status" value="in_progress" />
-                                            <input type="hidden" name="view" value="day" />
-                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Atender</button>
-                                        </form>
+                                        <?php if ($canInProgress): ?>
+                                            <form method="post" action="/schedule/status">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                                <input type="hidden" name="status" value="in_progress" />
+                                                <input type="hidden" name="view" value="day" />
+                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit"><?= $status === 'completed' ? 'Reabrir' : 'Atender' ?></button>
+                                            </form>
+                                        <?php endif; ?>
 
-                                        <form method="post" action="/schedule/status">
-                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                            <input type="hidden" name="status" value="completed" />
-                                            <input type="hidden" name="view" value="day" />
-                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Concluir</button>
-                                        </form>
+                                        <?php if ($canComplete): ?>
+                                            <form method="post" action="/schedule/status">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                                <input type="hidden" name="status" value="completed" />
+                                                <input type="hidden" name="view" value="day" />
+                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Concluir</button>
+                                            </form>
+                                        <?php endif; ?>
 
-                                        <form method="post" action="/schedule/status">
-                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                            <input type="hidden" name="status" value="no_show" />
-                                            <input type="hidden" name="view" value="day" />
-                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">No-show</button>
-                                        </form>
+                                        <?php if ($canNoShow): ?>
+                                            <form method="post" action="/schedule/status">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                                <input type="hidden" name="status" value="no_show" />
+                                                <input type="hidden" name="view" value="day" />
+                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" title="Marque como Faltou quando o paciente não compareceu.">Faltou</button>
+                                            </form>
+                                        <?php endif; ?>
 
                                         <form method="post" action="/schedule/cancel">
                                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />

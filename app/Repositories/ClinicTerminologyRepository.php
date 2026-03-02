@@ -29,13 +29,14 @@ final class ClinicTerminologyRepository
     public function update(int $clinicId, string $patient, string $appointment, string $professional): void
     {
         $sql = "
-            UPDATE clinic_terminology
-               SET patient_label = :patient_label,
-                   appointment_label = :appointment_label,
-                   professional_label = :professional_label,
-                   updated_at = NOW()
-             WHERE clinic_id = :clinic_id
-               AND deleted_at IS NULL
+            INSERT INTO clinic_terminology (clinic_id, patient_label, appointment_label, professional_label, created_at)
+            VALUES (:clinic_id, :patient_label, :appointment_label, :professional_label, NOW())
+            ON DUPLICATE KEY UPDATE
+                patient_label = VALUES(patient_label),
+                appointment_label = VALUES(appointment_label),
+                professional_label = VALUES(professional_label),
+                updated_at = NOW(),
+                deleted_at = NULL
         ";
 
         $stmt = $this->pdo->prepare($sql);

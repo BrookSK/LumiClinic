@@ -195,6 +195,7 @@ final class StockService
         ?string $category,
         string $unit,
         string $stockMinimum,
+        string $initialStock,
         string $unitCost,
         ?string $validityDate,
         string $ip
@@ -217,14 +218,34 @@ final class StockService
             $category = null;
         }
 
+        if ($category === null) {
+            throw new \RuntimeException('Categoria é obrigatória.');
+        }
+
         $min = $this->parseQty($stockMinimum);
         if ($min < 0) {
             $min = 0.0;
         }
 
+        $init = $this->parseQty($initialStock);
+        if ($init < 0) {
+            $init = 0.0;
+        }
+
         $cost = $this->parseMoney($unitCost);
         if ($cost < 0) {
             $cost = 0.0;
+        }
+
+        if ($validityDate !== null && trim((string)$validityDate) !== '') {
+            $vd = \DateTimeImmutable::createFromFormat('Y-m-d', trim((string)$validityDate));
+            if ($vd === false) {
+                throw new \RuntimeException('Validade inválida.');
+            }
+            $today = new \DateTimeImmutable(date('Y-m-d'));
+            if ($vd < $today) {
+                throw new \RuntimeException('Validade não pode estar vencida.');
+            }
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -234,27 +255,56 @@ final class StockService
             throw new \RuntimeException('Unidade inválida.');
         }
 
-        if ($category !== null) {
-            $catRepo = new MaterialCategoryRepository($pdo);
-            if (!$catRepo->existsActiveByClinicAndName($clinicId, $category)) {
-                throw new \RuntimeException('Categoria inválida.');
-            }
+        $catRepo = new MaterialCategoryRepository($pdo);
+        if (!$catRepo->existsActiveByClinicAndName($clinicId, (string)$category)) {
+            throw new \RuntimeException('Categoria inválida.');
         }
 
         $repo = new MaterialRepository($pdo);
-        $id = $repo->create(
-            $clinicId,
-            $name,
-            $category,
-            $unit,
-            number_format($min, 3, '.', ''),
-            number_format($cost, 2, '.', ''),
-            $validityDate
-        );
+        try {
+            $pdo->beginTransaction();
 
-        (new AuditLogRepository($pdo))->log($userId, $clinicId, 'stock.materials.create', ['material_id' => $id], $ip);
+            $id = $repo->create(
+                $clinicId,
+                $name,
+                $category,
+                $unit,
+                number_format($min, 3, '.', ''),
+                number_format($cost, 2, '.', ''),
+                $validityDate
+            );
 
-        return $id;
+            if ($init > 0) {
+                $current = 0.0;
+                $newStock = $current + $init;
+                $repo->updateStockCurrent($clinicId, $id, number_format($newStock, 3, '.', ''));
+
+                $moveRepo = new StockMovementRepository($pdo);
+                $moveRepo->create(
+                    $clinicId,
+                    $id,
+                    'entry',
+                    number_format($init, 3, '.', ''),
+                    'material',
+                    $id,
+                    null,
+                    number_format($cost, 2, '.', ''),
+                    number_format(0.0, 2, '.', ''),
+                    'Estoque inicial',
+                    $userId
+                );
+            }
+
+            (new AuditLogRepository($pdo))->log($userId, $clinicId, 'stock.materials.create', ['material_id' => $id], $ip);
+
+            $pdo->commit();
+            return $id;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     /** @return array{from:string,to:string,movements:list<array<string,mixed>>} */

@@ -259,8 +259,7 @@ final class AppointmentService
             return true;
         }
 
-        $terminal = ['cancelled', 'no_show', 'completed'];
-        if (in_array($from, $terminal, true)) {
+        if (in_array($from, ['cancelled', 'no_show'], true)) {
             return false;
         }
 
@@ -268,6 +267,7 @@ final class AppointmentService
             'scheduled' => ['confirmed', 'in_progress', 'cancelled', 'no_show'],
             'confirmed' => ['in_progress', 'cancelled', 'no_show'],
             'in_progress' => ['completed', 'cancelled', 'no_show'],
+            'completed' => ['in_progress'],
         ];
 
         return isset($allowed[$from]) && in_array($to, $allowed[$from], true);

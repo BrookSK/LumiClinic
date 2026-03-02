@@ -9,6 +9,7 @@ use App\Core\Http\Response;
 use App\Core\View\View;
 use App\Services\Authorization\AuthorizationService;
 use App\Services\System\SystemSettingsService;
+use App\Services\Settings\SettingsService;
 
 abstract class Controller
 {
@@ -20,6 +21,10 @@ abstract class Controller
         $seo = (new SystemSettingsService($this->container))->getSeoSettings();
         if (!array_key_exists('seo', $data)) {
             $data['seo'] = $seo;
+        }
+
+        if (!array_key_exists('terminology', $data)) {
+            $data['terminology'] = (new SettingsService($this->container))->getTerminology();
         }
 
         return Response::html(View::render($view, $data));

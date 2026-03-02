@@ -40,6 +40,14 @@ final class PortalSecurityController extends Controller
         $me = $auth->me($clinicId, $patientUserId);
         $email = (string)($me['email'] ?? '');
 
+        if (trim($email) === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->view('portal/security', [
+                'me' => $me,
+                'error' => 'Seu cadastro não possui um e-mail válido. Atualize o e-mail para redefinir a senha.',
+                'reset_url' => null,
+            ]);
+        }
+
         $out = $auth->createPasswordResetAndNotify($email, $request->ip());
 
         return $this->view('portal/security', [

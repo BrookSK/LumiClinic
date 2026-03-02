@@ -131,15 +131,22 @@ ob_start();
                 <tbody>
                 <?php foreach ($entries as $e): ?>
                     <?php
-                        $cc = $e['cost_center_id'] === null ? null : (int)$e['cost_center_id'];
-                        $ccName = $cc !== null && isset($ccMap[$cc]) ? (string)$ccMap[$cc]['name'] : '-';
+                        $ccId = isset($e['cost_center_id']) ? (int)$e['cost_center_id'] : 0;
+                        $ccName = $ccId > 0 && isset($ccMap[$ccId]) ? (string)$ccMap[$ccId]['name'] : '-';
                         $linked = [];
-                        if ($e['sale_id'] !== null) { $linked[] = 'sale#' . (int)$e['sale_id']; }
-                        if ($e['payment_id'] !== null) { $linked[] = 'payment#' . (int)$e['payment_id']; }
+                        if (isset($e['sale_id']) && (int)$e['sale_id'] > 0) { $linked[] = 'Venda #' . (int)$e['sale_id']; }
+                        if (isset($e['payment_id']) && (int)$e['payment_id'] > 0) { $linked[] = 'Pagamento #' . (int)$e['payment_id']; }
+
+                        $kind = (string)($e['kind'] ?? '');
+                        $kindLabelMap = [
+                            'in' => 'Entrada',
+                            'out' => 'Saída',
+                        ];
+                        $kindLabel = $kindLabelMap[$kind] ?? $kind;
                     ?>
                     <tr>
                         <td><?= htmlspecialchars((string)$e['occurred_on'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string)$e['kind'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars((string)$kindLabel, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= number_format((float)$e['amount'], 2, ',', '.') ?></td>
                         <td><?= htmlspecialchars($ccName, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)($e['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
@@ -148,7 +155,7 @@ ob_start();
                             <form method="post" action="/finance/entries/delete">
                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                 <input type="hidden" name="entry_id" value="<?= (int)$e['id'] ?>" />
-                                <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
+                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Excluir</button>
                             </form>
                         </td>
                     </tr>

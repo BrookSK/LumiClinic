@@ -59,6 +59,7 @@ ob_start();
                 <th>ID</th>
                 <th>Template</th>
                 <th>Criado em</th>
+                <th>Ações</th>
             </tr>
             </thead>
             <tbody>
@@ -68,6 +69,9 @@ ob_start();
                     <?php $tid = (int)($r['template_id'] ?? 0); ?>
                     <td><?= htmlspecialchars(($templateMap[$tid] ?? '') !== '' ? (string)$templateMap[$tid] : ('Template #' . $tid), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/anamnesis/response?id=<?= (int)$r['id'] ?>">Ver</a>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

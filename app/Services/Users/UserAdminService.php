@@ -143,6 +143,6 @@ final class UserAdminService
         $users->disable($clinicId, $userId);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
-        $audit->log($actorId, $clinicId, 'users.delete', ['target_user_id' => $userId], $ip);
+        $audit->log($actorId, $clinicId, 'users.disable', ['target_user_id' => $userId], $ip);
     }
 }

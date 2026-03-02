@@ -204,7 +204,7 @@ ob_start();
 
                     <div style="position: sticky; left: 0; background: var(--lc-surface);">
                         <?php foreach ($slotMinutes as $mins): ?>
-                            <div class="lc-muted" style="font-size:12px; height: <?= (int)$rowHeight ?>px; display:flex; align-items:center;">
+                            <div class="lc-muted" style="font-size:12px; height: <?= (int)$rowHeight ?>px; display:flex; align-items:center; margin-bottom:10px; padding:6px;">
                                 <?= htmlspecialchars($fromMinutes((int)$mins), ENT_QUOTES, 'UTF-8') ?>
                             </div>
                         <?php endforeach; ?>
@@ -214,6 +214,7 @@ ob_start();
                         <?php
                             $ymd = (string)$day['ymd'];
                             $dayItems = $byDay[$ymd] ?? [];
+                            $dayBlocks = $blocksByDay[$ymd] ?? [];
                             $cellBg = 'transparent';
                             if ((bool)$day['is_closed']) {
                                 $cellBg = 'rgba(239,68,68,0.05)';
@@ -228,6 +229,57 @@ ob_start();
                                     <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working']) ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '" data-create-time="' . htmlspecialchars($slotTime, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
                                 ></div>
                             <?php endforeach; ?>
+
+                            <?php if (is_array($dayBlocks) && $dayBlocks !== []): ?>
+                                <?php foreach ($dayBlocks as $bl): ?>
+                                    <?php
+                                        $bst = (string)($bl['start_at'] ?? '');
+                                        $ben = (string)($bl['end_at'] ?? '');
+                                        if ($bst === '' || $ben === '') {
+                                            continue;
+                                        }
+                                        $bStart = $dtToMinutes($bst);
+                                        $bEnd = $dtToMinutes($ben);
+                                        if ($bEnd <= $bStart) {
+                                            continue;
+                                        }
+
+                                        $startIdx = null;
+                                        for ($mm = $bStart; $mm >= 0; $mm -= 15) {
+                                            if (isset($minuteIndex[$mm])) {
+                                                $startIdx = (int)$minuteIndex[$mm];
+                                                break;
+                                            }
+                                        }
+                                        if ($startIdx === null) {
+                                            continue;
+                                        }
+
+                                        $span = (int)ceil(($bEnd - $bStart) / 15);
+                                        $top = $startIdx * ($rowHeight + 10);
+                                        $height = max(28, ($span * $rowHeight) + (($span - 1) * 10));
+
+                                        $reason = trim((string)($bl['reason'] ?? ''));
+                                        $type = trim((string)($bl['type'] ?? ''));
+                                        $title = 'Bloqueado';
+                                        if ($type !== '') {
+                                            $title .= ' (' . $type . ')';
+                                        }
+                                        if ($reason !== '') {
+                                            $title .= ': ' . $reason;
+                                        }
+                                    ?>
+                                    <div
+                                        style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; overflow:hidden; border:1px dashed rgba(17,24,39,0.25); border-radius: 10px; background: rgba(17,24,39,0.06); z-index:4;"
+                                        title="<?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+                                        <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Bloqueado<?= $reason !== '' ? (': ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8')) : '' ?></div>
+                                        <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                            <?= htmlspecialchars(substr($bst, 11, 5), ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(substr($ben, 11, 5), ENT_QUOTES, 'UTF-8') ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
 
                             <?php if (is_array($dayItems) && $dayItems !== []): ?>
                                 <?php foreach ($dayItems as $it): ?>
@@ -258,7 +310,7 @@ ob_start();
                                     ?>
                                     <button type="button"
                                         class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
-                                        style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; cursor:pointer; overflow:hidden; border:0; background:transparent;"
+                                        style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; cursor:pointer; overflow:hidden; border:0; z-index:5;"
                                         data-open-appointment="1"
                                         data-appt-id="<?= (int)$it['id'] ?>"
                                         data-appt-patient="<?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"
@@ -429,7 +481,17 @@ ob_start();
                 <input type="hidden" name="view" value="week" />
                 <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
                 <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">No-show</button>
+                <button class="lc-btn lc-btn--secondary" type="submit" title="Marque como Faltou quando o paciente não compareceu.">Faltou</button>
+            </form>
+
+            <form method="post" action="/schedule/status" id="appt_form_reopen" style="display:none;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" id="appt_id_reopen" value="" />
+                <input type="hidden" name="status" value="in_progress" />
+                <input type="hidden" name="view" value="week" />
+                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                <button class="lc-btn lc-btn--secondary" type="submit">Reabrir</button>
             </form>
 
             <form method="post" action="/schedule/cancel" id="appt_form_cancel">
@@ -661,12 +723,21 @@ ob_start();
       const elStatus = document.getElementById('appt_status');
       const elSubtitle = document.getElementById('appt_subtitle');
 
+      const statusLabels = {
+        scheduled: 'Agendado',
+        confirmed: 'Confirmado',
+        in_progress: 'Em atendimento',
+        completed: 'Concluído',
+        no_show: 'Faltou',
+        cancelled: 'Cancelado'
+      };
+
       if (elPatient) elPatient.textContent = patient;
       if (elService) elService.textContent = service || '-';
       if (elProf) elProf.textContent = professional || '-';
       if (elStart) elStart.textContent = start;
       if (elEnd) elEnd.textContent = end;
-      if (elStatus) elStatus.textContent = status;
+      if (elStatus) elStatus.textContent = statusLabels[status] || status;
       if (elSubtitle) elSubtitle.textContent = `${start.slice(0,10)} ${start.slice(11,16)} - ${end.slice(11,16)}`;
 
       const linkRes = document.getElementById('appt_reschedule');
@@ -674,11 +745,34 @@ ob_start();
       if (linkRes) linkRes.setAttribute('href', `/schedule/reschedule?id=${encodeURIComponent(id)}`);
       if (linkLogs) linkLogs.setAttribute('href', `/schedule/logs?appointment_id=${encodeURIComponent(id)}`);
 
-      const ids = ['appt_id_confirmed','appt_id_in_progress','appt_id_completed','appt_id_no_show','appt_id_cancel'];
+      const ids = ['appt_id_confirmed','appt_id_in_progress','appt_id_completed','appt_id_no_show','appt_id_reopen','appt_id_cancel'];
       for (const iid of ids) {
         const el = document.getElementById(iid);
         if (el) el.setAttribute('value', id);
       }
+
+      const formConfirmed = document.getElementById('appt_form_confirmed');
+      const formInProgress = document.getElementById('appt_form_in_progress');
+      const formCompleted = document.getElementById('appt_form_completed');
+      const formNoShow = document.getElementById('appt_form_no_show');
+      const formReopen = document.getElementById('appt_form_reopen');
+      const formCancel = document.getElementById('appt_form_cancel');
+
+      const show = {
+        confirmed: status === 'scheduled',
+        in_progress: status === 'scheduled' || status === 'confirmed',
+        completed: status === 'in_progress',
+        no_show: status === 'scheduled' || status === 'confirmed' || status === 'in_progress',
+        reopen: status === 'completed',
+        cancel: status === 'scheduled' || status === 'confirmed' || status === 'in_progress'
+      };
+
+      if (formConfirmed) formConfirmed.style.display = show.confirmed ? '' : 'none';
+      if (formInProgress) formInProgress.style.display = show.in_progress ? '' : 'none';
+      if (formCompleted) formCompleted.style.display = show.completed ? '' : 'none';
+      if (formNoShow) formNoShow.style.display = show.no_show ? '' : 'none';
+      if (formReopen) formReopen.style.display = show.reopen ? '' : 'none';
+      if (formCancel) formCancel.style.display = show.cancel ? '' : 'none';
 
       openModal(detailsModal);
       return;

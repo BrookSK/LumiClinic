@@ -43,10 +43,43 @@ final class BlockController extends Controller
             throw new \RuntimeException('Contexto inválido.');
         }
 
-        $profRepo = new ProfessionalRepository($this->container->get(\PDO::class));
+        $from = trim((string)$request->input('from', date('Y-m-d')));
+        $to = trim((string)$request->input('to', date('Y-m-d')));
+        $professionalId = (int)$request->input('professional_id', 0);
+
+        $fromDt = \DateTimeImmutable::createFromFormat('Y-m-d', $from);
+        $toDt = \DateTimeImmutable::createFromFormat('Y-m-d', $to);
+        if ($fromDt === false || $toDt === false) {
+            $fromDt = new \DateTimeImmutable(date('Y-m-d'));
+            $toDt = $fromDt;
+        }
+        if ($toDt < $fromDt) {
+            $tmp = $fromDt;
+            $fromDt = $toDt;
+            $toDt = $tmp;
+        }
+
+        $startAt = $fromDt->format('Y-m-d 00:00:00');
+        $endAt = $toDt->modify('+1 day')->format('Y-m-d 00:00:00');
+
+        $pdo = $this->container->get(\PDO::class);
+        $profRepo = new ProfessionalRepository($pdo);
         $professionals = $profRepo->listActiveByClinic($clinicId);
 
-        return $this->view('scheduling/blocks', ['professionals' => $professionals]);
+        $repo = new SchedulingBlockRepository($pdo);
+        $blocks = $repo->listByClinicRange($clinicId, $startAt, $endAt);
+
+        if ($professionalId > 0) {
+            $blocks = array_values(array_filter($blocks, static fn ($b) => (int)($b['professional_id'] ?? 0) === 0 || (int)($b['professional_id'] ?? 0) === $professionalId));
+        }
+
+        return $this->view('scheduling/blocks', [
+            'professionals' => $professionals,
+            'blocks' => $blocks,
+            'from' => $fromDt->format('Y-m-d'),
+            'to' => $toDt->format('Y-m-d'),
+            'filter_professional_id' => $professionalId,
+        ]);
     }
 
     public function create(Request $request)

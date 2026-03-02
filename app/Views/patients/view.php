@@ -5,6 +5,12 @@ $patientUser = $patient_user ?? null;
 $portalDocs = $portal_legal_docs ?? [];
 $portalAcceptances = $portal_legal_acceptances ?? [];
 
+$statusLabelMap = [
+    'active' => 'Ativo',
+    'disabled' => 'Desativado',
+    'inactive' => 'Inativo',
+];
+
 $acceptMap = [];
 if (is_array($portalAcceptances)) {
     foreach ($portalAcceptances as $a) {
@@ -64,7 +70,8 @@ ob_start();
             </div>
             <div>
                 <div class="lc-label">Status</div>
-                <div><?= htmlspecialchars((string)($patient['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+                <?php $st = (string)($patient['status'] ?? ''); ?>
+                <div><?= htmlspecialchars((string)($statusLabelMap[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></div>
             </div>
         </div>
 

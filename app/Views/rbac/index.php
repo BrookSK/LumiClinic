@@ -32,10 +32,10 @@ ob_start();
                     <td>
                         <a class="lc-btn lc-btn--secondary" href="/rbac/edit?id=<?= (int)$r['id'] ?>">Abrir</a>
 
-                        <form method="post" action="/rbac/clone" class="lc-flex" style="gap:8px; align-items:center; margin-left:10px;">
+                        <form method="post" action="/rbac/clone" class="lc-flex" style="display:inline-flex; flex-wrap:nowrap; gap:8px; align-items:center; margin-left:10px; vertical-align:middle;">
                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                             <input type="hidden" name="from_role_id" value="<?= (int)$r['id'] ?>" />
-                            <input class="lc-input" style="width:220px;" type="text" name="name" placeholder="Clonar como..." />
+                            <input class="lc-input" style="width:220px; min-width:160px;" type="text" name="name" placeholder="Clonar como..." />
                             <button class="lc-btn lc-btn--primary" type="submit">Clonar</button>
                         </form>
                     </td>

@@ -64,6 +64,43 @@ final class CostCenterRepository
         return $row ?: null;
     }
 
+    /** @return array<string,mixed>|null */
+    public function findByNameIncludingDeleted(int $clinicId, string $name): ?array
+    {
+        $sql = "
+            SELECT id, clinic_id, name, status, deleted_at
+            FROM cost_centers
+            WHERE clinic_id = :clinic_id
+              AND name = :name
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'name' => $name]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function restore(int $clinicId, int $id): void
+    {
+        $sql = "
+            UPDATE cost_centers
+            SET deleted_at = NULL,
+                status = 'active',
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $id,
+            'clinic_id' => $clinicId,
+        ]);
+    }
+
     public function create(int $clinicId, string $name): int
     {
         $sql = "

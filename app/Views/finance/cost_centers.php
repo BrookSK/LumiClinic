@@ -5,6 +5,11 @@ $rows = $rows ?? [];
 $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
+$statusLabelMap = [
+    'active' => 'Ativo',
+    'disabled' => 'Inativo',
+];
+
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -62,11 +67,12 @@ ob_start();
                             $id = (int)($r['id'] ?? 0);
                             $st = (string)($r['status'] ?? 'active');
                             $toggleTo = $st === 'active' ? 'disabled' : 'active';
+                            $stLabel = (string)($statusLabelMap[$st] ?? $st);
                         ?>
                         <tr>
                             <td><?= $id ?></td>
                             <td><?= htmlspecialchars((string)($r['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars($st, ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars($stLabel, ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
                                 <div class="lc-flex lc-gap-sm lc-flex--wrap">
                                     <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers/edit?id=<?= $id ?>">Editar</a>

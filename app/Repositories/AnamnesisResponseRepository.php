@@ -8,6 +8,31 @@ final class AnamnesisResponseRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    /** @return array<string, mixed>|null */
+    public function findById(int $clinicId, int $responseId): ?array
+    {
+        $sql = "
+            SELECT
+                id, clinic_id, patient_id, template_id, professional_id,
+                answers_json,
+                created_by_user_id, created_at
+            FROM anamnesis_responses
+            WHERE clinic_id = :clinic_id
+              AND id = :id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'id' => $responseId,
+        ]);
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     /** @return list<array<string, mixed>> */
     public function listByPatient(int $clinicId, int $patientId, int $limit = 100): array
     {

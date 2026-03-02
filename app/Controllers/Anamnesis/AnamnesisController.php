@@ -8,6 +8,7 @@ use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Services\Anamnesis\AnamnesisService;
 use App\Services\Auth\AuthService;
+use App\Repositories\AnamnesisResponseRepository;
 
 final class AnamnesisController extends Controller
 {
@@ -145,7 +146,23 @@ final class AnamnesisController extends Controller
         }
 
         $service = new AnamnesisService($this->container);
-        $service->updateTemplate($id, $name, $status, is_array($fields) ? $fields : [], $request->ip());
+        try {
+            $service->updateTemplate($id, $name, $status, is_array($fields) ? $fields : [], $request->ip());
+        } catch (\RuntimeException $e) {
+            $data = $service->getTemplateWithFields($id);
+            return $this->view('anamnesis/templates-edit', [
+                'template' => $data['template'],
+                'fields' => $data['fields'],
+                'error' => $e->getMessage(),
+            ]);
+        } catch (\Throwable $e) {
+            $data = $service->getTemplateWithFields($id);
+            return $this->view('anamnesis/templates-edit', [
+                'template' => $data['template'],
+                'fields' => $data['fields'],
+                'error' => 'Erro ao salvar.',
+            ]);
+        }
 
         return $this->redirect('/anamnesis/templates/edit?id=' . $id);
     }
@@ -235,5 +252,60 @@ final class AnamnesisController extends Controller
         );
 
         return $this->redirect('/anamnesis?patient_id=' . $patientId);
+    }
+
+    public function response(Request $request)
+    {
+        $this->authorize('anamnesis.fill');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $responseId = (int)$request->input('id', 0);
+        if ($responseId <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new AnamnesisResponseRepository($pdo);
+        $response = $repo->findById($clinicId, $responseId);
+        if ($response === null) {
+            return $this->redirect('/patients');
+        }
+
+        $patientId = (int)($response['patient_id'] ?? 0);
+        $templateId = (int)($response['template_id'] ?? 0);
+        if ($patientId <= 0 || $templateId <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        $service = new AnamnesisService($this->container);
+        $list = $service->listForPatient($patientId, $request->ip());
+        $tpl = $service->getTemplateWithFields($templateId);
+
+        $answers = [];
+        $raw = (string)($response['answers_json'] ?? '');
+        if ($raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $answers = $decoded;
+            }
+        }
+
+        return $this->view('anamnesis/response', [
+            'patient' => $list['patient'],
+            'template' => $tpl['template'],
+            'fields' => $tpl['fields'],
+            'response' => $response,
+            'answers' => $answers,
+        ]);
     }
 }

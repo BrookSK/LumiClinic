@@ -1,7 +1,7 @@
 <?php
 $title = 'Novo termo';
 $csrf = $_SESSION['_csrf'] ?? '';
-$error = $error ?? null;
+$error = $error ?? ($_GET['error'] ?? null);
 $procedureTypes = $procedure_types ?? [];
 ob_start();
 ?>

@@ -3,6 +3,33 @@
 /** @var string $title */
 $csrf = $_SESSION['_csrf'] ?? '';
 
+$terminology = isset($terminology) && is_array($terminology) ? $terminology : [];
+$patientLabel = trim((string)($terminology['patient_label'] ?? 'Paciente'));
+$appointmentLabel = trim((string)($terminology['appointment_label'] ?? 'Consulta'));
+$professionalLabel = trim((string)($terminology['professional_label'] ?? 'Profissional'));
+
+$pluralizePt = function (string $word): string {
+    $w = trim($word);
+    if ($w === '') {
+        return '';
+    }
+
+    $lower = mb_strtolower($w, 'UTF-8');
+    if (str_ends_with($lower, 'l')) {
+        return mb_substr($w, 0, mb_strlen($w, 'UTF-8') - 1, 'UTF-8') . 'is';
+    }
+    if (str_ends_with($lower, 'm')) {
+        return mb_substr($w, 0, mb_strlen($w, 'UTF-8') - 1, 'UTF-8') . 'ns';
+    }
+    if (preg_match('/(r|z|x)$/iu', $w)) {
+        return $w . 'es';
+    }
+    return $w . 's';
+};
+
+$patientsLabel = $pluralizePt($patientLabel !== '' ? $patientLabel : 'Paciente');
+$professionalsLabel = $pluralizePt($professionalLabel !== '' ? $professionalLabel : 'Profissional');
+
 $seo = isset($seo) && is_array($seo) ? $seo : [];
 $seoSiteName = trim((string)($seo['site_name'] ?? ''));
 $seoDefaultTitle = trim((string)($seo['default_title'] ?? ''));
@@ -51,6 +78,21 @@ $isActive = function (string $prefix) use ($path): bool {
         return $path === '/';
     }
     return str_starts_with($path, $prefix);
+};
+
+$isActiveSegment = function (string $prefix) use ($path): bool {
+    if ($prefix === '/') {
+        return $path === '/';
+    }
+    if (!str_starts_with($path, $prefix)) {
+        return false;
+    }
+    $next = substr($path, strlen($prefix), 1);
+    return $next === '' || $next === '/';
+};
+
+$isExact = function (string $href) use ($path): bool {
+    return $path === $href;
 };
 
 $navItem = function (string $href, string $label, string $iconSvg, bool $active): string {
@@ -227,7 +269,7 @@ $ico = [
                                         <div class="lc-nav__sub">
                                             <?= $navItem('/users', 'Usuários', $ico['users'], $isActive('/users')) ?>
                                             <?php if ($can('professionals.manage')): ?>
-                                                <?= $navItem('/professionals', 'Profissionais', $ico['users'], $isActive('/professionals')) ?>
+                                                <?= $navItem('/professionals', $professionalsLabel, $ico['users'], $isActive('/professionals')) ?>
                                             <?php endif; ?>
                                             <?php if ($can('rbac.manage')): ?>
                                                 <?= $navItem('/rbac', 'Papéis & Permissões', $ico['shield'], $isActive('/rbac')) ?>
@@ -320,14 +362,14 @@ $ico = [
                     <details class="lc-navgroup" <?= $patientsActive ? 'open' : '' ?>>
                         <summary class="lc-nav__item lc-navgroup__summary<?= $patientsActive ? ' lc-nav__item--active' : '' ?>">
                             <span class="lc-nav__icon" aria-hidden="true"><?= $ico['patients'] ?></span>
-                            <span class="lc-nav__label">Pacientes</span>
+                            <span class="lc-nav__label"><?= htmlspecialchars($patientsLabel, ENT_QUOTES, 'UTF-8') ?></span>
                             <span class="lc-navgroup__chev" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                             </span>
                         </summary>
                         <div class="lc-navgroup__children">
                             <div class="lc-nav__sub">
-                                <?= $navItem('/patients', 'Pacientes', $ico['patients'], $isActive('/patients')) ?>
+                                <?= $navItem('/patients', $patientsLabel, $ico['patients'], $isExact('/patients')) ?>
                                 <?php if ($can('patients.update') && $hasClinicContext): ?>
                                     <?= $navItem('/patients/profile-requests', 'Solicitações de perfil', $ico['patients'], $isActive('/patients/profile-requests')) ?>
                                 <?php endif; ?>
@@ -362,9 +404,12 @@ $ico = [
                     </details>
                 <?php endif; ?>
 
+                <?php
+                    $stockGroupActive = $isActive('/stock') && !$isActive('/stock/reports');
+                ?>
                 <?php if ($can('stock.materials.read') && $hasClinicContext): ?>
-                    <details class="lc-navgroup" <?= $isActive('/stock') ? 'open' : '' ?>>
-                        <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/stock') ? ' lc-nav__item--active' : '' ?>">
+                    <details class="lc-navgroup" <?= $stockGroupActive ? 'open' : '' ?>>
+                        <summary class="lc-nav__item lc-navgroup__summary<?= $stockGroupActive ? ' lc-nav__item--active' : '' ?>">
                             <span class="lc-nav__icon" aria-hidden="true"><?= $ico['stock'] ?></span>
                             <span class="lc-nav__label">Estoque</span>
                             <span class="lc-navgroup__chev" aria-hidden="true">
@@ -412,7 +457,7 @@ $ico = [
                         $isActive('/finance/reports') ||
                         $isActive('/stock/reports') ||
                         $isActive('/audit-logs') ||
-                        $isActive('/bi') ||
+                        $isActiveSegment('/bi') ||
                         $isActive('/compliance');
                 ?>
                 <?php if ($hasClinicContext && ($can('finance.reports.read') || $can('stock.reports.read') || $can('audit.read') || $can('bi.read') || $can('compliance.lgpd.read') || $can('compliance.policies.read') || $can('compliance.incidents.read'))): ?>
@@ -436,7 +481,7 @@ $ico = [
                                     <?= $navItem('/audit-logs', 'Auditoria', $ico['shield'], $isActive('/audit-logs')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('bi.read')): ?>
-                                    <?= $navItem('/bi', 'BI', $ico['dashboard'], $isActive('/bi')) ?>
+                                    <?= $navItem('/bi', 'BI', $ico['dashboard'], $isActiveSegment('/bi')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('compliance.lgpd.read')): ?>
                                     <?= $navItem('/compliance/lgpd-requests', 'LGPD (Solicitações)', $ico['shield'], $isActive('/compliance/lgpd-requests')) ?>
@@ -475,7 +520,7 @@ $ico = [
                     </button>
                     <div class="lc-header__title"><?= htmlspecialchars($title ?? 'Dashboard', ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="lc-topbar__search">
-                        <input class="lc-input" id="lcQuickSearch" type="search" placeholder="Busca rápida..." autocomplete="off" />
+                        <input class="lc-input" id="lcQuickSearch" type="search" placeholder="Buscar <?= htmlspecialchars(mb_strtolower($patientsLabel, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?> (nome, e-mail ou telefone)..." autocomplete="off" />
                     </div>
                 </div>
                 <div class="lc-topbar__right">
@@ -507,7 +552,7 @@ $ico = [
 <?php if ($requiredLegalDocs !== []): ?>
     <style>
         .lc-modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; display:flex; align-items:center; justify-content:center; padding:18px;}
-        .lc-modal{width:100%; max-width:820px; background:#fff; border-radius:14px; box-shadow:0 16px 50px rgba(0,0,0,.35); overflow:hidden;}
+        .lc-req-modal{width:100%; max-width:820px; background:#fff; border-radius:14px; box-shadow:0 16px 50px rgba(0,0,0,.35); overflow:hidden;}
         .lc-modal__hd{padding:14px 16px; border-bottom:1px solid rgba(0,0,0,.08); font-weight:800;}
         .lc-modal__bd{padding:14px 16px;}
         .lc-modal__ft{padding:14px 16px; border-top:1px solid rgba(0,0,0,.08); display:flex; gap:10px; justify-content:flex-end;}
@@ -520,7 +565,7 @@ $ico = [
     </style>
 
     <div class="lc-modal-overlay" id="lcReqOverlay" aria-modal="true" role="dialog">
-        <div class="lc-modal">
+        <div class="lc-req-modal">
             <div class="lc-modal__hd">Antes de continuar</div>
             <div class="lc-modal__bd">
                 <div class="lc-alert lc-alert--info">Para usar o sistema, você precisa aceitar os termos obrigatórios.</div>
@@ -679,7 +724,7 @@ $ico = [
         const canPatients = <?= ($can('patients.read') && $hasClinicContext) ? 'true' : 'false' ?>;
         const url = isSuperAdmin
           ? ('/sys/clinics?q=' + encodeURIComponent(q))
-          : (canPatients ? ('/patients?q=' + encodeURIComponent(q) + '&page=1') : ('/?q=' + encodeURIComponent(q)));
+          : (canPatients ? ('/patients?q=' + encodeURIComponent(q) + '&page=1&src=quick') : ('/?q=' + encodeURIComponent(q)));
         window.location.href = url;
       });
     }

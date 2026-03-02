@@ -1,7 +1,8 @@
 <?php
 $title = 'Editar termo';
 $csrf = $_SESSION['_csrf'] ?? '';
-$error = $error ?? null;
+$error = $error ?? ($_GET['error'] ?? null);
+$success = $success ?? ($_GET['success'] ?? null);
 $term = $term ?? null;
 $procedureTypes = $procedure_types ?? [];
 ob_start();
@@ -11,6 +12,10 @@ ob_start();
 
     <?php if ($error): ?>
         <div class="lc-alert lc-alert--danger"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
+    <?php endif; ?>
+
+    <?php if ($success): ?>
+        <div class="lc-alert lc-alert--success"><?= htmlspecialchars((string)$success, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
 
     <form method="post" class="lc-form" action="/consent-terms/edit">

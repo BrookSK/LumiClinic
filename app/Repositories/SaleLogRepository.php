@@ -20,7 +20,7 @@ final class SaleLogRepository
             )
             VALUES (
                 :clinic_id, :sale_id,
-                :action, CAST(:meta_json AS JSON),
+                :action, :meta_json,
                 :actor_user_id, :ip_address,
                 NOW()
             )

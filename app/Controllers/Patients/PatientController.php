@@ -261,6 +261,11 @@ final class PatientController extends Controller
         $refProfessionalId = (int)$request->input('reference_professional_id', 0);
         $status = trim((string)$request->input('status', 'active'));
 
+        $allowedStatus = ['active', 'disabled', 'inactive'];
+        if (!in_array($status, $allowedStatus, true)) {
+            $status = 'active';
+        }
+
         if ($id <= 0 || $name === '') {
             $service = new PatientService($this->container);
             return $this->view('patients/edit', [
@@ -271,7 +276,9 @@ final class PatientController extends Controller
         }
 
         $service = new PatientService($this->container);
-        $service->update($id, [
+
+        $fallbackPatient = [
+            'id' => $id,
             'name' => $name,
             'email' => ($email === '' ? null : $email),
             'phone' => ($phone === '' ? null : $phone),
@@ -282,9 +289,38 @@ final class PatientController extends Controller
             'notes' => ($notes === '' ? null : $notes),
             'reference_professional_id' => ($refProfessionalId > 0 ? $refProfessionalId : null),
             'status' => ($status === '' ? 'active' : $status),
-        ], $request->ip(), $request->header('user-agent'));
+        ];
 
-        return $this->redirect('/patients/view?id=' . $id);
+        try {
+            $service->update($id, [
+                'name' => $name,
+                'email' => ($email === '' ? null : $email),
+                'phone' => ($phone === '' ? null : $phone),
+                'birth_date' => ($birthDate === '' ? null : $birthDate),
+                'sex' => ($sex === '' ? null : $sex),
+                'cpf' => ($cpf === '' ? null : $cpf),
+                'address' => ($address === '' ? null : $address),
+                'notes' => ($notes === '' ? null : $notes),
+                'reference_professional_id' => ($refProfessionalId > 0 ? $refProfessionalId : null),
+                'status' => ($status === '' ? 'active' : $status),
+            ], $request->ip(), $request->header('user-agent'));
+
+            return $this->redirect('/patients/view?id=' . $id);
+        } catch (\RuntimeException $e) {
+            $patient = $service->get($id, $request->ip()) ?? $fallbackPatient;
+            return $this->view('patients/edit', [
+                'patient' => $patient,
+                'professionals' => $service->listReferenceProfessionals(),
+                'error' => $e->getMessage(),
+            ]);
+        } catch (\Throwable $e) {
+            $patient = $service->get($id, $request->ip()) ?? $fallbackPatient;
+            return $this->view('patients/edit', [
+                'patient' => $patient,
+                'professionals' => $service->listReferenceProfessionals(),
+                'error' => 'Erro ao salvar paciente.',
+            ]);
+        }
     }
 
     public function searchJson(Request $request): Response

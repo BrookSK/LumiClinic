@@ -40,7 +40,7 @@ ob_start();
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Novo material</div>
         <div class="lc-card__body">
-            <form method="post" action="/stock/materials/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;">
+            <form method="post" action="/stock/materials/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
                 <div class="lc-field">
@@ -50,7 +50,7 @@ ob_start();
 
                 <div class="lc-field">
                     <label class="lc-label">Categoria</label>
-                    <select class="lc-select" name="category">
+                    <select class="lc-select" name="category" required>
                         <option value="">-</option>
                         <?php foreach (($categories ?? []) as $c): ?>
                             <option value="<?= htmlspecialchars((string)$c['name'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$c['name'], ENT_QUOTES, 'UTF-8') ?></option>
@@ -75,13 +75,18 @@ ob_start();
                 </div>
 
                 <div class="lc-field">
+                    <label class="lc-label">Estoque inicial</label>
+                    <input class="lc-input" type="text" name="initial_stock" value="0" />
+                </div>
+
+                <div class="lc-field">
                     <label class="lc-label">Custo unit (R$)</label>
                     <input class="lc-input" type="text" name="unit_cost" value="0" />
                 </div>
 
                 <div class="lc-field">
                     <label class="lc-label">Validade</label>
-                    <input class="lc-input" type="date" name="validity_date" />
+                    <input class="lc-input" type="date" name="validity_date" min="<?= htmlspecialchars(date('Y-m-d'), ENT_QUOTES, 'UTF-8') ?>" />
                 </div>
 
                 <div class="lc-form__actions" style="grid-column: 1 / -1; padding-top: 4px;">
@@ -116,6 +121,14 @@ ob_start();
                 </thead>
                 <tbody>
                 <?php foreach ($items as $it): ?>
+                    <?php
+                        $status = (string)($it['status'] ?? '');
+                        $statusLabelMap = [
+                            'active' => 'Ativo',
+                            'disabled' => 'Inativo',
+                        ];
+                        $statusLabel = (string)($statusLabelMap[$status] ?? $status);
+                    ?>
                     <tr>
                         <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)($it['category'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
@@ -124,7 +137,7 @@ ob_start();
                         <td><?= number_format((float)$it['stock_minimum'], 3, ',', '.') ?></td>
                         <td><?= number_format((float)$it['unit_cost'], 2, ',', '.') ?></td>
                         <td><?= $it['validity_date'] === null ? '-' : htmlspecialchars((string)$it['validity_date'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string)$it['status'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars((string)$statusLabel, ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

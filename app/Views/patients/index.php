@@ -3,13 +3,17 @@ $title = 'Pacientes';
 $csrf = $_SESSION['_csrf'] ?? '';
 $patients = $patients ?? [];
 $q = $q ?? '';
+$src = trim((string)($_GET['src'] ?? ''));
+$terminology = isset($terminology) && is_array($terminology) ? $terminology : [];
+$patientLabel = trim((string)($terminology['patient_label'] ?? 'Paciente'));
+$patientsLabel = $patientLabel !== '' ? ($patientLabel . 's') : 'Pacientes';
 $page = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 25;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap lc-gap-md" style="margin-bottom:14px;">
-    <div class="lc-badge lc-badge--primary">Gestão de pacientes</div>
+    <div class="lc-badge lc-badge--primary">Gestão de <?= htmlspecialchars(mb_strtolower($patientsLabel, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?></div>
     <div class="lc-flex lc-gap-sm lc-flex--center lc-flex--wrap">
         <form method="get" action="/patients" class="lc-flex lc-gap-sm" style="align-items:center;">
             <input type="hidden" name="per_page" value="<?= (int)$perPage ?>" />
@@ -17,7 +21,7 @@ ob_start();
             <input class="lc-input" style="width:260px;" type="text" name="q" value="<?= htmlspecialchars((string)$q, ENT_QUOTES, 'UTF-8') ?>" placeholder="Buscar por nome, email ou telefone" />
             <button class="lc-btn lc-btn--secondary" type="submit">Buscar</button>
         </form>
-        <a class="lc-btn lc-btn--primary" href="/patients/create">Novo paciente</a>
+        <a class="lc-btn lc-btn--primary" href="/patients/create">Novo <?= htmlspecialchars(mb_strtolower($patientLabel, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?></a>
     </div>
 
     <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-sm" style="margin-top:12px;">
@@ -33,8 +37,22 @@ ob_start();
     </div>
 </div>
 
+<?php if ($src === 'quick' && trim((string)$q) !== ''): ?>
+    <div class="lc-alert lc-alert--info" style="margin-bottom:12px;">
+        Busca rápida: procurando <strong>pacientes</strong> por <strong><?= htmlspecialchars((string)$q, ENT_QUOTES, 'UTF-8') ?></strong>.
+    </div>
+<?php endif; ?>
+
 <div class="lc-card">
     <div class="lc-card__title">Lista</div>
+
+    <?php
+        $statusLabelMap = [
+            'active' => 'Ativo',
+            'disabled' => 'Desativado',
+            'inactive' => 'Inativo',
+        ];
+    ?>
 
     <div class="lc-table-wrap">
         <table class="lc-table">
@@ -55,7 +73,7 @@ ob_start();
                     <td><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($p['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($p['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)$p['status'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($statusLabelMap[(string)($p['status'] ?? '')] ?? (string)($p['status'] ?? '')), ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="lc-flex lc-flex--wrap" style="gap:8px;">
                         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)$p['id'] ?>">Abrir</a>
                         <a class="lc-btn lc-btn--secondary" href="/patients/edit?id=<?= (int)$p['id'] ?>">Editar</a>
