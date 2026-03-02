@@ -15,6 +15,12 @@ $hasNext = isset($has_next) ? (bool)$has_next : false;
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Agenda';
 
+$dateDisplay = $date;
+$dateDt = \DateTimeImmutable::createFromFormat('Y-m-d', $date);
+if ($dateDt !== false) {
+    $dateDisplay = $dateDt->format('d/m/Y');
+}
+
 $svcMap = [];
 foreach ($services as $s) {
     $svcMap[(int)$s['id']] = $s;
@@ -35,7 +41,7 @@ ob_start();
         <div>
             <div class="lc-pagehead__title">Agenda</div>
             <div class="lc-pagehead__meta">
-                <span class="lc-badge lc-badge--primary"><?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="lc-badge lc-badge--primary"><?= htmlspecialchars($dateDisplay, ENT_QUOTES, 'UTF-8') ?></span>
                 <?php if (!$isProfessional && $professionalId > 0 && isset($profMap[$professionalId])): ?>
                     <span class="lc-badge"><?= htmlspecialchars((string)$profMap[$professionalId]['name'], ENT_QUOTES, 'UTF-8') ?></span>
                 <?php elseif (!$isProfessional && $professionalId === 0): ?>
@@ -321,6 +327,11 @@ ob_start();
                     </div>
 
                     <div class="lc-field">
+                        <label class="lc-label">Data</label>
+                        <input class="lc-input" type="date" name="_modal_date" id="modal_date" value="<?= htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') ?>" />
+                    </div>
+
+                    <div class="lc-field">
                         <label class="lc-label">Horário</label>
                         <select class="lc-select" name="start_at" id="modal_start_at" required>
                             <option value="">Selecione um serviço + profissional + data</option>
@@ -352,12 +363,17 @@ ob_start();
   const patientHintEl = document.getElementById('patientHint');
   const modalServiceEl = document.getElementById('modal_service_id');
   const modalProfEl = document.getElementById('modal_professional_id');
+  const modalDateEl = document.getElementById('modal_date');
   const modalStartEl = document.getElementById('modal_start_at');
 
   function openModal() {
     if (!modal) return;
     modal.setAttribute('aria-hidden', 'false');
     modal.classList.add('lc-modal--open');
+
+    if (modalDateEl && dateFilterEl && dateFilterEl.value) {
+      modalDateEl.value = dateFilterEl.value;
+    }
   }
 
   function closeModal() {
@@ -390,7 +406,7 @@ ob_start();
     openModal();
   });
 
-  if (!modalServiceEl || !modalProfEl || !modalStartEl) {
+  if (!modalServiceEl || !modalProfEl || !modalStartEl || !modalDateEl) {
     return;
   }
 
@@ -498,7 +514,7 @@ ob_start();
   async function loadSlots() {
     const serviceId = modalServiceEl.value;
     const profId = modalProfEl.value;
-    const date = dateFilterEl ? dateFilterEl.value : '';
+    const date = modalDateEl ? modalDateEl.value : '';
     modalStartEl.innerHTML = '<option value="">Carregando...</option>';
 
     if (!serviceId || !profId || !date) {
@@ -540,9 +556,7 @@ ob_start();
   modalServiceEl.addEventListener('change', loadSlots);
   modalProfEl.addEventListener('change', loadSlots);
 
-  if (dateFilterEl) {
-    dateFilterEl.addEventListener('change', loadSlots);
-  }
+  modalDateEl.addEventListener('change', loadSlots);
 })();
 </script>
 

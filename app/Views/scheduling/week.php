@@ -18,6 +18,12 @@ $title = 'Agenda (Semana)';
 
 $weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+$dateDisplay = $date;
+$dateDt = \DateTimeImmutable::createFromFormat('Y-m-d', (string)$date);
+if ($dateDt !== false) {
+    $dateDisplay = $dateDt->format('d/m/Y');
+}
+
 $svcMap = [];
 foreach ($services as $s) {
     $svcMap[(int)$s['id']] = $s;
@@ -79,7 +85,7 @@ ob_start();
         <div>
             <div class="lc-pagehead__title">Agenda</div>
             <div class="lc-pagehead__meta">
-                <span class="lc-badge lc-badge--primary"><?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="lc-badge lc-badge--primary"><?= htmlspecialchars($dateDisplay, ENT_QUOTES, 'UTF-8') ?></span>
                 <?php if (!$isProfessional && (int)$professional_id > 0 && isset($profMap[(int)$professional_id])): ?>
                     <span class="lc-badge"><?= htmlspecialchars((string)$profMap[(int)$professional_id]['name'], ENT_QUOTES, 'UTF-8') ?></span>
                 <?php elseif (!$isProfessional && (int)$professional_id === 0): ?>

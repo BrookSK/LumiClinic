@@ -23,7 +23,7 @@ ob_start();
                     <option value="finalized" <?= (($category ?? 'all') === 'finalized') ? 'selected' : '' ?>>Finalizados</option>
                 </select>
             </div>
-            <div>
+            <div class="lc-form__actions">
                 <button class="lc-btn" type="submit">Ver</button>
                 <a class="lc-btn lc-btn--secondary" href="/schedule?date=<?= urlencode((string)$date) ?>">Voltar à agenda</a>
             </div>
