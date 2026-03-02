@@ -40,6 +40,8 @@ $whByWeekday = isset($wh_by_weekday) && is_array($wh_by_weekday) ? $wh_by_weekda
 
 $closedMap = isset($closed_map) && is_array($closed_map) ? $closed_map : [];
 
+$blocksByDay = isset($blocks_by_day) && is_array($blocks_by_day) ? $blocks_by_day : [];
+
 /** @return int */
 $toMinutes = static function (string $hhmm): int {
     $t = trim($hhmm);

@@ -65,7 +65,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Adicionar material padrão</div>
     <div class="lc-card__body">
-        <form method="post" action="/services/materials/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end;">
+        <form method="post" action="/services/materials/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end; gap:12px;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
             <input type="hidden" name="service_id" value="<?= (int)$service['id'] ?>" />
 

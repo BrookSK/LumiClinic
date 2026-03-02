@@ -83,7 +83,7 @@ final class AnamnesisController extends Controller
         $service = new AnamnesisService($this->container);
         $id = $service->createTemplate($name, is_array($fields) ? $fields : [], $request->ip());
 
-        return $this->redirect('/anamnesis/templates/edit?id=' . $id);
+        return $this->redirect('/anamnesis/templates/edit?id=' . $id . '&saved=1');
     }
 
     public function editTemplate(Request $request)
@@ -103,9 +103,12 @@ final class AnamnesisController extends Controller
         $service = new AnamnesisService($this->container);
         $data = $service->getTemplateWithFields($id);
 
+        $saved = trim((string)$request->input('saved', ''));
+
         return $this->view('anamnesis/templates-edit', [
             'template' => $data['template'],
             'fields' => $data['fields'],
+            'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
         ]);
     }
 

@@ -310,7 +310,7 @@ $ico = [
                                 <?= $navItem('/anamnesis/templates', 'Anamnese', $ico['shield'], $isActive('/anamnesis')) ?>
                             <?php endif; ?>
 
-                            <?php $servicesActive = $isActive('/services') || $isActive('/services/materials'); ?>
+                            <?php $servicesActive = $isActiveSegment('/services'); ?>
                             <?php if ($can('services.manage') && $hasClinicContext): ?>
                                 <details class="lc-navgroup" <?= $servicesActive ? 'open' : '' ?> style="margin-left:10px;">
                                     <summary class="lc-nav__item lc-navgroup__summary<?= $servicesActive ? ' lc-nav__item--active' : '' ?>">
@@ -322,8 +322,8 @@ $ico = [
                                     </summary>
                                     <div class="lc-navgroup__children">
                                         <div class="lc-nav__sub">
-                                            <?= $navItem('/services', 'Cadastro', $ico['clinic'], $isActive('/services')) ?>
-                                            <?= $navItem('/services/materials', 'Vínculo com estoque', $ico['stock'], $isActive('/services/materials')) ?>
+                                            <?= $navItem('/services', 'Cadastro', $ico['clinic'], $isExact('/services')) ?>
+                                            <?= $navItem('/services/materials', 'Vínculo com estoque', $ico['stock'], $isExact('/services/materials')) ?>
                                         </div>
                                     </div>
                                 </details>

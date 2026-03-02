@@ -2,6 +2,7 @@
 $title = 'Editar template de anamnese';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
+$success = $success ?? null;
 $template = $template ?? null;
 $fields = $fields ?? [];
 ob_start();
@@ -32,6 +33,10 @@ $fieldsJson = json_encode($fieldsForJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPE
 
     <?php if ($error): ?>
         <div class="lc-alert lc-alert--danger"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
+    <?php endif; ?>
+
+    <?php if ($success): ?>
+        <div class="lc-alert lc-alert--success"><?= htmlspecialchars((string)$success, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
 
     <form method="post" class="lc-form" action="/anamnesis/templates/edit" id="anamnesis-template-form">

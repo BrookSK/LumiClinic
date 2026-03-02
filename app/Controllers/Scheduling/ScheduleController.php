@@ -259,6 +259,26 @@ final class ScheduleController extends Controller
             $indicators = new ScheduleIndicatorsService();
             $byDay = $indicators->groupAppointmentsByDay($items);
 
+            $blockRepo = new SchedulingBlockRepository($this->container->get(\PDO::class));
+            $blocks = $blockRepo->listByClinicRange(
+                $clinicId,
+                $monthStart->format('Y-m-d 00:00:00'),
+                $monthEnd->format('Y-m-d 00:00:00')
+            );
+
+            $blocksByDay = [];
+            foreach ($blocks as $b) {
+                $st = (string)($b['start_at'] ?? '');
+                $ymd = $st !== '' ? substr($st, 0, 10) : '';
+                if ($ymd === '') {
+                    continue;
+                }
+                if (!isset($blocksByDay[$ymd])) {
+                    $blocksByDay[$ymd] = [];
+                }
+                $blocksByDay[$ymd][] = $b;
+            }
+
             return $this->view('scheduling/month', [
                 'date' => $date,
                 'view' => $view,
@@ -268,6 +288,7 @@ final class ScheduleController extends Controller
                 'error' => $error,
                 'items' => $items,
                 'by_day' => $byDay,
+                'blocks_by_day' => $blocksByDay,
                 'status_class_map' => $indicators->statusClassMap(),
                 'professionals' => $professionals,
                 'services' => $services,

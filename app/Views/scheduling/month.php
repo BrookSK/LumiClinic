@@ -22,6 +22,7 @@ foreach (($professionals ?? []) as $p) {
 }
 
 $byDay = isset($by_day) && is_array($by_day) ? $by_day : [];
+$blocksByDay = isset($blocks_by_day) && is_array($blocks_by_day) ? $blocks_by_day : [];
 
 $monthStart = \DateTimeImmutable::createFromFormat('Y-m-d', (string)($month_start ?? ($date ?? date('Y-m-d'))));
 if ($monthStart !== false) {
@@ -127,6 +128,7 @@ ob_start();
                         $ymd = $d->format('Y-m-d');
                         $inMonth = $d->format('m') === $monthStart->format('m');
                         $dayItems = $byDay[$ymd] ?? [];
+                        $dayBlocks = $blocksByDay[$ymd] ?? [];
                         $count = count($dayItems);
                         $border = $ymd === $today ? '4px solid #2563eb' : '1px solid rgba(17,24,39,0.08)';
                         $opacity = $inMonth ? '1' : '0.45';
@@ -136,7 +138,7 @@ ob_start();
                         <?= !$isProfessional ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
                     >
                         <div class="lc-card" style="margin:0; border-left: <?= htmlspecialchars($border, ENT_QUOTES, 'UTF-8') ?>; opacity: <?= htmlspecialchars($opacity, ENT_QUOTES, 'UTF-8') ?>;">
-                            <div class="lc-card__body lc-flex" style="padding:12px; min-height:88px; flex-direction:column; gap:8px;">
+                            <div class="lc-card__body lc-flex" style="padding:12px; height:120px; overflow:hidden; flex-direction:column; gap:8px;">
                                 <div class="lc-flex lc-flex--between" style="align-items:baseline;">
                                     <div style="font-weight: 700;">
                                         <?= htmlspecialchars($d->format('d'), ENT_QUOTES, 'UTF-8') ?>
@@ -145,6 +147,10 @@ ob_start();
                                         <?= $count > 0 ? ((int)$count . ' ag.') : '' ?>
                                     </div>
                                 </div>
+
+                                <?php if (is_array($dayBlocks) && $dayBlocks !== []): ?>
+                                    <div style="font-size:12px; font-weight:650; color: rgba(31,41,55,0.70);">Bloqueado</div>
+                                <?php endif; ?>
 
                                 <?php if ($dayItems === []): ?>
                                     <div class="lc-muted" style="font-size:12px;">&nbsp;</div>
