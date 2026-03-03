@@ -49,6 +49,7 @@ ob_start();
             <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
                 <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
                 <a class="lc-btn lc-btn--secondary" href="/settings/terminology">Editar terminologia</a>
+                <a class="lc-btn lc-btn--secondary" href="/settings/ai">Configurar IA</a>
             </div>
         </form>
     </div>

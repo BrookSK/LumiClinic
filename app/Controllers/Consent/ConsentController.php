@@ -157,7 +157,7 @@ final class ConsentController extends Controller
         }
 
         $service = new ConsentService($this->container);
-        $data = $service->listForPatient($patientId, $request->ip());
+        $data = $service->listForPatient($patientId, $request->ip(), $request->header('user-agent'));
 
         return $this->view('consent/index', $data);
     }
@@ -201,9 +201,33 @@ final class ConsentController extends Controller
         }
 
         $service = new ConsentService($this->container);
-        $service->accept($patientId, $termId, $signature, $request->ip());
+        $service->accept($patientId, $termId, $signature, $request->ip(), $request->header('user-agent'));
 
         return $this->redirect('/consent?patient_id=' . $patientId);
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorize('consent_terms.accept');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        $service = new ConsentService($this->container);
+        try {
+            $data = $service->getAcceptanceExportData($id, $request->ip(), $request->header('user-agent'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/patients?error=' . urlencode($e->getMessage()));
+        }
+
+        return $this->view('consent/export', $data);
     }
 
     public function signatureFile(Request $request)

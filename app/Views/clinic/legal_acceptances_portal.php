@@ -9,6 +9,7 @@ ob_start();
 
     <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:12px;">
         <a class="lc-btn lc-btn--secondary" href="/clinic/legal-documents">Configurar textos</a>
+        <a class="lc-btn lc-btn--secondary" href="/clinic/legal-signatures">Assinaturas</a>
         <a class="lc-btn lc-btn--secondary" href="/clinic">Voltar</a>
     </div>
 

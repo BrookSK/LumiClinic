@@ -14,6 +14,7 @@ final class AnamnesisResponseRepository
         $sql = "
             SELECT
                 id, clinic_id, patient_id, template_id, professional_id,
+                template_name_snapshot, template_updated_at_snapshot, fields_snapshot_json,
                 answers_json,
                 created_by_user_id, created_at
             FROM anamnesis_responses
@@ -37,7 +38,8 @@ final class AnamnesisResponseRepository
     public function listByPatient(int $clinicId, int $patientId, int $limit = 100): array
     {
         $sql = "
-            SELECT id, clinic_id, patient_id, template_id, professional_id, created_by_user_id, created_at
+            SELECT id, clinic_id, patient_id, template_id, template_name_snapshot, template_updated_at_snapshot,
+                   professional_id, created_by_user_id, created_at
             FROM anamnesis_responses
             WHERE clinic_id = :clinic_id
               AND patient_id = :patient_id
@@ -60,6 +62,9 @@ final class AnamnesisResponseRepository
         int $clinicId,
         int $patientId,
         int $templateId,
+        ?string $templateNameSnapshot,
+        ?string $templateUpdatedAtSnapshot,
+        ?string $fieldsSnapshotJson,
         ?int $professionalId,
         string $answersJson,
         int $createdByUserId
@@ -67,12 +72,14 @@ final class AnamnesisResponseRepository
         $sql = "
             INSERT INTO anamnesis_responses (
                 clinic_id, patient_id, template_id, professional_id,
+                template_name_snapshot, template_updated_at_snapshot, fields_snapshot_json,
                 answers_json,
                 created_by_user_id,
                 created_at
             )
             VALUES (
                 :clinic_id, :patient_id, :template_id, :professional_id,
+                :template_name_snapshot, :template_updated_at_snapshot, :fields_snapshot_json,
                 :answers_json,
                 :created_by_user_id,
                 NOW()
@@ -85,6 +92,9 @@ final class AnamnesisResponseRepository
             'patient_id' => $patientId,
             'template_id' => $templateId,
             'professional_id' => $professionalId,
+            'template_name_snapshot' => ($templateNameSnapshot !== null && trim($templateNameSnapshot) !== '' ? $templateNameSnapshot : null),
+            'template_updated_at_snapshot' => ($templateUpdatedAtSnapshot !== null && trim($templateUpdatedAtSnapshot) !== '' ? $templateUpdatedAtSnapshot : null),
+            'fields_snapshot_json' => ($fieldsSnapshotJson !== null && trim($fieldsSnapshotJson) !== '' ? $fieldsSnapshotJson : null),
             'answers_json' => $answersJson,
             'created_by_user_id' => $createdByUserId,
         ]);

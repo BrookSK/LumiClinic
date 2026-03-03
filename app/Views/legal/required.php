@@ -39,11 +39,7 @@ ob_start();
                             <div style="opacity:.8; margin-top:6px; white-space:pre-wrap;"><?= nl2br(htmlspecialchars((string)($d['body'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></div>
                         </td>
                         <td>
-                            <form method="post" action="/legal/accept">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="id" value="<?= (int)($d['id'] ?? 0) ?>" />
-                                <button class="lc-btn lc-btn--primary" type="submit">Aceitar</button>
-                            </form>
+                            <a class="lc-btn lc-btn--primary" href="/legal/sign?id=<?= (int)($d['id'] ?? 0) ?>">Assinar</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>

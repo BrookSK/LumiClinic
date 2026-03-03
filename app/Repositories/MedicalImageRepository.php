@@ -14,7 +14,7 @@ final class MedicalImageRepository
         $sql = "
             SELECT
                 mi.id, mi.clinic_id, mi.patient_id, mi.medical_record_id, mi.professional_id,
-                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type,
+                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type, mi.session_number, mi.pose,
                 mi.storage_path, mi.original_filename, mi.mime_type, mi.size_bytes,
                 mi.created_by_user_id, mi.created_at
             FROM medical_images mi
@@ -23,6 +23,40 @@ final class MedicalImageRepository
               AND mi.deleted_at IS NULL
             ORDER BY mi.created_at DESC, mi.id DESC
             LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'patient_id' => $patientId,
+        ]);
+
+        /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function listByPatientForTimeline(int $clinicId, int $patientId, int $limit = 500): array
+    {
+        $limit = max(1, min(1000, $limit));
+
+        $sql = "
+            SELECT
+                mi.id, mi.clinic_id, mi.patient_id, mi.medical_record_id, mi.professional_id,
+                mi.kind, mi.comparison_key,
+                mi.taken_at, mi.created_at,
+                mi.procedure_type, mi.session_number, mi.pose,
+                mi.original_filename
+            FROM medical_images mi
+            WHERE mi.clinic_id = :clinic_id
+              AND mi.patient_id = :patient_id
+              AND mi.deleted_at IS NULL
+            ORDER BY
+                mi.procedure_type ASC,
+                mi.session_number ASC,
+                COALESCE(mi.taken_at, mi.created_at) ASC,
+                mi.id ASC
+            LIMIT {$limit}
         ";
 
         $stmt = $this->pdo->prepare($sql);
@@ -77,6 +111,8 @@ final class MedicalImageRepository
         string $kind,
         ?string $takenAt,
         ?string $procedureType,
+        ?int $sessionNumber,
+        ?string $pose,
         string $storagePath,
         ?string $originalFilename,
         ?string $mimeType,
@@ -87,7 +123,7 @@ final class MedicalImageRepository
         $sql = "
             INSERT INTO medical_images (
                 clinic_id, patient_id, medical_record_id, professional_id,
-                kind, taken_at, procedure_type,
+                kind, taken_at, procedure_type, session_number, pose,
                 storage_path, original_filename, mime_type, size_bytes,
                 patient_visibility_status,
                 approved_at, approved_by_user_id,
@@ -96,7 +132,7 @@ final class MedicalImageRepository
                 created_at
             ) VALUES (
                 :clinic_id, :patient_id, NULL, NULL,
-                :kind, :taken_at, :procedure_type,
+                :kind, :taken_at, :procedure_type, :session_number, :pose,
                 :storage_path, :original_filename, :mime_type, :size_bytes,
                 'visible',
                 NOW(), :approved_by_user_id,
@@ -113,6 +149,8 @@ final class MedicalImageRepository
             'kind' => $kind,
             'taken_at' => ($takenAt === '' ? null : $takenAt),
             'procedure_type' => ($procedureType === '' ? null : $procedureType),
+            'session_number' => $sessionNumber,
+            'pose' => ($pose === '' ? null : $pose),
             'storage_path' => $storagePath,
             'original_filename' => ($originalFilename === '' ? null : $originalFilename),
             'mime_type' => ($mimeType === '' ? null : $mimeType),
@@ -159,7 +197,7 @@ final class MedicalImageRepository
         $sql = "
             SELECT
                 mi.id, mi.clinic_id, mi.patient_id, mi.medical_record_id, mi.professional_id,
-                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type,
+                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type, mi.session_number, mi.pose,
                 mi.storage_path, mi.original_filename, mi.mime_type, mi.size_bytes,
                 mi.created_by_user_id, mi.created_at
             FROM medical_images mi
@@ -185,7 +223,7 @@ final class MedicalImageRepository
         $sql = "
             SELECT
                 mi.id, mi.clinic_id, mi.patient_id, mi.medical_record_id, mi.professional_id,
-                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type,
+                mi.kind, mi.comparison_key, mi.taken_at, mi.procedure_type, mi.session_number, mi.pose,
                 mi.storage_path, mi.original_filename, mi.mime_type, mi.size_bytes,
                 mi.created_by_user_id, mi.created_at
             FROM medical_images mi
@@ -216,6 +254,8 @@ final class MedicalImageRepository
         ?string $comparisonKey,
         ?string $takenAt,
         ?string $procedureType,
+        ?int $sessionNumber,
+        ?string $pose,
         string $storagePath,
         ?string $originalFilename,
         ?string $mimeType,
@@ -225,14 +265,14 @@ final class MedicalImageRepository
         $sql = "
             INSERT INTO medical_images (
                 clinic_id, patient_id, medical_record_id, professional_id,
-                kind, comparison_key, taken_at, procedure_type,
+                kind, comparison_key, taken_at, procedure_type, session_number, pose,
                 storage_path, original_filename, mime_type, size_bytes,
                 created_by_user_id,
                 created_at
             )
             VALUES (
                 :clinic_id, :patient_id, :medical_record_id, :professional_id,
-                :kind, :comparison_key, :taken_at, :procedure_type,
+                :kind, :comparison_key, :taken_at, :procedure_type, :session_number, :pose,
                 :storage_path, :original_filename, :mime_type, :size_bytes,
                 :created_by_user_id,
                 NOW()
@@ -249,6 +289,8 @@ final class MedicalImageRepository
             'comparison_key' => ($comparisonKey === '' ? null : $comparisonKey),
             'taken_at' => ($takenAt === '' ? null : $takenAt),
             'procedure_type' => ($procedureType === '' ? null : $procedureType),
+            'session_number' => $sessionNumber,
+            'pose' => ($pose === '' ? null : $pose),
             'storage_path' => $storagePath,
             'original_filename' => ($originalFilename === '' ? null : $originalFilename),
             'mime_type' => ($mimeType === '' ? null : $mimeType),

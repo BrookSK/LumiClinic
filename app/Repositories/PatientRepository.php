@@ -30,19 +30,22 @@ final class PatientRepository
         ?string $cpf,
         ?string $address,
         ?string $notes,
-        ?int $referenceProfessionalId
+        ?int $referenceProfessionalId,
+        ?int $patientOriginId = null
     ): int {
         $sql = "
             INSERT INTO patients (
                 clinic_id, name, email, phone, birth_date, sex,
                 cpf,
                 address, notes, reference_professional_id,
+                patient_origin_id,
                 status, created_at
             )
             VALUES (
                 :clinic_id, :name, :email, :phone, :birth_date, :sex,
                 :cpf,
                 :address, :notes, :reference_professional_id,
+                :patient_origin_id,
                 'active', NOW()
             )
         ";
@@ -59,6 +62,7 @@ final class PatientRepository
             'address' => ($address === '' ? null : $address),
             'notes' => ($notes === '' ? null : $notes),
             'reference_professional_id' => ($referenceProfessionalId !== null && $referenceProfessionalId > 0 ? $referenceProfessionalId : null),
+            'patient_origin_id' => ($patientOriginId !== null && $patientOriginId > 0 ? $patientOriginId : null),
         ]);
 
         return (int)$this->pdo->lastInsertId();
@@ -123,7 +127,8 @@ final class PatientRepository
             SELECT
                 id, clinic_id, name, email, phone, status,
                 birth_date, sex, cpf, cpf_last4,
-                address, notes, reference_professional_id
+                address, notes, reference_professional_id,
+                patient_origin_id
             FROM patients
             WHERE id = :id
               AND clinic_id = :clinic_id
@@ -150,6 +155,7 @@ final class PatientRepository
         ?string $address,
         ?string $notes,
         ?int $referenceProfessionalId,
+        ?int $patientOriginId,
         string $status
     ): void {
         $sql = "
@@ -164,6 +170,7 @@ final class PatientRepository
                 address = :address,
                 notes = :notes,
                 reference_professional_id = :reference_professional_id,
+                patient_origin_id = :patient_origin_id,
                 status = :status,
                 updated_at = NOW()
             WHERE id = :id
@@ -185,6 +192,7 @@ final class PatientRepository
             'address' => ($address === '' ? null : $address),
             'notes' => ($notes === '' ? null : $notes),
             'reference_professional_id' => ($referenceProfessionalId !== null && $referenceProfessionalId > 0 ? $referenceProfessionalId : null),
+            'patient_origin_id' => ($patientOriginId !== null && $patientOriginId > 0 ? $patientOriginId : null),
             'status' => $status,
         ]);
     }
@@ -234,6 +242,26 @@ final class PatientRepository
             'id' => $id,
             'clinic_id' => $clinicId,
             'name' => 'Anonimizado #' . $id,
+        ]);
+    }
+
+    public function softDelete(int $clinicId, int $id): void
+    {
+        $sql = "
+            UPDATE patients
+            SET deleted_at = NOW(),
+                updated_at = NOW(),
+                status = 'inactive'
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $id,
+            'clinic_id' => $clinicId,
         ]);
     }
 }

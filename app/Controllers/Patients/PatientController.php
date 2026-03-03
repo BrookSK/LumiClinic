@@ -12,6 +12,7 @@ use App\Repositories\LegalDocumentRepository;
 use App\Repositories\PatientUserRepository;
 use App\Services\Patients\PatientService;
 use App\Services\Auth\AuthService;
+use App\Services\Settings\OperationalConfigService;
 
 final class PatientController extends Controller
 {
@@ -76,6 +77,7 @@ final class PatientController extends Controller
 
         return $this->view('patients/create', [
             'professionals' => $service->listReferenceProfessionals(),
+            'patient_origins' => (new OperationalConfigService($this->container))->listActivePatientOrigins(),
         ]);
     }
 
@@ -120,12 +122,14 @@ final class PatientController extends Controller
         }
         $notes = trim((string)$request->input('notes', ''));
         $refProfessionalId = (int)$request->input('reference_professional_id', 0);
+        $patientOriginId = (int)$request->input('patient_origin_id', 0);
 
         if ($name === '') {
             $service = new PatientService($this->container);
             return $this->view('patients/create', [
                 'error' => 'Nome é obrigatório.',
                 'professionals' => $service->listReferenceProfessionals(),
+                'patient_origins' => (new OperationalConfigService($this->container))->listActivePatientOrigins(),
             ]);
         }
 
@@ -140,6 +144,7 @@ final class PatientController extends Controller
             'address' => ($address === '' ? null : $address),
             'notes' => ($notes === '' ? null : $notes),
             'reference_professional_id' => ($refProfessionalId > 0 ? $refProfessionalId : null),
+            'patient_origin_id' => ($patientOriginId > 0 ? $patientOriginId : null),
         ], $request->ip());
 
         return $this->redirect('/patients/view?id=' . $id);
@@ -160,7 +165,7 @@ final class PatientController extends Controller
         }
 
         $service = new PatientService($this->container);
-        $patient = $service->get($id, $request->ip());
+        $patient = $service->get($id, $request->ip(), $request->header('user-agent'));
         if ($patient === null) {
             return $this->redirect('/patients');
         }
@@ -206,7 +211,7 @@ final class PatientController extends Controller
         }
 
         $service = new PatientService($this->container);
-        $patient = $service->get($id, $request->ip());
+        $patient = $service->get($id, $request->ip(), $request->header('user-agent'));
         if ($patient === null) {
             return $this->redirect('/patients');
         }
@@ -214,6 +219,7 @@ final class PatientController extends Controller
         return $this->view('patients/edit', [
             'patient' => $patient,
             'professionals' => $service->listReferenceProfessionals(),
+            'patient_origins' => (new OperationalConfigService($this->container))->listActivePatientOrigins(),
         ]);
     }
 
@@ -259,6 +265,7 @@ final class PatientController extends Controller
         }
         $notes = trim((string)$request->input('notes', ''));
         $refProfessionalId = (int)$request->input('reference_professional_id', 0);
+        $patientOriginId = (int)$request->input('patient_origin_id', 0);
         $status = trim((string)$request->input('status', 'active'));
 
         $allowedStatus = ['active', 'disabled', 'inactive'];
@@ -271,6 +278,7 @@ final class PatientController extends Controller
             return $this->view('patients/edit', [
                 'patient' => $service->get($id, $request->ip()),
                 'professionals' => $service->listReferenceProfessionals(),
+                'patient_origins' => (new OperationalConfigService($this->container))->listActivePatientOrigins(),
                 'error' => 'Preencha os campos obrigatórios.',
             ]);
         }
@@ -288,6 +296,7 @@ final class PatientController extends Controller
             'address' => ($address === '' ? null : $address),
             'notes' => ($notes === '' ? null : $notes),
             'reference_professional_id' => ($refProfessionalId > 0 ? $refProfessionalId : null),
+            'patient_origin_id' => ($patientOriginId > 0 ? $patientOriginId : null),
             'status' => ($status === '' ? 'active' : $status),
         ];
 
@@ -302,6 +311,7 @@ final class PatientController extends Controller
                 'address' => ($address === '' ? null : $address),
                 'notes' => ($notes === '' ? null : $notes),
                 'reference_professional_id' => ($refProfessionalId > 0 ? $refProfessionalId : null),
+                'patient_origin_id' => ($patientOriginId > 0 ? $patientOriginId : null),
                 'status' => ($status === '' ? 'active' : $status),
             ], $request->ip(), $request->header('user-agent'));
 
@@ -311,6 +321,7 @@ final class PatientController extends Controller
             return $this->view('patients/edit', [
                 'patient' => $patient,
                 'professionals' => $service->listReferenceProfessionals(),
+                'patient_origins' => (new OperationalConfigService($this->container))->listActivePatientOrigins(),
                 'error' => $e->getMessage(),
             ]);
         } catch (\Throwable $e) {
@@ -318,6 +329,7 @@ final class PatientController extends Controller
             return $this->view('patients/edit', [
                 'patient' => $patient,
                 'professionals' => $service->listReferenceProfessionals(),
+                'patient_origins' => (new OperationalConfigService($this->container))->listActivePatientOrigins(),
                 'error' => 'Erro ao salvar paciente.',
             ]);
         }

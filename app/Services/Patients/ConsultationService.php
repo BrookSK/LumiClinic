@@ -8,6 +8,7 @@ use App\Core\Container\Container;
 use App\Core\Http\Response;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\PatientClinicalAlertRepository;
 use App\Repositories\ConsultationAttachmentRepository;
 use App\Repositories\ConsultationRepository;
 use App\Services\Auth\AuthService;
@@ -18,7 +19,7 @@ final class ConsultationService
 {
     public function __construct(private readonly Container $container) {}
 
-    /** @return array{appointment:array<string,mixed>,consultation:?array<string,mixed>,attachments:list<array<string,mixed>>} */
+    /** @return array{appointment:array<string,mixed>,consultation:?array<string,mixed>,attachments:list<array<string,mixed>>,clinical_alerts:list<array<string,mixed>>} */
     public function getByAppointment(int $appointmentId, string $ip, ?string $userAgent = null): array
     {
         $auth = new AuthService($this->container);
@@ -37,13 +38,19 @@ final class ConsultationService
         $consultRepo = new ConsultationRepository($pdo);
         $consult = $consultRepo->findByAppointmentId($clinicId, $appointmentId);
 
+        $patientId = isset($appt['patient_id']) && $appt['patient_id'] !== null ? (int)$appt['patient_id'] : 0;
+        $clinicalAlerts = [];
+        if ($patientId > 0) {
+            $clinicalAlerts = (new PatientClinicalAlertRepository($pdo))->listByPatient($clinicId, $patientId, 200);
+        }
+
         $attachments = [];
         if ($consult !== null) {
             $attRepo = new ConsultationAttachmentRepository($pdo);
             $attachments = $attRepo->listByConsultation($clinicId, (int)$consult['id'], 200);
         }
 
-        return ['appointment' => $appt, 'consultation' => $consult, 'attachments' => $attachments];
+        return ['appointment' => $appt, 'consultation' => $consult, 'attachments' => $attachments, 'clinical_alerts' => $clinicalAlerts];
     }
 
     public function upsert(int $appointmentId, string $executedAtInput, int $professionalId, ?string $notes, string $ip, ?string $userAgent = null): int

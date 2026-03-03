@@ -90,4 +90,21 @@ final class ComplianceLgpdController extends Controller
             return $this->redirect('/compliance/lgpd-requests?status=pending');
         }
     }
+
+    public function delete(Request $request)
+    {
+        $this->authorize('compliance.lgpd.anonymize');
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/compliance/lgpd-requests');
+        }
+
+        try {
+            (new ComplianceLgpdService($this->container))->deletePatientFromRequest($id, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/compliance/lgpd-requests?status=processed');
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/compliance/lgpd-requests?status=pending');
+        }
+    }
 }

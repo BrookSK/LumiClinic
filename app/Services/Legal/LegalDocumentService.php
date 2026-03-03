@@ -7,6 +7,7 @@ namespace App\Services\Legal;
 use App\Core\Container\Container;
 use App\Repositories\LegalDocumentAcceptanceRepository;
 use App\Repositories\LegalDocumentRepository;
+use App\Repositories\LegalDocumentSignatureRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Portal\PatientAuthService;
 
@@ -33,8 +34,8 @@ final class LegalDocumentService
 
         $pdo = $this->container->get(\PDO::class);
         $docs = (new LegalDocumentRepository($pdo))->listActiveForPatientPortal($clinicId);
-        $accepted = (new LegalDocumentAcceptanceRepository($pdo))->listAcceptedDocumentIdsByPatientUser($clinicId, $patientUserId);
-        $acceptedMap = array_fill_keys($accepted, true);
+        $signRepo = new LegalDocumentSignatureRepository($pdo);
+        $versioning = new LegalDocumentVersioningService($this->container);
 
         $out = [];
         foreach ($docs as $d) {
@@ -43,7 +44,9 @@ final class LegalDocumentService
             if (!$req || $id <= 0) {
                 continue;
             }
-            if (isset($acceptedMap[$id])) {
+            $ver = $versioning->ensureCurrentVersionForDocumentId($id);
+            $verId = (int)($ver['version_id'] ?? 0);
+            if ($verId > 0 && $signRepo->existsForPatientUser($verId, $patientUserId)) {
                 continue;
             }
             $out[] = $d;
@@ -94,14 +97,13 @@ final class LegalDocumentService
 
         $pdo = $this->container->get(\PDO::class);
         $docsRepo = new LegalDocumentRepository($pdo);
+        $signRepo = new LegalDocumentSignatureRepository($pdo);
+        $versioning = new LegalDocumentVersioningService($this->container);
 
         $docs = $docsRepo->listActiveForSystemUser($clinicId, $roleCodes);
         if (in_array('owner', $roleCodes, true)) {
             $docs = array_merge($docsRepo->listActiveForClinicOwner($clinicId), $docs);
         }
-        $accepted = (new LegalDocumentAcceptanceRepository($pdo))->listAcceptedDocumentIdsByUser($clinicId, $userId);
-        $acceptedMap = array_fill_keys($accepted, true);
-
         $out = [];
         foreach ($docs as $d) {
             $id = (int)($d['id'] ?? 0);
@@ -109,7 +111,10 @@ final class LegalDocumentService
             if (!$req || $id <= 0) {
                 continue;
             }
-            if (isset($acceptedMap[$id])) {
+
+            $ver = $versioning->ensureCurrentVersionForDocumentId($id);
+            $verId = (int)($ver['version_id'] ?? 0);
+            if ($verId > 0 && $signRepo->existsForUser($verId, $userId)) {
                 continue;
             }
             $out[] = $d;

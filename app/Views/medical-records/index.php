@@ -2,6 +2,9 @@
 $title = 'Prontuário';
 $patient = $patient ?? null;
 $records = $records ?? [];
+$templates = $templates ?? [];
+$professionals = $professionals ?? [];
+$filters = $filters ?? [];
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -19,6 +22,51 @@ ob_start();
     </div>
 </div>
 
+<div class="lc-card" style="margin-bottom:14px;">
+    <div class="lc-card__title">Filtros</div>
+    <div class="lc-card__body">
+        <form method="get" action="/medical-records" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); align-items:end;">
+            <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
+
+            <div class="lc-field">
+                <label class="lc-label">Template</label>
+                <?php $curTpl = (int)($filters['template_id'] ?? 0); ?>
+                <select class="lc-select" name="template_id">
+                    <option value="">(todos)</option>
+                    <?php foreach ($templates as $t): ?>
+                        <option value="<?= (int)$t['id'] ?>" <?= (int)$t['id'] === $curTpl ? 'selected' : '' ?>><?= htmlspecialchars((string)$t['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="lc-field">
+                <label class="lc-label">Profissional</label>
+                <?php $curProf = (int)($filters['professional_id'] ?? 0); ?>
+                <select class="lc-select" name="professional_id">
+                    <option value="">(todos)</option>
+                    <?php foreach ($professionals as $pr): ?>
+                        <option value="<?= (int)$pr['id'] ?>" <?= (int)$pr['id'] === $curProf ? 'selected' : '' ?>><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="lc-field">
+                <label class="lc-label">De</label>
+                <input class="lc-input" type="datetime-local" name="date_from" value="<?= htmlspecialchars((string)($filters['date_from'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Até</label>
+                <input class="lc-input" type="datetime-local" name="date_to" value="<?= htmlspecialchars((string)($filters['date_to'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
+
+            <div class="lc-form__actions" style="grid-column: 1 / -1;">
+                <button class="lc-btn lc-btn--primary" type="submit">Aplicar</button>
+                <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <?php foreach ($records as $r): ?>
     <div id="mr-<?= (int)$r['id'] ?>" class="lc-card" style="margin-bottom:12px;">
         <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="gap:10px;">
@@ -26,6 +74,9 @@ ob_start();
                 <div class="lc-card__title">Atendimento em <?= htmlspecialchars((string)$r['attended_at'], ENT_QUOTES, 'UTF-8') ?></div>
                 <div class="lc-card__body">
                     <?= htmlspecialchars((string)($r['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                    <?php if (($r['template_name_snapshot'] ?? '') !== ''): ?>
+                        <div class="lc-muted" style="margin-top:6px;">Template: <?= htmlspecialchars((string)$r['template_name_snapshot'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php endif; ?>
                 </div>
             </div>
             <div>

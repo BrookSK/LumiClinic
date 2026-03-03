@@ -11,6 +11,7 @@ use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\PlanEntitlementsService;
+use App\Services\Compliance\SensitiveDataAuditService;
 use App\Services\Portal\PatientPortalAccessService;
 
 final class PatientService
@@ -45,7 +46,7 @@ final class PatientService
         return $repo->listActiveByClinic($clinicId);
     }
 
-    /** @param array{name:string,email:?string,phone:?string,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int} $data */
+    /** @param array{name:string,email:?string,phone:?string,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int,patient_origin_id?:?int} $data */
     public function create(array $data, string $ip): int
     {
         $auth = new AuthService($this->container);
@@ -87,7 +88,8 @@ final class PatientService
             $cpf,
             $data['address'],
             $data['notes'],
-            $data['reference_professional_id']
+            $data['reference_professional_id'],
+            array_key_exists('patient_origin_id', $data) ? ($data['patient_origin_id'] !== null ? (int)$data['patient_origin_id'] : null) : null
         );
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
@@ -105,7 +107,7 @@ final class PatientService
     }
 
     /** @return array<string, mixed>|null */
-    public function get(int $patientId, string $ip): ?array
+    public function get(int $patientId, string $ip, ?string $userAgent = null): ?array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -119,14 +121,20 @@ final class PatientService
         $patient = $repo->findClinicalById($clinicId, $patientId);
 
         if ($patient !== null) {
-            $audit = new AuditLogRepository($this->container->get(\PDO::class));
-            $audit->log($actorId, $clinicId, 'patients.view', ['patient_id' => $patientId], $ip);
+            (new SensitiveDataAuditService($this->container))->access(
+                'patients.view',
+                'patient',
+                $patientId,
+                ['patient_id' => $patientId],
+                $ip,
+                $userAgent
+            );
         }
 
         return $patient;
     }
 
-    /** @param array{name:string,email:?string,phone:?string,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int,status:string} $data */
+    /** @param array{name:string,email:?string,phone:?string,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int,patient_origin_id?:?int,status:string} $data */
     public function update(int $patientId, array $data, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
@@ -177,6 +185,7 @@ final class PatientService
             $data['address'],
             $data['notes'],
             $data['reference_professional_id'],
+            array_key_exists('patient_origin_id', $data) ? ($data['patient_origin_id'] !== null ? (int)$data['patient_origin_id'] : null) : null,
             $data['status']
         );
 

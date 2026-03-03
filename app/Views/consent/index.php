@@ -61,6 +61,7 @@ ob_start();
                 <th>Termo</th>
                 <th>Procedimento</th>
                 <th>Aceito em</th>
+                <th>Ações</th>
             </tr>
             </thead>
             <tbody>
@@ -68,9 +69,13 @@ ob_start();
                 <tr>
                     <td><?= (int)$a['id'] ?></td>
                     <?php $tid = (int)($a['term_id'] ?? 0); ?>
-                    <td><?= htmlspecialchars(($termTitleMap[$tid] ?? '') !== '' ? (string)$termTitleMap[$tid] : ('Termo #' . $tid), ENT_QUOTES, 'UTF-8') ?></td>
+                    <?php $snapTitle = trim((string)($a['term_title_snapshot'] ?? '')); ?>
+                    <td><?= htmlspecialchars($snapTitle !== '' ? $snapTitle : (($termTitleMap[$tid] ?? '') !== '' ? (string)$termTitleMap[$tid] : ('Termo #' . $tid)), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$a['procedure_type'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$a['accepted_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>
+                        <a class="lc-btn lc-btn--secondary" href="/consent/export?id=<?= (int)$a['id'] ?>" target="_blank">Exportar</a>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

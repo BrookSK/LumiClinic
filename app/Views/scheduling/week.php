@@ -16,6 +16,8 @@ $statusClassMap = isset($status_class_map) && is_array($status_class_map) ? $sta
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Agenda (Semana)';
 
+$funnelStages = $funnel_stages ?? [];
+
 $weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 $dateDisplay = $date;
@@ -402,6 +404,16 @@ ob_start();
                 <div class="lc-field">
                     <label class="lc-label">Observações (opcional)</label>
                     <input class="lc-input" type="text" name="notes" placeholder="" />
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Etapa do funil (opcional)</label>
+                    <select class="lc-select" name="funnel_stage_id">
+                        <option value="">(opcional)</option>
+                        <?php foreach (($funnelStages ?? []) as $st): ?>
+                            <option value="<?= (int)($st['id'] ?? 0) ?>"><?= htmlspecialchars((string)($st['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <div class="lc-modal__footer">

@@ -185,7 +185,7 @@ final class AnamnesisController extends Controller
         }
 
         $service = new AnamnesisService($this->container);
-        $data = $service->listForPatient($patientId, $request->ip());
+        $data = $service->listForPatient($patientId, $request->ip(), $request->header('user-agent'));
 
         return $this->view('anamnesis/index', [
             'patient' => $data['patient'],
@@ -210,7 +210,7 @@ final class AnamnesisController extends Controller
         }
 
         $service = new AnamnesisService($this->container);
-        $list = $service->listForPatient($patientId, $request->ip());
+        $list = $service->listForPatient($patientId, $request->ip(), $request->header('user-agent'));
         $tpl = $service->getTemplateWithFields($templateId);
 
         return $this->view('anamnesis/fill', [
@@ -251,7 +251,8 @@ final class AnamnesisController extends Controller
             $templateId,
             ($professionalId > 0 ? $professionalId : null),
             $answers,
-            $request->ip()
+            $request->ip(),
+            $request->header('user-agent')
         );
 
         return $this->redirect('/anamnesis?patient_id=' . $patientId);
@@ -310,5 +311,29 @@ final class AnamnesisController extends Controller
             'response' => $response,
             'answers' => $answers,
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorize('anamnesis.fill');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $responseId = (int)$request->input('id', 0);
+        if ($responseId <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        $service = new AnamnesisService($this->container);
+        try {
+            $data = $service->getExportData($responseId, $request->ip(), $request->header('user-agent'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/patients?error=' . urlencode($e->getMessage()));
+        }
+
+        return $this->view('anamnesis/export', $data);
     }
 }

@@ -44,11 +44,7 @@ ob_start();
                         <td>
                             <a class="lc-btn lc-btn--secondary" href="/portal/legal/read?id=<?= (int)($d['id'] ?? 0) ?>" target="_blank">Ler</a>
 
-                            <form method="post" action="/portal/legal/accept" style="display:inline-block; margin-left:6px;">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="id" value="<?= (int)($d['id'] ?? 0) ?>" />
-                                <button class="lc-btn lc-btn--primary" type="submit">Aceitar</button>
-                            </form>
+                            <a class="lc-btn lc-btn--primary" href="/portal/legal/sign?id=<?= (int)($d['id'] ?? 0) ?>" style="margin-left:6px;">Assinar</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>

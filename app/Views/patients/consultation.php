@@ -2,6 +2,7 @@
 /** @var array<string,mixed> $appointment */
 /** @var array<string,mixed>|null $patient */
 /** @var array<string,mixed>|null $consultation */
+/** @var list<array<string,mixed>>|null $clinical_alerts */
 /** @var list<array<string,mixed>> $attachments */
 /** @var list<array<string,mixed>> $professionals */
 /** @var string $error */
@@ -32,6 +33,14 @@ if (is_array($consultation) && isset($consultation['professional_id'])) {
 
 $notesValue = is_array($consultation) ? (string)($consultation['notes'] ?? '') : '';
 
+$clinicalAlerts = isset($clinical_alerts) && is_array($clinical_alerts) ? $clinical_alerts : [];
+$clinicalAlertsActive = [];
+foreach ($clinicalAlerts as $a) {
+    if ((int)($a['active'] ?? 0) === 1) {
+        $clinicalAlertsActive[] = $a;
+    }
+}
+
 ob_start();
 ?>
 
@@ -44,6 +53,25 @@ ob_start();
 <?php if (isset($success) && $success !== ''): ?>
     <div class="lc-alert lc-alert--success" style="margin-bottom:12px;">
         <?= htmlspecialchars((string)$success, ENT_QUOTES, 'UTF-8') ?>
+    </div>
+<?php endif; ?>
+
+<?php if ($clinicalAlertsActive !== []): ?>
+    <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;">
+        <div><strong>Alertas clínicos ativos</strong></div>
+        <div style="margin-top:6px;">
+            <?php foreach ($clinicalAlertsActive as $a): ?>
+                <div style="margin-bottom:6px;">
+                    <strong><?= htmlspecialchars((string)($a['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                    <?php if (($a['details'] ?? '') !== ''): ?>
+                        <div class="lc-muted"><?= nl2br(htmlspecialchars((string)$a['details'], ENT_QUOTES, 'UTF-8')) ?></div>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <div style="margin-top:6px;">
+            <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= $patientId ?>">Abrir ficha clínica</a>
+        </div>
     </div>
 <?php endif; ?>
 

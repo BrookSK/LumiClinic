@@ -9,6 +9,8 @@ ob_start();
     <div class="lc-badge lc-badge--primary">Comparação</div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Voltar</a>
+        <a class="lc-btn lc-btn--secondary" href="/medical-images/annotate?id=<?= (int)$beforeId ?>">Marcar (Antes)</a>
+        <a class="lc-btn lc-btn--secondary" href="/medical-images/annotate?id=<?= (int)$afterId ?>">Marcar (Depois)</a>
     </div>
 </div>
 

@@ -17,6 +17,7 @@ use App\Repositories\SchedulingBlockRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Repositories\ServiceMaterialDefaultRepository;
 use App\Services\Finance\FinancialService;
+use App\Services\Settings\OperationalConfigService;
 use App\Services\Auth\AuthService;
 use App\Services\Scheduling\AppointmentService;
 use App\Services\Scheduling\AvailabilityService;
@@ -279,6 +280,8 @@ final class ScheduleController extends Controller
                 $blocksByDay[$ymd][] = $b;
             }
 
+            $funnelStages = (new OperationalConfigService($this->container))->listActiveFunnelStages();
+
             return $this->view('scheduling/month', [
                 'date' => $date,
                 'view' => $view,
@@ -289,6 +292,7 @@ final class ScheduleController extends Controller
                 'items' => $items,
                 'by_day' => $byDay,
                 'blocks_by_day' => $blocksByDay,
+                'funnel_stages' => $funnelStages,
                 'status_class_map' => $indicators->statusClassMap(),
                 'professionals' => $professionals,
                 'services' => $services,
@@ -360,6 +364,8 @@ final class ScheduleController extends Controller
                 $blocksByDay[$ymd][] = $b;
             }
 
+            $funnelStages = (new OperationalConfigService($this->container))->listActiveFunnelStages();
+
             return $this->view('scheduling/week', [
                 'date' => $date,
                 'view' => $view,
@@ -380,6 +386,7 @@ final class ScheduleController extends Controller
                 'working_hours' => $workingHours,
                 'closed_days' => $closedDays,
                 'blocks_by_day' => $blocksByDay,
+                'funnel_stages' => $funnelStages,
             ]);
         }
 
@@ -417,6 +424,8 @@ final class ScheduleController extends Controller
             $date . ' 23:59:59'
         );
 
+        $funnelStages = (new OperationalConfigService($this->container))->listActiveFunnelStages();
+
         return $this->view('scheduling/index', [
             'date' => $date,
             'view' => $view,
@@ -432,6 +441,7 @@ final class ScheduleController extends Controller
             'per_page' => $perPage,
             'has_next' => $hasNext,
             'blocks' => $blocks,
+            'funnel_stages' => $funnelStages,
         ]);
     }
 
@@ -493,6 +503,7 @@ final class ScheduleController extends Controller
         $startAt = trim((string)$request->input('start_at', ''));
         $patientId = (int)$request->input('patient_id', 0);
         $notes = trim((string)$request->input('notes', ''));
+        $funnelStageId = (int)$request->input('funnel_stage_id', 0);
 
         if ($serviceId <= 0) {
             return $this->redirect('/schedule?error=' . urlencode('Servi?o ? obrigat?rio.'));
@@ -515,6 +526,8 @@ final class ScheduleController extends Controller
                 $startAt,
                 $origin,
                 $patientId > 0 ? $patientId : null,
+                $funnelStageId > 0 ? $funnelStageId : null,
+                null,
                 $notes,
                 $request->ip(),
             );

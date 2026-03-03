@@ -64,8 +64,93 @@ final class MedicalImageService
         return ['patient' => $patient, 'images' => $images, 'professionals' => $professionals, 'pairs' => $pairs, 'records' => $records];
     }
 
+    /** @return array{patient:array<string,mixed>,items:list<array{procedure_type:?string,session_number:?int,images:list<array<string,mixed>>}>} */
+    public function timelineForPatient(int $patientId, string $ip, ?string $userAgent = null): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+
+        $patients = new PatientRepository($pdo);
+        $patient = $patients->findClinicalById($clinicId, $patientId);
+        if ($patient === null) {
+            throw new \RuntimeException('Paciente inválido.');
+        }
+
+        $repo = new MedicalImageRepository($pdo);
+        $rows = $repo->listByPatientForTimeline($clinicId, $patientId, 500);
+
+        $items = [];
+        $map = [];
+        foreach ($rows as $r) {
+            $proc = isset($r['procedure_type']) ? (string)$r['procedure_type'] : '';
+            $procKey = $proc;
+            $sess = $r['session_number'] ?? null;
+            $sessKey = $sess === null ? 'null' : (string)(int)$sess;
+            $key = $procKey . '|' . $sessKey;
+
+            if (!isset($map[$key])) {
+                $map[$key] = count($items);
+                $items[] = [
+                    'procedure_type' => ($proc === '' ? null : $proc),
+                    'session_number' => (is_numeric($sess) ? (int)$sess : null),
+                    'images' => [],
+                ];
+            }
+
+            $idx = (int)$map[$key];
+            $items[$idx]['images'][] = $r;
+        }
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log(
+            $actorId,
+            $clinicId,
+            'medical_images.timeline.view',
+            ['patient_id' => $patientId],
+            $ip,
+            $roleCodes,
+            'patient',
+            $patientId,
+            $userAgent
+        );
+
+        return ['patient' => $patient, 'items' => $items];
+    }
+
+    /** @return array<string,mixed>|null */
+    public function getImage(int $imageId, string $ip, ?string $userAgent = null): ?array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            return null;
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new MedicalImageRepository($pdo);
+        $img = $repo->findById($clinicId, $imageId);
+        if ($img === null) {
+            return null;
+        }
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'medical_images.read', ['medical_image_id' => $imageId, 'patient_id' => (int)($img['patient_id'] ?? 0)], $ip, $roleCodes, 'medical_image', $imageId, $userAgent);
+
+        return $img;
+    }
+
     /**
-     * @param array{kind:string,taken_at:?string,procedure_type:?string,professional_id:?int,medical_record_id:?int} $meta
+     * @param array{kind:string,taken_at:?string,procedure_type:?string,session_number:?int,pose:?string,professional_id:?int,medical_record_id:?int} $meta
      */
     public function upload(int $patientId, array $meta, array $file, string $ip, ?string $userAgent = null): int
     {
@@ -144,6 +229,8 @@ final class MedicalImageService
             null,
             ($takenAt === '' ? null : $takenAt),
             $meta['procedure_type'],
+            $meta['session_number'],
+            $meta['pose'],
             $relative,
             $originalName,
             $mime,
@@ -169,7 +256,7 @@ final class MedicalImageService
     }
 
     /**
-     * @param array{taken_at:?string,procedure_type:?string,professional_id:?int,medical_record_id:?int} $meta
+     * @param array{taken_at:?string,procedure_type:?string,session_number:?int,pose:?string,professional_id:?int,medical_record_id:?int} $meta
      */
     public function uploadPair(int $patientId, array $meta, array $beforeFile, array $afterFile, string $ip, ?string $userAgent = null): string
     {
@@ -212,6 +299,8 @@ final class MedicalImageService
             $key,
             ($takenAt === '' ? null : $takenAt),
             $meta['procedure_type'],
+            $meta['session_number'],
+            $meta['pose'],
             $before['relative'],
             $before['original_name'],
             $before['mime'],
@@ -228,6 +317,8 @@ final class MedicalImageService
             $key,
             ($takenAt === '' ? null : $takenAt),
             $meta['procedure_type'],
+            $meta['session_number'],
+            $meta['pose'],
             $after['relative'],
             $after['original_name'],
             $after['mime'],

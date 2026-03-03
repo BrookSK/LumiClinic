@@ -67,10 +67,12 @@ ob_start();
                 <tr>
                     <td><?= (int)$r['id'] ?></td>
                     <?php $tid = (int)($r['template_id'] ?? 0); ?>
-                    <td><?= htmlspecialchars(($templateMap[$tid] ?? '') !== '' ? (string)$templateMap[$tid] : ('Template #' . $tid), ENT_QUOTES, 'UTF-8') ?></td>
+                    <?php $snapName = trim((string)($r['template_name_snapshot'] ?? '')); ?>
+                    <td><?= htmlspecialchars($snapName !== '' ? $snapName : (($templateMap[$tid] ?? '') !== '' ? (string)$templateMap[$tid] : ('Template #' . $tid)), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$r['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td>
                         <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/anamnesis/response?id=<?= (int)$r['id'] ?>">Ver</a>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/anamnesis/export?id=<?= (int)$r['id'] ?>" target="_blank">Exportar</a>
                     </td>
                 </tr>
             <?php endforeach; ?>

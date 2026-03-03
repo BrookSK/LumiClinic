@@ -202,6 +202,7 @@ $ico = [
                         || $isActive('/users')
                         || $isActive('/professionals')
                         || $isActive('/rbac')
+                        || $isActive('/settings/operational')
                         || $isActive('/services')
                         || $isActive('/anamnesis')
                         || $isActive('/blocks')
@@ -220,6 +221,7 @@ $ico = [
                         <div class="lc-nav__sub">
                             <?php if ($can('settings.read')): ?>
                                 <?= $navItem('/settings', 'Geral', $ico['settings'], $isActive('/settings') && !$isActive('/settings/legal-documents')) ?>
+                                <?= $navItem('/settings/operational', 'Operacional', $ico['settings'], $isActive('/settings/operational')) ?>
                             <?php endif; ?>
 
                             <?php if ($can('clinics.read') && $hasClinicContext): ?>

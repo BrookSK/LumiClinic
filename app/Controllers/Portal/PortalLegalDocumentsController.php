@@ -7,6 +7,7 @@ namespace App\Controllers\Portal;
 use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Services\Legal\LegalDocumentService;
+use App\Services\Legal\LegalDocumentSignatureService;
 use App\Services\Portal\PatientAuthService;
 
 final class PortalLegalDocumentsController extends Controller
@@ -80,6 +81,51 @@ final class PortalLegalDocumentsController extends Controller
         $path = (string)parse_url($ref, PHP_URL_PATH);
         if ($path !== '' && str_starts_with($path, '/portal')) {
             return $this->redirect($path);
+        }
+
+        return $this->redirect('/portal/required-consents');
+    }
+
+    public function sign(Request $request)
+    {
+        $auth = new PatientAuthService($this->container);
+        if ($auth->patientUserId() === null) {
+            return $this->redirect('/portal/login');
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/portal/required-consents');
+        }
+
+        try {
+            $data = (new LegalDocumentSignatureService($this->container))->getDocumentForSigningAsPatientUser($id);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/portal/required-consents?error=' . urlencode($e->getMessage()));
+        }
+
+        return $this->view('portal/legal_sign', [
+            'doc' => $data['doc'],
+        ]);
+    }
+
+    public function signStore(Request $request)
+    {
+        $auth = new PatientAuthService($this->container);
+        if ($auth->patientUserId() === null) {
+            return $this->redirect('/portal/login');
+        }
+
+        $id = (int)$request->input('id', 0);
+        $sig = (string)$request->input('signature_data_url', '');
+        if ($id <= 0) {
+            return $this->redirect('/portal/required-consents');
+        }
+
+        try {
+            (new LegalDocumentSignatureService($this->container))->signAsPatientUser($id, $sig, $request->ip(), $request->header('user-agent'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/portal/legal/sign?id=' . $id . '&error=' . urlencode($e->getMessage()));
         }
 
         return $this->redirect('/portal/required-consents');

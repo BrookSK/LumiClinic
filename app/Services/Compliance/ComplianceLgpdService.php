@@ -14,6 +14,8 @@ use App\Repositories\PatientUserRepository;
 use App\Repositories\PaymentRepository;
 use App\Repositories\SaleRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Compliance\DataExportService;
+use App\Services\Compliance\SensitiveDataAuditService;
 
 final class ComplianceLgpdService
 {
@@ -141,6 +143,17 @@ final class ComplianceLgpdService
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log($actorId, $clinicId, 'compliance.lgpd.export', ['request_id' => $requestId, 'patient_id' => $patientId], $ip, $roleCodes, 'patient', $patientId, $userAgent);
 
+        (new DataExportService($this->container))->record(
+            'compliance.lgpd.export',
+            'patient',
+            $patientId,
+            'json',
+            null,
+            ['request_id' => $requestId],
+            $ip,
+            $userAgent
+        );
+
         return $payload;
     }
 
@@ -180,6 +193,68 @@ final class ComplianceLgpdService
             $audit = new AuditLogRepository($pdo);
             $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
             $audit->log($actorId, $clinicId, 'compliance.lgpd.anonymize', ['request_id' => $requestId, 'patient_id' => $patientId], $ip, $roleCodes, 'patient', $patientId, $userAgent);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    public function deletePatientFromRequest(int $requestId, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $lgpd = new PatientLgpdRequestRepository($pdo);
+        $req = $lgpd->findById($clinicId, $requestId);
+        if ($req === null) {
+            throw new \RuntimeException('Solicitação inválida.');
+        }
+
+        if ((string)($req['type'] ?? '') !== 'delete') {
+            throw new \RuntimeException('Tipo de solicitação inválido.');
+        }
+
+        $patientId = (int)$req['patient_id'];
+        if ($patientId <= 0) {
+            throw new \RuntimeException('Paciente inválido.');
+        }
+
+        $patients = new PatientRepository($pdo);
+        $patient = $patients->findClinicalById($clinicId, $patientId);
+        if ($patient === null) {
+            throw new \RuntimeException('Paciente inválido.');
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $patients->softDelete($clinicId, $patientId);
+
+            $patientUsers = new PatientUserRepository($pdo);
+            $patientUsers->anonymizeByPatientId($clinicId, $patientId);
+
+            $lgpd->markProcessed($clinicId, $requestId, $actorId, 'Exclusão (soft-delete) executada.');
+
+            $audit = new AuditLogRepository($pdo);
+            $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+            $audit->log($actorId, $clinicId, 'compliance.lgpd.delete', ['request_id' => $requestId, 'patient_id' => $patientId], $ip, $roleCodes, 'patient', $patientId, $userAgent);
+
+            (new SensitiveDataAuditService($this->container))->access(
+                'sensitive.delete',
+                'patient',
+                $patientId,
+                ['module' => 'compliance', 'action' => 'lgpd_delete', 'request_id' => $requestId],
+                $ip,
+                $userAgent
+            );
 
             $pdo->commit();
         } catch (\Throwable $e) {

@@ -53,6 +53,7 @@ final class ConsultationController extends Controller
                 'patient' => $patient,
                 'consultation' => $data['consultation'],
                 'attachments' => $data['attachments'],
+                'clinical_alerts' => $data['clinical_alerts'] ?? [],
                 'professionals' => (new PatientService($this->container))->listReferenceProfessionals(),
                 'error' => trim((string)$request->input('error', '')),
                 'success' => trim((string)$request->input('success', '')),

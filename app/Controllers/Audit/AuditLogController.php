@@ -10,6 +10,7 @@ use App\Core\Http\Response;
 use App\Repositories\AuditLogRepository;
 use App\Services\Audit\AuditLogService;
 use App\Services\Auth\AuthService;
+use App\Services\Compliance\DataExportService;
 
 final class AuditLogController extends Controller
 {
@@ -89,6 +90,17 @@ final class AuditLogController extends Controller
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log($auth->userId(), $auth->clinicId(), 'audit.export', $filters, $request->ip(), $roleCodes, null, null, $request->header('user-agent'));
+
+        (new DataExportService($this->container))->record(
+            'audit.export',
+            null,
+            null,
+            'csv',
+            null,
+            $filters,
+            $request->ip(),
+            $request->header('user-agent')
+        );
 
         $out = fopen('php://temp', 'r+');
         fputcsv($out, ['id', 'created_at', 'user_id', 'action', 'ip_address', 'meta_json']);

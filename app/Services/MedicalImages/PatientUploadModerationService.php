@@ -58,6 +58,8 @@ final class PatientUploadModerationService
                 (string)$u['kind'],
                 $takenAt,
                 null,
+                null,
+                null,
                 (string)$u['storage_path'],
                 $u['original_filename'] !== null ? (string)$u['original_filename'] : null,
                 $u['mime_type'] !== null ? (string)$u['mime_type'] : null,

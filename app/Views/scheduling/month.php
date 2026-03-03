@@ -5,6 +5,8 @@ $professionalId = isset($professional_id) ? (int)$professional_id : 0;
 $title = 'Agenda (Mês)';
 $statusClassMap = isset($status_class_map) && is_array($status_class_map) ? $status_class_map : [];
 
+$funnelStages = $funnel_stages ?? [];
+
 $dateDisplay = (string)($date ?? '');
 $dateDt = \DateTimeImmutable::createFromFormat('Y-m-d', $dateDisplay);
 if ($dateDt !== false) {
@@ -247,6 +249,16 @@ ob_start();
                 <div class="lc-field">
                     <label class="lc-label">Observações (opcional)</label>
                     <input class="lc-input" type="text" name="notes" placeholder="" />
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Etapa do funil (opcional)</label>
+                    <select class="lc-select" name="funnel_stage_id">
+                        <option value="">(opcional)</option>
+                        <?php foreach (($funnelStages ?? []) as $st): ?>
+                            <option value="<?= (int)($st['id'] ?? 0) ?>"><?= htmlspecialchars((string)($st['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <div class="lc-modal__footer">

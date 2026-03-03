@@ -12,7 +12,8 @@ final class ClinicSettingsRepository
     public function findByClinicId(int $clinicId): ?array
     {
         $sql = "
-            SELECT clinic_id, timezone, language, week_start_weekday, week_end_weekday, encryption_key
+            SELECT clinic_id, timezone, language, week_start_weekday, week_end_weekday, encryption_key,
+                   openai_api_key_encrypted
             FROM clinic_settings
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -24,6 +25,23 @@ final class ClinicSettingsRepository
         $row = $stmt->fetch();
 
         return $row ?: null;
+    }
+
+    public function updateOpenAiApiKeyEncrypted(int $clinicId, ?string $encrypted): void
+    {
+        $sql = "
+            UPDATE clinic_settings
+               SET openai_api_key_encrypted = :encrypted,
+                   updated_at = NOW()
+             WHERE clinic_id = :clinic_id
+               AND deleted_at IS NULL
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'encrypted' => ($encrypted === null || trim($encrypted) === '') ? null : $encrypted,
+        ]);
     }
 
     public function update(int $clinicId, string $timezone, string $language, ?int $weekStartWeekday = null, ?int $weekEndWeekday = null): void

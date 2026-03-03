@@ -467,6 +467,8 @@ final class AppointmentRepository
         int $bufferAfterMinutes,
         string $status,
         string $origin,
+        ?int $funnelStageId,
+        ?int $lostReasonId,
         ?string $notes,
         ?int $createdByUserId
     ): int {
@@ -474,11 +476,11 @@ final class AppointmentRepository
             INSERT INTO appointments (
                 clinic_id, professional_id, service_id, patient_id, start_at, end_at,
                 buffer_before_minutes, buffer_after_minutes,
-                status, origin, notes, created_by_user_id, created_at
+                status, origin, funnel_stage_id, lost_reason_id, notes, created_by_user_id, created_at
             ) VALUES (
                 :clinic_id, :professional_id, :service_id, :patient_id, :start_at, :end_at,
                 :buffer_before_minutes, :buffer_after_minutes,
-                :status, :origin, :notes, :created_by_user_id, NOW()
+                :status, :origin, :funnel_stage_id, :lost_reason_id, :notes, :created_by_user_id, NOW()
             )
         ";
 
@@ -494,6 +496,8 @@ final class AppointmentRepository
             'buffer_after_minutes' => max(0, (int)$bufferAfterMinutes),
             'status' => $status,
             'origin' => $origin,
+            'funnel_stage_id' => ($funnelStageId !== null && $funnelStageId > 0 ? $funnelStageId : null),
+            'lost_reason_id' => ($lostReasonId !== null && $lostReasonId > 0 ? $lostReasonId : null),
             'notes' => ($notes === '' ? null : $notes),
             'created_by_user_id' => $createdByUserId,
         ]);

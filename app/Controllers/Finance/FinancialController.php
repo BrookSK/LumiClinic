@@ -9,6 +9,7 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Repositories\ServiceCatalogRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Compliance\DataExportService;
 use App\Services\Finance\FinancialService;
 use App\Services\Finance\SalesService;
 
@@ -409,6 +410,21 @@ final class FinancialController extends Controller
         $csv = stream_get_contents($out);
         fclose($out);
 
+        (new DataExportService($this->container))->record(
+            'finance.reports.export',
+            null,
+            null,
+            'csv',
+            null,
+            [
+                'from' => $from,
+                'to' => $to,
+                'professional_id' => $professionalId,
+            ],
+            $request->ip(),
+            $request->header('user-agent')
+        );
+
         $filename = 'finance_reports_' . date('Ymd_His') . '.csv';
         return Response::raw((string)$csv, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -500,6 +516,21 @@ final class FinancialController extends Controller
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
         $pdf = $dompdf->output();
+
+        (new DataExportService($this->container))->record(
+            'finance.reports.export',
+            null,
+            null,
+            'pdf',
+            null,
+            [
+                'from' => $from,
+                'to' => $to,
+                'professional_id' => $professionalId,
+            ],
+            $request->ip(),
+            $request->header('user-agent')
+        );
 
         $filename = 'finance_reports_' . date('Ymd_His') . '.pdf';
         return Response::raw((string)$pdf, 200, [

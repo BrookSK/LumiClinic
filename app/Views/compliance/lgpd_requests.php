@@ -88,6 +88,14 @@ ob_start();
                                         <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
                                         <button class="lc-btn lc-btn--danger" type="submit">Anonimizar</button>
                                     </form>
+
+                                    <?php if ((string)($r['type'] ?? '') === 'delete'): ?>
+                                        <form method="post" action="/compliance/lgpd-requests/delete" class="lc-form">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
+                                            <button class="lc-btn lc-btn--danger" type="submit">Excluir (soft)</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

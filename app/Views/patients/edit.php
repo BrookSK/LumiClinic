@@ -4,6 +4,7 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $patient = $patient ?? null;
 $professionals = $professionals ?? [];
+$patientOrigins = $patient_origins ?? [];
 
 $addressText = (string)($patient['address'] ?? '');
 $addressLines = preg_split('/\r\n|\r|\n/', $addressText) ?: [];
@@ -102,6 +103,16 @@ ob_start();
             <option value="" <?= $currentRef === 0 ? 'selected' : '' ?>>Nenhum</option>
             <?php foreach ($professionals as $pr): ?>
                 <option value="<?= (int)$pr['id'] ?>" <?= (int)$pr['id'] === $currentRef ? 'selected' : '' ?>><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
+            <?php endforeach; ?>
+        </select>
+
+        <label class="lc-label">Origem do paciente</label>
+        <?php $currentOrigin = (int)($patient['patient_origin_id'] ?? 0); ?>
+        <select class="lc-select" name="patient_origin_id">
+            <option value="" <?= $currentOrigin === 0 ? 'selected' : '' ?>>(opcional)</option>
+            <?php foreach (($patientOrigins ?? []) as $o): ?>
+                <?php $oid = (int)($o['id'] ?? 0); ?>
+                <option value="<?= $oid ?>" <?= ($oid > 0 && $oid === $currentOrigin) ? 'selected' : '' ?>><?= htmlspecialchars((string)($o['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
         </select>
 

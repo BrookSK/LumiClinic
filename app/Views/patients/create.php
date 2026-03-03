@@ -3,6 +3,7 @@ $title = 'Novo paciente';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $professionals = $professionals ?? [];
+$patientOrigins = $patient_origins ?? [];
 ob_start();
 ?>
 <div class="lc-card">
@@ -53,6 +54,14 @@ ob_start();
             <option value="">Nenhum</option>
             <?php foreach ($professionals as $pr): ?>
                 <option value="<?= (int)$pr['id'] ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
+            <?php endforeach; ?>
+        </select>
+
+        <label class="lc-label">Origem do paciente</label>
+        <select class="lc-select" name="patient_origin_id">
+            <option value="">(opcional)</option>
+            <?php foreach (($patientOrigins ?? []) as $o): ?>
+                <option value="<?= (int)($o['id'] ?? 0) ?>"><?= htmlspecialchars((string)($o['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
         </select>
 

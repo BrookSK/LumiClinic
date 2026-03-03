@@ -8,6 +8,8 @@ use App\Core\Container\Container;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AppointmentLogRepository;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\ClinicFunnelStageRepository;
+use App\Repositories\ClinicLostReasonRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Repositories\SchedulingBlockRepository;
@@ -25,6 +27,8 @@ final class AppointmentService
         string $startAt,
         string $origin,
         ?int $patientId,
+        ?int $funnelStageId,
+        ?int $lostReasonId,
         ?string $notes,
         string $ip
     ): int {
@@ -88,6 +92,20 @@ final class AppointmentService
         $blocksRepo = new SchedulingBlockRepository($pdo);
         $apptRepo = new AppointmentRepository($pdo);
 
+        if ($funnelStageId !== null && $funnelStageId > 0) {
+            $stageRepo = new ClinicFunnelStageRepository($pdo);
+            if (!$stageRepo->existsActiveByClinicAndId($clinicId, (int)$funnelStageId)) {
+                throw new \RuntimeException('Etapa do funil inválida.');
+            }
+        }
+
+        if ($lostReasonId !== null && $lostReasonId > 0) {
+            $lostRepo = new ClinicLostReasonRepository($pdo);
+            if (!$lostRepo->existsActiveByClinicAndId($clinicId, (int)$lostReasonId)) {
+                throw new \RuntimeException('Motivo de perda inválido.');
+            }
+        }
+
         try {
             $pdo->beginTransaction();
 
@@ -112,6 +130,8 @@ final class AppointmentService
                 $bufferAfter,
                 'scheduled',
                 $origin,
+                $funnelStageId,
+                $lostReasonId,
                 $notes,
                 $userId
             );

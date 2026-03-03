@@ -20,6 +20,7 @@ ob_start();
         <div class="lc-muted" style="margin-top:6px;">Envie imagens do paciente e, se necessário, crie comparações (Antes x Depois).</div>
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
+        <a class="lc-btn lc-btn--secondary" href="/medical-images/timeline?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Timeline</a>
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar ao paciente</a>
     </div>
 </div>
@@ -69,6 +70,15 @@ ob_start();
                     <div class="lc-field">
                         <label class="lc-label">Procedimento (opcional)</label>
                         <input class="lc-input" type="text" name="procedure_type" />
+                    </div>
+                    <div class="lc-field">
+                        <label class="lc-label">Sessão (opcional)</label>
+                        <input class="lc-input" type="number" name="session_number" min="1" step="1" />
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Ângulo/Posição (opcional)</label>
+                        <input class="lc-input" type="text" name="pose" />
                     </div>
                     <div class="lc-field">
                         <label class="lc-label">Profissional (opcional)</label>
@@ -132,6 +142,15 @@ ob_start();
                         <div class="lc-field">
                             <label class="lc-label">Procedimento (opcional)</label>
                             <input class="lc-input" type="text" name="procedure_type" />
+                        </div>
+                        <div class="lc-field">
+                            <label class="lc-label">Sessão (opcional)</label>
+                            <input class="lc-input" type="number" name="session_number" min="1" step="1" />
+                        </div>
+
+                        <div class="lc-field">
+                            <label class="lc-label">Ângulo/Posição (opcional)</label>
+                            <input class="lc-input" type="text" name="pose" />
                         </div>
 
                         <div class="lc-field">
@@ -217,6 +236,8 @@ ob_start();
                             <th>Tipo</th>
                             <th>Data</th>
                             <th>Procedimento</th>
+                            <th>Sessão</th>
+                            <th>Ângulo/Posição</th>
                             <th>Arquivo</th>
                             <th>Ações</th>
                         </tr>
@@ -229,9 +250,12 @@ ob_start();
                                 <td><?= htmlspecialchars((string)($kindLabel[$k] ?? $k), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars((string)($img['taken_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars((string)($img['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($img['session_number'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($img['pose'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars((string)($img['original_filename'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td class="lc-flex lc-flex--wrap" style="gap:8px;">
                                     <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= (int)$img['id'] ?>" target="_blank">Abrir</a>
+                                    <a class="lc-btn lc-btn--secondary" href="/medical-images/annotate?id=<?= (int)$img['id'] ?>">Marcar</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

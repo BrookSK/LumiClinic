@@ -13,6 +13,7 @@ final class ConsentAcceptanceRepository
     {
         $sql = "
             SELECT ca.id, ca.clinic_id, ca.term_id, ca.patient_id, ca.procedure_type,
+                   ca.term_procedure_type_snapshot, ca.term_title_snapshot, ca.term_body_snapshot, ca.term_updated_at_snapshot,
                    ca.accepted_by_user_id, ca.ip_address, ca.accepted_at, ca.created_at
             FROM consent_acceptances ca
             WHERE ca.clinic_id = :clinic_id
@@ -36,6 +37,10 @@ final class ConsentAcceptanceRepository
         int $termId,
         int $patientId,
         string $procedureType,
+        ?string $termProcedureTypeSnapshot,
+        ?string $termTitleSnapshot,
+        ?string $termBodySnapshot,
+        ?string $termUpdatedAtSnapshot,
         int $acceptedByUserId,
         string $ip,
         string $acceptedAt
@@ -43,11 +48,13 @@ final class ConsentAcceptanceRepository
         $sql = "
             INSERT INTO consent_acceptances (
                 clinic_id, term_id, patient_id, procedure_type,
+                term_procedure_type_snapshot, term_title_snapshot, term_body_snapshot, term_updated_at_snapshot,
                 accepted_by_user_id, ip_address, accepted_at,
                 created_at
             )
             VALUES (
                 :clinic_id, :term_id, :patient_id, :procedure_type,
+                :term_procedure_type_snapshot, :term_title_snapshot, :term_body_snapshot, :term_updated_at_snapshot,
                 :accepted_by_user_id, :ip_address, :accepted_at,
                 NOW()
             )
@@ -59,6 +66,10 @@ final class ConsentAcceptanceRepository
             'term_id' => $termId,
             'patient_id' => $patientId,
             'procedure_type' => $procedureType,
+            'term_procedure_type_snapshot' => ($termProcedureTypeSnapshot !== null && trim($termProcedureTypeSnapshot) !== '' ? $termProcedureTypeSnapshot : null),
+            'term_title_snapshot' => ($termTitleSnapshot !== null && trim($termTitleSnapshot) !== '' ? $termTitleSnapshot : null),
+            'term_body_snapshot' => ($termBodySnapshot !== null && trim($termBodySnapshot) !== '' ? $termBodySnapshot : null),
+            'term_updated_at_snapshot' => ($termUpdatedAtSnapshot !== null && trim($termUpdatedAtSnapshot) !== '' ? $termUpdatedAtSnapshot : null),
             'accepted_by_user_id' => $acceptedByUserId,
             'ip_address' => ($ip === '' ? null : $ip),
             'accepted_at' => $acceptedAt,
@@ -72,6 +83,7 @@ final class ConsentAcceptanceRepository
     {
         $sql = "
             SELECT ca.id, ca.clinic_id, ca.term_id, ca.patient_id, ca.procedure_type,
+                   ca.term_procedure_type_snapshot, ca.term_title_snapshot, ca.term_body_snapshot, ca.term_updated_at_snapshot,
                    ca.accepted_by_user_id, ca.ip_address, ca.accepted_at, ca.created_at
             FROM consent_acceptances ca
             WHERE ca.id = :id

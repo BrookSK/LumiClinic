@@ -6,6 +6,8 @@ namespace App\Controllers\MedicalImages;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Core\Http\Response;
+use App\Repositories\MedicalImageAnnotationRepository;
 use App\Services\Auth\AuthService;
 use App\Services\MedicalImages\MedicalImageService;
 
@@ -69,6 +71,8 @@ final class MedicalImageController extends Controller
         $kind = trim((string)$request->input('kind', 'other'));
         $takenAt = trim((string)$request->input('taken_at', ''));
         $procedureType = trim((string)$request->input('procedure_type', ''));
+        $sessionNumber = (int)$request->input('session_number', 0);
+        $pose = trim((string)$request->input('pose', ''));
         $professionalId = (int)$request->input('professional_id', 0);
         $medicalRecordId = (int)$request->input('medical_record_id', 0);
 
@@ -82,6 +86,8 @@ final class MedicalImageController extends Controller
             'kind' => $kind,
             'taken_at' => ($takenAt === '' ? null : $takenAt),
             'procedure_type' => ($procedureType === '' ? null : $procedureType),
+            'session_number' => ($sessionNumber > 0 ? $sessionNumber : null),
+            'pose' => ($pose === '' ? null : $pose),
             'professional_id' => ($professionalId > 0 ? $professionalId : null),
             'medical_record_id' => ($medicalRecordId > 0 ? $medicalRecordId : null),
         ], $file, $request->ip(), $request->header('user-agent'));
@@ -105,6 +111,8 @@ final class MedicalImageController extends Controller
 
         $takenAt = trim((string)$request->input('taken_at', ''));
         $procedureType = trim((string)$request->input('procedure_type', ''));
+        $sessionNumber = (int)$request->input('session_number', 0);
+        $pose = trim((string)$request->input('pose', ''));
         $professionalId = (int)$request->input('professional_id', 0);
         $medicalRecordId = (int)$request->input('medical_record_id', 0);
 
@@ -118,6 +126,8 @@ final class MedicalImageController extends Controller
         $key = $service->uploadPair($patientId, [
             'taken_at' => ($takenAt === '' ? null : $takenAt),
             'procedure_type' => ($procedureType === '' ? null : $procedureType),
+            'session_number' => ($sessionNumber > 0 ? $sessionNumber : null),
+            'pose' => ($pose === '' ? null : $pose),
             'professional_id' => ($professionalId > 0 ? $professionalId : null),
             'medical_record_id' => ($medicalRecordId > 0 ? $medicalRecordId : null),
         ], $before, $after, $request->ip(), $request->header('user-agent'));
@@ -164,6 +174,138 @@ final class MedicalImageController extends Controller
             'before_id' => $beforeId,
             'after_id' => $afterId,
         ]);
+    }
+
+    public function timeline(Request $request)
+    {
+        $this->authorize('medical_images.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $patientId = (int)$request->input('patient_id', 0);
+        if ($patientId <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        $service = new MedicalImageService($this->container);
+        $data = $service->timelineForPatient($patientId, $request->ip(), $request->header('user-agent'));
+
+        return $this->view('medical-images/timeline', [
+            'patient' => $data['patient'],
+            'items' => $data['items'],
+        ]);
+    }
+
+    public function annotate(Request $request)
+    {
+        $this->authorize('medical_images.read');
+        $this->authorize('files.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        $service = new MedicalImageService($this->container);
+        $img = $service->getImage($id, $request->ip(), $request->header('user-agent'));
+        if ($img === null) {
+            return $this->redirect('/patients');
+        }
+
+        return $this->view('medical-images/annotate', [
+            'image' => $img,
+            'csrf' => $_SESSION['_csrf'] ?? '',
+        ]);
+    }
+
+    public function annotationsJson(Request $request): Response
+    {
+        $this->authorize('medical_images.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return Response::json(['items' => []]);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::json(['items' => []]);
+        }
+
+        $imageId = (int)$request->input('image_id', 0);
+        if ($imageId <= 0) {
+            return Response::json(['items' => []]);
+        }
+
+        $repo = new MedicalImageAnnotationRepository($this->container->get(\PDO::class));
+        $items = $repo->listByImage($clinicId, $imageId, 500);
+
+        return Response::json(['items' => $items]);
+    }
+
+    public function annotationsCreate(Request $request)
+    {
+        $this->authorize('medical_images.upload');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $imageId = (int)$request->input('image_id', 0);
+        $payload = trim((string)$request->input('payload_json', ''));
+        $note = trim((string)$request->input('note', ''));
+        if ($imageId <= 0 || $payload === '') {
+            return $this->redirect('/patients');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            return $this->redirect('/patients');
+        }
+
+        $repo = new MedicalImageAnnotationRepository($this->container->get(\PDO::class));
+        $repo->create($clinicId, $imageId, $payload, ($note === '' ? null : $note), $actorId);
+
+        return $this->redirect('/medical-images/annotate?id=' . $imageId);
+    }
+
+    public function annotationsDelete(Request $request)
+    {
+        $this->authorize('medical_images.upload');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        $imageId = (int)$request->input('image_id', 0);
+        if ($id <= 0 || $imageId <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/patients');
+        }
+
+        $repo = new MedicalImageAnnotationRepository($this->container->get(\PDO::class));
+        $repo->softDelete($clinicId, $id);
+
+        return $this->redirect('/medical-images/annotate?id=' . $imageId);
     }
 
     public function file(Request $request)

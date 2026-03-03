@@ -11,6 +11,7 @@ use App\Controllers\Bi\BiController;
 use App\Controllers\Clinics\ClinicController;
 use App\Controllers\Clinics\ClinicLegalDocumentsController;
 use App\Controllers\Clinics\ClinicLegalAcceptancesController;
+use App\Controllers\Clinics\ClinicLegalSignaturesController;
 use App\Controllers\DashboardController;
 use App\Controllers\Rbac\RbacController;
 use App\Controllers\Scheduling\BlockController;
@@ -20,6 +21,7 @@ use App\Controllers\Scheduling\ScheduleController;
 use App\Controllers\Scheduling\ServiceController;
 use App\Controllers\Scheduling\ServiceMaterialsController;
 use App\Controllers\Settings\SettingsController;
+use App\Controllers\Settings\OperationalController;
 use App\Controllers\Settings\LegalDocumentsController as SettingsLegalDocumentsController;
 use App\Controllers\System\SystemClinicController;
 use App\Controllers\System\SystemBillingAdminController;
@@ -30,10 +32,12 @@ use App\Controllers\System\SystemLegalOwnerDocumentsController;
 use App\Controllers\System\SystemLegalOwnerAcceptancesController;
 use App\Controllers\Users\UserController;
 use App\Controllers\Patients\PatientController;
+use App\Controllers\Patients\PatientClinicalSheetController;
 use App\Controllers\Patients\PatientPortalAccessController;
 use App\Controllers\Patients\PatientContentController;
 use App\Controllers\Patients\PatientProfileChangeRequestController;
 use App\Controllers\MedicalRecords\MedicalRecordController;
+use App\Controllers\MedicalRecords\MedicalRecordTemplateController;
 use App\Controllers\MedicalImages\MedicalImageController;
 use App\Controllers\MedicalImages\PatientUploadModerationController;
 use App\Controllers\Anamnesis\AnamnesisController;
@@ -92,6 +96,8 @@ $router->post('/logout', [LoginController::class, 'logout']);
 
 $router->get('/legal/required', [LegalDocumentsController::class, 'required']);
 $router->post('/legal/accept', [LegalDocumentsController::class, 'accept']);
+$router->get('/legal/sign', [LegalDocumentsController::class, 'sign']);
+$router->post('/legal/sign', [LegalDocumentsController::class, 'signStore']);
 
 $router->get('/portal/login', [AuthPatientController::class, 'showLogin']);
 $router->post('/portal/login', [AuthPatientController::class, 'login']);
@@ -124,6 +130,8 @@ $router->post('/portal/perfil/request-change', [PortalProfileController::class, 
 $router->get('/portal/required-consents', [PortalLegalDocumentsController::class, 'required']);
 $router->get('/portal/legal/read', [PortalLegalDocumentsController::class, 'read']);
 $router->post('/portal/legal/accept', [PortalLegalDocumentsController::class, 'accept']);
+$router->get('/portal/legal/sign', [PortalLegalDocumentsController::class, 'sign']);
+$router->post('/portal/legal/sign', [PortalLegalDocumentsController::class, 'signStore']);
 $router->get('/portal/seguranca', [PortalSecurityController::class, 'index']);
 $router->post('/portal/seguranca/reset', [PortalSecurityController::class, 'sendReset']);
 
@@ -204,6 +212,8 @@ $router->get('/clinic/legal-documents', [ClinicLegalDocumentsController::class, 
 $router->get('/clinic/legal-documents/edit', [ClinicLegalDocumentsController::class, 'edit']);
 $router->post('/clinic/legal-documents/save', [ClinicLegalDocumentsController::class, 'save']);
 $router->get('/clinic/legal-acceptances/portal', [ClinicLegalAcceptancesController::class, 'portal']);
+$router->get('/clinic/legal-signatures', [ClinicLegalSignaturesController::class, 'index']);
+$router->get('/clinic/legal-signatures/view', [ClinicLegalSignaturesController::class, 'show']);
 
 $router->get('/clinic/working-hours', [ClinicController::class, 'workingHours']);
 $router->post('/clinic/working-hours', [ClinicController::class, 'storeWorkingHour']);
@@ -224,6 +234,19 @@ $router->post('/users/disable', [UserController::class, 'disable']);
 $router->get('/settings', [SettingsController::class, 'index']);
 $router->post('/settings', [SettingsController::class, 'update']);
 
+$router->get('/settings/ai', [SettingsController::class, 'ai']);
+$router->post('/settings/ai', [SettingsController::class, 'aiUpdate']);
+$router->post('/settings/ai/test', [SettingsController::class, 'aiTest']);
+$router->post('/settings/ai/clear', [SettingsController::class, 'aiClear']);
+
+$router->get('/settings/operational', [OperationalController::class, 'index']);
+$router->post('/settings/operational/funnel-stages/create', [OperationalController::class, 'createFunnelStage']);
+$router->post('/settings/operational/funnel-stages/delete', [OperationalController::class, 'deleteFunnelStage']);
+$router->post('/settings/operational/lost-reasons/create', [OperationalController::class, 'createLostReason']);
+$router->post('/settings/operational/lost-reasons/delete', [OperationalController::class, 'deleteLostReason']);
+$router->post('/settings/operational/patient-origins/create', [OperationalController::class, 'createPatientOrigin']);
+$router->post('/settings/operational/patient-origins/delete', [OperationalController::class, 'deletePatientOrigin']);
+
 $router->get('/settings/legal-documents', [SettingsLegalDocumentsController::class, 'index']);
 $router->get('/settings/legal-documents/edit', [SettingsLegalDocumentsController::class, 'edit']);
 $router->post('/settings/legal-documents/save', [SettingsLegalDocumentsController::class, 'save']);
@@ -238,6 +261,7 @@ $router->get('/compliance/lgpd-requests', [ComplianceLgpdController::class, 'ind
 $router->post('/compliance/lgpd-requests/process', [ComplianceLgpdController::class, 'process']);
 $router->get('/compliance/lgpd-requests/export', [ComplianceLgpdController::class, 'export']);
 $router->post('/compliance/lgpd-requests/anonymize', [ComplianceLgpdController::class, 'anonymize']);
+$router->post('/compliance/lgpd-requests/delete', [ComplianceLgpdController::class, 'delete']);
 
 $router->get('/compliance/certifications', [ComplianceCertificationController::class, 'index']);
 $router->post('/compliance/certifications/policies/create', [ComplianceCertificationController::class, 'createPolicy']);
@@ -357,6 +381,15 @@ $router->post('/patients/consultation/save', [\App\Controllers\Patients\Consulta
 $router->post('/patients/consultation/attachments/upload', [\App\Controllers\Patients\ConsultationController::class, 'upload']);
 $router->get('/patients/consultation/attachments/file', [\App\Controllers\Patients\ConsultationController::class, 'file']);
 
+$router->get('/patients/clinical-sheet', [PatientClinicalSheetController::class, 'show']);
+$router->post('/patients/clinical-sheet/allergies/create', [PatientClinicalSheetController::class, 'createAllergy']);
+$router->post('/patients/clinical-sheet/allergies/delete', [PatientClinicalSheetController::class, 'deleteAllergy']);
+$router->post('/patients/clinical-sheet/conditions/create', [PatientClinicalSheetController::class, 'createCondition']);
+$router->post('/patients/clinical-sheet/conditions/delete', [PatientClinicalSheetController::class, 'deleteCondition']);
+$router->post('/patients/clinical-sheet/alerts/create', [PatientClinicalSheetController::class, 'createAlert']);
+$router->post('/patients/clinical-sheet/alerts/resolve', [PatientClinicalSheetController::class, 'resolveAlert']);
+$router->post('/patients/clinical-sheet/alerts/delete', [PatientClinicalSheetController::class, 'deleteAlert']);
+
 $router->get('/patients/portal-access', [PatientPortalAccessController::class, 'show']);
 $router->post('/patients/portal-access/ensure', [PatientPortalAccessController::class, 'ensure']);
 
@@ -374,11 +407,22 @@ $router->post('/medical-records/create', [MedicalRecordController::class, 'store
 $router->get('/medical-records/edit', [MedicalRecordController::class, 'edit']);
 $router->post('/medical-records/edit', [MedicalRecordController::class, 'update']);
 
+$router->get('/medical-record-templates', [MedicalRecordTemplateController::class, 'index']);
+$router->get('/medical-record-templates/create', [MedicalRecordTemplateController::class, 'create']);
+$router->post('/medical-record-templates/create', [MedicalRecordTemplateController::class, 'store']);
+$router->get('/medical-record-templates/edit', [MedicalRecordTemplateController::class, 'edit']);
+$router->post('/medical-record-templates/edit', [MedicalRecordTemplateController::class, 'update']);
+
 $router->get('/medical-images', [MedicalImageController::class, 'index']);
 $router->post('/medical-images/upload', [MedicalImageController::class, 'upload']);
 $router->post('/medical-images/upload-pair', [MedicalImageController::class, 'uploadPair']);
+$router->get('/medical-images/timeline', [MedicalImageController::class, 'timeline']);
 $router->get('/medical-images/compare', [MedicalImageController::class, 'compare']);
 $router->get('/medical-images/file', [MedicalImageController::class, 'file']);
+$router->get('/medical-images/annotate', [MedicalImageController::class, 'annotate']);
+$router->get('/medical-images/annotations.json', [MedicalImageController::class, 'annotationsJson']);
+$router->post('/medical-images/annotations/create', [MedicalImageController::class, 'annotationsCreate']);
+$router->post('/medical-images/annotations/delete', [MedicalImageController::class, 'annotationsDelete']);
 
 $router->get('/medical-images/moderation', [PatientUploadModerationController::class, 'index']);
 $router->post('/medical-images/moderation/approve', [PatientUploadModerationController::class, 'approve']);
@@ -394,6 +438,7 @@ $router->get('/anamnesis', [AnamnesisController::class, 'index']);
 $router->get('/anamnesis/fill', [AnamnesisController::class, 'fill']);
 $router->post('/anamnesis/fill', [AnamnesisController::class, 'submit']);
 $router->get('/anamnesis/response', [AnamnesisController::class, 'response']);
+$router->get('/anamnesis/export', [AnamnesisController::class, 'export']);
 
 $router->get('/consent-terms', [ConsentController::class, 'terms']);
 $router->get('/consent-terms/create', [ConsentController::class, 'createTerm']);
@@ -404,6 +449,7 @@ $router->post('/consent-terms/edit', [ConsentController::class, 'updateTerm']);
 $router->get('/consent', [ConsentController::class, 'index']);
 $router->get('/consent/accept', [ConsentController::class, 'accept']);
 $router->post('/consent/accept', [ConsentController::class, 'submit']);
+$router->get('/consent/export', [ConsentController::class, 'export']);
 $router->get('/signatures/file', [ConsentController::class, 'signatureFile']);
 
 $router->get('/sys/clinics', [SystemClinicController::class, 'index']);

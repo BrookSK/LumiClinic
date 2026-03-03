@@ -9,9 +9,12 @@ use App\Core\Http\Response;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\ConsentAcceptanceRepository;
 use App\Repositories\ConsentTermRepository;
+use App\Repositories\DataVersionRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\SignatureRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Compliance\DataExportService;
+use App\Services\Compliance\SensitiveDataAuditService;
 use App\Services\Storage\PrivateStorage;
 
 final class ConsentService
@@ -94,7 +97,7 @@ final class ConsentService
     }
 
     /** @return array{patient:array<string,mixed>,terms:list<array<string,mixed>>,acceptances:list<array<string,mixed>>,signatures:list<array<string,mixed>>} */
-    public function listForPatient(int $patientId, string $ip): array
+    public function listForPatient(int $patientId, string $ip, ?string $userAgent = null): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -115,7 +118,17 @@ final class ConsentService
         $sigRepo = new SignatureRepository($pdo);
 
         $audit = new AuditLogRepository($pdo);
-        $audit->log($actorId, $clinicId, 'consent_terms.view', ['patient_id' => $patientId], $ip);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'consent_terms.view', ['patient_id' => $patientId], $ip, $roleCodes, 'patient', $patientId, $userAgent);
+
+        (new SensitiveDataAuditService($this->container))->access(
+            'sensitive.access',
+            'patient',
+            $patientId,
+            ['module' => 'consent_terms', 'action' => 'list', 'patient_id' => $patientId],
+            $ip,
+            $userAgent
+        );
 
         return [
             'patient' => $patient,
@@ -159,7 +172,7 @@ final class ConsentService
         return ['patient' => $patient, 'term' => $term];
     }
 
-    public function accept(int $patientId, int $termId, string $signatureDataUrl, string $ip): int
+    public function accept(int $patientId, int $termId, string $signatureDataUrl, string $ip, ?string $userAgent = null): int
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -193,9 +206,34 @@ final class ConsentService
                 $termId,
                 $patientId,
                 (string)$term['procedure_type'],
+                (string)($term['procedure_type'] ?? ''),
+                (string)($term['title'] ?? ''),
+                (string)($term['body'] ?? ''),
+                isset($term['updated_at']) && $term['updated_at'] !== null ? (string)$term['updated_at'] : null,
                 $actorId,
                 $ip,
                 $acceptedAt
+            );
+
+            (new DataVersionRepository($pdo))->record(
+                $clinicId,
+                'consent_acceptance',
+                $acceptanceId,
+                'create',
+                [
+                    'term_id' => $termId,
+                    'patient_id' => $patientId,
+                    'accepted_at' => $acceptedAt,
+                    'term_snapshot' => [
+                        'procedure_type' => (string)($term['procedure_type'] ?? ''),
+                        'title' => (string)($term['title'] ?? ''),
+                        'body' => (string)($term['body'] ?? ''),
+                        'updated_at' => $term['updated_at'] ?? null,
+                    ],
+                ],
+                $actorId,
+                $ip,
+                $userAgent
             );
 
             $token = bin2hex(random_bytes(16));
@@ -230,6 +268,78 @@ final class ConsentService
             }
             throw $e;
         }
+    }
+
+    /** @return array{acceptance:array<string,mixed>,term:array<string,mixed>,patient:array<string,mixed>,signature:?array<string,mixed>} */
+    public function getAcceptanceExportData(int $acceptanceId, string $ip, ?string $userAgent = null): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+
+        $accRepo = new ConsentAcceptanceRepository($pdo);
+        $acc = $accRepo->findById($clinicId, $acceptanceId);
+        if ($acc === null) {
+            throw new \RuntimeException('Aceite inválido.');
+        }
+
+        $patients = new PatientRepository($pdo);
+        $patientId = (int)($acc['patient_id'] ?? 0);
+        $patient = $patients->findClinicalById($clinicId, $patientId);
+        if ($patient === null) {
+            throw new \RuntimeException('Paciente inválido.');
+        }
+
+        $terms = new ConsentTermRepository($pdo);
+        $termId = (int)($acc['term_id'] ?? 0);
+        $term = $terms->findById($clinicId, $termId);
+        if ($term === null) {
+            $term = ['id' => $termId, 'procedure_type' => null, 'title' => null, 'body' => null, 'updated_at' => null];
+        }
+
+        $sigRepo = new SignatureRepository($pdo);
+        $sig = null;
+        foreach ($sigRepo->listByPatient($clinicId, $patientId, 200) as $s) {
+            if ((int)($s['term_acceptance_id'] ?? 0) === $acceptanceId) {
+                $sig = $s;
+                break;
+            }
+        }
+
+        $audit = new AuditLogRepository($pdo);
+        $audit->log($actorId, $clinicId, 'consent_terms.export', [
+            'acceptance_id' => $acceptanceId,
+            'patient_id' => $patientId,
+            'term_id' => $termId,
+            'signature_id' => $sig !== null ? (int)($sig['id'] ?? 0) : null,
+        ], $ip, null, 'patient', $patientId, $userAgent);
+
+        (new DataExportService($this->container))->record(
+            'consent_terms.export',
+            'patient',
+            $patientId,
+            'html',
+            null,
+            [
+                'acceptance_id' => $acceptanceId,
+                'term_id' => $termId,
+                'signature_id' => $sig !== null ? (int)($sig['id'] ?? 0) : null,
+            ],
+            $ip,
+            $userAgent
+        );
+
+        return [
+            'acceptance' => $acc,
+            'term' => $term,
+            'patient' => $patient,
+            'signature' => $sig,
+        ];
     }
 
     public function serveSignature(int $signatureId, string $ip, ?string $userAgent = null): Response
