@@ -581,11 +581,7 @@ $ico = [
                             <div class="lc-flex lc-gap-sm" style="flex-shrink:0;">
                                 <button class="lc-btn lc-btn--secondary" type="button" data-lc-read-doc="<?= (int)($d['id'] ?? 0) ?>">Ler</button>
 
-                                <form method="post" action="/legal/accept" style="display:inline-block;">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= (int)($d['id'] ?? 0) ?>" />
-                                    <button class="lc-btn lc-btn--primary" type="submit">Aceitar</button>
-                                </form>
+                                <a class="lc-btn lc-btn--primary" href="/legal/sign?id=<?= (int)($d['id'] ?? 0) ?>">Assinar</a>
                             </div>
                         </div>
                     <?php endforeach; ?>

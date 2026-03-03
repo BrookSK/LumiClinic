@@ -63,6 +63,7 @@ final class AuthMiddleware implements MiddlewareInterface
             '/logout',
             '/legal/required',
             '/legal/accept',
+            '/legal/sign',
         ];
         if ($pending !== [] && !in_array($path, $enforced, true) && $request->method() !== 'GET') {
             return Response::redirect('/legal/required');

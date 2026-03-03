@@ -48,6 +48,7 @@ final class PatientAuthMiddleware implements MiddlewareInterface
             '/portal/required-consents',
             '/portal/legal/read',
             '/portal/legal/accept',
+            '/portal/legal/sign',
             '/portal/logout',
         ];
 
