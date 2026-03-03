@@ -281,7 +281,7 @@ $ico = [
                                 </details>
                             <?php endif; ?>
 
-                            <?php $docsActive = $isActive('/settings/legal-documents') || $isActive('/clinic/legal-documents') || $isActive('/clinic/legal-acceptances/portal') || $isActive('/consent-terms'); ?>
+                            <?php $docsActive = $isActive('/settings/legal-documents') || $isActive('/clinic/legal-documents') || $isActive('/clinic/legal-acceptances/portal') || $isActive('/clinic/legal-signatures') || $isActive('/consent-terms'); ?>
                             <?php if (($can('settings.read') || $can('clinics.read') || $can('consent_terms.manage')) && $hasClinicContext): ?>
                                 <details class="lc-navgroup" <?= $docsActive ? 'open' : '' ?> style="margin-left:10px;">
                                     <summary class="lc-nav__item lc-navgroup__summary<?= $docsActive ? ' lc-nav__item--active' : '' ?>">
@@ -299,6 +299,7 @@ $ico = [
                                             <?php if ($can('clinics.read')): ?>
                                                 <?= $navItem('/clinic/legal-documents', 'Portal (modelos)', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
                                                 <?= $navItem('/clinic/legal-acceptances/portal', 'Portal (aceites)', $ico['shield'], $isActive('/clinic/legal-acceptances/portal')) ?>
+                                                <?= $navItem('/clinic/legal-signatures', 'Assinaturas (trilha)', $ico['shield'], $isActive('/clinic/legal-signatures')) ?>
                                             <?php endif; ?>
                                             <?php if ($can('consent_terms.manage')): ?>
                                                 <?= $navItem('/consent-terms', 'Consentimento (Legado)', $ico['shield'], $isActive('/consent-terms')) ?>
