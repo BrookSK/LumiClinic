@@ -230,20 +230,42 @@ $ico = [
                     <div class="lc-navgroup__children">
                         <div class="lc-nav__sub">
                             <?php if ($can('settings.read')): ?>
-                                <?= $navItem('/settings', 'Geral', $ico['settings'], $isActive('/settings') && !$isActive('/settings/legal-documents')) ?>
-                                <?= $navItem('/settings/terminology', 'Terminologia', $ico['settings'], $isActive('/settings/terminology')) ?>
-                                <?= $navItem('/settings/operational', 'Operacional', $ico['settings'], $isActive('/settings/operational')) ?>
-                                <?= $navItem('/settings/ai', 'IA', $ico['settings'], $isActive('/settings/ai')) ?>
-                                <?= $navItem('/settings/whatsapp', 'WhatsApp', $ico['settings'], $isActive('/settings/whatsapp')) ?>
+                                <?php
+                                    $generalActive = ($isActive('/settings') && !$isActive('/settings/legal-documents'))
+                                        || $isActive('/settings/terminology')
+                                        || $isActive('/settings/operational')
+                                        || $isActive('/settings/ai')
+                                        || $isActive('/settings/whatsapp')
+                                        || $isActive('/whatsapp-templates')
+                                        || $isActive('/whatsapp-logs');
+                                ?>
+                                <details class="lc-navgroup" <?= $generalActive ? 'open' : '' ?> style="margin-left:10px;">
+                                    <summary class="lc-nav__item lc-navgroup__summary<?= $generalActive ? ' lc-nav__item--active' : '' ?>">
+                                        <span class="lc-nav__icon" aria-hidden="true"><?= $ico['settings'] ?></span>
+                                        <span class="lc-nav__label">Geral</span>
+                                        <span class="lc-navgroup__chev" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                        </span>
+                                    </summary>
+                                    <div class="lc-navgroup__children">
+                                        <div class="lc-nav__sub">
+                                            <?= $navItem('/settings', 'Geral', $ico['settings'], $isActive('/settings') && !$isActive('/settings/legal-documents')) ?>
+                                            <?= $navItem('/settings/terminology', 'Terminologia', $ico['settings'], $isActive('/settings/terminology')) ?>
+                                            <?= $navItem('/settings/operational', 'Operacional', $ico['settings'], $isActive('/settings/operational')) ?>
+                                            <?= $navItem('/settings/ai', 'IA', $ico['settings'], $isActive('/settings/ai')) ?>
+                                            <?= $navItem('/settings/whatsapp', 'WhatsApp', $ico['settings'], $isActive('/settings/whatsapp')) ?>
+
+                                            <?php if ($can('settings.update') && $hasClinicContext): ?>
+                                                <?= $navItem('/whatsapp-templates', 'WhatsApp (templates)', $ico['settings'], $isActive('/whatsapp-templates')) ?>
+                                                <?= $navItem('/whatsapp-logs', 'WhatsApp (logs)', $ico['settings'], $isActive('/whatsapp-logs')) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </details>
                             <?php endif; ?>
 
                             <?php if ($can('medical_record_templates.manage') && $hasClinicContext): ?>
                                 <?= $navItem('/medical-record-templates', 'Modelos de prontuário', $ico['shield'], $isActive('/medical-record-templates')) ?>
-                            <?php endif; ?>
-
-                            <?php if ($can('settings.update') && $hasClinicContext): ?>
-                                <?= $navItem('/whatsapp-templates', 'WhatsApp (templates)', $ico['settings'], $isActive('/whatsapp-templates')) ?>
-                                <?= $navItem('/whatsapp-logs', 'WhatsApp (logs)', $ico['settings'], $isActive('/whatsapp-logs')) ?>
                             <?php endif; ?>
 
                             <?php if ($can('clinics.read') && $hasClinicContext): ?>
