@@ -46,7 +46,7 @@ final class PatientService
         return $repo->listActiveByClinic($clinicId);
     }
 
-    /** @param array{name:string,email:?string,phone:?string,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int,patient_origin_id?:?int} $data */
+    /** @param array{name:string,email:?string,phone:?string,whatsapp_opt_in?:int,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int,patient_origin_id?:?int} $data */
     public function create(array $data, string $ip): int
     {
         $auth = new AuthService($this->container);
@@ -78,11 +78,13 @@ final class PatientService
         }
 
         $repo = new PatientRepository($this->container->get(\PDO::class));
+        $whatsappOptIn = array_key_exists('whatsapp_opt_in', $data) ? (int)$data['whatsapp_opt_in'] : 1;
         $id = $repo->createWithClinicalFields(
             $clinicId,
             $data['name'],
             $data['email'],
             $data['phone'],
+            $whatsappOptIn,
             $data['birth_date'],
             $data['sex'],
             $cpf,
@@ -134,7 +136,7 @@ final class PatientService
         return $patient;
     }
 
-    /** @param array{name:string,email:?string,phone:?string,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int,patient_origin_id?:?int,status:string} $data */
+    /** @param array{name:string,email:?string,phone:?string,whatsapp_opt_in?:int,birth_date:?string,sex:?string,cpf:?string,address:?string,notes:?string,reference_professional_id:?int,patient_origin_id?:?int,status:string} $data */
     public function update(int $patientId, array $data, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
@@ -148,6 +150,9 @@ final class PatientService
         $pdo = $this->container->get(\PDO::class);
         $repo = new PatientRepository($pdo);
         $existing = $repo->findClinicalById($clinicId, $patientId);
+
+        $oldWaOptIn = $existing !== null ? (int)($existing['whatsapp_opt_in'] ?? 1) : 1;
+        $newWaOptIn = array_key_exists('whatsapp_opt_in', $data) ? (int)$data['whatsapp_opt_in'] : 1;
 
         if ($existing !== null) {
             (new DataVersionRepository($pdo))->record(
@@ -179,6 +184,7 @@ final class PatientService
             $data['name'],
             $data['email'],
             $data['phone'],
+            $newWaOptIn,
             $data['birth_date'],
             $data['sex'],
             $cpf,
@@ -192,5 +198,19 @@ final class PatientService
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log($actorId, $clinicId, 'patients.update', ['patient_id' => $patientId], $ip, $roleCodes, 'patient', $patientId, $userAgent);
+
+        if ($oldWaOptIn !== $newWaOptIn) {
+            $audit->log(
+                $actorId,
+                $clinicId,
+                'patients.whatsapp_opt_in_update',
+                ['patient_id' => $patientId, 'from' => $oldWaOptIn, 'to' => $newWaOptIn],
+                $ip,
+                $roleCodes,
+                'patient',
+                $patientId,
+                $userAgent
+            );
+        }
     }
 }

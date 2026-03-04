@@ -74,12 +74,14 @@ final class PatientProfileChangeRequestService
             $name,
             ($email === '' ? null : $email),
             ($phone === '' ? null : $phone),
+            (int)($patient['whatsapp_opt_in'] ?? 1),
             ($birthDate === '' ? null : $birthDate),
             (string)($patient['sex'] ?? ''),
             (string)($patient['cpf'] ?? ''),
             ($address === '' ? null : $address),
             (string)($patient['notes'] ?? ''),
             isset($patient['reference_professional_id']) ? (int)$patient['reference_professional_id'] : null,
+            isset($patient['patient_origin_id']) ? (int)$patient['patient_origin_id'] : null,
             (string)($patient['status'] ?? 'active')
         );
 

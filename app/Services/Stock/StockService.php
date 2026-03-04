@@ -31,6 +31,101 @@ final class StockService
     }
 
     /**
+     * Baixa automática usando materiais reais registrados para a sessão.
+     * Idempotente por (reference_type='session', reference_id=appointmentId).
+     *
+     * @param array<int,string> $qtyByMaterialId map material_id => qty string
+     * @return array{movement_ids:list<int>,total_cost:float}
+     */
+    public function autoConsumeForAppointmentAdjusted(int $appointmentId, int $serviceId, array $qtyByMaterialId, string $ip): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($appointmentId <= 0 || $serviceId <= 0) {
+            return ['movement_ids' => [], 'total_cost' => 0.0];
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $movRepo = new StockMovementRepository($pdo);
+
+        try {
+            $pdo->beginTransaction();
+
+            if ($movRepo->existsForReference($clinicId, 'session', $appointmentId)) {
+                $pdo->commit();
+                return ['movement_ids' => [], 'total_cost' => 0.0];
+            }
+
+            $matRepo = new MaterialRepository($pdo);
+            $movementIds = [];
+            $totalCostAll = 0.0;
+
+            foreach ($qtyByMaterialId as $mid => $qtyStr) {
+                $materialId = (int)$mid;
+                if ($materialId <= 0) {
+                    continue;
+                }
+
+                $qty = (float)str_replace(',', '.', trim((string)$qtyStr));
+                if ($qty <= 0) {
+                    continue;
+                }
+
+                $mat = $matRepo->findByIdForUpdate($clinicId, $materialId);
+                if ($mat === null) {
+                    continue;
+                }
+
+                $current = (float)$mat['stock_current'];
+                $unitCost = (float)$mat['unit_cost'];
+                $newStock = $current - $qty;
+                if ($newStock < 0) {
+                    throw new \RuntimeException('Estoque insuficiente para baixa automática.');
+                }
+
+                $matRepo->updateStockCurrent($clinicId, $materialId, number_format($newStock, 3, '.', ''));
+
+                $totalCost = round($unitCost * $qty, 2);
+                $totalCostAll += $totalCost;
+
+                $movementIds[] = $movRepo->create(
+                    $clinicId,
+                    $materialId,
+                    'exit',
+                    number_format($qty, 3, '.', ''),
+                    'session',
+                    $appointmentId,
+                    null,
+                    number_format($unitCost, 2, '.', ''),
+                    number_format($totalCost, 2, '.', ''),
+                    'Baixa automática por sessão',
+                    $userId
+                );
+            }
+
+            (new AuditLogRepository($pdo))->log($userId, $clinicId, 'stock.session_auto_consume_adjusted', [
+                'appointment_id' => $appointmentId,
+                'service_id' => $serviceId,
+                'movement_ids' => $movementIds,
+                'total_cost' => $totalCostAll,
+            ], $ip);
+
+            $pdo->commit();
+            return ['movement_ids' => $movementIds, 'total_cost' => $totalCostAll];
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
      * @return array{
      *   low_stock:list<array<string,mixed>>,
      *   out_of_stock:list<array<string,mixed>>,

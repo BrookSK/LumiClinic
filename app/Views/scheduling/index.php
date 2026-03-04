@@ -171,6 +171,9 @@ ob_start();
                         $status = (string)$it['status'];
                         $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
 
+                        $checkedInAt = isset($it['checked_in_at']) ? (string)$it['checked_in_at'] : '';
+                        $startedAt = isset($it['started_at']) ? (string)$it['started_at'] : '';
+
                         $statusLabelMap = [
                             'scheduled' => 'Agendado',
                             'confirmed' => 'Confirmado',
@@ -182,6 +185,8 @@ ob_start();
                         $statusLabel = $statusLabelMap[$status] ?? $status;
 
                         $canConfirm = in_array($status, ['scheduled'], true);
+                        $canCheckIn = in_array($status, ['scheduled', 'confirmed', 'in_progress'], true) && $checkedInAt === '';
+                        $canStart = in_array($status, ['scheduled', 'confirmed'], true) && $startedAt === '';
                         $canInProgress = in_array($status, ['scheduled', 'confirmed', 'completed'], true);
                         $canComplete = in_array($status, ['in_progress'], true);
                         $canNoShow = in_array($status, ['scheduled', 'confirmed', 'in_progress'], true);
@@ -213,6 +218,28 @@ ob_start();
                                                 <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
                                                 <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
                                                 <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Confirmar</button>
+                                            </form>
+                                        <?php endif; ?>
+
+                                        <?php if ($canCheckIn): ?>
+                                            <form method="post" action="/schedule/check-in">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                                <input type="hidden" name="view" value="day" />
+                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Chegou (check-in)</button>
+                                            </form>
+                                        <?php endif; ?>
+
+                                        <?php if ($canStart): ?>
+                                            <form method="post" action="/schedule/start">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                                <input type="hidden" name="view" value="day" />
+                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Iniciar atendimento</button>
                                             </form>
                                         <?php endif; ?>
 

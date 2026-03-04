@@ -9,12 +9,15 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AppointmentLogRepository;
+use App\Repositories\AuditLogRepository;
 use App\Repositories\ClinicClosedDaysRepository;
 use App\Repositories\ClinicSettingsRepository;
 use App\Repositories\ClinicWorkingHoursRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Repositories\SchedulingBlockRepository;
 use App\Repositories\ServiceCatalogRepository;
+use App\Repositories\MaterialRepository;
+use App\Repositories\AppointmentMaterialsUsedRepository;
 use App\Repositories\ServiceMaterialDefaultRepository;
 use App\Services\Finance\FinancialService;
 use App\Services\Settings\OperationalConfigService;
@@ -80,10 +83,15 @@ final class ScheduleController extends Controller
         $defaultsRepo = new ServiceMaterialDefaultRepository($pdo);
         $defaults = $defaultsRepo->listDetailedByService($clinicId, (int)$appointment['service_id']);
 
+        $materials = (new MaterialRepository($pdo))->listByClinic($clinicId, 500);
+        $usedQty = (new AppointmentMaterialsUsedRepository($pdo))->listQtyByAppointment($clinicId, $id);
+
         return $this->view('scheduling/complete_materials', [
             'appointment' => $appointment,
             'service' => $service,
             'defaults' => $defaults,
+            'materials' => $materials,
+            'used_qty' => $usedQty,
             'date' => trim((string)$request->input('date', '')),
             'view' => trim((string)$request->input('view', 'day')),
             'professional_id' => (int)$request->input('professional_id', 0),
@@ -106,6 +114,8 @@ final class ScheduleController extends Controller
         $professionalId = (int)$request->input('professional_id', 0);
         $note = trim((string)$request->input('note', ''));
         $qty = $request->input('qty', []);
+        $extraMaterialIds = $request->input('extra_material_id', []);
+        $extraQty = $request->input('extra_qty', []);
 
         if ($id <= 0) {
             return $this->redirect('/schedule');
@@ -140,13 +150,33 @@ final class ScheduleController extends Controller
 
             $stock = new StockService($this->container);
 
-            $result = ['movement_ids' => [], 'total_cost' => 0.0];
+            $qtyMap = [];
             if (is_array($qty) && $qty !== []) {
                 /** @var array<int,string> $qty */
-                $result = $stock->consumeForAppointmentAdjusted($id, (int)$appointment['service_id'], $qty, $note, $request->ip());
-            } else {
-                $result = $stock->consumeForAppointmentAdjusted($id, (int)$appointment['service_id'], [], $note, $request->ip());
+                $qtyMap = $qty;
             }
+
+            if (is_array($extraMaterialIds) && is_array($extraQty)) {
+                $n = min(count($extraMaterialIds), count($extraQty));
+                for ($i = 0; $i < $n; $i++) {
+                    $mid = (int)($extraMaterialIds[$i] ?? 0);
+                    $q = (string)($extraQty[$i] ?? '');
+                    if ($mid > 0 && trim($q) !== '') {
+                        $qtyMap[$mid] = $q;
+                    }
+                }
+            }
+
+            (new AppointmentMaterialsUsedRepository($pdo))->replaceForAppointment(
+                $clinicId,
+                $id,
+                $qtyMap,
+                $note,
+                (new AuthService($this->container))->userId()
+            );
+
+            $result = ['movement_ids' => [], 'total_cost' => 0.0];
+            $result = $stock->consumeForAppointmentAdjusted($id, (int)$appointment['service_id'], $qtyMap, $note, $request->ip());
 
             if ((float)$result['total_cost'] > 0) {
                 (new FinancialService($this->container))->createEntry(
@@ -171,6 +201,218 @@ final class ScheduleController extends Controller
             return $this->redirect('/schedule/complete-materials?id=' . (int)$id . '&error=' . urlencode($e->getMessage()));
         } catch (\Throwable $e) {
             return $this->redirect('/schedule/complete-materials?id=' . (int)$id . '&error=' . urlencode('Erro ao finalizar sess?o.'));
+        }
+    }
+
+    public function checkIn(Request $request)
+    {
+        if ($this->isProfessionalRole()) {
+            $this->authorize('scheduling.finalize');
+        } else {
+            $this->authorize('scheduling.update');
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        $returnDate = trim((string)$request->input('date', ''));
+        $view = trim((string)$request->input('view', 'day'));
+        $professionalId = (int)$request->input('professional_id', 0);
+
+        if ($id <= 0) {
+            return $this->redirect('/schedule');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inv?lido.');
+        }
+
+        if ($this->isProfessionalRole()) {
+            $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
+            $repo = new AppointmentRepository($this->container->get(\PDO::class));
+            $appointment = $repo->findById($clinicId, $id);
+            if ($appointment === null) {
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
+            }
+
+            if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
+                throw new \RuntimeException('Acesso negado.');
+            }
+
+            $professionalId = $ownProfessionalId;
+        }
+
+        try {
+            $pdo = $this->container->get(\PDO::class);
+            $repo = new AppointmentRepository($pdo);
+            $appointment = $repo->findById($clinicId, $id);
+            if ($appointment === null) {
+                throw new \RuntimeException('Agendamento inv?lido.');
+            }
+
+            $status = (string)($appointment['status'] ?? '');
+            if (in_array($status, ['cancelled', 'completed', 'no_show'], true)) {
+                throw new \RuntimeException('N?o ? poss?vel fazer check-in nesta consulta.');
+            }
+
+            $fromCheckedInAt = isset($appointment['checked_in_at']) ? (string)$appointment['checked_in_at'] : null;
+            if ($fromCheckedInAt !== null && $fromCheckedInAt !== '') {
+                $q = [];
+                if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
+                if ($view !== '') { $q[] = 'view=' . urlencode($view); }
+                if ($professionalId > 0) { $q[] = 'professional_id=' . $professionalId; }
+                return $this->redirect('/schedule' . ($q ? ('?' . implode('&', $q)) : ''));
+            }
+
+            $now = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+            $repo->setCheckedInAt($clinicId, $id, $now);
+
+            (new AppointmentLogRepository($pdo))->log(
+                $clinicId,
+                $id,
+                'check_in',
+                ['checked_in_at' => $fromCheckedInAt],
+                ['checked_in_at' => $now],
+                $userId,
+                $request->ip()
+            );
+
+            (new AuditLogRepository($pdo))->log($userId, $clinicId, 'scheduling.appointment_check_in', [
+                'appointment_id' => $id,
+                'checked_in_at' => $now,
+            ], $request->ip());
+
+            $q = [];
+            if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
+            if ($view !== '') { $q[] = 'view=' . urlencode($view); }
+            if ($professionalId > 0) { $q[] = 'professional_id=' . $professionalId; }
+            return $this->redirect('/schedule' . ($q ? ('?' . implode('&', $q)) : ''));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/schedule?error=' . urlencode($e->getMessage()));
+        } catch (\Throwable $e) {
+            return $this->redirect('/schedule?error=' . urlencode('Erro ao fazer check-in.'));
+        }
+    }
+
+    public function start(Request $request)
+    {
+        $this->authorize('scheduling.finalize');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        $returnDate = trim((string)$request->input('date', ''));
+        $view = trim((string)$request->input('view', 'day'));
+        $professionalId = (int)$request->input('professional_id', 0);
+
+        if ($id <= 0) {
+            return $this->redirect('/schedule');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inv?lido.');
+        }
+
+        if ($this->isProfessionalRole()) {
+            $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
+            $repo = new AppointmentRepository($this->container->get(\PDO::class));
+            $appointment = $repo->findById($clinicId, $id);
+            if ($appointment === null) {
+                return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
+            }
+
+            if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
+                throw new \RuntimeException('Acesso negado.');
+            }
+
+            $professionalId = $ownProfessionalId;
+        }
+
+        try {
+            $pdo = $this->container->get(\PDO::class);
+            $repo = new AppointmentRepository($pdo);
+            $appointment = $repo->findById($clinicId, $id);
+            if ($appointment === null) {
+                throw new \RuntimeException('Agendamento inv?lido.');
+            }
+
+            $status = (string)($appointment['status'] ?? '');
+            if (!in_array($status, ['scheduled', 'confirmed'], true)) {
+                throw new \RuntimeException('N?o ? poss?vel iniciar esta consulta.');
+            }
+
+            $fromCheckedInAt = isset($appointment['checked_in_at']) ? (string)$appointment['checked_in_at'] : null;
+            $fromStartedAt = isset($appointment['started_at']) ? (string)$appointment['started_at'] : null;
+            if ($fromStartedAt !== null && $fromStartedAt !== '') {
+                $q = [];
+                if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
+                if ($view !== '') { $q[] = 'view=' . urlencode($view); }
+                if ($professionalId > 0) { $q[] = 'professional_id=' . $professionalId; }
+                return $this->redirect('/schedule' . ($q ? ('?' . implode('&', $q)) : ''));
+            }
+
+            $now = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+
+            if ($fromCheckedInAt === null || $fromCheckedInAt === '') {
+                $repo->setCheckedInAt($clinicId, $id, $now);
+
+                (new AppointmentLogRepository($pdo))->log(
+                    $clinicId,
+                    $id,
+                    'check_in',
+                    ['checked_in_at' => $fromCheckedInAt],
+                    ['checked_in_at' => $now, 'auto' => true],
+                    $userId,
+                    $request->ip()
+                );
+
+                (new AuditLogRepository($pdo))->log($userId, $clinicId, 'scheduling.appointment_check_in', [
+                    'appointment_id' => $id,
+                    'checked_in_at' => $now,
+                    'auto' => true,
+                ], $request->ip());
+            }
+
+            $repo->setStartedAt($clinicId, $id, $now);
+
+            (new AppointmentLogRepository($pdo))->log(
+                $clinicId,
+                $id,
+                'start',
+                ['started_at' => $fromStartedAt, 'status' => $status],
+                ['started_at' => $now, 'status' => 'in_progress'],
+                $userId,
+                $request->ip()
+            );
+
+            (new AuditLogRepository($pdo))->log($userId, $clinicId, 'scheduling.appointment_start', [
+                'appointment_id' => $id,
+                'started_at' => $now,
+            ], $request->ip());
+
+            (new AppointmentService($this->container))->updateStatus($id, 'in_progress', $request->ip());
+
+            $q = [];
+            if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
+            if ($view !== '') { $q[] = 'view=' . urlencode($view); }
+            if ($professionalId > 0) { $q[] = 'professional_id=' . $professionalId; }
+            return $this->redirect('/schedule' . ($q ? ('?' . implode('&', $q)) : ''));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/schedule?error=' . urlencode($e->getMessage()));
+        } catch (\Throwable $e) {
+            return $this->redirect('/schedule?error=' . urlencode('Erro ao iniciar consulta.'));
         }
     }
 

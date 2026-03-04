@@ -10,6 +10,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\PatientAppointmentRequestRepository;
 use App\Repositories\PatientEventRepository;
 use App\Services\Queue\QueueService;
+use App\Services\Whatsapp\WhatsappReminderSchedulerService;
 
 final class PortalAgendaService
 {
@@ -60,6 +61,8 @@ final class PortalAgendaService
             $clinicId,
             'notifications'
         );
+
+        (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
 
         (new PatientEventRepository($pdo))->create(
             $clinicId,

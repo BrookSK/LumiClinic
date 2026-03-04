@@ -8,6 +8,78 @@ final class AppointmentRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    /** @return array<string, mixed>|null */
+    public function findReminderContext(int $clinicId, int $appointmentId): ?array
+    {
+        $sql = "
+            SELECT
+                a.id,
+                a.clinic_id,
+                a.patient_id,
+                a.start_at,
+                a.end_at,
+                a.status,
+                COALESCE(pat.name, '') AS patient_name,
+                pat.phone AS patient_phone,
+                pat.whatsapp_opt_in
+            FROM appointments a
+            LEFT JOIN patients pat
+                   ON pat.id = a.patient_id
+                  AND pat.clinic_id = a.clinic_id
+                  AND pat.deleted_at IS NULL
+            WHERE a.id = :id
+              AND a.clinic_id = :clinic_id
+              AND a.deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $appointmentId, 'clinic_id' => $clinicId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function setCheckedInAt(int $clinicId, int $appointmentId, ?string $checkedInAt): void
+    {
+        $sql = "
+            UPDATE appointments
+               SET checked_in_at = :checked_in_at,
+                   updated_at = NOW()
+             WHERE id = :id
+               AND clinic_id = :clinic_id
+               AND deleted_at IS NULL
+             LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $appointmentId,
+            'clinic_id' => $clinicId,
+            'checked_in_at' => $checkedInAt,
+        ]);
+    }
+
+    public function setStartedAt(int $clinicId, int $appointmentId, ?string $startedAt): void
+    {
+        $sql = "
+            UPDATE appointments
+               SET started_at = :started_at,
+                   updated_at = NOW()
+             WHERE id = :id
+               AND clinic_id = :clinic_id
+               AND deleted_at IS NULL
+             LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $appointmentId,
+            'clinic_id' => $clinicId,
+            'started_at' => $startedAt,
+        ]);
+    }
+
     /** @return list<array<string, mixed>> */
     public function listUpcomingByPatient(int $clinicId, int $patientId, int $limit = 10, int $offset = 0): array
     {
@@ -166,6 +238,8 @@ final class AppointmentRepository
                 a.end_at,
                 a.buffer_before_minutes,
                 a.buffer_after_minutes,
+                a.checked_in_at,
+                a.started_at,
                 a.status,
                 a.origin,
                 a.notes,
@@ -215,7 +289,7 @@ final class AppointmentRepository
     public function findByIdForPatient(int $clinicId, int $patientId, int $appointmentId): ?array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, checked_in_at, started_at, status, origin, notes
             FROM appointments
             WHERE id = :id
               AND clinic_id = :clinic_id
@@ -256,7 +330,7 @@ final class AppointmentRepository
     public function listByClinicDate(int $clinicId, string $dateYmd): array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, checked_in_at, started_at, status, origin, notes
             FROM appointments
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -275,7 +349,7 @@ final class AppointmentRepository
     public function listByClinicRange(int $clinicId, string $startAt, string $endAt, ?int $professionalId = null, ?int $limit = null, int $offset = 0): array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, checked_in_at, started_at, status, origin, notes
             FROM appointments
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -313,7 +387,7 @@ final class AppointmentRepository
     public function findById(int $clinicId, int $id): ?array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, patient_procedure_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, patient_procedure_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, checked_in_at, started_at, status, origin, notes
             FROM appointments
             WHERE id = :id
               AND clinic_id = :clinic_id

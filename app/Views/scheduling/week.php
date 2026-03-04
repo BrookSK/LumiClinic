@@ -328,6 +328,8 @@ ob_start();
                                         data-appt-professional="<?= htmlspecialchars($professionalName, ENT_QUOTES, 'UTF-8') ?>"
                                         data-appt-start="<?= htmlspecialchars((string)($it['start_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                         data-appt-end="<?= htmlspecialchars((string)($it['end_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-appt-checked-in-at="<?= htmlspecialchars((string)($it['checked_in_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-appt-started-at="<?= htmlspecialchars((string)($it['started_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                         data-appt-status="<?= htmlspecialchars((string)($it['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                         data-appt-origin="<?= htmlspecialchars((string)($it['origin'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                     >
@@ -472,6 +474,24 @@ ob_start();
                 <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
                 <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
                 <button class="lc-btn lc-btn--secondary" type="submit">Confirmar</button>
+            </form>
+
+            <form method="post" action="/schedule/check-in" id="appt_form_check_in">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" id="appt_id_check_in" value="" />
+                <input type="hidden" name="view" value="week" />
+                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                <button class="lc-btn lc-btn--secondary" type="submit">Chegou (check-in)</button>
+            </form>
+
+            <form method="post" action="/schedule/start" id="appt_form_start">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" id="appt_id_start" value="" />
+                <input type="hidden" name="view" value="week" />
+                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                <button class="lc-btn lc-btn--secondary" type="submit">Iniciar atendimento</button>
             </form>
 
             <form method="post" action="/schedule/status" id="appt_form_in_progress">
@@ -733,6 +753,8 @@ ob_start();
       const professional = apptBtn.getAttribute('data-appt-professional') || '';
       const start = apptBtn.getAttribute('data-appt-start') || '';
       const end = apptBtn.getAttribute('data-appt-end') || '';
+      const checkedInAt = apptBtn.getAttribute('data-appt-checked-in-at') || '';
+      const startedAt = apptBtn.getAttribute('data-appt-started-at') || '';
       const status = apptBtn.getAttribute('data-appt-status') || '';
 
       const elPatient = document.getElementById('appt_patient');
@@ -765,13 +787,15 @@ ob_start();
       if (linkRes) linkRes.setAttribute('href', `/schedule/reschedule?id=${encodeURIComponent(id)}`);
       if (linkLogs) linkLogs.setAttribute('href', `/schedule/logs?appointment_id=${encodeURIComponent(id)}`);
 
-      const ids = ['appt_id_confirmed','appt_id_in_progress','appt_id_completed','appt_id_no_show','appt_id_reopen','appt_id_cancel'];
+      const ids = ['appt_id_confirmed','appt_id_check_in','appt_id_start','appt_id_in_progress','appt_id_completed','appt_id_no_show','appt_id_reopen','appt_id_cancel'];
       for (const iid of ids) {
         const el = document.getElementById(iid);
         if (el) el.setAttribute('value', id);
       }
 
       const formConfirmed = document.getElementById('appt_form_confirmed');
+      const formCheckIn = document.getElementById('appt_form_check_in');
+      const formStart = document.getElementById('appt_form_start');
       const formInProgress = document.getElementById('appt_form_in_progress');
       const formCompleted = document.getElementById('appt_form_completed');
       const formNoShow = document.getElementById('appt_form_no_show');
@@ -780,6 +804,8 @@ ob_start();
 
       const show = {
         confirmed: status === 'scheduled',
+        check_in: (status === 'scheduled' || status === 'confirmed' || status === 'in_progress') && checkedInAt === '',
+        start: (status === 'scheduled' || status === 'confirmed') && startedAt === '',
         in_progress: status === 'scheduled' || status === 'confirmed',
         completed: status === 'in_progress',
         no_show: status === 'scheduled' || status === 'confirmed' || status === 'in_progress',
@@ -788,6 +814,8 @@ ob_start();
       };
 
       if (formConfirmed) formConfirmed.style.display = show.confirmed ? '' : 'none';
+      if (formCheckIn) formCheckIn.style.display = show.check_in ? '' : 'none';
+      if (formStart) formStart.style.display = show.start ? '' : 'none';
       if (formInProgress) formInProgress.style.display = show.in_progress ? '' : 'none';
       if (formCompleted) formCompleted.style.display = show.completed ? '' : 'none';
       if (formNoShow) formNoShow.style.display = show.no_show ? '' : 'none';

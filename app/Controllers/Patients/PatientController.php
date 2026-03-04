@@ -93,6 +93,7 @@ final class PatientController extends Controller
         $name = trim((string)$request->input('name', ''));
         $email = trim((string)$request->input('email', ''));
         $phone = trim((string)$request->input('phone', ''));
+        $whatsappOptIn = (int)$request->input('whatsapp_opt_in', 1);
         $birthDate = trim((string)$request->input('birth_date', ''));
         $sex = trim((string)$request->input('sex', ''));
         $cpf = trim((string)$request->input('cpf', ''));
@@ -138,6 +139,7 @@ final class PatientController extends Controller
             'name' => $name,
             'email' => ($email === '' ? null : $email),
             'phone' => ($phone === '' ? null : $phone),
+            'whatsapp_opt_in' => $whatsappOptIn ? 1 : 0,
             'birth_date' => ($birthDate === '' ? null : $birthDate),
             'sex' => ($sex === '' ? null : $sex),
             'cpf' => ($cpf === '' ? null : $cpf),
@@ -236,6 +238,7 @@ final class PatientController extends Controller
         $name = trim((string)$request->input('name', ''));
         $email = trim((string)$request->input('email', ''));
         $phone = trim((string)$request->input('phone', ''));
+        $whatsappOptIn = (int)$request->input('whatsapp_opt_in', 1);
         $birthDate = trim((string)$request->input('birth_date', ''));
         $sex = trim((string)$request->input('sex', ''));
         $cpf = trim((string)$request->input('cpf', ''));
@@ -290,6 +293,7 @@ final class PatientController extends Controller
             'name' => $name,
             'email' => ($email === '' ? null : $email),
             'phone' => ($phone === '' ? null : $phone),
+            'whatsapp_opt_in' => $whatsappOptIn ? 1 : 0,
             'birth_date' => ($birthDate === '' ? null : $birthDate),
             'sex' => ($sex === '' ? null : $sex),
             'cpf' => ($cpf === '' ? null : $cpf),
@@ -305,6 +309,7 @@ final class PatientController extends Controller
                 'name' => $name,
                 'email' => ($email === '' ? null : $email),
                 'phone' => ($phone === '' ? null : $phone),
+                'whatsapp_opt_in' => $whatsappOptIn ? 1 : 0,
                 'birth_date' => ($birthDate === '' ? null : $birthDate),
                 'sex' => ($sex === '' ? null : $sex),
                 'cpf' => ($cpf === '' ? null : $cpf),

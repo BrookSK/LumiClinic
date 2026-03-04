@@ -77,6 +77,13 @@ ob_start();
             </div>
         </div>
 
+        <label class="lc-label" style="margin-top:10px;">WhatsApp</label>
+        <?php $waOptIn = (int)($patient['whatsapp_opt_in'] ?? 1); ?>
+        <label class="lc-checkbox" style="display:flex; gap:8px; align-items:center;">
+            <input type="checkbox" name="whatsapp_opt_in" value="1" <?= $waOptIn ? 'checked' : '' ?> />
+            <span>Receber lembretes por WhatsApp</span>
+        </label>
+
         <div class="lc-grid">
             <div>
                 <label class="lc-label">Data de nascimento</label>

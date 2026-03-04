@@ -25,6 +25,7 @@ final class PatientRepository
         string $name,
         ?string $email,
         ?string $phone,
+        int $whatsappOptIn,
         ?string $birthDate,
         ?string $sex,
         ?string $cpf,
@@ -36,6 +37,7 @@ final class PatientRepository
         $sql = "
             INSERT INTO patients (
                 clinic_id, name, email, phone, birth_date, sex,
+                whatsapp_opt_in, whatsapp_opt_in_updated_at,
                 cpf,
                 address, notes, reference_professional_id,
                 patient_origin_id,
@@ -43,6 +45,7 @@ final class PatientRepository
             )
             VALUES (
                 :clinic_id, :name, :email, :phone, :birth_date, :sex,
+                :whatsapp_opt_in, NOW(),
                 :cpf,
                 :address, :notes, :reference_professional_id,
                 :patient_origin_id,
@@ -58,6 +61,7 @@ final class PatientRepository
             'phone' => ($phone === '' ? null : $phone),
             'birth_date' => ($birthDate === '' ? null : $birthDate),
             'sex' => ($sex === '' ? null : $sex),
+            'whatsapp_opt_in' => $whatsappOptIn ? 1 : 0,
             'cpf' => ($cpf === '' ? null : $cpf),
             'address' => ($address === '' ? null : $address),
             'notes' => ($notes === '' ? null : $notes),
@@ -73,7 +77,7 @@ final class PatientRepository
     {
         $offset = max(0, $offset);
         $sql = "
-            SELECT id, name, email, phone, status
+            SELECT id, name, email, phone, whatsapp_opt_in, status
             FROM patients
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -105,7 +109,7 @@ final class PatientRepository
     public function findById(int $clinicId, int $id): ?array
     {
         $sql = "
-            SELECT id, clinic_id, name, email, phone, status
+            SELECT id, clinic_id, name, email, phone, whatsapp_opt_in, status
             FROM patients
             WHERE id = :id
               AND clinic_id = :clinic_id
@@ -125,7 +129,7 @@ final class PatientRepository
     {
         $sql = "
             SELECT
-                id, clinic_id, name, email, phone, status,
+                id, clinic_id, name, email, phone, whatsapp_opt_in, whatsapp_opt_in_updated_at, status,
                 birth_date, sex, cpf, cpf_last4,
                 address, notes, reference_professional_id,
                 patient_origin_id
@@ -149,6 +153,7 @@ final class PatientRepository
         string $name,
         ?string $email,
         ?string $phone,
+        int $whatsappOptIn,
         ?string $birthDate,
         ?string $sex,
         ?string $cpf,
@@ -164,6 +169,8 @@ final class PatientRepository
                 name = :name,
                 email = :email,
                 phone = :phone,
+                whatsapp_opt_in = :whatsapp_opt_in,
+                whatsapp_opt_in_updated_at = NOW(),
                 birth_date = :birth_date,
                 sex = :sex,
                 cpf = :cpf,
@@ -186,6 +193,7 @@ final class PatientRepository
             'name' => $name,
             'email' => ($email === '' ? null : $email),
             'phone' => ($phone === '' ? null : $phone),
+            'whatsapp_opt_in' => $whatsappOptIn ? 1 : 0,
             'birth_date' => ($birthDate === '' ? null : $birthDate),
             'sex' => ($sex === '' ? null : $sex),
             'cpf' => ($cpf === '' ? null : $cpf),

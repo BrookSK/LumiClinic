@@ -36,6 +36,7 @@ final class AuthMiddleware implements MiddlewareInterface
             '/forgot',
             '/reset',
             '/choose-access',
+            '/a/confirm',
             '/private/tutorial/platform',
             '/private/tutorial/clinic',
             '/tutorial/api-tokens/paciente',

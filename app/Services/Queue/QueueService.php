@@ -13,6 +13,8 @@ use App\Services\Observability\MetricsService;
 use App\Services\Observability\AlertEngineService;
 use App\Services\Observability\ObservabilityRetentionService;
 use App\Services\Portal\PortalNotificationService;
+use App\Services\Whatsapp\WhatsappReminderReconcileService;
+use App\Services\Whatsapp\WhatsappReminderSendService;
 
 final class QueueService
 {
@@ -58,6 +60,35 @@ final class QueueService
             }
 
             (new PortalNotificationService($this->container))->notifyAppointmentConfirmed($clinicId, $patientId, $appointmentId);
+            return;
+        }
+
+        if ($jobType === 'whatsapp.send_reminder') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para whatsapp.send_reminder.');
+            }
+
+            $appointmentId = (int)($payload['appointment_id'] ?? 0);
+            $templateCode = trim((string)($payload['template_code'] ?? ''));
+            $logId = (int)($payload['log_id'] ?? 0);
+
+            if ($appointmentId <= 0 || $templateCode === '' || $logId <= 0) {
+                throw new \RuntimeException('Payload inválido para whatsapp.send_reminder.');
+            }
+
+            (new WhatsappReminderSendService($this->container))->sendReminder($clinicId, $appointmentId, $templateCode, $logId);
+            return;
+        }
+
+        if ($jobType === 'whatsapp.reminders.reconcile') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para whatsapp.reminders.reconcile.');
+            }
+
+            (new WhatsappReminderReconcileService($this->container))->reconcile($clinicId);
+
+            $runAt = (new \DateTimeImmutable('now'))->modify('+10 minutes')->format('Y-m-d H:i:s');
+            $this->enqueue('whatsapp.reminders.reconcile', ['seed' => 1], $clinicId, 'notifications', $runAt, 10);
             return;
         }
 

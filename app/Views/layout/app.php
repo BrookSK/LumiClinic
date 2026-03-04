@@ -192,6 +192,10 @@ $ico = [
             <?php else: ?>
                 <?= $navItem('/', 'Dashboard', $ico['dashboard'], $isActive('/')) ?>
 
+                <?php if ($can('scheduling.read')): ?>
+                    <?= $navItem('/manager/panel', 'Painel Gestor', $ico['dashboard'], $isActive('/manager/panel')) ?>
+                <?php endif; ?>
+
                 <?php
                     $configNav = '';
                     ob_start();

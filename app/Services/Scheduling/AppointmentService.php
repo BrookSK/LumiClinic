@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace App\Services\Scheduling;
 
 use App\Core\Container\Container;
-use App\Repositories\AppointmentRepository;
 use App\Repositories\AppointmentLogRepository;
+use App\Repositories\AppointmentMaterialsUsedRepository;
+use App\Repositories\AppointmentRepository;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\ClinicFunnelStageRepository;
 use App\Repositories\ClinicLostReasonRepository;
+use App\Repositories\PatientProcedureRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
-use App\Repositories\SchedulingBlockRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Observability\SystemEvent;
+use App\Services\Stock\StockService;
+use App\Repositories\SchedulingBlockRepository;
+use App\Services\Whatsapp\WhatsappReminderSchedulerService;
 
 final class AppointmentService
 {
@@ -171,6 +175,8 @@ final class AppointmentService
             ], 'appointment', $id, $ip, null);
 
             $pdo->commit();
+
+            (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $id);
             return $id;
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -214,6 +220,8 @@ final class AppointmentService
             'appointment_id' => $appointmentId,
         ], $ip);
 
+        (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
+
         SystemEvent::dispatch($this->container, 'appointment.cancelled', [
             'appointment_id' => $appointmentId,
         ], 'appointment', $appointmentId, $ip, null);
@@ -247,6 +255,18 @@ final class AppointmentService
             throw new \RuntimeException('Transi??o de status inv?lida.');
         }
 
+        if ($status === 'completed') {
+            $pdo = $this->container->get(\PDO::class);
+            $usedQty = (new AppointmentMaterialsUsedRepository($pdo))->listQtyByAppointment($clinicId, $appointmentId);
+
+            $stock = new StockService($this->container);
+            if ($usedQty !== []) {
+                $stock->autoConsumeForAppointmentAdjusted($appointmentId, (int)$current['service_id'], $usedQty, $ip);
+            } else {
+                $stock->autoConsumeForAppointment($appointmentId, (int)$current['service_id'], $ip);
+            }
+        }
+
         $repo->updateStatus($clinicId, $appointmentId, $status);
 
         (new AppointmentLogRepository($pdo))->log(
@@ -265,6 +285,8 @@ final class AppointmentService
             'from' => $from,
             'to' => $status,
         ], $ip);
+
+        (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
 
         SystemEvent::dispatch($this->container, 'appointment.status_updated', [
             'appointment_id' => $appointmentId,
@@ -428,6 +450,8 @@ final class AppointmentService
             ], 'appointment', $appointmentId, $ip, null);
 
             $pdo->commit();
+
+            (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();

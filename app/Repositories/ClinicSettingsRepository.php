@@ -13,7 +13,8 @@ final class ClinicSettingsRepository
     {
         $sql = "
             SELECT clinic_id, timezone, language, week_start_weekday, week_end_weekday, encryption_key,
-                   openai_api_key_encrypted
+                   openai_api_key_encrypted,
+                   zapi_instance_id, zapi_token_encrypted
             FROM clinic_settings
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -41,6 +42,27 @@ final class ClinicSettingsRepository
         $stmt->execute([
             'clinic_id' => $clinicId,
             'encrypted' => ($encrypted === null || trim($encrypted) === '') ? null : $encrypted,
+        ]);
+    }
+
+    public function updateZapiConfig(int $clinicId, ?string $instanceId, ?string $tokenEncrypted): void
+    {
+        $sql = "
+            UPDATE clinic_settings
+               SET zapi_instance_id = :instance_id,
+                   zapi_token_encrypted = :token_encrypted,
+                   updated_at = NOW()
+             WHERE clinic_id = :clinic_id
+               AND deleted_at IS NULL
+        ";
+
+        $instanceId = $instanceId === null ? null : trim($instanceId);
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'instance_id' => ($instanceId === null || $instanceId === '') ? null : $instanceId,
+            'token_encrypted' => ($tokenEncrypted === null || trim($tokenEncrypted) === '') ? null : $tokenEncrypted,
         ]);
     }
 

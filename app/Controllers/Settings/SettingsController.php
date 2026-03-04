@@ -8,7 +8,12 @@ use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Services\Ai\AiConfigService;
 use App\Services\Ai\OpenAiClient;
+use App\Repositories\WhatsappTemplateRepository;
+use App\Repositories\WhatsappMessageLogQueryRepository;
 use App\Services\Settings\SettingsService;
+use App\Services\Auth\AuthService;
+use App\Services\Whatsapp\WhatsappConfigService;
+use App\Services\Whatsapp\ZapiClient;
 
 final class SettingsController extends Controller
 {
@@ -160,5 +165,165 @@ final class SettingsController extends Controller
 
         (new AiConfigService($this->container))->setOpenAiApiKey(null, $request->ip());
         return $this->redirect('/settings/ai?saved=1');
+    }
+
+    public function whatsapp(Request $request)
+    {
+        $this->authorize('settings.read');
+
+        $svc = new WhatsappConfigService($this->container);
+        $data = $svc->getWhatsappSettings();
+
+        $saved = trim((string)$request->input('saved', ''));
+        return $this->view('settings/whatsapp', [
+            'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
+            'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
+            'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
+        ]);
+    }
+
+    public function whatsappUpdate(Request $request)
+    {
+        $this->authorize('settings.update');
+
+        $instanceId = trim((string)$request->input('zapi_instance_id', ''));
+        $token = trim((string)$request->input('zapi_token', ''));
+
+        if ($instanceId === '' || $token === '') {
+            $svc = new WhatsappConfigService($this->container);
+            $data = $svc->getWhatsappSettings();
+            return $this->view('settings/whatsapp', [
+                'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
+                'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
+                'error' => 'Informe a instância e o token para salvar.',
+            ]);
+        }
+
+        (new WhatsappConfigService($this->container))->setZapiConfig($instanceId, $token, $request->ip());
+        return $this->redirect('/settings/whatsapp?saved=1');
+    }
+
+    public function whatsappTest(Request $request)
+    {
+        $this->authorize('settings.update');
+
+        $svc = new WhatsappConfigService($this->container);
+        $data = $svc->getWhatsappSettings();
+
+        try {
+            $ok = (new ZapiClient($this->container))->instanceStatus();
+            return $this->view('settings/whatsapp', [
+                'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
+                'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
+                'success' => $ok ? 'Conexão com Z-API OK.' : 'Falha ao testar WhatsApp.',
+            ]);
+        } catch (\Throwable $e) {
+            return $this->view('settings/whatsapp', [
+                'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
+                'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
+                'error' => 'Falha ao testar WhatsApp. Verifique as credenciais e tente novamente.',
+            ]);
+        }
+    }
+
+    public function whatsappClear(Request $request)
+    {
+        $this->authorize('settings.update');
+
+        (new WhatsappConfigService($this->container))->clearZapiConfig($request->ip());
+        return $this->redirect('/settings/whatsapp?saved=1');
+    }
+
+    public function whatsappDiagnose(Request $request)
+    {
+        $this->authorize('settings.update');
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/sys/clinics');
+        }
+
+        $svc = new WhatsappConfigService($this->container);
+        $data = $svc->getWhatsappSettings();
+
+        $instanceId = (string)($data['zapi_instance_id'] ?? '');
+        $tokenSet = (bool)($data['zapi_token_set'] ?? false);
+
+        $checks = [];
+
+        $isConfigured = trim($instanceId) !== '' && $tokenSet;
+        $checks[] = [
+            'title' => 'Configuração da Z-API',
+            'ok' => $isConfigured,
+            'message' => $isConfigured
+                ? 'Credenciais configuradas.'
+                : 'Preencha o instance id e o token e clique em Salvar.',
+            'action_label' => $isConfigured ? null : 'Ir para configuração',
+            'action_url' => $isConfigured ? null : '/settings/whatsapp',
+        ];
+
+        $zapiOk = false;
+        if ($isConfigured) {
+            try {
+                $zapiOk = (new ZapiClient($this->container))->instanceStatus();
+            } catch (\Throwable $e) {
+                $zapiOk = false;
+            }
+        }
+        $checks[] = [
+            'title' => 'Conexão com a Z-API',
+            'ok' => $isConfigured ? $zapiOk : false,
+            'message' => !$isConfigured
+                ? 'Configure as credenciais antes de testar a conexão.'
+                : ($zapiOk ? 'Conexão OK.' : 'Falha ao conectar. Verifique credenciais e status da instância.'),
+            'action_label' => $isConfigured ? 'Abrir configurações' : null,
+            'action_url' => $isConfigured ? '/settings/whatsapp' : null,
+        ];
+
+        $pdo = $this->container->get(\PDO::class);
+        $tplRepo = new WhatsappTemplateRepository($pdo);
+        $tpl24 = $tplRepo->findByCode($clinicId, 'reminder_24h');
+        $tpl2 = $tplRepo->findByCode($clinicId, 'reminder_2h');
+
+        $tpl24Ok = $tpl24 !== null && (string)($tpl24['status'] ?? 'active') === 'active';
+        $tpl2Ok = $tpl2 !== null && (string)($tpl2['status'] ?? 'active') === 'active';
+        $checks[] = [
+            'title' => 'Templates de lembrete',
+            'ok' => $tpl24Ok && $tpl2Ok,
+            'message' => ($tpl24Ok && $tpl2Ok)
+                ? 'Templates 24h e 2h estão ativos.'
+                : 'Ative/crie os templates reminder_24h e reminder_2h.',
+            'action_label' => 'Abrir templates',
+            'action_url' => '/whatsapp-templates',
+        ];
+
+        $failedCount = 0;
+        try {
+            $q = new WhatsappMessageLogQueryRepository($pdo);
+            $rows = $q->search($clinicId, ['status' => 'failed', 'from' => date('Y-m-d', strtotime('-7 day')), 'to' => date('Y-m-d')], 51, 0);
+            $failedCount = count($rows);
+        } catch (\Throwable $e) {
+            $failedCount = 0;
+        }
+
+        $checks[] = [
+            'title' => 'Falhas recentes (últimos 7 dias)',
+            'ok' => $failedCount === 0,
+            'message' => $failedCount === 0
+                ? 'Nenhuma falha recente.'
+                : 'Encontramos falhas recentes. Você pode clicar em "Tentar enviar novamente" nos logs.',
+            'action_label' => 'Abrir logs',
+            'action_url' => '/whatsapp-logs',
+        ];
+
+        return $this->view('settings/whatsapp', [
+            'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
+            'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
+            'diagnose' => [
+                'checks' => $checks,
+            ],
+            'success' => 'Diagnóstico concluído. Veja os itens abaixo.',
+        ]);
     }
 }

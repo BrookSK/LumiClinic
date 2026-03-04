@@ -23,6 +23,8 @@ use App\Controllers\Scheduling\ServiceMaterialsController;
 use App\Controllers\Settings\SettingsController;
 use App\Controllers\Settings\OperationalController;
 use App\Controllers\Settings\LegalDocumentsController as SettingsLegalDocumentsController;
+use App\Controllers\Whatsapp\WhatsappTemplateController;
+use App\Controllers\Whatsapp\WhatsappLogController;
 use App\Controllers\System\SystemClinicController;
 use App\Controllers\System\SystemBillingAdminController;
 use App\Controllers\System\SystemPlanAdminController;
@@ -76,11 +78,13 @@ use App\Controllers\Dashboard\SystemHealthController;
 use App\Controllers\Ai\AiController;
 use App\Controllers\Reports\ReportsController;
 use App\Controllers\Private\PrivateTutorialController;
+use App\Controllers\Manager\ManagerPanelController;
 use App\Controllers\Tutorial\ApiTokensTutorialController;
 use App\Controllers\Tutorial\SystemTutorialController;
 use App\Controllers\Tutorial\PatientTutorialController;
 use App\Controllers\Account\MeController;
 use App\Controllers\Auth\AccessChoiceController;
+use App\Controllers\Public\AppointmentConfirmController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
@@ -93,6 +97,9 @@ $router->post('/forgot', [LoginController::class, 'forgot']);
 $router->get('/reset', [LoginController::class, 'showReset']);
 $router->post('/reset', [LoginController::class, 'reset']);
 $router->post('/logout', [LoginController::class, 'logout']);
+
+$router->get('/a/confirm', [AppointmentConfirmController::class, 'show']);
+$router->post('/a/confirm', [AppointmentConfirmController::class, 'submit']);
 
 $router->get('/legal/required', [LegalDocumentsController::class, 'required']);
 $router->post('/legal/accept', [LegalDocumentsController::class, 'accept']);
@@ -168,6 +175,8 @@ $router->get('/ai/anomalies', [AiController::class, 'anomalies']);
 $router->get('/reports/metrics.csv', [ReportsController::class, 'metricsCsv']);
 $router->get('/reports/performance.csv', [ReportsController::class, 'performanceCsv']);
 
+$router->get('/manager/panel', [ManagerPanelController::class, 'index']);
+
 $router->get('/private/tutorial/platform', [PrivateTutorialController::class, 'platform']);
 $router->post('/private/tutorial/platform', [PrivateTutorialController::class, 'platform']);
 $router->get('/private/tutorial/clinic', [PrivateTutorialController::class, 'clinic']);
@@ -239,6 +248,23 @@ $router->post('/settings/ai', [SettingsController::class, 'aiUpdate']);
 $router->post('/settings/ai/test', [SettingsController::class, 'aiTest']);
 $router->post('/settings/ai/clear', [SettingsController::class, 'aiClear']);
 
+$router->get('/settings/whatsapp', [SettingsController::class, 'whatsapp']);
+$router->post('/settings/whatsapp', [SettingsController::class, 'whatsappUpdate']);
+$router->post('/settings/whatsapp/test', [SettingsController::class, 'whatsappTest']);
+$router->post('/settings/whatsapp/clear', [SettingsController::class, 'whatsappClear']);
+$router->post('/settings/whatsapp/diagnose', [SettingsController::class, 'whatsappDiagnose']);
+
+$router->get('/whatsapp-templates', [WhatsappTemplateController::class, 'index']);
+$router->get('/whatsapp-templates/create', [WhatsappTemplateController::class, 'create']);
+$router->post('/whatsapp-templates/create', [WhatsappTemplateController::class, 'store']);
+$router->get('/whatsapp-templates/edit', [WhatsappTemplateController::class, 'edit']);
+$router->post('/whatsapp-templates/edit', [WhatsappTemplateController::class, 'update']);
+
+$router->get('/whatsapp-logs', [WhatsappLogController::class, 'index']);
+$router->get('/whatsapp-logs/show', [WhatsappLogController::class, 'show']);
+$router->post('/whatsapp-logs/retry-send', [WhatsappLogController::class, 'retrySend']);
+$router->post('/whatsapp-logs/force-reconcile', [WhatsappLogController::class, 'forceReconcile']);
+
 $router->get('/settings/operational', [OperationalController::class, 'index']);
 $router->post('/settings/operational/funnel-stages/create', [OperationalController::class, 'createFunnelStage']);
 $router->post('/settings/operational/funnel-stages/delete', [OperationalController::class, 'deleteFunnelStage']);
@@ -280,6 +306,8 @@ $router->get('/schedule', [ScheduleController::class, 'index']);
 $router->get('/schedule/available', [ScheduleController::class, 'available']);
 $router->post('/schedule/create', [ScheduleController::class, 'create']);
 $router->post('/schedule/cancel', [ScheduleController::class, 'cancel']);
+$router->post('/schedule/check-in', [ScheduleController::class, 'checkIn']);
+$router->post('/schedule/start', [ScheduleController::class, 'start']);
 $router->post('/schedule/status', [ScheduleController::class, 'updateStatus']);
 $router->get('/schedule/complete-materials', [ScheduleController::class, 'completeMaterials']);
 $router->post('/schedule/complete-materials', [ScheduleController::class, 'completeMaterialsSubmit']);
