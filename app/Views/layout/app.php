@@ -207,10 +207,16 @@ $ico = [
                         || $isActive('/professionals')
                         || $isActive('/rbac')
                         || $isActive('/settings/operational')
+                        || $isActive('/settings/whatsapp')
+                        || $isActive('/settings/ai')
+                        || $isActive('/settings/terminology')
                         || $isActive('/services')
                         || $isActive('/anamnesis')
                         || $isActive('/blocks')
                         || $isActive('/schedule-rules')
+                        || $isActive('/whatsapp-templates')
+                        || $isActive('/whatsapp-logs')
+                        || $isActive('/medical-record-templates')
                         || $isActive('/consent-terms');
                 ?>
                 <details class="lc-navgroup" <?= $cfgActive ? 'open' : '' ?>>
@@ -225,7 +231,19 @@ $ico = [
                         <div class="lc-nav__sub">
                             <?php if ($can('settings.read')): ?>
                                 <?= $navItem('/settings', 'Geral', $ico['settings'], $isActive('/settings') && !$isActive('/settings/legal-documents')) ?>
+                                <?= $navItem('/settings/terminology', 'Terminologia', $ico['settings'], $isActive('/settings/terminology')) ?>
                                 <?= $navItem('/settings/operational', 'Operacional', $ico['settings'], $isActive('/settings/operational')) ?>
+                                <?= $navItem('/settings/ai', 'IA', $ico['settings'], $isActive('/settings/ai')) ?>
+                                <?= $navItem('/settings/whatsapp', 'WhatsApp', $ico['settings'], $isActive('/settings/whatsapp')) ?>
+                            <?php endif; ?>
+
+                            <?php if ($can('medical_record_templates.manage') && $hasClinicContext): ?>
+                                <?= $navItem('/medical-record-templates', 'Modelos de prontuário', $ico['shield'], $isActive('/medical-record-templates')) ?>
+                            <?php endif; ?>
+
+                            <?php if ($can('settings.update') && $hasClinicContext): ?>
+                                <?= $navItem('/whatsapp-templates', 'WhatsApp (templates)', $ico['settings'], $isActive('/whatsapp-templates')) ?>
+                                <?= $navItem('/whatsapp-logs', 'WhatsApp (logs)', $ico['settings'], $isActive('/whatsapp-logs')) ?>
                             <?php endif; ?>
 
                             <?php if ($can('clinics.read') && $hasClinicContext): ?>
@@ -359,6 +377,9 @@ $ico = [
                                 <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
                                     <?= $navItem('/schedule/ops', 'Operação da Agenda', $ico['calendar'], $isExact('/schedule/ops')) ?>
                                 <?php endif; ?>
+                                <?php if ($can('scheduling.logs') && $hasClinicContext): ?>
+                                    <?= $navItem('/schedule/logs', 'Logs da agenda', $ico['calendar'], $isExact('/schedule/logs')) ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </details>
@@ -379,6 +400,9 @@ $ico = [
                                 <?= $navItem('/patients', $patientsLabel, $ico['patients'], $isExact('/patients')) ?>
                                 <?php if ($can('patients.update') && $hasClinicContext): ?>
                                     <?= $navItem('/patients/profile-requests', 'Solicitações de perfil', $ico['patients'], $isActive('/patients/profile-requests')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('medical_images.read') && $hasClinicContext): ?>
+                                    <?= $navItem('/medical-images/moderation', 'Fotos (moderação)', $ico['patients'], $isActive('/medical-images/moderation')) ?>
                                 <?php endif; ?>
                             </div>
                         </div>
