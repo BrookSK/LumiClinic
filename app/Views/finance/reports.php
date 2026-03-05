@@ -98,6 +98,8 @@ ob_start();
                 <tr>
                     <th>Profissional</th>
                     <th>Receita</th>
+                    <th>Custo (materiais)</th>
+                    <th>Margem</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -105,10 +107,14 @@ ob_start();
                     <?php
                         $pid = $r['professional_id'] === null ? 0 : (int)$r['professional_id'];
                         $name = $pid > 0 && isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : '-';
+                        $cost = (float)($r['cost'] ?? 0);
+                        $margin = (float)($r['margin'] ?? ((float)$r['revenue'] - $cost));
                     ?>
                     <tr>
                         <td><?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?></td>
                         <td>R$ <?= number_format((float)$r['revenue'], 2, ',', '.') ?></td>
+                        <td>R$ <?= number_format($cost, 2, ',', '.') ?></td>
+                        <td>R$ <?= number_format($margin, 2, ',', '.') ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -128,13 +134,21 @@ ob_start();
                 <tr>
                     <th>Service ID</th>
                     <th>Receita</th>
+                    <th>Custo (materiais)</th>
+                    <th>Margem</th>
                 </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($by_service as $r): ?>
+                    <?php
+                        $cost = (float)($r['cost'] ?? 0);
+                        $margin = (float)($r['margin'] ?? ((float)$r['revenue'] - $cost));
+                    ?>
                     <tr>
                         <td>#<?= (int)$r['service_id'] ?></td>
                         <td>R$ <?= number_format((float)$r['revenue'], 2, ',', '.') ?></td>
+                        <td>R$ <?= number_format($cost, 2, ',', '.') ?></td>
+                        <td>R$ <?= number_format($margin, 2, ',', '.') ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

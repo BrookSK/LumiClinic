@@ -20,6 +20,7 @@ use App\Controllers\Scheduling\ProfessionalScheduleController;
 use App\Controllers\Scheduling\ScheduleController;
 use App\Controllers\Scheduling\ServiceController;
 use App\Controllers\Scheduling\ServiceMaterialsController;
+use App\Controllers\Procedures\ProcedureController;
 use App\Controllers\Settings\SettingsController;
 use App\Controllers\Settings\OperationalController;
 use App\Controllers\Settings\LegalDocumentsController as SettingsLegalDocumentsController;
@@ -387,6 +388,19 @@ $router->post('/blocks/create', [BlockController::class, 'create']);
 
 $router->get('/schedule-rules', [ProfessionalScheduleController::class, 'index']);
 $router->post('/schedule-rules/create', [ProfessionalScheduleController::class, 'create']);
+
+$router->get('/procedures', [ProcedureController::class, 'index']);
+$router->post('/procedures/create', [ProcedureController::class, 'create']);
+$router->get('/procedures/edit', [ProcedureController::class, 'edit']);
+$router->post('/procedures/edit', [ProcedureController::class, 'update']);
+
+$router->post('/procedures/protocols/create', [ProcedureController::class, 'protocolCreate']);
+$router->post('/procedures/protocols/update', [ProcedureController::class, 'protocolUpdate']);
+$router->post('/procedures/protocols/delete', [ProcedureController::class, 'protocolDelete']);
+
+$router->post('/procedures/steps/create', [ProcedureController::class, 'stepCreate']);
+$router->post('/procedures/steps/update', [ProcedureController::class, 'stepUpdate']);
+$router->post('/procedures/steps/delete', [ProcedureController::class, 'stepDelete']);
 
 $router->get('/rbac', [RbacController::class, 'index']);
 $router->get('/rbac/edit', [RbacController::class, 'edit']);

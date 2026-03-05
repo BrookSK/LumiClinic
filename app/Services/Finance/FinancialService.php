@@ -388,6 +388,76 @@ final class FinancialService
         $stmt2->execute($params);
         $bySvc = $stmt2->fetchAll();
 
+        $sqlCostsByProf = "
+            SELECT
+                pp.professional_id,
+                SUM(pp.stock_total_cost_snapshot) AS cost
+            FROM procedure_performed pp
+            WHERE pp.clinic_id = :clinic_id
+              AND pp.deleted_at IS NULL
+              AND COALESCE(pp.real_ended_at, pp.created_at) BETWEEN :from_dt AND :to_dt
+              " . ($professionalId !== null && $professionalId > 0 ? ' AND pp.professional_id = :professional_id ' : '') . "
+            GROUP BY pp.professional_id
+        ";
+
+        $stmtC1 = $pdo->prepare($sqlCostsByProf);
+        $stmtC1->execute($params);
+        $costsByProfRows = $stmtC1->fetchAll();
+
+        $costByProfMap = [];
+        foreach (is_array($costsByProfRows) ? $costsByProfRows : [] as $r) {
+            $pid = isset($r['professional_id']) ? (int)$r['professional_id'] : 0;
+            if ($pid <= 0) {
+                continue;
+            }
+            $costByProfMap[$pid] = (float)($r['cost'] ?? 0);
+        }
+
+        $sqlCostsBySvc = "
+            SELECT
+                pp.service_id,
+                SUM(pp.stock_total_cost_snapshot) AS cost
+            FROM procedure_performed pp
+            WHERE pp.clinic_id = :clinic_id
+              AND pp.deleted_at IS NULL
+              AND COALESCE(pp.real_ended_at, pp.created_at) BETWEEN :from_dt AND :to_dt
+              " . ($professionalId !== null && $professionalId > 0 ? ' AND pp.professional_id = :professional_id ' : '') . "
+            GROUP BY pp.service_id
+        ";
+
+        $stmtC2 = $pdo->prepare($sqlCostsBySvc);
+        $stmtC2->execute($params);
+        $costsBySvcRows = $stmtC2->fetchAll();
+
+        $costBySvcMap = [];
+        foreach (is_array($costsBySvcRows) ? $costsBySvcRows : [] as $r) {
+            $sid = isset($r['service_id']) ? (int)$r['service_id'] : 0;
+            if ($sid <= 0) {
+                continue;
+            }
+            $costBySvcMap[$sid] = (float)($r['cost'] ?? 0);
+        }
+
+        $byProf = is_array($byProf) ? $byProf : [];
+        foreach ($byProf as &$r) {
+            $pid = $r['professional_id'] === null ? 0 : (int)$r['professional_id'];
+            $rev = (float)($r['revenue'] ?? 0);
+            $cost = $pid > 0 && isset($costByProfMap[$pid]) ? (float)$costByProfMap[$pid] : 0.0;
+            $r['cost'] = $cost;
+            $r['margin'] = $rev - $cost;
+        }
+        unset($r);
+
+        $bySvc = is_array($bySvc) ? $bySvc : [];
+        foreach ($bySvc as &$r) {
+            $sid = (int)($r['service_id'] ?? 0);
+            $rev = (float)($r['revenue'] ?? 0);
+            $cost = $sid > 0 && isset($costBySvcMap[$sid]) ? (float)$costBySvcMap[$sid] : 0.0;
+            $r['cost'] = $cost;
+            $r['margin'] = $rev - $cost;
+        }
+        unset($r);
+
         $sqlTicket = "
             SELECT
                 AVG(s.total_liquido) AS avg_ticket
@@ -463,8 +533,8 @@ final class FinancialService
         return [
             'from' => $from,
             'to' => $to,
-            'by_professional' => is_array($byProf) ? $byProf : [],
-            'by_service' => is_array($bySvc) ? $bySvc : [],
+            'by_professional' => $byProf,
+            'by_service' => $bySvc,
             'ticket_medio' => $ticket,
             'appointments' => $appointments,
             'paid_sales' => $paidSales,

@@ -18,6 +18,8 @@ use App\Repositories\SchedulingBlockRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Repositories\MaterialRepository;
 use App\Repositories\AppointmentMaterialsUsedRepository;
+use App\Repositories\ProcedurePerformedMaterialRepository;
+use App\Repositories\ProcedurePerformedRepository;
 use App\Repositories\ServiceMaterialDefaultRepository;
 use App\Services\Finance\FinancialService;
 use App\Services\Settings\OperationalConfigService;
@@ -148,6 +150,12 @@ final class ScheduleController extends Controller
                 throw new \RuntimeException('Agendamento inv?lido.');
             }
 
+            $svcRepo = new ServiceCatalogRepository($pdo);
+            $service = $svcRepo->findById($clinicId, (int)$appointment['service_id']);
+            if ($service === null) {
+                throw new \RuntimeException('Serviço inválido.');
+            }
+
             $stock = new StockService($this->container);
 
             $qtyMap = [];
@@ -178,8 +186,10 @@ final class ScheduleController extends Controller
             $result = ['movement_ids' => [], 'total_cost' => 0.0];
             $result = $stock->consumeForAppointmentAdjusted($id, (int)$appointment['service_id'], $qtyMap, $note, $request->ip());
 
+            $createdFinancialEntryId = null;
+
             if ((float)$result['total_cost'] > 0) {
-                (new FinancialService($this->container))->createEntry(
+                $createdFinancialEntryId = (new FinancialService($this->container))->createEntry(
                     'out',
                     date('Y-m-d'),
                     number_format((float)$result['total_cost'], 2, '.', ''),
@@ -189,6 +199,53 @@ final class ScheduleController extends Controller
                     $request->ip()
                 );
             }
+
+            $nowUtc = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+            $realStartedAt = null;
+            if (isset($appointment['started_at']) && trim((string)$appointment['started_at']) !== '') {
+                $realStartedAt = (string)$appointment['started_at'];
+            } else {
+                $realStartedAt = (string)($appointment['start_at'] ?? null);
+            }
+
+            $realDurationMinutes = null;
+            try {
+                if ($realStartedAt !== null && $realStartedAt !== '') {
+                    $d1 = new \DateTimeImmutable($realStartedAt, new \DateTimeZone('UTC'));
+                    $d2 = new \DateTimeImmutable($nowUtc, new \DateTimeZone('UTC'));
+                    $mins = (int)floor(max(0, $d2->getTimestamp() - $d1->getTimestamp()) / 60);
+                    if ($mins > 0) {
+                        $realDurationMinutes = $mins;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $realDurationMinutes = null;
+            }
+
+            $performedRepo = new ProcedurePerformedRepository($pdo);
+            $performedId = $performedRepo->upsertForAppointment(
+                $clinicId,
+                $id,
+                isset($appointment['patient_id']) ? (int)$appointment['patient_id'] : null,
+                (int)$appointment['professional_id'],
+                (int)$appointment['service_id'],
+                isset($service['procedure_id']) && $service['procedure_id'] !== null ? (int)$service['procedure_id'] : null,
+                $realStartedAt,
+                $nowUtc,
+                $realDurationMinutes,
+                (float)$result['total_cost'],
+                is_array($result['movement_ids'] ?? null) ? $result['movement_ids'] : null,
+                $createdFinancialEntryId,
+                $note,
+                (new AuthService($this->container))->userId()
+            );
+
+            (new ProcedurePerformedMaterialRepository($pdo))->replaceForPerformed(
+                $clinicId,
+                $performedId,
+                $qtyMap,
+                $note
+            );
 
             (new AppointmentService($this->container))->updateStatus($id, 'completed', $request->ip());
 

@@ -210,6 +210,7 @@ $ico = [
                         || $isActive('/settings/whatsapp')
                         || $isActive('/settings/ai')
                         || $isActive('/settings/terminology')
+                        || $isActive('/procedures')
                         || $isActive('/services')
                         || $isActive('/anamnesis')
                         || $isActive('/blocks')
@@ -371,6 +372,9 @@ $ico = [
                                         <div class="lc-nav__sub">
                                             <?= $navItem('/services', 'Cadastro', $ico['clinic'], $isExact('/services')) ?>
                                             <?= $navItem('/services/materials', 'Vínculo com estoque', $ico['stock'], $isExact('/services/materials')) ?>
+                                            <?php if ($can('procedures.manage')): ?>
+                                                <?= $navItem('/procedures', 'Procedimentos', $ico['clinic'], $isActive('/procedures')) ?>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </details>

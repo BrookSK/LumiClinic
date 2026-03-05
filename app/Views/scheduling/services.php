@@ -1,5 +1,6 @@
 <?php
 /** @var list<array<string,mixed>> $items */
+/** @var list<array<string,mixed>> $procedures */
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Serviços';
 
@@ -9,7 +10,7 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Novo serviço</div>
     <div class="lc-card__body">
-        <form method="post" action="/services/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr; align-items:end;">
+        <form method="post" action="/services/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 2fr; align-items:end;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field">
@@ -45,6 +46,16 @@ ob_start();
                 </select>
             </div>
 
+            <div class="lc-field">
+                <label class="lc-label">Procedimento</label>
+                <select class="lc-select" name="procedure_id">
+                    <option value="">(nenhum)</option>
+                    <?php foreach (($procedures ?? []) as $p): ?>
+                        <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
             <div style="grid-column: 1 / -1;">
                 <button class="lc-btn" type="submit">Salvar</button>
             </div>
@@ -62,6 +73,7 @@ ob_start();
                 <thead>
                 <tr>
                     <th>Nome</th>
+                    <th>Procedimento</th>
                     <th>Duração</th>
                     <th>Buffer</th>
                     <th>Preço</th>
@@ -73,6 +85,7 @@ ob_start();
                 <?php foreach ($items as $it): ?>
                     <tr>
                         <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars((string)($it['procedure_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= (int)$it['duration_minutes'] ?> min</td>
                         <td><?= (int)($it['buffer_before_minutes'] ?? 0) ?> / <?= (int)($it['buffer_after_minutes'] ?? 0) ?> min</td>
                         <td><?= $it['price_cents'] === null ? '-' : (int)$it['price_cents'] ?></td>
