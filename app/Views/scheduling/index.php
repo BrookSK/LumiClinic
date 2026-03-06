@@ -33,6 +33,9 @@ foreach ($professionals as $p) {
 }
 
 $blocks = $blocks ?? [];
+$workingHours = $working_hours ?? [];
+$closedMap = isset($closed_map) && is_array($closed_map) ? $closed_map : [];
+$slotMinutes = isset($slot_minutes) && is_array($slot_minutes) ? $slot_minutes : [];
 
 ob_start();
 ?>
@@ -117,6 +120,160 @@ ob_start();
     </div>
 
     <div class="lc-card lc-card--soft">
+        <?php
+            $canRenderGrid = ($isProfessional || $professionalId > 0) && is_array($slotMinutes) && $slotMinutes !== [];
+            $isClosed = array_key_exists((string)$date, $closedMap);
+
+            $toMinutes = static function (string $hhmm): int {
+                $t = trim($hhmm);
+                if (preg_match('/^(\d{2}):(\d{2})/', $t, $m) !== 1) {
+                    return 0;
+                }
+                return ((int)$m[1]) * 60 + ((int)$m[2]);
+            };
+            $fromMinutes = static function (int $mins): string {
+                $h = (int)floor($mins / 60);
+                $m = $mins % 60;
+                return str_pad((string)$h, 2, '0', STR_PAD_LEFT) . ':' . str_pad((string)$m, 2, '0', STR_PAD_LEFT);
+            };
+            $dtToMinutes = static function (string $dt) use ($toMinutes): int {
+                $t = substr($dt, 11, 5);
+                return $toMinutes($t);
+            };
+
+            $minuteIndex = [];
+            foreach ($slotMinutes as $idx => $m) {
+                $minuteIndex[(int)$m] = (int)$idx;
+            }
+            $rowHeight = 42;
+        ?>
+
+        <?php if ($canRenderGrid): ?>
+            <div class="lc-card" style="margin-bottom:14px;">
+                <div class="lc-card__title">Horários do dia</div>
+                <div class="lc-card__body" style="padding:0; overflow:auto; max-height: calc(100vh - 360px);">
+                    <div style="min-width: 560px;">
+                        <div class="lc-grid" style="grid-template-columns: 90px minmax(0, 1fr); gap:10px; padding:12px;">
+                            <div></div>
+                            <div class="lc-card" style="margin:0; border-left: 3px solid #2563eb; background: <?= $isClosed ? 'rgba(239,68,68,0.08)' : 'var(--lc-surface)' ?>;">
+                                <div class="lc-card__body" style="padding:10px;">
+                                    <div style="font-weight:700;"><?= htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') ?></div>
+                                    <?php if ($isClosed): ?>
+                                        <div class="lc-muted" style="font-size:12px; margin-top:6px;">Feriado/Recesso<?= trim((string)$closedMap[(string)$date]) !== '' ? (': ' . htmlspecialchars((string)$closedMap[(string)$date], ENT_QUOTES, 'UTF-8')) : '' ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <div style="position: sticky; left: 0; background: var(--lc-surface);">
+                                <?php foreach ($slotMinutes as $mins): ?>
+                                    <div class="lc-muted" style="font-size:12px; height: <?= (int)$rowHeight ?>px; display:flex; align-items:center; margin-bottom:10px; padding:6px;">
+                                        <?= htmlspecialchars($fromMinutes((int)$mins), ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <div style="position:relative; background: <?= $isClosed ? 'rgba(239,68,68,0.05)' : 'transparent' ?>; border-radius: 10px;">
+                                <?php foreach ($slotMinutes as $mins): ?>
+                                    <?php $slotTime = $fromMinutes((int)$mins); ?>
+                                    <div style="height: <?= (int)$rowHeight ?>px; border:1px solid rgba(17,24,39,0.06); border-radius:10px; margin-bottom:10px; padding:6px; <?= (!$isProfessional && !$isClosed) ? 'cursor:pointer;' : '' ?>"
+                                        <?= (!$isProfessional && !$isClosed)
+                                            ? ('data-open-create="1" data-create-date="' . htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') . '" data-create-time="' . htmlspecialchars($slotTime, ENT_QUOTES, 'UTF-8') . '" data-create-professional-id="' . (int)$professionalId . '"')
+                                            : '' ?>
+                                    ></div>
+                                <?php endforeach; ?>
+
+                                <?php if (is_array($blocks) && $blocks !== []): ?>
+                                    <?php foreach ($blocks as $bl): ?>
+                                        <?php
+                                            $bst = (string)($bl['start_at'] ?? '');
+                                            $ben = (string)($bl['end_at'] ?? '');
+                                            if ($bst === '' || $ben === '') {
+                                                continue;
+                                            }
+                                            $bStart = $dtToMinutes($bst);
+                                            $bEnd = $dtToMinutes($ben);
+                                            if ($bEnd <= $bStart) {
+                                                continue;
+                                            }
+                                            $startIdx = null;
+                                            for ($mm = $bStart; $mm >= 0; $mm -= 15) {
+                                                if (isset($minuteIndex[$mm])) {
+                                                    $startIdx = (int)$minuteIndex[$mm];
+                                                    break;
+                                                }
+                                            }
+                                            if ($startIdx === null) {
+                                                continue;
+                                            }
+                                            $span = (int)ceil(($bEnd - $bStart) / 15);
+                                            $top = $startIdx * ($rowHeight + 10);
+                                            $height = max(28, ($span * $rowHeight) + (($span - 1) * 10));
+                                            $reason = trim((string)($bl['reason'] ?? ''));
+                                        ?>
+                                        <div
+                                            style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; overflow:hidden; border:1px dashed rgba(17,24,39,0.25); border-radius: 10px; background: rgba(17,24,39,0.06); z-index:4;"
+                                            title="<?= htmlspecialchars($reason !== '' ? $reason : 'Bloqueado', ENT_QUOTES, 'UTF-8') ?>"
+                                        >
+                                            <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Bloqueado<?= $reason !== '' ? (': ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8')) : '' ?></div>
+                                            <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                                <?= htmlspecialchars(substr($bst, 11, 5), ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(substr($ben, 11, 5), ENT_QUOTES, 'UTF-8') ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+
+                                <?php if (is_array($items) && $items !== []): ?>
+                                    <?php foreach ($items as $it): ?>
+                                        <?php
+                                            if ((int)($it['professional_id'] ?? 0) !== (int)$professionalId) {
+                                                continue;
+                                            }
+                                            $st = (string)($it['start_at'] ?? '');
+                                            $en = (string)($it['end_at'] ?? '');
+                                            if ($st === '' || $en === '') {
+                                                continue;
+                                            }
+                                            $apptStart = $dtToMinutes($st);
+                                            $apptEnd = $dtToMinutes($en);
+                                            if ($apptEnd <= $apptStart) {
+                                                continue;
+                                            }
+                                            if (!isset($minuteIndex[$apptStart])) {
+                                                continue;
+                                            }
+                                            $startIdx = (int)$minuteIndex[$apptStart];
+                                            $span = (int)ceil(($apptEnd - $apptStart) / 15);
+                                            $top = $startIdx * ($rowHeight + 10);
+                                            $height = max(36, ($span * $rowHeight) + (($span - 1) * 10));
+
+                                            $sid = (int)($it['service_id'] ?? 0);
+                                            $serviceName = isset($svcMap[$sid]) ? (string)($svcMap[$sid]['name'] ?? '') : '';
+                                            $status = (string)($it['status'] ?? '');
+                                            $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
+                                        ?>
+                                        <div class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
+                                             style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; overflow:hidden; border:0; z-index:5;">
+                                            <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Agendamento #<?= (int)($it['id'] ?? 0) ?></div>
+                                            <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                                <?= htmlspecialchars(substr($st, 11, 5), ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(substr($en, 11, 5), ENT_QUOTES, 'UTF-8') ?>
+                                                <?= $serviceName !== '' ? (' • ' . htmlspecialchars($serviceName, ENT_QUOTES, 'UTF-8')) : '' ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php elseif (!$isProfessional && (int)$professionalId === 0): ?>
+            <div class="lc-card" style="margin-bottom:14px;">
+                <div class="lc-card__body">
+                    <div class="lc-muted">Para ver a grade por horário (15 min), selecione um profissional no filtro.</div>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <div class="lc-card" style="margin-bottom:14px;">
             <div class="lc-card__title">Agendamentos</div>
             <div class="lc-card__actions">
@@ -414,6 +571,9 @@ ob_start();
   const modalDateEl = document.getElementById('modal_date');
   const modalStartEl = document.getElementById('modal_start_at');
 
+  let desiredSlotTime = '';
+  let desiredDate = '';
+
   function openModal() {
     if (!modal) return;
     modal.setAttribute('aria-hidden', 'false');
@@ -421,6 +581,10 @@ ob_start();
 
     if (modalDateEl && dateFilterEl && dateFilterEl.value) {
       modalDateEl.value = dateFilterEl.value;
+    }
+
+    if (modalDateEl && desiredDate) {
+      modalDateEl.value = desiredDate;
     }
   }
 
@@ -654,12 +818,21 @@ ob_start();
     }
 
     modalStartEl.innerHTML = '<option value="">Selecione</option>';
+    let foundDesired = false;
     for (const s of slots) {
       const t = (s.start_at || '').slice(11, 16);
       const opt = document.createElement('option');
       opt.value = s.start_at;
       opt.textContent = t;
+      if (desiredSlotTime && t === desiredSlotTime) {
+        opt.selected = true;
+        foundDesired = true;
+      }
       modalStartEl.appendChild(opt);
+    }
+    if (foundDesired) {
+      desiredSlotTime = '';
+      desiredDate = '';
     }
   }
 
@@ -667,6 +840,26 @@ ob_start();
   modalProfEl.addEventListener('change', loadSlots);
 
   modalDateEl.addEventListener('change', loadSlots);
+
+  document.addEventListener('click', function(e) {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    const createCell = t.closest('[data-open-create]');
+    if (!createCell || !modal) return;
+    const d = createCell.getAttribute('data-create-date') || '';
+    const tm = createCell.getAttribute('data-create-time') || '';
+    const pid = parseInt(createCell.getAttribute('data-create-professional-id') || '0', 10);
+
+    desiredDate = d;
+    desiredSlotTime = tm;
+
+    if (modalProfEl && pid > 0 && String(modalProfEl.value || '') !== String(pid)) {
+      modalProfEl.value = String(pid);
+    }
+
+    openModal();
+    loadSlots();
+  });
 })();
 </script>
 

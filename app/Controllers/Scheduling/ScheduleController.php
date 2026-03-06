@@ -739,6 +739,17 @@ final class ScheduleController extends Controller
         $perPage = max(25, min(200, $perPage));
         $offset = ($page - 1) * $perPage;
 
+        $dateDt = \DateTimeImmutable::createFromFormat('Y-m-d', $date);
+        if ($dateDt === false) {
+            throw new \RuntimeException('Data inválida.');
+        }
+
+        $whRepo = new ClinicWorkingHoursRepository($this->container->get(\PDO::class));
+        $workingHours = $whRepo->listByClinic($clinicId);
+
+        $cdRepo = new ClinicClosedDaysRepository($this->container->get(\PDO::class));
+        $closedDays = $cdRepo->listClosedOnlyByClinic($clinicId);
+
         $apptRepo = new AppointmentRepository($this->container->get(\PDO::class));
         $items = $apptRepo->listByClinicRange(
             $clinicId,
@@ -761,6 +772,30 @@ final class ScheduleController extends Controller
         $services = $svcRepo->listActiveByClinic($clinicId);
 
         $indicators = new ScheduleIndicatorsService();
+
+        $whByWeekday = $indicators->workingHoursByWeekday($workingHours);
+        $closedMap = $indicators->closedDaysMap($closedDays);
+
+        $slotMinutes = [];
+        $wd = (int)$dateDt->format('w');
+        $windows = $whByWeekday[$wd] ?? [];
+        foreach ($windows as $w) {
+            $startT = (string)($w['start_time'] ?? '');
+            $endT = (string)($w['end_time'] ?? '');
+            if (preg_match('/^(\d{2}):(\d{2})/', $startT, $m1) !== 1 || preg_match('/^(\d{2}):(\d{2})/', $endT, $m2) !== 1) {
+                continue;
+            }
+            $startM = ((int)$m1[1]) * 60 + ((int)$m1[2]);
+            $endM = ((int)$m2[1]) * 60 + ((int)$m2[2]);
+            if ($endM <= $startM) {
+                continue;
+            }
+            for ($mm = $startM; $mm < $endM; $mm += 15) {
+                $slotMinutes[$mm] = true;
+            }
+        }
+        $slotMinutes = array_keys($slotMinutes);
+        sort($slotMinutes);
 
         $blockRepo = new SchedulingBlockRepository($this->container->get(\PDO::class));
         $blocks = $blockRepo->listByClinicRange(
@@ -786,6 +821,10 @@ final class ScheduleController extends Controller
             'per_page' => $perPage,
             'has_next' => $hasNext,
             'blocks' => $blocks,
+            'working_hours' => $workingHours,
+            'closed_days' => $closedDays,
+            'closed_map' => $closedMap,
+            'slot_minutes' => $slotMinutes,
             'funnel_stages' => $funnelStages,
         ]);
     }
