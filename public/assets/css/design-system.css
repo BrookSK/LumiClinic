@@ -373,7 +373,7 @@ body.lc-body--auth{display:flex;min-height:100vh;align-items:center;justify-cont
 
 .lc-auth .lc-btn--primary{width:100%;justify-content:center;margin-top:10px}
 
-.lc-table-wrap{overflow:auto;margin-top:12px;-webkit-overflow-scrolling:touch}
+.lc-table-wrap{overflow-x:auto;overflow-y:visible;margin-top:12px;-webkit-overflow-scrolling:touch}
 
 .lc-table{width:100%;border-collapse:separate;border-spacing:0}
 
