@@ -302,6 +302,9 @@ $router->get('/compliance/lgpd-requests/export', [ComplianceLgpdController::clas
 $router->post('/compliance/lgpd-requests/anonymize', [ComplianceLgpdController::class, 'anonymize']);
 $router->post('/compliance/lgpd-requests/delete', [ComplianceLgpdController::class, 'delete']);
 
+$router->get('/compliance/lgpd-audit', [\App\Controllers\Compliance\ComplianceLgpdAuditController::class, 'index']);
+$router->get('/compliance/lgpd-audit/export', [\App\Controllers\Compliance\ComplianceLgpdAuditController::class, 'export']);
+
 $router->get('/compliance/certifications', [ComplianceCertificationController::class, 'index']);
 $router->post('/compliance/certifications/policies/create', [ComplianceCertificationController::class, 'createPolicy']);
 $router->post('/compliance/certifications/policies/update', [ComplianceCertificationController::class, 'updatePolicy']);
@@ -448,6 +451,9 @@ $router->post('/patients/edit', [PatientController::class, 'update']);
 $router->get('/patients/search-json', [PatientController::class, 'searchJson']);
 
 $router->get('/patients/appointments', [\App\Controllers\Patients\PatientAppointmentsController::class, 'index']);
+
+$router->get('/patients/timeline', [\App\Controllers\Patients\PatientTimelineController::class, 'index']);
+$router->get('/patients/timeline/export.csv', [\App\Controllers\Patients\PatientTimelineController::class, 'exportCsv']);
 
 $router->get('/patients/consultation', [\App\Controllers\Patients\ConsultationController::class, 'show']);
 $router->post('/patients/consultation/save', [\App\Controllers\Patients\ConsultationController::class, 'save']);

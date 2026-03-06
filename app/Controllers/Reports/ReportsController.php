@@ -10,6 +10,7 @@ use App\Core\Http\Response;
 use App\Repositories\PerformanceLogRepository;
 use App\Repositories\SystemMetricRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Compliance\DataExportService;
 
 final class ReportsController extends Controller
 {
@@ -32,6 +33,17 @@ final class ReportsController extends Controller
                 (string)$it['created_at'],
             ]);
         }
+
+        (new DataExportService($this->container))->record(
+            'reports.metrics.export',
+            null,
+            null,
+            'csv',
+            'metrics.csv',
+            ['limit' => 200],
+            $request->ip(),
+            $request->header('user-agent')
+        );
 
         return Response::raw($csv, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -65,6 +77,17 @@ final class ReportsController extends Controller
                 (string)$it['created_at'],
             ]);
         }
+
+        (new DataExportService($this->container))->record(
+            'reports.performance.export',
+            null,
+            null,
+            'csv',
+            'performance.csv',
+            ['limit' => 2000],
+            $request->ip(),
+            $request->header('user-agent')
+        );
 
         return Response::raw($csv, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',

@@ -26,6 +26,7 @@ ob_start();
     <div class="lc-badge lc-badge--primary">Perfil</div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients">Voltar</a>
+        <a class="lc-btn lc-btn--secondary" href="/patients/timeline?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Linha do tempo</a>
         <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Ficha clínica</a>
         <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Prontuário</a>
         <a class="lc-btn lc-btn--secondary" href="/finance/sales?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Orçamentos</a>
