@@ -13,6 +13,26 @@ use App\Services\Auth\AuthService;
 
 final class BlockController extends Controller
 {
+    private function normalizeDatetimeLocal(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $value = str_replace('T', ' ', $value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $value) === 1) {
+            $value .= ':00';
+        }
+
+        $dt = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $value);
+        if ($dt === false) {
+            return null;
+        }
+
+        return $dt->format('Y-m-d H:i:s');
+    }
+
     private function redirectSuperAdminWithoutClinicContext(): ?\App\Core\Http\Response
     {
         $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
@@ -79,6 +99,7 @@ final class BlockController extends Controller
             'from' => $fromDt->format('Y-m-d'),
             'to' => $toDt->format('Y-m-d'),
             'filter_professional_id' => $professionalId,
+            'error' => trim((string)$request->input('error', '')),
         ]);
     }
 
@@ -92,13 +113,29 @@ final class BlockController extends Controller
         }
 
         $professionalId = (int)$request->input('professional_id', 0);
-        $startAt = trim((string)$request->input('start_at', ''));
-        $endAt = trim((string)$request->input('end_at', ''));
+        $startAtRaw = trim((string)$request->input('start_at', ''));
+        $endAtRaw = trim((string)$request->input('end_at', ''));
         $reason = trim((string)$request->input('reason', ''));
         $type = trim((string)$request->input('type', 'manual'));
 
-        if ($startAt === '' || $endAt === '') {
-            return $this->redirect('/blocks');
+        if ($startAtRaw === '' || $endAtRaw === '') {
+            return $this->redirect('/blocks?error=' . urlencode('Início e fim são obrigatórios.'));
+        }
+
+        $startAt = $this->normalizeDatetimeLocal($startAtRaw);
+        $endAt = $this->normalizeDatetimeLocal($endAtRaw);
+        if ($startAt === null || $endAt === null) {
+            return $this->redirect('/blocks?error=' . urlencode('Data/hora inválida.'));
+        }
+
+        if ($reason === '') {
+            return $this->redirect('/blocks?error=' . urlencode('Motivo é obrigatório.'));
+        }
+
+        $st = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $startAt);
+        $en = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $endAt);
+        if ($st === false || $en === false || $en <= $st) {
+            return $this->redirect('/blocks?error=' . urlencode('Fim deve ser após o início.'));
         }
 
         $typeAllowed = ['manual', 'holiday', 'maintenance'];

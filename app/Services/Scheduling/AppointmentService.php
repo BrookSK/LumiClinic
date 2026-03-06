@@ -134,7 +134,19 @@ final class AppointmentService
 
             $blocks = $blocksRepo->listOverlapping($clinicId, $professionalId, $occupiedStartStr, $occupiedEndStr);
             if ($blocks !== []) {
-                throw new \RuntimeException('Horário indisponível (bloqueio).');
+                $b0 = $blocks[0];
+                $why = trim((string)($b0['reason'] ?? ''));
+                $stB = (string)($b0['start_at'] ?? '');
+                $enB = (string)($b0['end_at'] ?? '');
+                $msg = 'Horário indisponível (bloqueio)';
+                if ($stB !== '' && $enB !== '') {
+                    $msg .= ' ' . $stB . ' - ' . $enB;
+                }
+                if ($why !== '') {
+                    $msg .= ' (' . $why . ')';
+                }
+                $msg .= '.';
+                throw new \RuntimeException($msg);
             }
 
             $conflicts = $apptRepo->listOverlappingForUpdate($clinicId, $professionalId, $occupiedStartStr, $occupiedEndStr);
@@ -558,7 +570,19 @@ final class AppointmentService
 
             $blocks = $blocksRepo->listOverlapping($clinicId, $professionalId, $occupiedStartStr, $occupiedEndStr);
             if ($blocks !== []) {
-                throw new \RuntimeException('Hor?rio indispon?vel (bloqueio).');
+                $b0 = $blocks[0];
+                $why = trim((string)($b0['reason'] ?? ''));
+                $stB = (string)($b0['start_at'] ?? '');
+                $enB = (string)($b0['end_at'] ?? '');
+                $msg = 'Horário indisponível (bloqueio)';
+                if ($stB !== '' && $enB !== '') {
+                    $msg .= ' ' . $stB . ' - ' . $enB;
+                }
+                if ($why !== '') {
+                    $msg .= ' (' . $why . ')';
+                }
+                $msg .= '.';
+                throw new \RuntimeException($msg);
             }
 
             $conflicts = $apptRepo->listOverlappingForUpdateExcludingAppointment($clinicId, $professionalId, $occupiedStartStr, $occupiedEndStr, $appointmentId);

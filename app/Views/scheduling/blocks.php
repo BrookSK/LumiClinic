@@ -4,6 +4,7 @@
 /** @var string|null $from */
 /** @var string|null $to */
 /** @var int|null $filter_professional_id */
+$error = $error ?? null;
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Bloqueios';
 
@@ -23,6 +24,9 @@ ob_start();
 <div class="lc-card">
     <div class="lc-card__header">Criar bloqueio</div>
     <div class="lc-card__body">
+        <?php if (is_string($error) && trim($error) !== ''): ?>
+            <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
         <form method="post" action="/blocks/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 2fr 2fr 2fr; align-items:end;">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
@@ -57,7 +61,7 @@ ob_start();
 
             <div class="lc-field" style="grid-column: 1 / -1;">
                 <label class="lc-label">Motivo</label>
-                <input class="lc-input" type="text" name="reason" />
+                <input class="lc-input" type="text" name="reason" required />
             </div>
 
             <div style="grid-column: 1 / -1;">
