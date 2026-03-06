@@ -73,6 +73,7 @@ ob_start();
                     <td>
                         <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/anamnesis/response?id=<?= (int)$r['id'] ?>">Ver</a>
                         <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/anamnesis/export?id=<?= (int)$r['id'] ?>" target="_blank">Exportar</a>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/anamnesis/export-pdf?id=<?= (int)$r['id'] ?>" target="_blank">PDF</a>
                     </td>
                 </tr>
             <?php endforeach; ?>

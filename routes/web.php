@@ -132,6 +132,8 @@ $router->get('/portal/documentos', [PortalDocumentsController::class, 'index']);
 $router->get('/portal/signatures/file', [PortalDocumentsController::class, 'signatureFile']);
 $router->get('/portal/medical-images/file', [PortalDocumentsController::class, 'medicalImageFile']);
 
+$router->get('/portal/anamnesis/export-pdf', [\App\Controllers\Portal\PortalAnamnesisController::class, 'exportPdf']);
+
 $router->get('/portal/busca', [PortalSearchController::class, 'index']);
 
 $router->get('/portal/uploads', [PortalUploadController::class, 'index']);
@@ -538,6 +540,7 @@ $router->get('/anamnesis/fill', [AnamnesisController::class, 'fill']);
 $router->post('/anamnesis/fill', [AnamnesisController::class, 'submit']);
 $router->get('/anamnesis/response', [AnamnesisController::class, 'response']);
 $router->get('/anamnesis/export', [AnamnesisController::class, 'export']);
+$router->get('/anamnesis/export-pdf', [AnamnesisController::class, 'exportPdf']);
 
 $router->get('/consent-terms', [ConsentController::class, 'terms']);
 $router->get('/consent-terms/create', [ConsentController::class, 'createTerm']);

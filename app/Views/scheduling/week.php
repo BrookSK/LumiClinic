@@ -236,7 +236,9 @@ ob_start();
                             <?php foreach ($slotMinutes as $mins): ?>
                                 <?php $slotTime = $fromMinutes((int)$mins); ?>
                                 <div style="height: <?= (int)$rowHeight ?>px; border:1px solid rgba(17,24,39,0.06); border-radius:10px; margin-bottom:10px; padding:6px; <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working']) ? 'cursor:pointer;' : '' ?>"
-                                    <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working']) ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '" data-create-time="' . htmlspecialchars($slotTime, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
+                                    <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working'])
+                                        ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '" data-create-time="' . htmlspecialchars($slotTime, ENT_QUOTES, 'UTF-8') . '" data-create-professional-id="' . (int)$professional_id . '"')
+                                        : '' ?>
                                 ></div>
                             <?php endforeach; ?>
 
@@ -738,8 +740,14 @@ ob_start();
     if (createCell && createModal) {
       const d = createCell.getAttribute('data-create-date') || '';
       const tm = createCell.getAttribute('data-create-time') || '';
+      const pid = parseInt(createCell.getAttribute('data-create-professional-id') || '0', 10);
       createDate = d;
       desiredSlotTime = tm;
+
+      if (modalProfEl && pid > 0 && String(modalProfEl.value || '') !== String(pid)) {
+        modalProfEl.value = String(pid);
+      }
+
       openModal(createModal);
       loadSlots();
       return;

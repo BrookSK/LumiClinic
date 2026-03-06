@@ -5,6 +5,8 @@ $patient = $patient ?? null;
 $template = $template ?? null;
 $fields = $fields ?? [];
 $professionals = $professionals ?? [];
+$defaultProfessionalId = isset($default_professional_id) ? (int)$default_professional_id : 0;
+$lockProfessional = isset($lock_professional) && (int)$lock_professional === 1;
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -22,13 +24,18 @@ ob_start();
         <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
         <input type="hidden" name="template_id" value="<?= (int)($template['id'] ?? 0) ?>" />
 
-        <label class="lc-label">Profissional (opcional)</label>
-        <select class="lc-select" name="professional_id">
-            <option value="">(opcional)</option>
-            <?php foreach ($professionals as $pr): ?>
-                <option value="<?= (int)$pr['id'] ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
-            <?php endforeach; ?>
-        </select>
+        <?php if ($lockProfessional && $defaultProfessionalId > 0): ?>
+            <input type="hidden" name="professional_id" value="<?= (int)$defaultProfessionalId ?>" />
+        <?php else: ?>
+            <label class="lc-label">Profissional (opcional)</label>
+            <select class="lc-select" name="professional_id">
+                <option value="">(opcional)</option>
+                <?php foreach ($professionals as $pr): ?>
+                    <?php $pid = (int)($pr['id'] ?? 0); ?>
+                    <option value="<?= $pid ?>" <?= ($defaultProfessionalId > 0 && $pid === $defaultProfessionalId) ? 'selected' : '' ?>><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+            </select>
+        <?php endif; ?>
 
         <?php foreach ($fields as $f): ?>
             <?php
