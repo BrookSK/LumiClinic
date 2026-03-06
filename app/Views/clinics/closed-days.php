@@ -21,11 +21,25 @@ ob_start();
         <label class="lc-label">Motivo (opcional)</label>
         <input class="lc-input" type="text" name="reason" />
 
+        <label class="lc-label">Funcionamento</label>
+        <select class="lc-select" name="is_open">
+            <option value="0" selected>Fechado</option>
+            <option value="1">Aberto</option>
+        </select>
+
         <div class="lc-flex lc-gap-sm" style="margin-top:14px;">
             <button class="lc-btn lc-btn--primary" type="submit">Adicionar</button>
-            <a class="lc-btn lc-btn--secondary" href="/clinic">Voltar</a>
         </div>
     </form>
+
+    <div class="lc-flex lc-gap-sm" style="margin-top:10px;">
+        <form method="post" action="/clinic/closed-days/ai" style="margin:0;">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <input type="hidden" name="year" value="<?= (int)date('Y') ?>" />
+            <button class="lc-btn lc-btn--secondary" type="submit" onclick="return confirm('Gerar feriados automaticamente com IA? Isso irá inserir/atualizar as datas do ano.');">Gerar feriados com IA</button>
+        </form>
+        <a class="lc-btn lc-btn--secondary" href="/clinic">Voltar</a>
+    </div>
 </div>
 
 <div class="lc-card">
@@ -37,6 +51,7 @@ ob_start();
             <tr>
                 <th>Data</th>
                 <th>Motivo</th>
+                <th>Status</th>
                 <th>Ações</th>
             </tr>
             </thead>
@@ -45,6 +60,10 @@ ob_start();
                 <tr>
                     <td><?= htmlspecialchars((string)$it['closed_date'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($it['reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>
+                        <?php $open = isset($it['is_open']) && (int)$it['is_open'] === 1; ?>
+                        <span class="lc-badge <?= $open ? 'lc-badge--success' : 'lc-badge--danger' ?>"><?= $open ? 'Aberto' : 'Fechado' ?></span>
+                    </td>
                     <td>
                         <form method="post" action="/clinic/closed-days/delete" style="margin:0;">
                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />

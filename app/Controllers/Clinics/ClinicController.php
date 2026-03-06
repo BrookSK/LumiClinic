@@ -214,6 +214,8 @@ final class ClinicController extends Controller
 
         $date = trim((string)$request->input('closed_date', ''));
         $reason = trim((string)$request->input('reason', ''));
+        $isOpen = (int)$request->input('is_open', 0);
+        $isOpen = $isOpen === 1 ? 1 : 0;
 
         if ($date === '') {
             $service = new ClinicService($this->container);
@@ -224,7 +226,36 @@ final class ClinicController extends Controller
         }
 
         $service = new ClinicService($this->container);
-        $service->createClosedDay($date, $reason, $request->ip());
+        $service->upsertClosedDay($date, $reason, $isOpen, $request->ip());
+
+        return $this->redirect('/clinic/closed-days');
+    }
+
+    public function aiGenerateClosedDays(Request $request)
+    {
+        $this->authorize('clinics.update');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $year = (int)$request->input('year', (int)date('Y'));
+
+        try {
+            $service = new ClinicService($this->container);
+            $items = $service->generateClosedDaysWithAi($year, $request->ip());
+
+            foreach ($items as $it) {
+                $service->upsertClosedDay((string)$it['date'], (string)$it['name'], (int)$it['is_open'], $request->ip());
+            }
+        } catch (\Throwable $e) {
+            $service = new ClinicService($this->container);
+            return $this->view('clinics/closed-days', [
+                'items' => $service->listClosedDays(),
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $this->redirect('/clinic/closed-days');
     }

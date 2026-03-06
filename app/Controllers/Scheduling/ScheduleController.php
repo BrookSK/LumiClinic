@@ -675,7 +675,7 @@ final class ScheduleController extends Controller
             $workingHours = $whRepo->listByClinic($clinicId);
 
             $cdRepo = new ClinicClosedDaysRepository($this->container->get(\PDO::class));
-            $closedDays = $cdRepo->listByClinic($clinicId);
+            $closedDays = $cdRepo->listClosedOnlyByClinic($clinicId);
 
             $profRepo = new ProfessionalRepository($this->container->get(\PDO::class));
             $professionals = $profRepo->listActiveByClinic($clinicId);

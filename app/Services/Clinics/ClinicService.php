@@ -9,6 +9,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\ClinicClosedDaysRepository;
 use App\Repositories\ClinicRepository;
 use App\Repositories\ClinicWorkingHoursRepository;
+use App\Services\Ai\OpenAiClient;
 use App\Services\Auth\AuthService;
 
 final class ClinicService
@@ -176,11 +177,97 @@ final class ClinicService
             throw new \RuntimeException('Contexto inválido.');
         }
 
+        $isOpen = 0;
         $repo = new ClinicClosedDaysRepository($this->container->get(\PDO::class));
-        $id = $repo->create($clinicId, $date, $reason);
+        $id = $repo->create($clinicId, $date, $reason, $isOpen);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'clinics.closed_days_create', ['id' => $id, 'date' => $date], $ip);
+    }
+
+    public function upsertClosedDay(string $date, ?string $reason, int $isOpen, string $ip): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        (new ClinicClosedDaysRepository($this->container->get(\PDO::class)))->upsert($clinicId, $date, $reason, $isOpen);
+
+        (new AuditLogRepository($this->container->get(\PDO::class)))->log(
+            $userId,
+            $clinicId,
+            'clinics.closed_days_upsert',
+            ['date' => $date, 'is_open' => $isOpen === 1 ? 1 : 0],
+            $ip
+        );
+    }
+
+    /** @return list<array{date:string,name:string,is_open:int}> */
+    public function generateClosedDaysWithAi(int $year, string $ip): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $year = max(2000, min($year, 2100));
+
+        $messages = [
+            ['role' => 'system', 'content' => 'Você gera uma lista de feriados para clínicas no Brasil. Responda SOMENTE com um JSON (array). Nada de markdown.'],
+            ['role' => 'user', 'content' => 'Gere feriados nacionais do Brasil para o ano ' . $year . '. Para cada item: {"date":"YYYY-MM-DD","name":"...","is_open":0|1}. Inclua: Confraternização Universal, Carnaval (segunda e terça), Quarta-feira de Cinzas, Sexta-feira Santa, Tiradentes, Dia do Trabalho, Corpus Christi, Independência, Nossa Senhora Aparecida, Finados, Proclamação da República, Natal. Sugira is_open=0 (fechado) por padrão e is_open=1 apenas se fizer sentido para uma clínica.'],
+        ];
+
+        $resp = (new OpenAiClient($this->container))->chatCompletions('gpt-4o-mini', $messages, 0.2);
+        $content = '';
+        if (isset($resp['choices'][0]['message']['content'])) {
+            $content = (string)$resp['choices'][0]['message']['content'];
+        }
+        $content = trim($content);
+        if ($content === '') {
+            throw new \RuntimeException('IA retornou vazio.');
+        }
+
+        if (str_starts_with($content, '```')) {
+            $content = preg_replace('/^```[a-zA-Z0-9_-]*\s*/', '', $content);
+            $content = preg_replace('/\s*```$/', '', (string)$content);
+            $content = trim((string)$content);
+        }
+
+        $json = json_decode($content, true);
+        if (!is_array($json)) {
+            throw new \RuntimeException('Resposta inválida da IA (esperado JSON).');
+        }
+
+        $out = [];
+        foreach ($json as $it) {
+            if (!is_array($it)) {
+                continue;
+            }
+            $date = trim((string)($it['date'] ?? ''));
+            $name = trim((string)($it['name'] ?? ''));
+            $isOpen = (int)($it['is_open'] ?? 0);
+            if ($date === '' || $name === '') {
+                continue;
+            }
+            $out[] = ['date' => $date, 'name' => $name, 'is_open' => ($isOpen === 1 ? 1 : 0)];
+        }
+
+        (new AuditLogRepository($this->container->get(\PDO::class)))->log(
+            $userId,
+            $clinicId,
+            'clinics.closed_days_ai_generate',
+            ['year' => $year, 'count' => count($out)],
+            $ip
+        );
+
+        return $out;
     }
 
     public function deleteClosedDay(int $id, string $ip): void
