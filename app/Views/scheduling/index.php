@@ -121,7 +121,7 @@ ob_start();
 
     <div class="lc-card lc-card--soft">
         <?php
-            $canRenderGrid = ($isProfessional || $professionalId > 0) && is_array($slotMinutes) && $slotMinutes !== [];
+            $canRenderGrid = is_array($slotMinutes) && $slotMinutes !== [];
             $isClosed = array_key_exists((string)$date, $closedMap);
 
             $toMinutes = static function (string $hhmm): int {
@@ -225,9 +225,6 @@ ob_start();
                                 <?php if (is_array($items) && $items !== []): ?>
                                     <?php foreach ($items as $it): ?>
                                         <?php
-                                            if ((int)($it['professional_id'] ?? 0) !== (int)$professionalId) {
-                                                continue;
-                                            }
                                             $st = (string)($it['start_at'] ?? '');
                                             $en = (string)($it['end_at'] ?? '');
                                             if ($st === '' || $en === '') {
@@ -248,6 +245,8 @@ ob_start();
 
                                             $sid = (int)($it['service_id'] ?? 0);
                                             $serviceName = isset($svcMap[$sid]) ? (string)($svcMap[$sid]['name'] ?? '') : '';
+                                            $pid = (int)($it['professional_id'] ?? 0);
+                                            $professionalName = isset($profMap[$pid]) ? (string)($profMap[$pid]['name'] ?? '') : '';
                                             $status = (string)($it['status'] ?? '');
                                             $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
                                         ?>
@@ -256,6 +255,7 @@ ob_start();
                                             <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Agendamento #<?= (int)($it['id'] ?? 0) ?></div>
                                             <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                                 <?= htmlspecialchars(substr($st, 11, 5), ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(substr($en, 11, 5), ENT_QUOTES, 'UTF-8') ?>
+                                                <?= $professionalName !== '' ? (' • ' . htmlspecialchars($professionalName, ENT_QUOTES, 'UTF-8')) : '' ?>
                                                 <?= $serviceName !== '' ? (' • ' . htmlspecialchars($serviceName, ENT_QUOTES, 'UTF-8')) : '' ?>
                                             </div>
                                         </div>
@@ -264,12 +264,6 @@ ob_start();
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        <?php elseif (!$isProfessional && (int)$professionalId === 0): ?>
-            <div class="lc-card" style="margin-bottom:14px;">
-                <div class="lc-card__body">
-                    <div class="lc-muted">Para ver a grade por horário (15 min), selecione um profissional no filtro.</div>
                 </div>
             </div>
         <?php endif; ?>
