@@ -4,12 +4,12 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $success = $success ?? null;
 $diagnose = $diagnose ?? null;
-$zapiInstanceId = $zapi_instance_id ?? null;
-$zapiTokenSet = $zapi_token_set ?? false;
+$evolutionInstance = $evolution_instance ?? null;
+$evolutionApiKeySet = $evolution_apikey_set ?? false;
 ob_start();
 ?>
 <div class="lc-card">
-    <div class="lc-card__title">WhatsApp (Z-API)</div>
+    <div class="lc-card__title">WhatsApp (Evolution API)</div>
 
     <?php if ($error): ?>
         <div class="lc-alert lc-alert--danger"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
@@ -21,22 +21,22 @@ ob_start();
 
     <div class="lc-card__body">
         <div class="lc-muted" style="margin-bottom:10px;">
-            O token é salvo criptografado por clínica. Não exibimos o valor após salvar.
+            A API key é salva criptografada por clínica. Não exibimos o valor após salvar.
         </div>
 
         <form method="post" class="lc-form" action="/settings/whatsapp">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Status</label>
-            <div class="lc-badge <?= ($zapiInstanceId !== null && $zapiInstanceId !== '' && $zapiTokenSet) ? 'lc-badge--success' : 'lc-badge--secondary' ?>">
-                <?= ($zapiInstanceId !== null && $zapiInstanceId !== '' && $zapiTokenSet) ? 'Configurado' : 'Não configurado' ?>
+            <div class="lc-badge <?= ($evolutionInstance !== null && $evolutionInstance !== '' && $evolutionApiKeySet) ? 'lc-badge--success' : 'lc-badge--secondary' ?>">
+                <?= ($evolutionInstance !== null && $evolutionInstance !== '' && $evolutionApiKeySet) ? 'Configurado' : 'Não configurado' ?>
             </div>
 
-            <label class="lc-label" style="margin-top:12px;">Z-API instance id</label>
-            <input class="lc-input" type="text" name="zapi_instance_id" value="<?= htmlspecialchars((string)($zapiInstanceId ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="YOUR_INSTANCE" autocomplete="off" />
+            <label class="lc-label" style="margin-top:12px;">Instância</label>
+            <input class="lc-input" type="text" name="evolution_instance" value="<?= htmlspecialchars((string)($evolutionInstance ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="nome-da-instancia" autocomplete="off" />
 
-            <label class="lc-label" style="margin-top:12px;">Z-API token</label>
-            <input class="lc-input" type="password" name="zapi_token" placeholder="YOUR_TOKEN" autocomplete="off" />
+            <label class="lc-label" style="margin-top:12px;">API Key</label>
+            <input class="lc-input" type="password" name="evolution_apikey" placeholder="apikey" autocomplete="off" />
 
             <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
                 <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>

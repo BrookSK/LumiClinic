@@ -14,7 +14,7 @@ use App\Services\Anamnesis\AnamnesisService;
 use App\Services\Settings\SettingsService;
 use App\Services\Auth\AuthService;
 use App\Services\Whatsapp\WhatsappConfigService;
-use App\Services\Whatsapp\ZapiClient;
+use App\Services\Whatsapp\EvolutionClient;
 
 final class SettingsController extends Controller
 {
@@ -214,8 +214,8 @@ final class SettingsController extends Controller
 
         $saved = trim((string)$request->input('saved', ''));
         return $this->view('settings/whatsapp', [
-            'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
-            'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
+            'evolution_instance' => $data['evolution_instance'] ?? null,
+            'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
             'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
         ]);
     }
@@ -224,20 +224,20 @@ final class SettingsController extends Controller
     {
         $this->authorize('settings.update');
 
-        $instanceId = trim((string)$request->input('zapi_instance_id', ''));
-        $token = trim((string)$request->input('zapi_token', ''));
+        $instance = trim((string)$request->input('evolution_instance', ''));
+        $apiKey = trim((string)$request->input('evolution_apikey', ''));
 
-        if ($instanceId === '' || $token === '') {
+        if ($instance === '' || $apiKey === '') {
             $svc = new WhatsappConfigService($this->container);
             $data = $svc->getWhatsappSettings();
             return $this->view('settings/whatsapp', [
-                'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
-                'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
-                'error' => 'Informe a instância e o token para salvar.',
+                'evolution_instance' => $data['evolution_instance'] ?? null,
+                'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                'error' => 'Informe a instância e a apikey para salvar.',
             ]);
         }
 
-        (new WhatsappConfigService($this->container))->setZapiConfig($instanceId, $token, $request->ip());
+        (new WhatsappConfigService($this->container))->setEvolutionConfig($instance, $apiKey, $request->ip());
         return $this->redirect('/settings/whatsapp?saved=1');
     }
 
@@ -249,16 +249,16 @@ final class SettingsController extends Controller
         $data = $svc->getWhatsappSettings();
 
         try {
-            $ok = (new ZapiClient($this->container))->instanceStatus();
+            $ok = (new EvolutionClient($this->container))->instanceStatus();
             return $this->view('settings/whatsapp', [
-                'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
-                'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
-                'success' => $ok ? 'Conexão com Z-API OK.' : 'Falha ao testar WhatsApp.',
+                'evolution_instance' => $data['evolution_instance'] ?? null,
+                'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                'success' => $ok ? 'Conexão com Evolution API OK.' : 'Falha ao testar WhatsApp.',
             ]);
         } catch (\Throwable $e) {
             return $this->view('settings/whatsapp', [
-                'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
-                'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
+                'evolution_instance' => $data['evolution_instance'] ?? null,
+                'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
                 'error' => 'Falha ao testar WhatsApp. Verifique as credenciais e tente novamente.',
             ]);
         }
@@ -268,7 +268,7 @@ final class SettingsController extends Controller
     {
         $this->authorize('settings.update');
 
-        (new WhatsappConfigService($this->container))->clearZapiConfig($request->ip());
+        (new WhatsappConfigService($this->container))->clearEvolutionConfig($request->ip());
         return $this->redirect('/settings/whatsapp?saved=1');
     }
 
@@ -285,36 +285,36 @@ final class SettingsController extends Controller
         $svc = new WhatsappConfigService($this->container);
         $data = $svc->getWhatsappSettings();
 
-        $instanceId = (string)($data['zapi_instance_id'] ?? '');
-        $tokenSet = (bool)($data['zapi_token_set'] ?? false);
+        $instance = (string)($data['evolution_instance'] ?? '');
+        $apiKeySet = (bool)($data['evolution_apikey_set'] ?? false);
 
         $checks = [];
 
-        $isConfigured = trim($instanceId) !== '' && $tokenSet;
+        $isConfigured = trim($instance) !== '' && $apiKeySet;
         $checks[] = [
-            'title' => 'Configuração da Z-API',
+            'title' => 'Configuração da Evolution API',
             'ok' => $isConfigured,
             'message' => $isConfigured
                 ? 'Credenciais configuradas.'
-                : 'Preencha o instance id e o token e clique em Salvar.',
+                : 'Preencha a instância e a apikey e clique em Salvar.',
             'action_label' => $isConfigured ? null : 'Ir para configuração',
             'action_url' => $isConfigured ? null : '/settings/whatsapp',
         ];
 
-        $zapiOk = false;
+        $evoOk = false;
         if ($isConfigured) {
             try {
-                $zapiOk = (new ZapiClient($this->container))->instanceStatus();
+                $evoOk = (new EvolutionClient($this->container))->instanceStatus();
             } catch (\Throwable $e) {
-                $zapiOk = false;
+                $evoOk = false;
             }
         }
         $checks[] = [
-            'title' => 'Conexão com a Z-API',
-            'ok' => $isConfigured ? $zapiOk : false,
+            'title' => 'Conexão com a Evolution API',
+            'ok' => $isConfigured ? $evoOk : false,
             'message' => !$isConfigured
                 ? 'Configure as credenciais antes de testar a conexão.'
-                : ($zapiOk ? 'Conexão OK.' : 'Falha ao conectar. Verifique credenciais e status da instância.'),
+                : ($evoOk ? 'Conexão OK.' : 'Falha ao conectar. Verifique credenciais e status da instância.'),
             'action_label' => $isConfigured ? 'Abrir configurações' : null,
             'action_url' => $isConfigured ? '/settings/whatsapp' : null,
         ];
@@ -356,8 +356,8 @@ final class SettingsController extends Controller
         ];
 
         return $this->view('settings/whatsapp', [
-            'zapi_instance_id' => $data['zapi_instance_id'] ?? null,
-            'zapi_token_set' => (bool)($data['zapi_token_set'] ?? false),
+            'evolution_instance' => $data['evolution_instance'] ?? null,
+            'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
             'diagnose' => [
                 'checks' => $checks,
             ],

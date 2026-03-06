@@ -14,7 +14,7 @@ use App\Services\Auth\AuthService;
 use App\Services\Mail\MailerService;
 use App\Services\Queue\QueueService;
 use App\Services\Whatsapp\WhatsappTemplateRenderer;
-use App\Services\Whatsapp\ZapiClient;
+use App\Services\Whatsapp\EvolutionClient;
 use App\Repositories\WhatsappTemplateRepository;
 
 final class MarketingAutomationService
@@ -342,10 +342,15 @@ final class MarketingAutomationService
             $msgRepo->markProcessingSnapshot($clinicId, $messageId, $payloadSnapshot, null);
 
             try {
-                $resp = (new ZapiClient($this->container))->sendText($phone, $text);
+                $resp = (new EvolutionClient($this->container))->sendText($phone, $text);
                 $providerId = null;
                 if (is_array($resp)) {
-                    $providerId = $resp['messageId'] ?? ($resp['id'] ?? null);
+                    if (isset($resp['key']) && is_array($resp['key'])) {
+                        $providerId = $resp['key']['id'] ?? null;
+                    }
+                    if ($providerId === null) {
+                        $providerId = $resp['messageId'] ?? ($resp['id'] ?? null);
+                    }
                     $providerId = $providerId === null ? null : (string)$providerId;
                 }
                 $msgRepo->markSent($clinicId, $messageId, is_array($resp) ? $resp : ['raw' => $resp], $providerId);

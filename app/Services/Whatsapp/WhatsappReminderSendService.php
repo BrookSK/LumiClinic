@@ -12,6 +12,7 @@ use App\Repositories\WhatsappMessageLogRepository;
 use App\Repositories\WhatsappTemplateRepository;
 use App\Services\Scheduling\AppointmentConfirmationLinkService;
 use App\Services\Anamnesis\AppointmentAnamnesisLinkService;
+use App\Services\Whatsapp\EvolutionClient;
 
 final class WhatsappReminderSendService
 {
@@ -148,11 +149,16 @@ final class WhatsappReminderSendService
 
         $logs->markSendingSnapshot($clinicId, $logId, $payloadSnapshot, null);
 
-        $resp = (new ZapiClient($this->container))->sendText($phone, $message);
+        $resp = (new EvolutionClient($this->container))->sendText($phone, $message);
 
         $providerId = null;
         if (is_array($resp)) {
-            $providerId = $resp['messageId'] ?? ($resp['id'] ?? null);
+            if (isset($resp['key']) && is_array($resp['key'])) {
+                $providerId = $resp['key']['id'] ?? null;
+            }
+            if ($providerId === null) {
+                $providerId = $resp['messageId'] ?? ($resp['id'] ?? null);
+            }
             $providerId = $providerId === null ? null : (string)$providerId;
         }
 

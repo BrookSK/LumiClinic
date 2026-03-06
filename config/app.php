@@ -13,6 +13,11 @@ return [
 
         'env' => getenv('APP_ENV') ?: 'local',
     ],
+    'whatsapp' => [
+        'evolution' => [
+            'base_url' => getenv('EVOLUTION_BASE_URL') ?: '',
+        ],
+    ],
     'billing' => [
         'asaas' => [
             'base_url' => getenv('ASAAS_BASE_URL') ?: 'https://www.asaas.com/api/v3',

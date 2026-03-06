@@ -14,7 +14,7 @@ final class WhatsappConfigService
 {
     public function __construct(private readonly Container $container) {}
 
-    /** @return array{zapi_instance_id:?string,zapi_token_set:bool} */
+    /** @return array{evolution_instance:?string,evolution_apikey_set:bool} */
     public function getWhatsappSettings(): array
     {
         $auth = new AuthService($this->container);
@@ -25,19 +25,19 @@ final class WhatsappConfigService
 
         $row = (new ClinicSettingsRepository($this->container->get(\PDO::class)))->findByClinicId($clinicId);
 
-        $instanceId = is_array($row) ? (string)($row['zapi_instance_id'] ?? '') : '';
-        $enc = is_array($row) ? (string)($row['zapi_token_encrypted'] ?? '') : '';
+        $instance = is_array($row) ? (string)($row['evolution_instance'] ?? '') : '';
+        $enc = is_array($row) ? (string)($row['evolution_apikey_encrypted'] ?? '') : '';
 
-        $instanceId = trim($instanceId);
+        $instance = trim($instance);
         $enc = trim($enc);
 
         return [
-            'zapi_instance_id' => $instanceId === '' ? null : $instanceId,
-            'zapi_token_set' => $enc !== '',
+            'evolution_instance' => $instance === '' ? null : $instance,
+            'evolution_apikey_set' => $enc !== '',
         ];
     }
 
-    public function setZapiConfig(?string $instanceId, ?string $tokenPlain, string $ip): void
+    public function setEvolutionConfig(?string $instance, ?string $apiKeyPlain, string $ip): void
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -46,31 +46,31 @@ final class WhatsappConfigService
             throw new \RuntimeException('Contexto inválido.');
         }
 
-        $instanceId = $instanceId === null ? null : trim($instanceId);
-        $tokenPlain = $tokenPlain === null ? null : trim($tokenPlain);
+        $instance = $instance === null ? null : trim($instance);
+        $apiKeyPlain = $apiKeyPlain === null ? null : trim($apiKeyPlain);
 
         $encrypted = null;
-        if ($tokenPlain !== null && $tokenPlain !== '') {
-            $encrypted = (new CryptoService($this->container))->encrypt($clinicId, $tokenPlain);
+        if ($apiKeyPlain !== null && $apiKeyPlain !== '') {
+            $encrypted = (new CryptoService($this->container))->encrypt($clinicId, $apiKeyPlain);
         }
 
-        (new ClinicSettingsRepository($this->container->get(\PDO::class)))->updateZapiConfig($clinicId, $instanceId, $encrypted);
+        (new ClinicSettingsRepository($this->container->get(\PDO::class)))->updateEvolutionConfig($clinicId, $instance, $encrypted);
 
         (new AuditLogRepository($this->container->get(\PDO::class)))->log(
             $userId,
             $clinicId,
             'settings.whatsapp_update',
-            ['fields' => ['zapi_instance_id', 'zapi_token']],
+            ['fields' => ['evolution_instance', 'evolution_apikey']],
             $ip
         );
     }
 
-    public function clearZapiConfig(string $ip): void
+    public function clearEvolutionConfig(string $ip): void
     {
-        $this->setZapiConfig(null, null, $ip);
+        $this->setEvolutionConfig(null, null, $ip);
     }
 
-    public function getZapiTokenPlain(): ?string
+    public function getEvolutionApiKeyPlain(): ?string
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -79,7 +79,7 @@ final class WhatsappConfigService
         }
 
         $row = (new ClinicSettingsRepository($this->container->get(\PDO::class)))->findByClinicId($clinicId);
-        $enc = is_array($row) ? (string)($row['zapi_token_encrypted'] ?? '') : '';
+        $enc = is_array($row) ? (string)($row['evolution_apikey_encrypted'] ?? '') : '';
         $enc = trim($enc);
         if ($enc === '') {
             return null;
