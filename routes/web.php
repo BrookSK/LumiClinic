@@ -547,6 +547,10 @@ $router->post('/sys/plans/create', [SystemPlanAdminController::class, 'create'])
 $router->post('/sys/plans/update', [SystemPlanAdminController::class, 'update']);
 $router->post('/sys/plans/set-status', [SystemPlanAdminController::class, 'setStatus']);
 
+$router->get('/sys/settings/webpush', [\App\Controllers\System\SystemSettingsController::class, 'webpush']);
+$router->post('/sys/settings/webpush', [\App\Controllers\System\SystemSettingsController::class, 'webpushSubmit']);
+$router->post('/sys/settings/webpush/generate', [\App\Controllers\System\SystemSettingsController::class, 'webpushGenerate']);
+
 $router->get('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billing']);
 $router->post('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billingSubmit']);
 

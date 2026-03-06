@@ -18,6 +18,54 @@ final class SystemSettingsController extends Controller
         }
     }
 
+    public function webpush(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $service = new SystemSettingsService($this->container);
+        $saved = trim((string)$request->input('saved', ''));
+
+        return $this->view('system/settings/webpush', array_merge($service->getWebPushSettings(), [
+            'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
+        ]));
+    }
+
+    public function webpushSubmit(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $service = new SystemSettingsService($this->container);
+        $service->saveWebPushSettings($_POST);
+
+        return $this->redirect('/sys/settings/webpush?saved=1');
+    }
+
+    public function webpushGenerate(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        if (!class_exists('Minishlink\\WebPush\\VAPID')) {
+            throw new \RuntimeException('Dependência ausente: instale minishlink/web-push via Composer para gerar chaves VAPID.');
+        }
+
+        $keys = \Minishlink\WebPush\VAPID::createVapidKeys();
+
+        $service = new SystemSettingsService($this->container);
+        $existing = $service->getWebPushSettings();
+        $subject = trim((string)($existing['webpush_subject'] ?? ''));
+        if ($subject === '') {
+            $subject = 'mailto:admin@example.com';
+        }
+
+        $service->saveWebPushSettings([
+            'webpush_public_key' => (string)($keys['publicKey'] ?? ''),
+            'webpush_private_key' => (string)($keys['privateKey'] ?? ''),
+            'webpush_subject' => $subject,
+        ]);
+
+        return $this->redirect('/sys/settings/webpush?saved=1');
+    }
+
     public function billing(Request $request)
     {
         $this->ensureSuperAdmin();

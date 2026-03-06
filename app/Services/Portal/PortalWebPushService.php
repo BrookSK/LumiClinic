@@ -6,6 +6,7 @@ namespace App\Services\Portal;
 
 use App\Core\Container\Container;
 use App\Repositories\PatientWebpushSubscriptionRepository;
+use App\Services\System\SystemSettingsService;
 
 final class PortalWebPushService
 {
@@ -19,9 +20,22 @@ final class PortalWebPushService
         $cfg = $this->container->has('config') ? $this->container->get('config') : [];
         $webpush = is_array($cfg) && isset($cfg['webpush']) && is_array($cfg['webpush']) ? $cfg['webpush'] : [];
 
+        $sys = new SystemSettingsService($this->container);
+        $db = $sys->getWebPushSettings();
+
+        $publicKey = trim((string)($webpush['public_key'] ?? ''));
+        if ($publicKey === '') {
+            $publicKey = trim((string)($db['webpush_public_key'] ?? ''));
+        }
+
+        $subject = trim((string)($webpush['subject'] ?? ''));
+        if ($subject === '') {
+            $subject = trim((string)($db['webpush_subject'] ?? ''));
+        }
+
         return [
-            'public_key' => (string)($webpush['public_key'] ?? ''),
-            'subject' => (string)($webpush['subject'] ?? ''),
+            'public_key' => $publicKey,
+            'subject' => $subject,
         ];
     }
 
@@ -56,9 +70,26 @@ final class PortalWebPushService
         $cfg = $this->container->has('config') ? $this->container->get('config') : [];
         $webpush = is_array($cfg) && isset($cfg['webpush']) && is_array($cfg['webpush']) ? $cfg['webpush'] : [];
 
-        $publicKey = (string)($webpush['public_key'] ?? '');
-        $privateKey = (string)($webpush['private_key'] ?? '');
-        $subject = (string)($webpush['subject'] ?? 'mailto:admin@example.com');
+        $sys = new SystemSettingsService($this->container);
+        $db = $sys->getWebPushSettings();
+
+        $publicKey = trim((string)($webpush['public_key'] ?? ''));
+        $privateKey = trim((string)($webpush['private_key'] ?? ''));
+        $subject = trim((string)($webpush['subject'] ?? ''));
+
+        if ($publicKey === '') {
+            $publicKey = trim((string)($db['webpush_public_key'] ?? ''));
+        }
+        if ($privateKey === '') {
+            $privateKey = trim((string)($db['webpush_private_key'] ?? ''));
+        }
+        if ($subject === '') {
+            $subject = trim((string)($db['webpush_subject'] ?? ''));
+        }
+
+        if ($subject === '') {
+            $subject = 'mailto:admin@example.com';
+        }
 
         if (trim($publicKey) === '' || trim($privateKey) === '') {
             throw new \RuntimeException('Chaves VAPID ausentes (webpush.public_key / webpush.private_key).');

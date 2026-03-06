@@ -21,6 +21,35 @@ final class SystemSettingsService
         (new SystemSettingsRepository($this->container->get(\PDO::class)))->upsertText($key, $value);
     }
 
+    /** @return array{webpush_public_key:string,webpush_private_key:string,webpush_subject:string} */
+    public function getWebPushSettings(): array
+    {
+        return [
+            'webpush_public_key' => (string)($this->getText('webpush.public_key') ?? ''),
+            'webpush_private_key' => (string)($this->getText('webpush.private_key') ?? ''),
+            'webpush_subject' => (string)($this->getText('webpush.subject') ?? ''),
+        ];
+    }
+
+    /** @param array<string,mixed> $input */
+    public function saveWebPushSettings(array $input): void
+    {
+        $map = [
+            'webpush_public_key' => 'webpush.public_key',
+            'webpush_private_key' => 'webpush.private_key',
+            'webpush_subject' => 'webpush.subject',
+        ];
+
+        foreach ($map as $field => $key) {
+            if (!array_key_exists($field, $input)) {
+                continue;
+            }
+
+            $val = trim((string)$input[$field]);
+            $this->setText($key, $val === '' ? null : $val);
+        }
+    }
+
     /** @return array<string, string> */
     public function getBillingSettings(): array
     {
