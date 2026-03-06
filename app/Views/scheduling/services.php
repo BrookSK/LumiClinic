@@ -35,8 +35,8 @@ ob_start();
             </div>
 
             <div class="lc-field">
-                <label class="lc-label">Preço (centavos)</label>
-                <input class="lc-input" type="number" name="price_cents" min="0" step="1" />
+                <label class="lc-label">Preço (R$)</label>
+                <input class="lc-input" type="text" name="price" placeholder="0,00" inputmode="decimal" />
             </div>
 
             <div class="lc-field">
@@ -102,7 +102,14 @@ ob_start();
                         <td><?= htmlspecialchars((string)($it['procedure_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= (int)$it['duration_minutes'] ?> min</td>
                         <td><?= (int)($it['buffer_before_minutes'] ?? 0) ?> / <?= (int)($it['buffer_after_minutes'] ?? 0) ?> min</td>
-                        <td><?= $it['price_cents'] === null ? '-' : (int)$it['price_cents'] ?></td>
+                        <td>
+                            <?php
+                                $pc = $it['price_cents'] ?? null;
+                                $pc = $pc === null ? null : (int)$pc;
+                                $display = $pc === null ? '-' : ('R$ ' . number_format(((float)$pc) / 100.0, 2, ',', '.'));
+                            ?>
+                            <?= htmlspecialchars($display, ENT_QUOTES, 'UTF-8') ?>
+                        </td>
                         <td><?= ((int)$it['allow_specific_professional'] === 1) ? 'Sim' : 'Não' ?></td>
                         <td style="text-align:right;">
                             <a class="lc-btn lc-btn--secondary" href="/services/materials?service_id=<?= (int)$it['id'] ?>">Materiais</a>

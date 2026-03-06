@@ -14,6 +14,33 @@ use App\Services\Auth\AuthService;
 
 final class ServiceController extends Controller
 {
+    private function parseMoneyToCents(?string $raw): ?int
+    {
+        if ($raw === null) {
+            return null;
+        }
+
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $raw = str_replace(['R$', ' '], '', $raw);
+        $raw = str_replace('.', '', $raw);
+        $raw = str_replace(',', '.', $raw);
+
+        if (!preg_match('/^-?\d+(\.\d{1,2})?$/', $raw)) {
+            return null;
+        }
+
+        $value = (float)$raw;
+        if ($value < 0) {
+            $value = 0;
+        }
+
+        return (int)round($value * 100);
+    }
+
     private function redirectSuperAdminWithoutClinicContext(): ?\App\Core\Http\Response
     {
         $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
@@ -69,7 +96,10 @@ final class ServiceController extends Controller
         $duration = (int)$request->input('duration_minutes', 0);
         $bufferBefore = (int)$request->input('buffer_before_minutes', 0);
         $bufferAfter = (int)$request->input('buffer_after_minutes', 0);
-        $price = trim((string)$request->input('price_cents', ''));
+        $priceRaw = trim((string)$request->input('price', ''));
+        if ($priceRaw === '') {
+            $priceRaw = trim((string)$request->input('price_cents', ''));
+        }
         $allowSpecific = (string)$request->input('allow_specific_professional', '0') === '1';
         $procedureIdRaw = trim((string)$request->input('procedure_id', ''));
         $categoryIdRaw = trim((string)$request->input('category_id', ''));
@@ -78,9 +108,9 @@ final class ServiceController extends Controller
             return $this->redirect('/services');
         }
 
-        $priceCents = null;
-        if ($price !== '') {
-            $priceCents = max(0, (int)$price);
+        $priceCents = $this->parseMoneyToCents($priceRaw);
+        if ($priceCents === null && $priceRaw !== '') {
+            return $this->redirect('/services');
         }
 
         $procedureId = null;
