@@ -93,6 +93,9 @@ $portalTitle = $patientName !== '' ? ('Olá, ' . $patientName) : 'Portal do Paci
     <?php if ($seoOgImageUrl !== ''): ?>
         <meta name="twitter:image" content="<?= htmlspecialchars($seoOgImageUrl, ENT_QUOTES, 'UTF-8') ?>" />
     <?php endif; ?>
+    <meta name="theme-color" content="#111827" />
+    <link rel="manifest" href="/portal/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icone_1.png" />
     <link rel="stylesheet" href="/assets/css/design-system.css" />
 </head>
 <body class="lc-body">
@@ -367,6 +370,17 @@ $portalTitle = $patientName !== '' ? ('Olá, ' . $patientName) : 'Portal do Paci
         window.location.href = '/portal/busca?q=' + encodeURIComponent(q);
       });
     }
+  } catch (e) {}
+})();
+</script>
+
+<script>
+(function(){
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('/portal/sw.js', { scope: '/portal/' }).catch(function(){});
+    });
   } catch (e) {}
 })();
 </script>

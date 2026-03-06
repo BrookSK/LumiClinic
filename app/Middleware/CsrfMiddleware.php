@@ -34,6 +34,13 @@ final class CsrfMiddleware implements MiddlewareInterface
 
         if ($request->method() === 'POST') {
             $token = (string)$request->input($this->config['token_key'], '');
+            if ($token === '' && str_contains((string)$request->header('content-type', ''), 'application/json')) {
+                $raw = (string)file_get_contents('php://input');
+                $data = json_decode($raw, true);
+                if (is_array($data) && isset($data[$this->config['token_key']])) {
+                    $token = (string)$data[$this->config['token_key']];
+                }
+            }
             if (!hash_equals((string)$_SESSION[$this->config['token_key']], $token)) {
                 return Response::html('CSRF token inválido', 419);
             }

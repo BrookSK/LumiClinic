@@ -67,6 +67,7 @@ use App\Controllers\Portal\PortalContentController;
 use App\Controllers\Portal\PortalMetricsController;
 use App\Controllers\Portal\PortalLgpdController;
 use App\Controllers\Portal\PortalApiTokensController;
+use App\Controllers\Portal\PortalPushController;
 use App\Controllers\Portal\PortalProfileController;
 use App\Controllers\Portal\PortalSecurityController;
 use App\Controllers\Portal\PortalSearchController;
@@ -135,6 +136,11 @@ $router->post('/portal/uploads', [PortalUploadController::class, 'submit']);
 
 $router->get('/portal/notificacoes', [PortalNotificationsController::class, 'index']);
 $router->post('/portal/notificacoes/read', [PortalNotificationsController::class, 'markRead']);
+
+$router->get('/portal/push/config', [PortalPushController::class, 'config']);
+$router->post('/portal/push/subscribe', [PortalPushController::class, 'subscribe']);
+$router->post('/portal/push/unsubscribe', [PortalPushController::class, 'unsubscribe']);
+$router->post('/portal/push/test', [PortalPushController::class, 'test']);
 
 $router->get('/portal/perfil', [PortalProfileController::class, 'index']);
 $router->post('/portal/perfil/request-change', [PortalProfileController::class, 'requestChange']);

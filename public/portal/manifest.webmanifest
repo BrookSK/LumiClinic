@@ -1,0 +1,22 @@
+{
+  "name": "Portal do Paciente",
+  "short_name": "Portal",
+  "start_url": "/portal",
+  "scope": "/portal/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icone_1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Principal_1.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

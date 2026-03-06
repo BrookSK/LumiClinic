@@ -42,6 +42,11 @@ return [
         'enabled' => true,
         'token_key' => '_csrf',
     ],
+    'webpush' => [
+        'public_key' => getenv('WEBPUSH_PUBLIC_KEY') ?: '',
+        'private_key' => getenv('WEBPUSH_PRIVATE_KEY') ?: '',
+        'subject' => getenv('WEBPUSH_SUBJECT') ?: 'mailto:admin@lumiclinic.local',
+    ],
     'observability' => [
         'retention_days_event_logs' => (int)(getenv('OBS_RETENTION_EVENT_DAYS') ?: 90),
         'retention_days_performance_logs' => (int)(getenv('OBS_RETENTION_PERF_DAYS') ?: 30),
