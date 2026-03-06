@@ -482,6 +482,7 @@ $ico = [
                                 <?php endif; ?>
                                 <?php if ($can('stock.movements.read')): ?>
                                     <?= $navItem('/stock/movements', 'Movimentações', $ico['stock'], $isActive('/stock/movements')) ?>
+                                    <?= $navItem('/stock/inventory', 'Inventário', $ico['stock'], $isActive('/stock/inventory')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('stock.alerts.read')): ?>
                                     <?= $navItem('/stock/alerts', 'Alertas', $ico['stock'], $isActive('/stock/alerts')) ?>
@@ -492,7 +493,7 @@ $ico = [
                 <?php endif; ?>
 
                 <?php $marketingActive = $isActive('/marketing'); ?>
-                <?php if ($can('marketing.calendar.read') && $hasClinicContext): ?>
+                <?php if (($can('marketing.calendar.read') || $can('marketing.automation.read')) && $hasClinicContext): ?>
                     <details class="lc-navgroup" <?= $marketingActive ? 'open' : '' ?>>
                         <summary class="lc-nav__item lc-navgroup__summary<?= $marketingActive ? ' lc-nav__item--active' : '' ?>">
                             <span class="lc-nav__icon" aria-hidden="true"><?= $ico['calendar'] ?></span>
@@ -503,7 +504,14 @@ $ico = [
                         </summary>
                         <div class="lc-navgroup__children">
                             <div class="lc-nav__sub">
-                                <?= $navItem('/marketing/calendar', 'Agenda de Marketing', $ico['calendar'], $isActive('/marketing/calendar')) ?>
+                                <?php if ($can('marketing.calendar.read')): ?>
+                                    <?= $navItem('/marketing/calendar', 'Agenda de Marketing', $ico['calendar'], $isActive('/marketing/calendar')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('marketing.automation.read')): ?>
+                                    <?= $navItem('/marketing/automation/segments', 'Automação - Segmentos', $ico['calendar'], $isActive('/marketing/automation/segments') || $isActive('/marketing/automation/segment')) ?>
+                                    <?= $navItem('/marketing/automation/campaigns', 'Automação - Campanhas', $ico['calendar'], $isActive('/marketing/automation/campaigns') || $isActive('/marketing/automation/campaign')) ?>
+                                    <?= $navItem('/marketing/automation/logs', 'Automação - Logs', $ico['calendar'], $isActive('/marketing/automation/logs') || $isActive('/marketing/automation/log')) ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </details>

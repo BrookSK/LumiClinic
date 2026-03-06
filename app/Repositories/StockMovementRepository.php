@@ -9,6 +9,38 @@ final class StockMovementRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string,mixed>> */
+    public function listByReference(int $clinicId, string $referenceType, int $referenceId): array
+    {
+        $sql = "
+            SELECT
+                id, clinic_id, material_id,
+                type, quantity,
+                reference_type, reference_id,
+                loss_reason,
+                unit_cost_snapshot, total_cost_snapshot,
+                notes,
+                user_id,
+                created_at
+            FROM stock_movements
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+              AND reference_type = :reference_type
+              AND reference_id = :reference_id
+            ORDER BY id ASC
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'reference_type' => $referenceType,
+            'reference_id' => $referenceId,
+        ]);
+
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array<string,mixed>> */
     public function listByClinic(int $clinicId, string $fromDate, string $toDate, int $limit = 500, int $offset = 0): array
     {
         $offset = max(0, $offset);
@@ -247,6 +279,69 @@ final class StockMovementRepository
               AND sm.type = 'exit'
               AND DATE(sm.created_at) BETWEEN :from_date AND :to_date
             GROUP BY p.id, p.name
+            ORDER BY cost DESC
+            LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ]);
+
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function aggregateLossCostByReason(int $clinicId, string $fromDate, string $toDate): array
+    {
+        $sql = "
+            SELECT
+                COALESCE(sm.loss_reason, '') AS loss_reason,
+                SUM(sm.quantity) AS qty,
+                SUM(sm.total_cost_snapshot) AS cost
+            FROM stock_movements sm
+            WHERE sm.clinic_id = :clinic_id
+              AND sm.deleted_at IS NULL
+              AND sm.type IN ('loss','expiration')
+              AND DATE(sm.created_at) BETWEEN :from_date AND :to_date
+            GROUP BY COALESCE(sm.loss_reason, '')
+            ORDER BY cost DESC
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ]);
+
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function aggregateLossCostByMaterial(int $clinicId, string $fromDate, string $toDate, int $limit = 200): array
+    {
+        $sql = "
+            SELECT
+                m.id AS material_id,
+                m.name AS material_name,
+                m.unit AS unit,
+                SUM(sm.quantity) AS qty,
+                SUM(sm.total_cost_snapshot) AS cost
+            FROM stock_movements sm
+            INNER JOIN materials m
+                    ON m.id = sm.material_id
+                   AND m.clinic_id = sm.clinic_id
+                   AND m.deleted_at IS NULL
+            WHERE sm.clinic_id = :clinic_id
+              AND sm.deleted_at IS NULL
+              AND sm.type IN ('loss','expiration')
+              AND DATE(sm.created_at) BETWEEN :from_date AND :to_date
+            GROUP BY m.id, m.name, m.unit
             ORDER BY cost DESC
             LIMIT " . (int)$limit . "
         ";

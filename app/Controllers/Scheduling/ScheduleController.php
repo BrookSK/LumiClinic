@@ -184,7 +184,7 @@ final class ScheduleController extends Controller
             );
 
             $result = ['movement_ids' => [], 'total_cost' => 0.0];
-            $result = $stock->consumeForAppointmentAdjusted($id, (int)$appointment['service_id'], $qtyMap, $note, $request->ip());
+            $result = $stock->reconcileForAppointment($id, (int)$appointment['service_id'], $qtyMap, $note, $request->ip());
 
             $createdFinancialEntryId = null;
 

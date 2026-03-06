@@ -53,7 +53,10 @@ use App\Controllers\Stock\MaterialController;
 use App\Controllers\Stock\MaterialMetaController;
 use App\Controllers\Stock\StockAlertsController;
 use App\Controllers\Stock\StockController;
+use App\Controllers\Stock\StockInventoryController;
 use App\Controllers\Stock\StockReportsController;
+use App\Controllers\Marketing\MarketingAutomationController;
+use App\Controllers\Marketing\MarketingAutomationUiController;
 use App\Controllers\Portal\AuthPatientController;
 use App\Controllers\Portal\PortalController;
 use App\Controllers\Portal\PortalAgendaController;
@@ -175,6 +178,9 @@ $router->get('/ai/anomalies', [AiController::class, 'anomalies']);
 
 $router->get('/reports/metrics.csv', [ReportsController::class, 'metricsCsv']);
 $router->get('/reports/performance.csv', [ReportsController::class, 'performanceCsv']);
+
+$router->get('/m/click', [MarketingAutomationController::class, 'click']);
+$router->post('/webhooks/marketing/whatsapp', [MarketingAutomationController::class, 'whatsappWebhook']);
 
 $router->get('/manager/panel', [ManagerPanelController::class, 'index']);
 
@@ -323,6 +329,20 @@ $router->get('/marketing/calendar/edit', [\App\Controllers\Marketing\MarketingCa
 $router->post('/marketing/calendar/update', [\App\Controllers\Marketing\MarketingCalendarController::class, 'update']);
 $router->post('/marketing/calendar/delete', [\App\Controllers\Marketing\MarketingCalendarController::class, 'delete']);
 
+$router->get('/marketing/automation/segments', [MarketingAutomationUiController::class, 'segments']);
+$router->post('/marketing/automation/segment/create', [MarketingAutomationUiController::class, 'segmentCreate']);
+$router->get('/marketing/automation/segment/edit', [MarketingAutomationUiController::class, 'segmentEdit']);
+$router->post('/marketing/automation/segment/update', [MarketingAutomationUiController::class, 'segmentUpdate']);
+
+$router->get('/marketing/automation/campaigns', [MarketingAutomationUiController::class, 'campaigns']);
+$router->post('/marketing/automation/campaign/create', [MarketingAutomationUiController::class, 'campaignCreate']);
+$router->get('/marketing/automation/campaign/edit', [MarketingAutomationUiController::class, 'campaignEdit']);
+$router->post('/marketing/automation/campaign/update', [MarketingAutomationUiController::class, 'campaignUpdate']);
+$router->post('/marketing/automation/campaign/run', [MarketingAutomationUiController::class, 'campaignRunNow']);
+
+$router->get('/marketing/automation/logs', [MarketingAutomationUiController::class, 'logs']);
+$router->post('/marketing/automation/log/retry', [MarketingAutomationUiController::class, 'logRetry']);
+
 $router->get('/finance/sales', [SalesController::class, 'index']);
 $router->get('/finance/sales/view', [SalesController::class, 'show']);
 $router->post('/finance/sales/create', [SalesController::class, 'create']);
@@ -365,6 +385,11 @@ $router->post('/stock/units/create', [MaterialMetaController::class, 'createUnit
 $router->post('/stock/units/delete', [MaterialMetaController::class, 'deleteUnit']);
 $router->get('/stock/movements', [StockController::class, 'movements']);
 $router->post('/stock/movements/create', [StockController::class, 'createMovement']);
+$router->get('/stock/inventory', [StockInventoryController::class, 'index']);
+$router->post('/stock/inventory/create', [StockInventoryController::class, 'create']);
+$router->get('/stock/inventory/edit', [StockInventoryController::class, 'edit']);
+$router->post('/stock/inventory/update', [StockInventoryController::class, 'update']);
+$router->post('/stock/inventory/confirm', [StockInventoryController::class, 'confirm']);
 $router->get('/stock/alerts', [StockAlertsController::class, 'index']);
 $router->get('/stock/reports', [StockReportsController::class, 'index']);
 $router->get('/stock/reports/export.csv', [StockReportsController::class, 'exportCsv']);

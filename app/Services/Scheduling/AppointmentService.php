@@ -17,6 +17,7 @@ use App\Repositories\ProfessionalRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Observability\SystemEvent;
+use App\Services\Queue\QueueService;
 use App\Services\Stock\StockService;
 use App\Repositories\SchedulingBlockRepository;
 use App\Services\Whatsapp\WhatsappReminderSchedulerService;
@@ -261,7 +262,7 @@ final class AppointmentService
 
             $stock = new StockService($this->container);
             if ($usedQty !== []) {
-                $stock->autoConsumeForAppointmentAdjusted($appointmentId, (int)$current['service_id'], $usedQty, $ip);
+                $stock->reconcileForAppointment($appointmentId, (int)$current['service_id'], $usedQty, 'Baixa automática por sessão', $ip);
             } else {
                 $stock->autoConsumeForAppointment($appointmentId, (int)$current['service_id'], $ip);
             }
@@ -293,6 +294,32 @@ final class AppointmentService
             'from' => $from,
             'to' => $status,
         ], 'appointment', $appointmentId, $ip, null);
+
+        $eventMap = [
+            'completed' => 'appointment.completed',
+            'no_show' => 'appointment.no_show',
+            'cancelled' => 'appointment.cancelled',
+            'confirmed' => 'appointment.confirmed',
+            'in_progress' => 'appointment.in_progress',
+            'scheduled' => 'appointment.scheduled',
+        ];
+
+        if (isset($eventMap[$status])) {
+            (new QueueService($this->container))->enqueue(
+                'marketing.process_event',
+                [
+                    'event' => $eventMap[$status],
+                    'appointment_id' => $appointmentId,
+                    'patient_id' => (int)($current['patient_id'] ?? 0),
+                    'from' => $from,
+                    'to' => $status,
+                ],
+                $clinicId,
+                'notifications',
+                null,
+                10
+            );
+        }
     }
 
     private function canTransition(string $from, string $to): bool

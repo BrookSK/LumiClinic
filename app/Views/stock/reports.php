@@ -4,6 +4,8 @@
 /** @var string $to */
 /** @var array<string,mixed> $summary */
 /** @var list<array<string,mixed>> $by_material */
+/** @var list<array<string,mixed>> $losses_by_reason */
+/** @var list<array<string,mixed>> $losses_by_material */
 /** @var list<array<string,mixed>> $by_service */
 /** @var list<array<string,mixed>> $by_professional */
 
@@ -72,6 +74,74 @@ ob_start();
                         <td><?= htmlspecialchars((string)$it['material_name'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= number_format((float)$it['qty'], 3, ',', '.') ?> <?= htmlspecialchars((string)$it['unit'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td>R$ <?= number_format((float)$it['cost'], 2, ',', '.') ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div class="lc-card" style="margin-bottom: 16px;">
+    <div class="lc-card__header">Perdas por motivo</div>
+    <div class="lc-card__body">
+        <?php if (($losses_by_reason ?? []) === []): ?>
+            <div class="lc-muted">Sem dados no período.</div>
+        <?php else: ?>
+            <table class="lc-table">
+                <thead>
+                <tr>
+                    <th>Motivo</th>
+                    <th>Qtd</th>
+                    <th>Custo</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach (($losses_by_reason ?? []) as $it): ?>
+                    <?php
+                        $reason = (string)($it['loss_reason'] ?? '');
+                        $reasonLabelMap = [
+                            '' => 'Não informado',
+                            'expiration' => 'Vencimento',
+                            'breakage' => 'Quebra',
+                            'contamination' => 'Contaminação',
+                            'operational_error' => 'Erro operacional',
+                            'internal_use' => 'Uso interno',
+                        ];
+                        $reasonLabel = (string)($reasonLabelMap[$reason] ?? $reason);
+                    ?>
+                    <tr>
+                        <td><?= htmlspecialchars($reasonLabel, ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= number_format((float)($it['qty'] ?? 0), 3, ',', '.') ?></td>
+                        <td>R$ <?= number_format((float)($it['cost'] ?? 0), 2, ',', '.') ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div class="lc-card" style="margin-bottom: 16px;">
+    <div class="lc-card__header">Perdas por material</div>
+    <div class="lc-card__body">
+        <?php if (($losses_by_material ?? []) === []): ?>
+            <div class="lc-muted">Sem dados no período.</div>
+        <?php else: ?>
+            <table class="lc-table">
+                <thead>
+                <tr>
+                    <th>Material</th>
+                    <th>Qtd</th>
+                    <th>Custo</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach (($losses_by_material ?? []) as $it): ?>
+                    <tr>
+                        <td><?= htmlspecialchars((string)($it['material_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= number_format((float)($it['qty'] ?? 0), 3, ',', '.') ?> <?= htmlspecialchars((string)($it['unit'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td>R$ <?= number_format((float)($it['cost'] ?? 0), 2, ',', '.') ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

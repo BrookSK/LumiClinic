@@ -47,6 +47,8 @@ final class StockReportsController extends Controller
             'to' => $data['to'],
             'summary' => $data['summary'],
             'by_material' => $data['by_material'],
+            'losses_by_reason' => $data['losses_by_reason'] ?? [],
+            'losses_by_material' => $data['losses_by_material'] ?? [],
             'by_service' => $data['by_service'],
             'by_professional' => $data['by_professional'],
         ]);
@@ -83,6 +85,29 @@ final class StockReportsController extends Controller
         fputcsv($out, ['consumo_por_material']);
         fputcsv($out, ['material', 'unidade', 'qtd_saida', 'custo']);
         foreach (($data['by_material'] ?? []) as $it) {
+            fputcsv($out, [
+                (string)($it['material_name'] ?? ''),
+                (string)($it['unit'] ?? ''),
+                (string)($it['qty'] ?? ''),
+                (string)($it['cost'] ?? ''),
+            ]);
+        }
+        fputcsv($out, []);
+
+        fputcsv($out, ['perdas_por_motivo']);
+        fputcsv($out, ['motivo', 'qtd', 'custo']);
+        foreach (($data['losses_by_reason'] ?? []) as $it) {
+            fputcsv($out, [
+                (string)($it['loss_reason'] ?? ''),
+                (string)($it['qty'] ?? ''),
+                (string)($it['cost'] ?? ''),
+            ]);
+        }
+        fputcsv($out, []);
+
+        fputcsv($out, ['perdas_por_material']);
+        fputcsv($out, ['material', 'unidade', 'qtd', 'custo']);
+        foreach (($data['losses_by_material'] ?? []) as $it) {
             fputcsv($out, [
                 (string)($it['material_name'] ?? ''),
                 (string)($it['unit'] ?? ''),
@@ -162,6 +187,22 @@ final class StockReportsController extends Controller
 
         $html .= '<h2>Consumo por material</h2><table><thead><tr><th>Material</th><th>Qtd saída</th><th>Custo</th></tr></thead><tbody>';
         foreach (($data['by_material'] ?? []) as $it) {
+            $html .= '<tr><td>' . htmlspecialchars((string)($it['material_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . number_format((float)($it['qty'] ?? 0), 3, ',', '.') . ' ' . htmlspecialchars((string)($it['unit'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>R$ ' . number_format((float)($it['cost'] ?? 0), 2, ',', '.') . '</td></tr>';
+        }
+        $html .= '</tbody></table>';
+
+        $html .= '<h2>Perdas por motivo</h2><table><thead><tr><th>Motivo</th><th>Qtd</th><th>Custo</th></tr></thead><tbody>';
+        foreach (($data['losses_by_reason'] ?? []) as $it) {
+            $html .= '<tr><td>' . htmlspecialchars((string)($it['loss_reason'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td>' . number_format((float)($it['qty'] ?? 0), 3, ',', '.') . '</td>'
+                . '<td>R$ ' . number_format((float)($it['cost'] ?? 0), 2, ',', '.') . '</td></tr>';
+        }
+        $html .= '</tbody></table>';
+
+        $html .= '<h2>Perdas por material</h2><table><thead><tr><th>Material</th><th>Qtd</th><th>Custo</th></tr></thead><tbody>';
+        foreach (($data['losses_by_material'] ?? []) as $it) {
             $html .= '<tr><td>' . htmlspecialchars((string)($it['material_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
                 . '<td>' . number_format((float)($it['qty'] ?? 0), 3, ',', '.') . ' ' . htmlspecialchars((string)($it['unit'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>'
                 . '<td>R$ ' . number_format((float)($it['cost'] ?? 0), 2, ',', '.') . '</td></tr>';

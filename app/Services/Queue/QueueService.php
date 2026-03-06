@@ -13,6 +13,7 @@ use App\Services\Observability\MetricsService;
 use App\Services\Observability\AlertEngineService;
 use App\Services\Observability\ObservabilityRetentionService;
 use App\Services\Portal\PortalNotificationService;
+use App\Services\Marketing\MarketingAutomationService;
 use App\Services\Whatsapp\WhatsappReminderReconcileService;
 use App\Services\Whatsapp\WhatsappReminderSendService;
 
@@ -89,6 +90,49 @@ final class QueueService
 
             $runAt = (new \DateTimeImmutable('now'))->modify('+10 minutes')->format('Y-m-d H:i:s');
             $this->enqueue('whatsapp.reminders.reconcile', ['seed' => 1], $clinicId, 'notifications', $runAt, 10);
+            return;
+        }
+
+        if ($jobType === 'marketing.run_campaign') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para marketing.run_campaign.');
+            }
+
+            $campaignId = (int)($payload['campaign_id'] ?? 0);
+            $ip = (string)($payload['ip'] ?? '');
+            if ($campaignId <= 0) {
+                throw new \RuntimeException('Payload inválido para marketing.run_campaign.');
+            }
+
+            (new MarketingAutomationService($this->container))->runCampaign($clinicId, $campaignId, $ip);
+            return;
+        }
+
+        if ($jobType === 'marketing.send_message') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para marketing.send_message.');
+            }
+
+            $messageId = (int)($payload['message_id'] ?? 0);
+            if ($messageId <= 0) {
+                throw new \RuntimeException('Payload inválido para marketing.send_message.');
+            }
+
+            (new MarketingAutomationService($this->container))->sendMessage($clinicId, $messageId);
+            return;
+        }
+
+        if ($jobType === 'marketing.process_event') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para marketing.process_event.');
+            }
+
+            $event = trim((string)($payload['event'] ?? ''));
+            if ($event === '') {
+                throw new \RuntimeException('Payload inválido para marketing.process_event.');
+            }
+
+            (new MarketingAutomationService($this->container))->processEvent($clinicId, $event, $payload);
             return;
         }
 
