@@ -91,6 +91,9 @@ final class MedicalRecordController extends Controller
         }
 
         $templateId = (int)$request->input('template_id', 0);
+        $prefAttendedAt = trim((string)$request->input('attended_at', ''));
+        $prefProcedureType = trim((string)$request->input('procedure_type', ''));
+        $prefProfessionalId = (int)$request->input('professional_id', 0);
         $tpl = null;
         $fields = [];
         if ($templateId > 0) {
@@ -105,12 +108,23 @@ final class MedicalRecordController extends Controller
 
         $tplService = new MedicalRecordTemplateService($this->container);
 
+        $error = trim((string)$request->input('error', ''));
+        $success = trim((string)$request->input('success', ''));
+
         return $this->view('medical-records/create', [
             'patient' => $data['patient'],
+            'records' => $data['records'],
             'professionals' => $service->listProfessionals(),
             'templates' => $tplService->listTemplates(),
             'template' => $tpl,
             'fields' => $fields,
+            'error' => $error !== '' ? $error : null,
+            'success' => $success !== '' ? $success : null,
+            'prefill' => [
+                'attended_at' => $prefAttendedAt,
+                'procedure_type' => $prefProcedureType,
+                'professional_id' => $prefProfessionalId,
+            ],
         ]);
     }
 

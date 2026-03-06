@@ -19,6 +19,7 @@ use App\Controllers\Scheduling\ProfessionalController;
 use App\Controllers\Scheduling\ProfessionalScheduleController;
 use App\Controllers\Scheduling\ScheduleController;
 use App\Controllers\Scheduling\ServiceController;
+use App\Controllers\Scheduling\ServiceCategoryController;
 use App\Controllers\Scheduling\ServiceMaterialsController;
 use App\Controllers\Procedures\ProcedureController;
 use App\Controllers\Settings\SettingsController;
@@ -339,6 +340,7 @@ $router->get('/schedule/reschedule', [ScheduleController::class, 'reschedule']);
 $router->post('/schedule/reschedule', [ScheduleController::class, 'rescheduleSubmit']);
 $router->get('/schedule/ops', [ScheduleController::class, 'ops']);
 $router->get('/schedule/logs', [ScheduleController::class, 'logs']);
+$router->get('/schedule/queue', [\App\Controllers\Scheduling\ProfessionalQueueController::class, 'index']);
 $router->post('/schedule/gcal/force-sync', [ScheduleController::class, 'forceGoogleCalendarSync']);
 
 $router->get('/marketing/calendar', [\App\Controllers\Marketing\MarketingCalendarController::class, 'index']);
@@ -415,6 +417,10 @@ $router->get('/stock/reports/export.pdf', [StockReportsController::class, 'expor
 
 $router->get('/services', [ServiceController::class, 'index']);
 $router->post('/services/create', [ServiceController::class, 'create']);
+
+$router->get('/services/categories', [ServiceCategoryController::class, 'index']);
+$router->post('/services/categories/create', [ServiceCategoryController::class, 'create']);
+$router->post('/services/categories/delete', [ServiceCategoryController::class, 'delete']);
 
 $router->get('/services/materials', [ServiceMaterialsController::class, 'index']);
 $router->post('/services/materials/create', [ServiceMaterialsController::class, 'create']);
@@ -495,6 +501,7 @@ $router->get('/medical-records/create', [MedicalRecordController::class, 'create
 $router->post('/medical-records/create', [MedicalRecordController::class, 'store']);
 $router->get('/medical-records/edit', [MedicalRecordController::class, 'edit']);
 $router->post('/medical-records/edit', [MedicalRecordController::class, 'update']);
+$router->post('/medical-records/audio/transcribe', [\App\Controllers\MedicalRecords\MedicalRecordAudioController::class, 'transcribe']);
 
 $router->get('/medical-record-templates', [MedicalRecordTemplateController::class, 'index']);
 $router->get('/medical-record-templates/create', [MedicalRecordTemplateController::class, 'create']);

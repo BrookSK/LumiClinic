@@ -125,6 +125,52 @@ final class AppointmentRepository
         ]);
     }
 
+    /** @return list<array<string,mixed>> */
+    public function listCheckedInQueueForProfessional(int $clinicId, int $professionalId, int $limit = 50): array
+    {
+        $limit = max(1, min($limit, 200));
+
+        $sql = "
+            SELECT
+                a.id,
+                a.clinic_id,
+                a.professional_id,
+                a.service_id,
+                a.patient_id,
+                a.start_at,
+                a.end_at,
+                a.checked_in_at,
+                a.started_at,
+                a.status,
+                COALESCE(pat.name, '') AS patient_name,
+                COALESCE(s.name, '') AS service_name
+            FROM appointments a
+            LEFT JOIN patients pat
+                   ON pat.id = a.patient_id
+                  AND pat.clinic_id = a.clinic_id
+                  AND pat.deleted_at IS NULL
+            LEFT JOIN services s
+                   ON s.id = a.service_id
+                  AND s.clinic_id = a.clinic_id
+                  AND s.deleted_at IS NULL
+            WHERE a.clinic_id = :clinic_id
+              AND a.professional_id = :professional_id
+              AND a.deleted_at IS NULL
+              AND a.checked_in_at IS NOT NULL
+              AND a.checked_in_at <> ''
+              AND (a.started_at IS NULL OR a.started_at = '')
+              AND a.status IN ('scheduled','confirmed','in_progress')
+            ORDER BY a.checked_in_at ASC
+            LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'professional_id' => $professionalId]);
+
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
+
     /** @return list<array<string, mixed>> */
     public function listUpcomingByPatient(int $clinicId, int $patientId, int $limit = 10, int $offset = 0): array
     {
@@ -160,6 +206,133 @@ final class AppointmentRepository
         $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
 
         /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Lista agendamentos para opera??o com filtros (usa joins para nome/CPF/servi?o/profissional).
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function listOpsFiltered(
+        int $clinicId,
+        string $dateYmd,
+        string $category,
+        ?int $professionalId,
+        ?int $serviceId,
+        ?int $serviceCategoryId,
+        ?string $patientName,
+        ?string $patientCpf,
+        ?string $timeFromHm,
+        ?string $timeToHm,
+        int $limit = 500
+    ): array {
+        $dateYmd = trim($dateYmd);
+        if ($dateYmd === '') {
+            $dateYmd = date('Y-m-d');
+        }
+
+        $startAt = $dateYmd . ' 00:00:00';
+        $endAt = $dateYmd . ' 23:59:59';
+
+        $where = " a.clinic_id = :clinic_id AND a.deleted_at IS NULL AND a.start_at >= :start_at AND a.start_at <= :end_at ";
+        $params = [
+            'clinic_id' => $clinicId,
+            'start_at' => $startAt,
+            'end_at' => $endAt,
+        ];
+
+        if ($professionalId !== null && $professionalId > 0) {
+            $where .= " AND a.professional_id = :professional_id ";
+            $params['professional_id'] = $professionalId;
+        }
+
+        if ($serviceId !== null && $serviceId > 0) {
+            $where .= " AND a.service_id = :service_id ";
+            $params['service_id'] = $serviceId;
+        }
+
+        if ($serviceCategoryId !== null && $serviceCategoryId > 0) {
+            $where .= " AND s.category_id = :service_category_id ";
+            $params['service_category_id'] = $serviceCategoryId;
+        }
+
+        $patientName = $patientName !== null ? trim($patientName) : '';
+        if ($patientName !== '') {
+            $where .= " AND pat.name LIKE :patient_name_like ";
+            $params['patient_name_like'] = '%' . $patientName . '%';
+        }
+
+        $patientCpf = $patientCpf !== null ? trim($patientCpf) : '';
+        if ($patientCpf !== '') {
+            $where .= " AND pat.cpf LIKE :patient_cpf_like ";
+            $params['patient_cpf_like'] = '%' . $patientCpf . '%';
+        }
+
+        $timeFromHm = $timeFromHm !== null ? trim($timeFromHm) : '';
+        if ($timeFromHm !== '' && preg_match('/^\d{2}:\d{2}$/', $timeFromHm)) {
+            $where .= " AND a.start_at >= :time_from ";
+            $params['time_from'] = $dateYmd . ' ' . $timeFromHm . ':00';
+        }
+
+        $timeToHm = $timeToHm !== null ? trim($timeToHm) : '';
+        if ($timeToHm !== '' && preg_match('/^\d{2}:\d{2}$/', $timeToHm)) {
+            $where .= " AND a.start_at <= :time_to ";
+            $params['time_to'] = $dateYmd . ' ' . $timeToHm . ':59';
+        }
+
+        $category = trim($category);
+        if ($category === 'pending') {
+            $where .= " AND a.status IN ('scheduled','confirmed','in_progress') ";
+        } elseif ($category === 'finalized') {
+            $where .= " AND a.status IN ('completed','cancelled','no_show') ";
+        }
+
+        $limit = max(1, min($limit, 2000));
+
+        $sql = "
+            SELECT
+                a.id,
+                a.clinic_id,
+                a.professional_id,
+                a.service_id,
+                a.patient_id,
+                a.start_at,
+                a.end_at,
+                a.checked_in_at,
+                a.started_at,
+                a.status,
+                COALESCE(pat.name, '') AS patient_name,
+                COALESCE(pat.cpf, '') AS patient_cpf,
+                COALESCE(s.name, '') AS service_name,
+                COALESCE(sc.name, '') AS service_category_name,
+                COALESCE(pro.name, '') AS professional_name
+            FROM appointments a
+            LEFT JOIN patients pat
+                   ON pat.id = a.patient_id
+                  AND pat.clinic_id = a.clinic_id
+                  AND pat.deleted_at IS NULL
+            LEFT JOIN services s
+                   ON s.id = a.service_id
+                  AND s.clinic_id = a.clinic_id
+                  AND s.deleted_at IS NULL
+            LEFT JOIN service_categories sc
+                   ON sc.id = s.category_id
+                  AND sc.clinic_id = a.clinic_id
+                  AND sc.deleted_at IS NULL
+            LEFT JOIN professionals pro
+                   ON pro.id = a.professional_id
+                  AND pro.clinic_id = a.clinic_id
+                  AND pro.deleted_at IS NULL
+            WHERE " . $where . "
+            ORDER BY a.start_at ASC
+            LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        /** @var list<array<string,mixed>> */
         return $stmt->fetchAll();
     }
 

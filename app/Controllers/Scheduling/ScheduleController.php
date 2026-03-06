@@ -24,10 +24,12 @@ use App\Repositories\ServiceMaterialDefaultRepository;
 use App\Services\Finance\FinancialService;
 use App\Services\Settings\OperationalConfigService;
 use App\Services\Auth\AuthService;
+use App\Services\Observability\SystemEvent;
 use App\Services\Queue\QueueService;
 use App\Services\Scheduling\AppointmentService;
 use App\Services\Scheduling\AvailabilityService;
 use App\Services\Scheduling\ScheduleIndicatorsService;
+use App\Services\Scheduling\StaffNotificationService;
 use App\Services\Stock\StockService;
 
 final class ScheduleController extends Controller
@@ -346,6 +348,13 @@ final class ScheduleController extends Controller
                 'checked_in_at' => $now,
             ], $request->ip());
 
+            (new StaffNotificationService($this->container))->notifyProfessionalAppointmentCheckedIn($clinicId, $id);
+
+            SystemEvent::dispatch($this->container, 'appointment.checked_in', [
+                'appointment_id' => $id,
+                'checked_in_at' => $now,
+            ], 'appointment', $id, $request->ip(), null);
+
             $q = [];
             if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
             if ($view !== '') { $q[] = 'view=' . urlencode($view); }
@@ -441,6 +450,14 @@ final class ScheduleController extends Controller
                     'checked_in_at' => $now,
                     'auto' => true,
                 ], $request->ip());
+
+                (new StaffNotificationService($this->container))->notifyProfessionalAppointmentCheckedIn($clinicId, $id);
+
+                SystemEvent::dispatch($this->container, 'appointment.checked_in', [
+                    'appointment_id' => $id,
+                    'checked_in_at' => $now,
+                    'auto' => true,
+                ], 'appointment', $id, $request->ip(), null);
             }
 
             $repo->setStartedAt($clinicId, $id, $now);
@@ -461,6 +478,34 @@ final class ScheduleController extends Controller
             ], $request->ip());
 
             (new AppointmentService($this->container))->updateStatus($id, 'in_progress', $request->ip());
+
+            $apptDetailed = $repo->findDetailedById($clinicId, $id);
+            $patientId = $apptDetailed !== null ? (int)($apptDetailed['patient_id'] ?? 0) : (int)($appointment['patient_id'] ?? 0);
+            if ($patientId > 0) {
+                $procedureType = null;
+                if ($apptDetailed !== null) {
+                    $procedureType = trim((string)($apptDetailed['service_name'] ?? ''));
+                    if ($procedureType === '') {
+                        $procedureType = null;
+                    }
+                }
+
+                $attendedAt = (string)($appointment['start_at'] ?? $now);
+                if ($attendedAt === '') {
+                    $attendedAt = $now;
+                }
+
+                $params = [
+                    'patient_id' => $patientId,
+                    'attended_at' => $attendedAt,
+                    'professional_id' => (int)($appointment['professional_id'] ?? 0),
+                    'procedure_type' => $procedureType,
+                    'appointment_id' => $id,
+                ];
+
+                $qs = http_build_query(array_filter($params, static fn ($v) => $v !== null && $v !== '' && $v !== 0));
+                return $this->redirect('/medical-records/create' . ($qs !== '' ? ('?' . $qs) : ''));
+            }
 
             $q = [];
             if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
@@ -1082,6 +1127,14 @@ final class ScheduleController extends Controller
 
         $date = trim((string)$request->input('date', date('Y-m-d')));
         $category = trim((string)$request->input('category', 'all'));
+        $patientName = trim((string)$request->input('patient_name', ''));
+        $patientCpf = trim((string)$request->input('patient_cpf', ''));
+        $timeFrom = trim((string)$request->input('time_from', ''));
+        $timeTo = trim((string)$request->input('time_to', ''));
+        $filterProfessionalId = (int)$request->input('filter_professional_id', 0);
+        $filterServiceId = (int)$request->input('filter_service_id', 0);
+        $filterServiceCategoryId = (int)$request->input('filter_service_category_id', 0);
+
         $repo = new AppointmentRepository($this->container->get(\PDO::class));
 
         $professionalId = null;
@@ -1089,7 +1142,23 @@ final class ScheduleController extends Controller
             $professionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
         }
 
-        $items = $repo->listByClinicRange($clinicId, $date . ' 00:00:00', $date . ' 23:59:59', $professionalId);
+        if ($professionalId === null && $filterProfessionalId > 0) {
+            $professionalId = $filterProfessionalId;
+        }
+
+        $items = $repo->listOpsFiltered(
+            $clinicId,
+            $date,
+            $category,
+            $professionalId,
+            $filterServiceId > 0 ? $filterServiceId : null,
+            $filterServiceCategoryId > 0 ? $filterServiceCategoryId : null,
+            $patientName !== '' ? $patientName : null,
+            $patientCpf !== '' ? $patientCpf : null,
+            $timeFrom !== '' ? $timeFrom : null,
+            $timeTo !== '' ? $timeTo : null,
+            1000
+        );
 
         $counts = [
             'scheduled' => 0,
@@ -1119,11 +1188,7 @@ final class ScheduleController extends Controller
         }
 
         $filteredItems = $items;
-        if ($category === 'pending') {
-            $filteredItems = array_values(array_filter($items, static fn ($it) => in_array((string)($it['status'] ?? ''), ['scheduled', 'confirmed', 'in_progress'], true)));
-        } elseif ($category === 'finalized') {
-            $filteredItems = array_values(array_filter($items, static fn ($it) => in_array((string)($it['status'] ?? ''), ['completed', 'cancelled', 'no_show'], true)));
-        } else {
+        if (!in_array($category, ['all', 'pending', 'finalized'], true)) {
             $category = 'all';
         }
 
@@ -1135,6 +1200,16 @@ final class ScheduleController extends Controller
             'counts' => $counts,
             'category' => $category,
             'items' => $filteredItems,
+            'patient_name' => $patientName,
+            'patient_cpf' => $patientCpf,
+            'time_from' => $timeFrom,
+            'time_to' => $timeTo,
+            'filter_professional_id' => $filterProfessionalId,
+            'filter_service_id' => $filterServiceId,
+            'filter_service_category_id' => $filterServiceCategoryId,
+            'professionals' => (new ProfessionalRepository($this->container->get(\PDO::class)))->listActiveByClinic($clinicId),
+            'services' => (new ServiceCatalogRepository($this->container->get(\PDO::class)))->listActiveByClinic($clinicId),
+            'service_categories' => (new \App\Repositories\ServiceCategoryRepository($this->container->get(\PDO::class)))->listActiveByClinic($clinicId),
             'pending_requests' => $pendingRequests,
         ]);
     }

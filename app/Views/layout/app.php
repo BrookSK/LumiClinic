@@ -403,6 +403,9 @@ $ico = [
                                 <?php if ($can('scheduling.ops') && $hasClinicContext): ?>
                                     <?= $navItem('/schedule/ops', 'Operação da Agenda', $ico['calendar'], $isExact('/schedule/ops')) ?>
                                 <?php endif; ?>
+                                <?php if ($can('scheduling.finalize') && $hasClinicContext): ?>
+                                    <?= $navItem('/schedule/queue', 'Fila de chegada', $ico['calendar'], $isExact('/schedule/queue')) ?>
+                                <?php endif; ?>
                                 <?php if ($can('scheduling.logs') && $hasClinicContext): ?>
                                     <?= $navItem('/schedule/logs', 'Logs da agenda', $ico['calendar'], $isExact('/schedule/logs')) ?>
                                 <?php endif; ?>

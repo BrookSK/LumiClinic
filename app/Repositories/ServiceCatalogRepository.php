@@ -16,6 +16,7 @@ final class ServiceCatalogRepository
                 s.id,
                 s.clinic_id,
                 s.procedure_id,
+                s.category_id,
                 s.name,
                 s.duration_minutes,
                 s.buffer_before_minutes,
@@ -23,12 +24,17 @@ final class ServiceCatalogRepository
                 s.price_cents,
                 s.allow_specific_professional,
                 s.status,
-                COALESCE(p.name, '') AS procedure_name
+                COALESCE(p.name, '') AS procedure_name,
+                COALESCE(sc.name, '') AS category_name
             FROM services s
             LEFT JOIN procedures p
                    ON p.id = s.procedure_id
                   AND p.clinic_id = s.clinic_id
                   AND p.deleted_at IS NULL
+            LEFT JOIN service_categories sc
+                   ON sc.id = s.category_id
+                  AND sc.clinic_id = s.clinic_id
+                  AND sc.deleted_at IS NULL
             WHERE s.clinic_id = :clinic_id
               AND s.deleted_at IS NULL
               AND s.status = 'active'
@@ -49,6 +55,7 @@ final class ServiceCatalogRepository
             SELECT
                 id, clinic_id,
                 procedure_id,
+                category_id,
                 name,
                 duration_minutes,
                 buffer_before_minutes,
@@ -73,6 +80,7 @@ final class ServiceCatalogRepository
     public function create(
         int $clinicId,
         ?int $procedureId,
+        ?int $categoryId,
         string $name,
         int $durationMinutes,
         int $bufferBeforeMinutes,
@@ -84,11 +92,13 @@ final class ServiceCatalogRepository
         $bufferAfterMinutes = max(0, $bufferAfterMinutes);
 
         $procedureId = $procedureId !== null ? max(1, $procedureId) : null;
+        $categoryId = $categoryId !== null ? max(1, $categoryId) : null;
 
         $sql = "
             INSERT INTO services (
                 clinic_id,
                 procedure_id,
+                category_id,
                 name,
                 duration_minutes,
                 buffer_before_minutes,
@@ -101,6 +111,7 @@ final class ServiceCatalogRepository
             VALUES (
                 :clinic_id,
                 :procedure_id,
+                :category_id,
                 :name,
                 :duration_minutes,
                 :buffer_before_minutes,
@@ -116,6 +127,7 @@ final class ServiceCatalogRepository
         $stmt->execute([
             'clinic_id' => $clinicId,
             'procedure_id' => $procedureId,
+            'category_id' => $categoryId,
             'name' => $name,
             'duration_minutes' => $durationMinutes,
             'buffer_before_minutes' => $bufferBeforeMinutes,

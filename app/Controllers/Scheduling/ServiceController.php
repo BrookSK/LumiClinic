@@ -8,6 +8,7 @@ use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\ProcedureRepository;
+use App\Repositories\ServiceCategoryRepository;
 use App\Repositories\ServiceCatalogRepository;
 use App\Services\Auth\AuthService;
 
@@ -49,7 +50,10 @@ final class ServiceController extends Controller
         $procRepo = new ProcedureRepository($this->container->get(\PDO::class));
         $procedures = $procRepo->listActiveByClinic($clinicId);
 
-        return $this->view('scheduling/services', ['items' => $items, 'procedures' => $procedures]);
+        $catRepo = new ServiceCategoryRepository($this->container->get(\PDO::class));
+        $categories = $catRepo->listActiveByClinic($clinicId);
+
+        return $this->view('scheduling/services', ['items' => $items, 'procedures' => $procedures, 'categories' => $categories]);
     }
 
     public function create(Request $request)
@@ -68,6 +72,7 @@ final class ServiceController extends Controller
         $price = trim((string)$request->input('price_cents', ''));
         $allowSpecific = (string)$request->input('allow_specific_professional', '0') === '1';
         $procedureIdRaw = trim((string)$request->input('procedure_id', ''));
+        $categoryIdRaw = trim((string)$request->input('category_id', ''));
 
         if ($name === '' || $duration <= 0) {
             return $this->redirect('/services');
@@ -83,6 +88,11 @@ final class ServiceController extends Controller
             $procedureId = max(1, (int)$procedureIdRaw);
         }
 
+        $categoryId = null;
+        if ($categoryIdRaw !== '') {
+            $categoryId = max(1, (int)$categoryIdRaw);
+        }
+
         /** @var ?int $procedureId */
 
         $auth = new AuthService($this->container);
@@ -93,12 +103,13 @@ final class ServiceController extends Controller
         }
 
         $repo = new ServiceCatalogRepository($this->container->get(\PDO::class));
-        $id = $repo->create($clinicId, $procedureId, $name, $duration, $bufferBefore, $bufferAfter, $priceCents, $allowSpecific);
+        $id = $repo->create($clinicId, $procedureId, $categoryId, $name, $duration, $bufferBefore, $bufferAfter, $priceCents, $allowSpecific);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'scheduling.service_create', [
             'service_id' => $id,
             'procedure_id' => $procedureId,
+            'category_id' => $categoryId,
             'name' => $name,
             'duration_minutes' => $duration,
             'buffer_before_minutes' => $bufferBefore,
