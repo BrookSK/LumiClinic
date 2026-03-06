@@ -28,7 +28,14 @@ final class SettingsService
         return $repo->findByClinicId($clinicId);
     }
 
-    public function updateSettings(string $timezone, string $language, ?int $weekStartWeekday, ?int $weekEndWeekday, string $ip): void
+    public function updateSettings(
+        string $timezone,
+        string $language,
+        ?int $weekStartWeekday,
+        ?int $weekEndWeekday,
+        ?int $anamnesisDefaultTemplateId,
+        string $ip
+    ): void
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -40,6 +47,7 @@ final class SettingsService
 
         $repo = new ClinicSettingsRepository($this->container->get(\PDO::class));
         $repo->update($clinicId, $timezone, $language, $weekStartWeekday, $weekEndWeekday);
+        $repo->updateAnamnesisDefaultTemplateId($clinicId, $anamnesisDefaultTemplateId);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'settings.update', ['fields' => ['timezone', 'language', 'week_start_weekday', 'week_end_weekday']], $ip);

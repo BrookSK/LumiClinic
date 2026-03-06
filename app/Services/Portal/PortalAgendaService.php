@@ -7,10 +7,12 @@ namespace App\Services\Portal;
 use App\Core\Container\Container;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\ClinicSettingsRepository;
 use App\Repositories\PatientAppointmentRequestRepository;
 use App\Repositories\PatientEventRepository;
 use App\Services\Queue\QueueService;
 use App\Services\Whatsapp\WhatsappReminderSchedulerService;
+use App\Repositories\WhatsappMessageLogRepository;
 
 final class PortalAgendaService
 {
@@ -61,6 +63,49 @@ final class PortalAgendaService
             $clinicId,
             'notifications'
         );
+
+        try {
+            $settings = (new ClinicSettingsRepository($pdo))->findByClinicId($clinicId);
+            $anamTplId = is_array($settings) && isset($settings['anamnesis_default_template_id'])
+                ? (int)$settings['anamnesis_default_template_id']
+                : 0;
+
+            if ($anamTplId > 0) {
+                (new QueueService($this->container))->enqueue(
+                    'portal.notify_anamnesis_request',
+                    ['patient_id' => $patientId, 'appointment_id' => $appointmentId],
+                    $clinicId,
+                    'notifications'
+                );
+
+                $scheduledFor = (new \DateTimeImmutable('now'))->modify('+1 minutes')->format('Y-m-d H:i:s');
+                $logId = (new WhatsappMessageLogRepository($pdo))->createOrUpdatePending(
+                    $clinicId,
+                    $appointmentId,
+                    $patientId,
+                    'anamnesis_request',
+                    $scheduledFor
+                );
+
+                (new QueueService($this->container))->enqueue(
+                    'whatsapp.send_reminder',
+                    ['appointment_id' => $appointmentId, 'template_code' => 'anamnesis_request', 'log_id' => $logId],
+                    $clinicId,
+                    'notifications',
+                    $scheduledFor,
+                    10
+                );
+
+                (new QueueService($this->container))->enqueue(
+                    'mail.send_anamnesis_request',
+                    ['appointment_id' => $appointmentId],
+                    $clinicId,
+                    'notifications'
+                );
+            }
+        } catch (\Throwable $e) {
+            // Não bloqueia.
+        }
 
         (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
 

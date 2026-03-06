@@ -11,6 +11,7 @@ use App\Repositories\ClinicSettingsRepository;
 use App\Repositories\WhatsappMessageLogRepository;
 use App\Repositories\WhatsappTemplateRepository;
 use App\Services\Scheduling\AppointmentConfirmationLinkService;
+use App\Services\Anamnesis\AppointmentAnamnesisLinkService;
 
 final class WhatsappReminderSendService
 {
@@ -51,6 +52,11 @@ final class WhatsappReminderSendService
 
         if ($templateCode === 'confirm_request' && $status === 'confirmed') {
             $logs->markSkipped($clinicId, $logId, 'Agendamento já confirmado.');
+            return;
+        }
+
+        if ($templateCode === 'anamnesis_request' && in_array($status, ['cancelled', 'no_show', 'completed'], true)) {
+            $logs->markSkipped($clinicId, $logId, 'Agendamento não elegível (status).');
             return;
         }
 
@@ -115,6 +121,16 @@ final class WhatsappReminderSendService
                 $vars['confirm_url'] = (string)$link['url'];
             } catch (\Throwable $e) {
                 $logs->markFailed($clinicId, $logId, 'Falha ao gerar link de confirmação.');
+                return;
+            }
+        }
+
+        if ($templateCode === 'anamnesis_request') {
+            try {
+                $link = (new AppointmentAnamnesisLinkService($this->container))->ensureLinkForAppointment($clinicId, $appointmentId, null);
+                $vars['anamnesis_url'] = (string)($link['url'] ?? '');
+            } catch (\Throwable $e) {
+                $logs->markFailed($clinicId, $logId, 'Falha ao gerar link de anamnese.');
                 return;
             }
         }

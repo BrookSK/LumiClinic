@@ -23,6 +23,7 @@ use App\Services\Queue\QueueService;
 use App\Services\Stock\StockService;
 use App\Repositories\SchedulingBlockRepository;
 use App\Services\Whatsapp\WhatsappReminderSchedulerService;
+use App\Repositories\WhatsappMessageLogRepository;
 
 final class AppointmentService
 {
@@ -330,6 +331,43 @@ final class AppointmentService
             'from' => $from,
             'to' => $status,
         ], $ip);
+
+        if ($status === 'confirmed') {
+            $patientId = (int)($current['patient_id'] ?? 0);
+            if ($patientId > 0) {
+                (new QueueService($this->container))->enqueue(
+                    'portal.notify_anamnesis_request',
+                    ['patient_id' => $patientId, 'appointment_id' => $appointmentId],
+                    $clinicId,
+                    'notifications'
+                );
+
+                $scheduledFor = (new \DateTimeImmutable('now'))->modify('+1 minutes')->format('Y-m-d H:i:s');
+                $logId = (new WhatsappMessageLogRepository($pdo))->createOrUpdatePending(
+                    $clinicId,
+                    $appointmentId,
+                    $patientId,
+                    'anamnesis_request',
+                    $scheduledFor
+                );
+
+                (new QueueService($this->container))->enqueue(
+                    'whatsapp.send_reminder',
+                    ['appointment_id' => $appointmentId, 'template_code' => 'anamnesis_request', 'log_id' => $logId],
+                    $clinicId,
+                    'notifications',
+                    $scheduledFor,
+                    10
+                );
+
+                (new QueueService($this->container))->enqueue(
+                    'mail.send_anamnesis_request',
+                    ['appointment_id' => $appointmentId],
+                    $clinicId,
+                    'notifications'
+                );
+            }
+        }
 
         (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
 

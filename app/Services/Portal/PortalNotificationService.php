@@ -50,4 +50,23 @@ final class PortalNotificationService
             $appointmentId
         );
     }
+
+    public function notifyAnamnesisRequest(int $clinicId, int $patientId, int $appointmentId, string $publicUrl, int $requestId): void
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new PatientNotificationRepository($pdo);
+
+        $safeUrl = trim($publicUrl) !== '' ? ('\n\nLink: ' . $publicUrl) : '';
+
+        $repo->create(
+            $clinicId,
+            $patientId,
+            'in_app',
+            'anamnesis_request',
+            'Anamnese disponível',
+            'Por favor, preencha a anamnese antes da consulta.' . $safeUrl,
+            'appointment_anamnesis_request',
+            $requestId
+        );
+    }
 }

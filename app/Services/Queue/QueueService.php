@@ -17,6 +17,10 @@ use App\Services\Marketing\MarketingAutomationService;
 use App\Services\Google\GoogleCalendarSyncService;
 use App\Services\Whatsapp\WhatsappReminderReconcileService;
 use App\Services\Whatsapp\WhatsappReminderSendService;
+use App\Services\Mail\MailerService;
+use App\Repositories\AppointmentRepository;
+use App\Repositories\PatientRepository;
+use App\Services\Anamnesis\AppointmentAnamnesisLinkService;
 
 final class QueueService
 {
@@ -39,6 +43,24 @@ final class QueueService
         $jobType = trim($jobType);
 
         if ($jobType === 'noop') {
+            return;
+        }
+
+        if ($jobType === 'portal.notify_anamnesis_request') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para portal.notify_anamnesis_request.');
+            }
+
+            $patientId = (int)($payload['patient_id'] ?? 0);
+            $appointmentId = (int)($payload['appointment_id'] ?? 0);
+            if ($patientId <= 0 || $appointmentId <= 0) {
+                throw new \RuntimeException('Payload inválido para portal.notify_anamnesis_request.');
+            }
+
+            $link = (new AppointmentAnamnesisLinkService($this->container))->ensureLinkForAppointment($clinicId, $appointmentId, null);
+            $url = (string)($link['url'] ?? '');
+            $requestId = (int)($link['request_id'] ?? 0);
+            (new PortalNotificationService($this->container))->notifyAnamnesisRequest($clinicId, $patientId, $appointmentId, $url, $requestId);
             return;
         }
 
@@ -79,6 +101,60 @@ final class QueueService
             }
 
             (new WhatsappReminderSendService($this->container))->sendReminder($clinicId, $appointmentId, $templateCode, $logId);
+            return;
+        }
+
+        if ($jobType === 'mail.send_anamnesis_request') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para mail.send_anamnesis_request.');
+            }
+
+            $appointmentId = (int)($payload['appointment_id'] ?? 0);
+            if ($appointmentId <= 0) {
+                throw new \RuntimeException('Payload inválido para mail.send_anamnesis_request.');
+            }
+
+            $pdo = $this->container->get(\PDO::class);
+            $appt = (new AppointmentRepository($pdo))->findById($clinicId, $appointmentId);
+            if ($appt === null) {
+                return;
+            }
+
+            $patientId = (int)($appt['patient_id'] ?? 0);
+            if ($patientId <= 0) {
+                return;
+            }
+
+            $patient = (new PatientRepository($pdo))->findById($clinicId, $patientId);
+            if ($patient === null) {
+                return;
+            }
+
+            $email = trim((string)($patient['email'] ?? ''));
+            if ($email === '') {
+                return;
+            }
+
+            $name = trim((string)($patient['name'] ?? ''));
+
+            $link = (new AppointmentAnamnesisLinkService($this->container))->ensureLinkForAppointment($clinicId, $appointmentId, null);
+            $url = trim((string)($link['url'] ?? ''));
+            if ($url === '') {
+                return;
+            }
+
+            $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+            $safeName = htmlspecialchars($name !== '' ? $name : $email, ENT_QUOTES, 'UTF-8');
+
+            $subject = 'Anamnese pré-consulta';
+            $html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#111827">'
+                . '<p>Olá, ' . $safeName . '.</p>'
+                . '<p>Para agilizar seu atendimento, preencha a <strong>anamnese</strong> antes da consulta:</p>'
+                . '<p><a href="' . $safeUrl . '">Preencher anamnese</a></p>'
+                . '<p style="color:rgba(17,24,39,0.65);font-size:12px;">Se você não reconhece este agendamento, ignore este e-mail.</p>'
+                . '</div>';
+
+            (new MailerService($this->container))->send($email, $name !== '' ? $name : $email, $subject, $html);
             return;
         }
 

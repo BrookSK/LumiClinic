@@ -67,7 +67,7 @@ final class AnamnesisResponseRepository
         ?string $fieldsSnapshotJson,
         ?int $professionalId,
         string $answersJson,
-        int $createdByUserId
+        ?int $createdByUserId
     ): int {
         $sql = "
             INSERT INTO anamnesis_responses (

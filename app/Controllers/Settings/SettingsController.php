@@ -10,6 +10,7 @@ use App\Services\Ai\AiConfigService;
 use App\Services\Ai\OpenAiClient;
 use App\Repositories\WhatsappTemplateRepository;
 use App\Repositories\WhatsappMessageLogQueryRepository;
+use App\Services\Anamnesis\AnamnesisService;
 use App\Services\Settings\SettingsService;
 use App\Services\Auth\AuthService;
 use App\Services\Whatsapp\WhatsappConfigService;
@@ -23,8 +24,16 @@ final class SettingsController extends Controller
 
         $service = new SettingsService($this->container);
 
+        $anamnesisTemplates = [];
+        try {
+            $anamnesisTemplates = (new AnamnesisService($this->container))->listTemplates();
+        } catch (\Throwable $e) {
+            $anamnesisTemplates = [];
+        }
+
         return $this->view('settings/index', [
             'settings' => $service->getSettings(),
+            'anamnesis_templates' => $anamnesisTemplates,
         ]);
     }
 
@@ -36,19 +45,34 @@ final class SettingsController extends Controller
         $language = trim((string)$request->input('language', ''));
         $weekStartWeekday = (int)$request->input('week_start_weekday', 1);
         $weekEndWeekday = (int)$request->input('week_end_weekday', 0);
+        $anamnesisDefaultTemplateId = (int)$request->input('anamnesis_default_template_id', 0);
 
         if ($timezone === '' || $language === '') {
             $service = new SettingsService($this->container);
+            $anamnesisTemplates = [];
+            try {
+                $anamnesisTemplates = (new AnamnesisService($this->container))->listTemplates();
+            } catch (\Throwable $e) {
+                $anamnesisTemplates = [];
+            }
             return $this->view('settings/index', [
                 'settings' => $service->getSettings(),
+                'anamnesis_templates' => $anamnesisTemplates,
                 'error' => 'Preencha todos os campos.',
             ]);
         }
 
         if ($weekStartWeekday < 0 || $weekStartWeekday > 6 || $weekEndWeekday < 0 || $weekEndWeekday > 6) {
             $service = new SettingsService($this->container);
+            $anamnesisTemplates = [];
+            try {
+                $anamnesisTemplates = (new AnamnesisService($this->container))->listTemplates();
+            } catch (\Throwable $e) {
+                $anamnesisTemplates = [];
+            }
             return $this->view('settings/index', [
                 'settings' => $service->getSettings(),
+                'anamnesis_templates' => $anamnesisTemplates,
                 'error' => 'Semana inválida.',
             ]);
         }
@@ -56,14 +80,28 @@ final class SettingsController extends Controller
         $expectedEnd = ($weekStartWeekday + 6) % 7;
         if ($weekEndWeekday !== $expectedEnd) {
             $service = new SettingsService($this->container);
+            $anamnesisTemplates = [];
+            try {
+                $anamnesisTemplates = (new AnamnesisService($this->container))->listTemplates();
+            } catch (\Throwable $e) {
+                $anamnesisTemplates = [];
+            }
             return $this->view('settings/index', [
                 'settings' => $service->getSettings(),
+                'anamnesis_templates' => $anamnesisTemplates,
                 'error' => 'O fim da semana deve ser o dia anterior ao início (ex.: início Seg => fim Dom).',
             ]);
         }
 
         $service = new SettingsService($this->container);
-        $service->updateSettings($timezone, $language, $weekStartWeekday, $weekEndWeekday, $request->ip());
+        $service->updateSettings(
+            $timezone,
+            $language,
+            $weekStartWeekday,
+            $weekEndWeekday,
+            ($anamnesisDefaultTemplateId > 0 ? $anamnesisDefaultTemplateId : null),
+            $request->ip()
+        );
 
         return $this->redirect('/settings');
     }

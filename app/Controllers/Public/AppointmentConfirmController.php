@@ -13,6 +13,8 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\ClinicRepository;
 use App\Repositories\ClinicSettingsRepository;
 use App\Services\Whatsapp\WhatsappReminderSchedulerService;
+use App\Services\Queue\QueueService;
+use App\Repositories\WhatsappMessageLogRepository;
 
 final class AppointmentConfirmController extends Controller
 {
@@ -131,6 +133,52 @@ final class AppointmentConfirmController extends Controller
             );
 
             (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
+
+            if ($action === 'confirm') {
+                try {
+                    $settings = (new ClinicSettingsRepository($pdo))->findByClinicId($clinicId);
+                    $anamTplId = is_array($settings) && isset($settings['anamnesis_default_template_id'])
+                        ? (int)$settings['anamnesis_default_template_id']
+                        : 0;
+
+                    $patientId = (int)($appt['patient_id'] ?? 0);
+                    if ($anamTplId > 0 && $patientId > 0) {
+                        (new QueueService($this->container))->enqueue(
+                            'portal.notify_anamnesis_request',
+                            ['patient_id' => $patientId, 'appointment_id' => $appointmentId],
+                            $clinicId,
+                            'notifications'
+                        );
+
+                        $scheduledFor = (new \DateTimeImmutable('now'))->modify('+1 minutes')->format('Y-m-d H:i:s');
+                        $logId = (new WhatsappMessageLogRepository($pdo))->createOrUpdatePending(
+                            $clinicId,
+                            $appointmentId,
+                            $patientId,
+                            'anamnesis_request',
+                            $scheduledFor
+                        );
+
+                        (new QueueService($this->container))->enqueue(
+                            'whatsapp.send_reminder',
+                            ['appointment_id' => $appointmentId, 'template_code' => 'anamnesis_request', 'log_id' => $logId],
+                            $clinicId,
+                            'notifications',
+                            $scheduledFor,
+                            10
+                        );
+
+                        (new QueueService($this->container))->enqueue(
+                            'mail.send_anamnesis_request',
+                            ['appointment_id' => $appointmentId],
+                            $clinicId,
+                            'notifications'
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    // Não bloqueia confirmação pública.
+                }
+            }
         }
 
         $tokenRepo->markUsed((int)$row['id'], $action);

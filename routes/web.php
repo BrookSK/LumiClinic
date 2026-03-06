@@ -106,6 +106,8 @@ $router->post('/logout', [LoginController::class, 'logout']);
 
 $router->get('/a/confirm', [AppointmentConfirmController::class, 'show']);
 $router->post('/a/confirm', [AppointmentConfirmController::class, 'submit']);
+$router->get('/a/anamnese', [\App\Controllers\Public\AppointmentAnamnesisController::class, 'show']);
+$router->post('/a/anamnese', [\App\Controllers\Public\AppointmentAnamnesisController::class, 'submit']);
 
 $router->get('/legal/required', [LegalDocumentsController::class, 'required']);
 $router->post('/legal/accept', [LegalDocumentsController::class, 'accept']);
