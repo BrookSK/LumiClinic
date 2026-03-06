@@ -14,6 +14,7 @@ use App\Services\Observability\AlertEngineService;
 use App\Services\Observability\ObservabilityRetentionService;
 use App\Services\Portal\PortalNotificationService;
 use App\Services\Marketing\MarketingAutomationService;
+use App\Services\Google\GoogleCalendarSyncService;
 use App\Services\Whatsapp\WhatsappReminderReconcileService;
 use App\Services\Whatsapp\WhatsappReminderSendService;
 
@@ -173,6 +174,20 @@ final class QueueService
 
             (new BillingEventProcessorService($this->container))->process($event);
             $repo->markProcessed($eventId);
+            return;
+        }
+
+        if ($jobType === 'gcal.sync_appointment') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para gcal.sync_appointment.');
+            }
+
+            $appointmentId = (int)($payload['appointment_id'] ?? 0);
+            if ($appointmentId <= 0) {
+                throw new \RuntimeException('Payload inválido para gcal.sync_appointment.');
+            }
+
+            (new GoogleCalendarSyncService($this->container))->syncAppointment($clinicId, $appointmentId);
             return;
         }
 

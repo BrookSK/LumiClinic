@@ -40,6 +40,51 @@ final class AppointmentRepository
         return $row ?: null;
     }
 
+    /** @return array<string,mixed>|null */
+    public function findDetailedById(int $clinicId, int $id): ?array
+    {
+        $sql = "
+            SELECT
+                a.id,
+                a.clinic_id,
+                a.professional_id,
+                a.service_id,
+                a.patient_id,
+                a.patient_procedure_id,
+                a.start_at,
+                a.end_at,
+                a.status,
+                a.notes,
+                a.created_by_user_id,
+                COALESCE(pat.name, '') AS patient_name,
+                COALESCE(s.name, '') AS service_name,
+                COALESCE(pro.name, '') AS professional_name
+            FROM appointments a
+            LEFT JOIN patients pat
+                   ON pat.id = a.patient_id
+                  AND pat.clinic_id = a.clinic_id
+                  AND pat.deleted_at IS NULL
+            LEFT JOIN services s
+                   ON s.id = a.service_id
+                  AND s.clinic_id = a.clinic_id
+                  AND s.deleted_at IS NULL
+            LEFT JOIN professionals pro
+                   ON pro.id = a.professional_id
+                  AND pro.clinic_id = a.clinic_id
+                  AND pro.deleted_at IS NULL
+            WHERE a.id = :id
+              AND a.clinic_id = :clinic_id
+              AND a.deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $id, 'clinic_id' => $clinicId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     public function setCheckedInAt(int $clinicId, int $appointmentId, ?string $checkedInAt): void
     {
         $sql = "
@@ -387,7 +432,7 @@ final class AppointmentRepository
     public function findById(int $clinicId, int $id): ?array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, patient_procedure_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, checked_in_at, started_at, status, origin, notes
+            SELECT id, clinic_id, professional_id, service_id, patient_id, patient_procedure_id, patient_package_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, checked_in_at, started_at, status, origin, notes
             FROM appointments
             WHERE id = :id
               AND clinic_id = :clinic_id
@@ -535,6 +580,7 @@ final class AppointmentRepository
         int $professionalId,
         int $serviceId,
         ?int $patientId,
+        ?int $patientPackageId,
         string $startAt,
         string $endAt,
         int $bufferBeforeMinutes,
@@ -548,11 +594,11 @@ final class AppointmentRepository
     ): int {
         $sql = "
             INSERT INTO appointments (
-                clinic_id, professional_id, service_id, patient_id, start_at, end_at,
+                clinic_id, professional_id, service_id, patient_id, patient_package_id, start_at, end_at,
                 buffer_before_minutes, buffer_after_minutes,
                 status, origin, funnel_stage_id, lost_reason_id, notes, created_by_user_id, created_at
             ) VALUES (
-                :clinic_id, :professional_id, :service_id, :patient_id, :start_at, :end_at,
+                :clinic_id, :professional_id, :service_id, :patient_id, :patient_package_id, :start_at, :end_at,
                 :buffer_before_minutes, :buffer_after_minutes,
                 :status, :origin, :funnel_stage_id, :lost_reason_id, :notes, :created_by_user_id, NOW()
             )
@@ -564,6 +610,7 @@ final class AppointmentRepository
             'professional_id' => $professionalId,
             'service_id' => $serviceId,
             'patient_id' => $patientId,
+            'patient_package_id' => ($patientPackageId !== null && $patientPackageId > 0 ? $patientPackageId : null),
             'start_at' => $startAt,
             'end_at' => $endAt,
             'buffer_before_minutes' => max(0, (int)$bufferBeforeMinutes),

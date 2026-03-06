@@ -27,6 +27,7 @@ ob_start();
     <div class="lc-badge lc-badge--primary">Configurações de Assinatura</div>
     <div class="lc-flex lc-gap-sm">
         <a class="lc-btn lc-btn--secondary" href="/sys/billing">Assinaturas</a>
+        <a class="lc-btn lc-btn--secondary" href="/sys/billing-events">Eventos</a>
         <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Clínicas</a>
     </div>
 </div>

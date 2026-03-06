@@ -10,6 +10,7 @@ use App\Core\Http\Response;
 use App\Repositories\LegalDocumentAcceptanceRepository;
 use App\Repositories\LegalDocumentRepository;
 use App\Repositories\PatientUserRepository;
+use App\Repositories\PatientPackageRepository;
 use App\Services\Patients\PatientService;
 use App\Services\Auth\AuthService;
 use App\Services\Settings\OperationalConfigService;
@@ -363,6 +364,51 @@ final class PatientController extends Controller
                 'name' => (string)($r['name'] ?? ''),
                 'email' => (string)($r['email'] ?? ''),
                 'phone' => (string)($r['phone'] ?? ''),
+            ];
+        }
+
+        return Response::json(['items' => $items]);
+    }
+
+    public function packagesJson(Request $request): Response
+    {
+        $this->authorize('patients.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return Response::json(['items' => []]);
+        }
+
+        $patientId = (int)$request->input('patient_id', 0);
+        if ($patientId <= 0) {
+            return Response::json(['items' => []]);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::json(['items' => []]);
+        }
+
+        $limit = (int)$request->input('limit', 30);
+        $limit = max(1, min(100, $limit));
+
+        $repo = new PatientPackageRepository($this->container->get(\PDO::class));
+        $rows = $repo->listActiveByPatient($clinicId, $patientId, $limit);
+
+        $items = [];
+        foreach ($rows as $r) {
+            $total = (int)($r['total_sessions'] ?? 0);
+            $used = (int)($r['used_sessions'] ?? 0);
+            $items[] = [
+                'id' => (int)($r['id'] ?? 0),
+                'package_id' => (int)($r['package_id'] ?? 0),
+                'package_name' => (string)($r['package_name'] ?? ''),
+                'total_sessions' => $total,
+                'used_sessions' => $used,
+                'remaining_sessions' => max(0, $total - $used),
+                'valid_until' => $r['valid_until'] !== null ? (string)$r['valid_until'] : null,
+                'status' => (string)($r['status'] ?? ''),
             ];
         }
 

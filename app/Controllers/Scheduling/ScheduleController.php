@@ -24,6 +24,7 @@ use App\Repositories\ServiceMaterialDefaultRepository;
 use App\Services\Finance\FinancialService;
 use App\Services\Settings\OperationalConfigService;
 use App\Services\Auth\AuthService;
+use App\Services\Queue\QueueService;
 use App\Services\Scheduling\AppointmentService;
 use App\Services\Scheduling\AvailabilityService;
 use App\Services\Scheduling\ScheduleIndicatorsService;
@@ -801,6 +802,7 @@ final class ScheduleController extends Controller
         $professionalId = (int)$request->input('professional_id', 0);
         $startAt = trim((string)$request->input('start_at', ''));
         $patientId = (int)$request->input('patient_id', 0);
+        $patientPackageId = (int)$request->input('patient_package_id', 0);
         $notes = trim((string)$request->input('notes', ''));
         $funnelStageId = (int)$request->input('funnel_stage_id', 0);
 
@@ -825,6 +827,7 @@ final class ScheduleController extends Controller
                 $startAt,
                 $origin,
                 $patientId > 0 ? $patientId : null,
+                $patientPackageId > 0 ? $patientPackageId : null,
                 $funnelStageId > 0 ? $funnelStageId : null,
                 null,
                 $notes,
@@ -1175,6 +1178,53 @@ final class ScheduleController extends Controller
         return $this->view('scheduling/logs', [
             'appointment' => $appointment,
             'logs' => $logs,
+            'ok' => trim((string)$request->input('ok', '')),
+            'error' => trim((string)$request->input('error', '')),
         ]);
+    }
+
+    public function forceGoogleCalendarSync(Request $request)
+    {
+        $this->authorize('scheduling.logs');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inv?lido.');
+        }
+
+        $appointmentId = (int)$request->input('appointment_id', 0);
+        if ($appointmentId <= 0) {
+            return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
+        }
+
+        $repo = new AppointmentRepository($this->container->get(\PDO::class));
+        $appointment = $repo->findById($clinicId, $appointmentId);
+        if ($appointment === null) {
+            return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
+        }
+
+        if ($this->isProfessionalRole()) {
+            $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
+            if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
+                throw new \RuntimeException('Acesso negado.');
+            }
+        }
+
+        (new QueueService($this->container))->enqueue(
+            'gcal.sync_appointment',
+            ['appointment_id' => $appointmentId, 'manual' => 1],
+            $clinicId,
+            'integrations',
+            (new \DateTimeImmutable('now'))->format('Y-m-d H:i:s'),
+            10
+        );
+
+        return $this->redirect('/schedule/logs?appointment_id=' . (int)$appointmentId . '&ok=' . urlencode('Sync do Google Calendar enfileirado.'));
     }
 }

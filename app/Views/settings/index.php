@@ -51,6 +51,7 @@ ob_start();
                 <a class="lc-btn lc-btn--secondary" href="/settings/terminology">Editar terminologia</a>
                 <a class="lc-btn lc-btn--secondary" href="/settings/ai">Configurar IA</a>
                 <a class="lc-btn lc-btn--secondary" href="/settings/whatsapp">Configurar WhatsApp</a>
+                <a class="lc-btn lc-btn--secondary" href="/settings/google-calendar">Google Calendar</a>
                 <a class="lc-btn lc-btn--secondary" href="/whatsapp-templates">Templates WhatsApp</a>
                 <a class="lc-btn lc-btn--secondary" href="/whatsapp-logs">Logs WhatsApp</a>
             </div>

@@ -634,7 +634,7 @@ final class SalesService
                         $startAt = (string)($slots[0]['start_at'] ?? '');
                         if ($startAt !== '') {
                             try {
-                                $apptId = $apptSvc->create($serviceId, $professionalId, $startAt, 'system', $patientId, null, null, 'Gerado do orçamento #' . (int)$saleId, $ip);
+                                $apptId = $apptSvc->create($serviceId, $professionalId, $startAt, 'system', $patientId, null, null, null, 'Gerado do orçamento #' . (int)$saleId, $ip);
                                 $apptRepo->setPatientProcedureId($clinicId, $apptId, $ppId);
                                 $pprocRepo->addUsedSessions($clinicId, $ppId, 1);
                                 $created++;

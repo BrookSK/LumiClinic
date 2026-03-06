@@ -70,4 +70,25 @@ final class BillingEventRepository
         $stmt = $this->pdo->prepare("\n            UPDATE billing_events\n            SET processed_at = NOW()\n            WHERE id = :id\n            LIMIT 1\n        ");
         $stmt->execute(['id' => $id]);
     }
+
+    public function resetProcessed(int $id): void
+    {
+        $stmt = $this->pdo->prepare("\n            UPDATE billing_events\n            SET processed_at = NULL
+            WHERE id = :id\n            LIMIT 1\n        ");
+        $stmt->execute(['id' => $id]);
+    }
+
+    /** @return array<string,mixed> */
+    public function decodePayload(array $event): array
+    {
+        $raw = $event['payload_json'] ?? null;
+        if (is_array($raw)) {
+            return $raw;
+        }
+        if (!is_string($raw) || trim($raw) === '') {
+            return [];
+        }
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
+    }
 }

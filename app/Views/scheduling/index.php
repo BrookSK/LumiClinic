@@ -334,6 +334,14 @@ ob_start();
                         <div class="lc-muted" id="patientHint" style="margin-top:6px; display:none;">Selecione um paciente da lista.</div>
                     </div>
 
+                    <div class="lc-field" style="grid-column: 1 / -1;">
+                        <label class="lc-label">Pacote (opcional)</label>
+                        <select class="lc-select" name="patient_package_id" id="patient_package_id">
+                            <option value="">(sem pacote)</option>
+                        </select>
+                        <div class="lc-muted" id="patientPackageHint" style="margin-top:6px; display:none;">Selecione um paciente para listar pacotes.</div>
+                    </div>
+
                     <div class="lc-field">
                         <label class="lc-label">Serviço</label>
                         <select class="lc-select" name="service_id" id="modal_service_id" required>
@@ -399,6 +407,8 @@ ob_start();
   const patientIdEl = document.getElementById('patient_id');
   const patientResultsEl = document.getElementById('patientResults');
   const patientHintEl = document.getElementById('patientHint');
+  const patientPackageEl = document.getElementById('patient_package_id');
+  const patientPackageHintEl = document.getElementById('patientPackageHint');
   const modalServiceEl = document.getElementById('modal_service_id');
   const modalProfEl = document.getElementById('modal_professional_id');
   const modalDateEl = document.getElementById('modal_date');
@@ -458,6 +468,63 @@ ob_start();
     patientResultsEl.innerHTML = '';
   }
 
+  function setPackagesLoading() {
+    if (!patientPackageEl) return;
+    patientPackageEl.innerHTML = '<option value="">Carregando...</option>';
+  }
+
+  function setPackagesEmpty() {
+    if (!patientPackageEl) return;
+    patientPackageEl.innerHTML = '<option value="">(sem pacote)</option>';
+  }
+
+  function showPackageHint(show) {
+    if (!patientPackageHintEl) return;
+    patientPackageHintEl.style.display = show ? 'block' : 'none';
+  }
+
+  async function loadPatientPackages(patientId) {
+    if (!patientPackageEl) return;
+    if (!patientId) {
+      setPackagesEmpty();
+      showPackageHint(true);
+      return;
+    }
+
+    setPackagesLoading();
+    showPackageHint(false);
+
+    const url = `/patients/packages-json?patient_id=${encodeURIComponent(patientId)}&limit=50`;
+    let data = null;
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) {
+        setPackagesEmpty();
+        return;
+      }
+      data = await res.json();
+    } catch (e) {
+      setPackagesEmpty();
+      return;
+    }
+
+    const items = (data && Array.isArray(data.items)) ? data.items : [];
+    if (items.length === 0) {
+      setPackagesEmpty();
+      return;
+    }
+
+    patientPackageEl.innerHTML = '<option value="">(sem pacote)</option>';
+    for (const it of items) {
+      const opt = document.createElement('option');
+      const name = (it.package_name || '').toString();
+      const remaining = (it.remaining_sessions !== undefined && it.remaining_sessions !== null) ? String(it.remaining_sessions) : '';
+      opt.value = String(it.id || '');
+      opt.textContent = remaining !== '' ? `${name} (${remaining} restantes)` : name;
+      patientPackageEl.appendChild(opt);
+    }
+  }
+
   function showPatientHint(show) {
     if (!patientHintEl) return;
     patientHintEl.style.display = show ? 'block' : 'none';
@@ -475,6 +542,10 @@ ob_start();
   if (patientSearchEl && patientIdEl && patientResultsEl) {
     patientSearchEl.addEventListener('input', function() {
       clearPatientSelection();
+      if (patientPackageEl) {
+        setPackagesEmpty();
+        showPackageHint(true);
+      }
       const q = (patientSearchEl.value || '').trim();
       hidePatientResults();
       showPatientHint(q.length > 0);
@@ -513,6 +584,7 @@ ob_start();
             patientSearchEl.value = name;
             hidePatientResults();
             showPatientHint(false);
+            loadPatientPackages(patientIdEl.value);
           });
           patientResultsEl.appendChild(row);
         }

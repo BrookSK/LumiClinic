@@ -267,6 +267,14 @@ $router->post('/settings/whatsapp/test', [SettingsController::class, 'whatsappTe
 $router->post('/settings/whatsapp/clear', [SettingsController::class, 'whatsappClear']);
 $router->post('/settings/whatsapp/diagnose', [SettingsController::class, 'whatsappDiagnose']);
 
+$router->get('/settings/google-calendar', [\App\Controllers\Settings\GoogleCalendarController::class, 'index']);
+$router->post('/settings/google-calendar/connect', [\App\Controllers\Settings\GoogleCalendarController::class, 'connect']);
+$router->get('/settings/google-calendar/callback', [\App\Controllers\Settings\GoogleCalendarController::class, 'callback']);
+$router->post('/settings/google-calendar/disconnect', [\App\Controllers\Settings\GoogleCalendarController::class, 'disconnect']);
+
+$router->get('/settings/google-calendar/logs', [\App\Controllers\Settings\GoogleCalendarLogsController::class, 'index']);
+$router->post('/settings/google-calendar/logs/force-sync', [\App\Controllers\Settings\GoogleCalendarLogsController::class, 'forceSync']);
+
 $router->get('/whatsapp-templates', [WhatsappTemplateController::class, 'index']);
 $router->get('/whatsapp-templates/create', [WhatsappTemplateController::class, 'create']);
 $router->post('/whatsapp-templates/create', [WhatsappTemplateController::class, 'store']);
@@ -331,6 +339,7 @@ $router->get('/schedule/reschedule', [ScheduleController::class, 'reschedule']);
 $router->post('/schedule/reschedule', [ScheduleController::class, 'rescheduleSubmit']);
 $router->get('/schedule/ops', [ScheduleController::class, 'ops']);
 $router->get('/schedule/logs', [ScheduleController::class, 'logs']);
+$router->post('/schedule/gcal/force-sync', [ScheduleController::class, 'forceGoogleCalendarSync']);
 
 $router->get('/marketing/calendar', [\App\Controllers\Marketing\MarketingCalendarController::class, 'index']);
 $router->post('/marketing/calendar/create', [\App\Controllers\Marketing\MarketingCalendarController::class, 'create']);
@@ -449,6 +458,7 @@ $router->get('/patients/view', [PatientController::class, 'show']);
 $router->get('/patients/edit', [PatientController::class, 'edit']);
 $router->post('/patients/edit', [PatientController::class, 'update']);
 $router->get('/patients/search-json', [PatientController::class, 'searchJson']);
+$router->get('/patients/packages-json', [PatientController::class, 'packagesJson']);
 
 $router->get('/patients/appointments', [\App\Controllers\Patients\PatientAppointmentsController::class, 'index']);
 
@@ -548,6 +558,10 @@ $router->post('/sys/billing/ensure-gateway', [SystemBillingAdminController::clas
 $router->post('/sys/billing/grant-month', [SystemBillingAdminController::class, 'grantMonth']);
 $router->post('/sys/billing/skip-month', [SystemBillingAdminController::class, 'skipMonth']);
 
+$router->get('/sys/billing-events', [\App\Controllers\System\SystemBillingEventsController::class, 'index']);
+$router->get('/sys/billing-events/show', [\App\Controllers\System\SystemBillingEventsController::class, 'show']);
+$router->post('/sys/billing-events/reprocess', [\App\Controllers\System\SystemBillingEventsController::class, 'reprocess']);
+
 $router->get('/sys/plans', [SystemPlanAdminController::class, 'index']);
 $router->post('/sys/plans/create', [SystemPlanAdminController::class, 'create']);
 $router->post('/sys/plans/update', [SystemPlanAdminController::class, 'update']);
@@ -556,6 +570,9 @@ $router->post('/sys/plans/set-status', [SystemPlanAdminController::class, 'setSt
 $router->get('/sys/settings/webpush', [\App\Controllers\System\SystemSettingsController::class, 'webpush']);
 $router->post('/sys/settings/webpush', [\App\Controllers\System\SystemSettingsController::class, 'webpushSubmit']);
 $router->post('/sys/settings/webpush/generate', [\App\Controllers\System\SystemSettingsController::class, 'webpushGenerate']);
+
+$router->get('/sys/settings/google-oauth', [\App\Controllers\System\SystemGoogleOauthSettingsController::class, 'index']);
+$router->post('/sys/settings/google-oauth', [\App\Controllers\System\SystemGoogleOauthSettingsController::class, 'submit']);
 
 $router->get('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billing']);
 $router->post('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billingSubmit']);

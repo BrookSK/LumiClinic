@@ -7,10 +7,12 @@ namespace App\Services\Scheduling;
 use App\Core\Container\Container;
 use App\Repositories\AppointmentLogRepository;
 use App\Repositories\AppointmentMaterialsUsedRepository;
+use App\Repositories\AppointmentPackageSessionRepository;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\ClinicFunnelStageRepository;
 use App\Repositories\ClinicLostReasonRepository;
+use App\Repositories\PatientPackageRepository;
 use App\Repositories\PatientProcedureRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
@@ -32,6 +34,7 @@ final class AppointmentService
         string $startAt,
         string $origin,
         ?int $patientId,
+        ?int $patientPackageId,
         ?int $funnelStageId,
         ?int $lostReasonId,
         ?string $notes,
@@ -42,7 +45,7 @@ final class AppointmentService
         $userId = $auth->userId();
 
         if ($clinicId === null || $userId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -50,12 +53,12 @@ final class AppointmentService
         $serviceRepo = new ServiceCatalogRepository($pdo);
         $service = $serviceRepo->findById($clinicId, $serviceId);
         if ($service === null) {
-            throw new \RuntimeException('Servi?o inv?lido.');
+            throw new \RuntimeException('Serviço inválido.');
         }
 
         $durationMinutes = (int)$service['duration_minutes'];
         if ($durationMinutes <= 0) {
-            throw new \RuntimeException('Servi?o inv?lido.');
+            throw new \RuntimeException('Serviço inválido.');
         }
 
         $bufferBefore = isset($service['buffer_before_minutes']) ? (int)$service['buffer_before_minutes'] : 0;
@@ -66,7 +69,7 @@ final class AppointmentService
         $profRepo = new ProfessionalRepository($pdo);
         $prof = $profRepo->findById($clinicId, $professionalId);
         if ($prof === null) {
-            throw new \RuntimeException('Profissional inv?lido.');
+            throw new \RuntimeException('Profissional inválido.');
         }
 
         if ($patientId === null || $patientId <= 0) {
@@ -76,12 +79,26 @@ final class AppointmentService
         $patientRepo = new PatientRepository($pdo);
         $patient = $patientRepo->findById($clinicId, $patientId);
         if ($patient === null) {
-            throw new \RuntimeException('Paciente inv?lido.');
+            throw new \RuntimeException('Paciente inválido.');
+        }
+
+        if ($patientPackageId !== null && $patientPackageId > 0) {
+            $ppRepo = new PatientPackageRepository($pdo);
+            $pp = $ppRepo->findActiveByIdForPatient($clinicId, $patientId, $patientPackageId);
+            if ($pp === null) {
+                throw new \RuntimeException('Pacote inválido.');
+            }
+
+            $total = (int)($pp['total_sessions'] ?? 0);
+            $used = (int)($pp['used_sessions'] ?? 0);
+            if ($total <= 0 || $used >= $total) {
+                throw new \RuntimeException('Pacote sem sessões disponíveis.');
+            }
         }
 
         $start = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $startAt);
         if ($start === false) {
-            throw new \RuntimeException('Data/hora inv?lida.');
+            throw new \RuntimeException('Data/hora inválida.');
         }
         $end = $start->modify('+' . $durationMinutes . ' minutes');
 
@@ -116,12 +133,12 @@ final class AppointmentService
 
             $blocks = $blocksRepo->listOverlapping($clinicId, $professionalId, $occupiedStartStr, $occupiedEndStr);
             if ($blocks !== []) {
-                throw new \RuntimeException('Hor?rio indispon?vel (bloqueio).');
+                throw new \RuntimeException('Horário indisponível (bloqueio).');
             }
 
             $conflicts = $apptRepo->listOverlappingForUpdate($clinicId, $professionalId, $occupiedStartStr, $occupiedEndStr);
             if ($conflicts !== []) {
-                throw new \RuntimeException('Conflito de hor?rio.');
+                throw new \RuntimeException('Conflito de horário.');
             }
 
             $id = $apptRepo->create(
@@ -129,6 +146,7 @@ final class AppointmentService
                 $professionalId,
                 $serviceId,
                 $patientId,
+                $patientPackageId,
                 $startStr,
                 $endStr,
                 $bufferBefore,
@@ -146,6 +164,7 @@ final class AppointmentService
                 'professional_id' => $professionalId,
                 'service_id' => $serviceId,
                 'patient_id' => $patientId,
+                'patient_package_id' => ($patientPackageId !== null && $patientPackageId > 0 ? $patientPackageId : null),
                 'start_at' => $startStr,
                 'end_at' => $endStr,
                 'buffer_before_minutes' => $bufferBefore,
@@ -160,6 +179,7 @@ final class AppointmentService
                 'service_id' => $serviceId,
                 'professional_id' => $professionalId,
                 'patient_id' => $patientId,
+                'patient_package_id' => ($patientPackageId !== null && $patientPackageId > 0 ? $patientPackageId : null),
                 'start_at' => $startStr,
                 'end_at' => $endStr,
                 'origin' => $origin,
@@ -170,6 +190,7 @@ final class AppointmentService
                 'service_id' => $serviceId,
                 'professional_id' => $professionalId,
                 'patient_id' => $patientId,
+                'patient_package_id' => ($patientPackageId !== null && $patientPackageId > 0 ? $patientPackageId : null),
                 'start_at' => $startStr,
                 'end_at' => $endStr,
                 'origin' => $origin,
@@ -178,6 +199,15 @@ final class AppointmentService
             $pdo->commit();
 
             (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $id);
+
+            (new QueueService($this->container))->enqueue(
+                'gcal.sync_appointment',
+                ['appointment_id' => $id],
+                $clinicId,
+                'integrations',
+                null,
+                10
+            );
             return $id;
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -194,7 +224,7 @@ final class AppointmentService
         $userId = $auth->userId();
 
         if ($clinicId === null || $userId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -202,8 +232,9 @@ final class AppointmentService
         $repo = new AppointmentRepository($pdo);
         $current = $repo->findById($clinicId, $appointmentId);
         if ($current === null) {
-            throw new \RuntimeException('Agendamento inv?lido.');
+            throw new \RuntimeException('Agendamento inválido.');
         }
+
         $repo->updateStatus($clinicId, $appointmentId, 'cancelled');
 
         (new AppointmentLogRepository($pdo))->log(
@@ -216,12 +247,20 @@ final class AppointmentService
             $ip
         );
 
-        $audit = new AuditLogRepository($pdo);
-        $audit->log($userId, $clinicId, 'scheduling.appointment_cancel', [
+        (new AuditLogRepository($pdo))->log($userId, $clinicId, 'scheduling.appointment_cancel', [
             'appointment_id' => $appointmentId,
         ], $ip);
 
         (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
+
+        (new QueueService($this->container))->enqueue(
+            'gcal.sync_appointment',
+            ['appointment_id' => $appointmentId],
+            $clinicId,
+            'integrations',
+            null,
+            10
+        );
 
         SystemEvent::dispatch($this->container, 'appointment.cancelled', [
             'appointment_id' => $appointmentId,
@@ -232,7 +271,7 @@ final class AppointmentService
     {
         $allowed = ['scheduled', 'confirmed', 'in_progress', 'completed', 'no_show', 'cancelled'];
         if (!in_array($status, $allowed, true)) {
-            throw new \RuntimeException('Status inv?lido.');
+            throw new \RuntimeException('Status inválido.');
         }
 
         $auth = new AuthService($this->container);
@@ -240,7 +279,7 @@ final class AppointmentService
         $userId = $auth->userId();
 
         if ($clinicId === null || $userId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -248,12 +287,12 @@ final class AppointmentService
         $repo = new AppointmentRepository($pdo);
         $current = $repo->findById($clinicId, $appointmentId);
         if ($current === null) {
-            throw new \RuntimeException('Agendamento inv?lido.');
+            throw new \RuntimeException('Agendamento inválido.');
         }
 
         $from = (string)$current['status'];
         if (!$this->canTransition($from, $status)) {
-            throw new \RuntimeException('Transi??o de status inv?lida.');
+            throw new \RuntimeException('Transição de status inválida.');
         }
 
         if ($status === 'completed') {
@@ -265,6 +304,11 @@ final class AppointmentService
                 $stock->reconcileForAppointment($appointmentId, (int)$current['service_id'], $usedQty, 'Baixa automática por sessão', $ip);
             } else {
                 $stock->autoConsumeForAppointment($appointmentId, (int)$current['service_id'], $ip);
+            }
+
+            $patientPackageId = isset($current['patient_package_id']) && $current['patient_package_id'] !== null ? (int)$current['patient_package_id'] : null;
+            if ($patientPackageId !== null && $patientPackageId > 0) {
+                $this->consumePatientPackageSessionIfNeeded($clinicId, $appointmentId, $patientPackageId, $userId, $ip);
             }
         }
 
@@ -288,6 +332,15 @@ final class AppointmentService
         ], $ip);
 
         (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
+
+        (new QueueService($this->container))->enqueue(
+            'gcal.sync_appointment',
+            ['appointment_id' => $appointmentId],
+            $clinicId,
+            'integrations',
+            null,
+            10
+        );
 
         SystemEvent::dispatch($this->container, 'appointment.status_updated', [
             'appointment_id' => $appointmentId,
@@ -340,6 +393,64 @@ final class AppointmentService
         ];
 
         return isset($allowed[$from]) && in_array($to, $allowed[$from], true);
+    }
+
+    private function consumePatientPackageSessionIfNeeded(
+        int $clinicId,
+        int $appointmentId,
+        int $patientPackageId,
+        int $actorUserId,
+        string $ip
+    ): void {
+        $pdo = $this->container->get(\PDO::class);
+
+        $sessionRepo = new AppointmentPackageSessionRepository($pdo);
+        if ($sessionRepo->existsForAppointment($clinicId, $appointmentId)) {
+            return;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            try {
+                $sessionRepo->create(
+                    $clinicId,
+                    $appointmentId,
+                    $patientPackageId,
+                    (new \DateTimeImmutable('now'))->format('Y-m-d H:i:s'),
+                    $actorUserId
+                );
+            } catch (\PDOException $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+
+                $code = $e->getCode();
+                if ($code === '23000') {
+                    return;
+                }
+
+                throw $e;
+            }
+
+            $ppRepo = new PatientPackageRepository($pdo);
+            $ok = $ppRepo->consumeOneSessionForUpdate($clinicId, $patientPackageId);
+            if (!$ok) {
+                throw new \RuntimeException('Pacote sem sess?es dispon?veis.');
+            }
+
+            (new AuditLogRepository($pdo))->log($actorUserId, $clinicId, 'packages.session_consumed', [
+                'appointment_id' => $appointmentId,
+                'patient_package_id' => $patientPackageId,
+            ], $ip);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function reschedule(
@@ -479,6 +590,15 @@ final class AppointmentService
             $pdo->commit();
 
             (new WhatsappReminderSchedulerService($this->container))->scheduleForAppointment($clinicId, $appointmentId);
+
+            (new QueueService($this->container))->enqueue(
+                'gcal.sync_appointment',
+                ['appointment_id' => $appointmentId],
+                $clinicId,
+                'integrations',
+                null,
+                10
+            );
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
