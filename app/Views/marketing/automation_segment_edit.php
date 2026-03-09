@@ -22,6 +22,26 @@ $ruleWa = (int)($rules['whatsapp_opt_in'] ?? 1);
 $rulePhone = (int)($rules['has_phone'] ?? 1);
 $ruleEmail = (int)($rules['has_email'] ?? 0);
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -49,56 +69,80 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Cadastro</div>
     <div class="lc-card__body">
-        <form method="post" action="/marketing/automation/segment/update" class="lc-form">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="id" value="<?= $id ?>" />
+        <?php if ($can('marketing.automation.manage')): ?>
+            <form method="post" action="/marketing/automation/segment/update" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" value="<?= $id ?>" />
 
-            <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 180px; align-items:end;">
-                <div class="lc-field">
-                    <label class="lc-label">Nome</label>
-                    <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>" required />
+                <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 180px; align-items:end;">
+                    <div class="lc-field">
+                        <label class="lc-label">Nome</label>
+                        <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>" required />
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Status</label>
+                        <select class="lc-select" name="status">
+                            <option value="active" <?= $status === 'active' ? 'selected' : '' ?>>Ativo</option>
+                            <option value="disabled" <?= $status === 'disabled' ? 'selected' : '' ?>>Desativado</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="lc-field">
-                    <label class="lc-label">Status</label>
-                    <select class="lc-select" name="status">
-                        <option value="active" <?= $status === 'active' ? 'selected' : '' ?>>Ativo</option>
-                        <option value="disabled" <?= $status === 'disabled' ? 'selected' : '' ?>>Desativado</option>
-                    </select>
+                <div class="lc-card lc-card--soft" style="margin-top:14px;">
+                    <div class="lc-card__header">Regras (MVP)</div>
+                    <div class="lc-card__body">
+                        <div class="lc-grid lc-gap-grid" style="grid-template-columns: 180px 1fr; align-items:center;">
+                            <div class="lc-field">
+                                <label class="lc-label">Status do paciente</label>
+                                <select class="lc-select" name="rule_status">
+                                    <option value="active" <?= $ruleStatus === 'active' ? 'selected' : '' ?>>Ativo</option>
+                                    <option value="inactive" <?= $ruleStatus === 'inactive' ? 'selected' : '' ?>>Inativo</option>
+                                </select>
+                            </div>
+
+                            <div class="lc-field">
+                                <label class="lc-label">Restrições</label>
+                                <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:6px;">
+                                    <label class="lc-checkbox"><input type="checkbox" name="rule_whatsapp_opt_in" value="1" <?= $ruleWa === 1 ? 'checked' : '' ?> /> WhatsApp opt-in</label>
+                                    <label class="lc-checkbox"><input type="checkbox" name="rule_has_phone" value="1" <?= $rulePhone === 1 ? 'checked' : '' ?> /> Tem telefone</label>
+                                    <label class="lc-checkbox"><input type="checkbox" name="rule_has_email" value="1" <?= $ruleEmail === 1 ? 'checked' : '' ?> /> Tem e-mail</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lc-muted" style="margin-top:10px;">Audiência estimada: <strong><?= (int)$audience_count ?></strong> paciente(s).</div>
+                    </div>
+                </div>
+
+                <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
+                    <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+                    <a class="lc-btn lc-btn--secondary" href="/marketing/automation/segments">Voltar</a>
+                </div>
+            </form>
+        <?php else: ?>
+            <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 180px; align-items:start;">
+                <div>
+                    <div class="lc-muted">Nome</div>
+                    <div><?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?></div>
+                </div>
+                <div>
+                    <div class="lc-muted">Status</div>
+                    <div><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
             </div>
 
             <div class="lc-card lc-card--soft" style="margin-top:14px;">
                 <div class="lc-card__header">Regras (MVP)</div>
                 <div class="lc-card__body">
-                    <div class="lc-grid lc-gap-grid" style="grid-template-columns: 180px 1fr; align-items:center;">
-                        <div class="lc-field">
-                            <label class="lc-label">Status do paciente</label>
-                            <select class="lc-select" name="rule_status">
-                                <option value="active" <?= $ruleStatus === 'active' ? 'selected' : '' ?>>Ativo</option>
-                                <option value="inactive" <?= $ruleStatus === 'inactive' ? 'selected' : '' ?>>Inativo</option>
-                            </select>
-                        </div>
-
-                        <div class="lc-field">
-                            <label class="lc-label">Restrições</label>
-                            <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:6px;">
-                                <label class="lc-checkbox"><input type="checkbox" name="rule_whatsapp_opt_in" value="1" <?= $ruleWa === 1 ? 'checked' : '' ?> /> WhatsApp opt-in</label>
-                                <label class="lc-checkbox"><input type="checkbox" name="rule_has_phone" value="1" <?= $rulePhone === 1 ? 'checked' : '' ?> /> Tem telefone</label>
-                                <label class="lc-checkbox"><input type="checkbox" name="rule_has_email" value="1" <?= $ruleEmail === 1 ? 'checked' : '' ?> /> Tem e-mail</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="lc-muted" style="margin-top:10px;">Audiência estimada: <strong><?= (int)$audience_count ?></strong> paciente(s).</div>
+                    <div class="lc-muted">Audiência estimada: <strong><?= (int)$audience_count ?></strong> paciente(s).</div>
                 </div>
             </div>
 
             <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
                 <a class="lc-btn lc-btn--secondary" href="/marketing/automation/segments">Voltar</a>
             </div>
-        </form>
+        <?php endif; ?>
     </div>
 </div>
 

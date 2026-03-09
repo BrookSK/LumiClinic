@@ -14,6 +14,26 @@
 
 $title = 'Financeiro - Relatórios';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $profMap = [];
 foreach ($professionals as $p) {
     $profMap[(int)$p['id']] = $p;
@@ -61,8 +81,10 @@ ob_start();
                     'professional_id' => (int)$professional_id,
                 ];
                 ?>
-                <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.csv?<?= http_build_query($exportQuery) ?>">Exportar planilha</a>
-                <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.pdf?<?= http_build_query($exportQuery) ?>">Exportar PDF</a>
+                <?php if ($can('finance.reports.read')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.csv?<?= http_build_query($exportQuery) ?>">Exportar planilha</a>
+                    <a class="lc-btn lc-btn--secondary" href="/finance/reports/export.pdf?<?= http_build_query($exportQuery) ?>">Exportar PDF</a>
+                <?php endif; ?>
             </div>
         </form>
     </div>

@@ -5,6 +5,27 @@ $error = $error ?? null;
 $success = $success ?? null;
 $template = $template ?? null;
 $fields = $fields ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 
 $fieldsForJson = [];
@@ -61,7 +82,9 @@ $fieldsJson = json_encode($fieldsForJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPE
             <div class="lc-card__body">
                 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="gap:10px; margin-bottom:10px;">
                     <div class="lc-muted">Edite os campos do formulário.</div>
-                    <button class="lc-btn lc-btn--secondary" type="button" id="add-field">Adicionar campo</button>
+                    <?php if ($can('medical_record_templates.manage')): ?>
+                        <button class="lc-btn lc-btn--secondary" type="button" id="add-field">Adicionar campo</button>
+                    <?php endif; ?>
                 </div>
 
                 <div class="lc-table-wrap">
@@ -83,7 +106,9 @@ $fieldsJson = json_encode($fieldsForJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPE
         </div>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-            <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+            <?php if ($can('medical_record_templates.manage')): ?>
+                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+            <?php endif; ?>
             <a class="lc-btn lc-btn--secondary" href="/medical-record-templates">Voltar</a>
         </div>
     </form>

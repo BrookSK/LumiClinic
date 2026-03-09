@@ -4,6 +4,26 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $items = $items ?? [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $weekdayLabels = [
     0 => 'Domingo',
     1 => 'Segunda',
@@ -16,15 +36,16 @@ $weekdayLabels = [
 
 ob_start();
 ?>
-<div class="lc-card" style="margin-bottom:16px;">
-    <div class="lc-card__title">Adicionar horário</div>
+<?php if ($can('clinics.update')): ?>
+    <div class="lc-card" style="margin-bottom:16px;">
+        <div class="lc-card__title">Adicionar horário</div>
 
-    <?php if ($error): ?>
-        <div class="lc-alert lc-alert--danger"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
-    <?php endif; ?>
+        <?php if ($error): ?>
+            <div class="lc-alert lc-alert--danger"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
 
-    <form method="post" class="lc-form" action="/clinic/working-hours">
-        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+        <form method="post" class="lc-form" action="/clinic/working-hours">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
         <label class="lc-label">Dia da semana</label>
         <select class="lc-input" name="weekday" required>
@@ -39,12 +60,13 @@ ob_start();
         <label class="lc-label">Fim</label>
         <input class="lc-input" type="time" name="end_time" required />
 
-        <div class="lc-flex lc-gap-sm" style="margin-top:14px;">
-            <button class="lc-btn lc-btn--primary" type="submit">Adicionar</button>
-            <a class="lc-btn lc-btn--secondary" href="/clinic">Voltar</a>
-        </div>
-    </form>
-</div>
+            <div class="lc-flex lc-gap-sm" style="margin-top:14px;">
+                <button class="lc-btn lc-btn--primary" type="submit">Adicionar</button>
+                <a class="lc-btn lc-btn--secondary" href="/clinic">Voltar</a>
+            </div>
+        </form>
+    </div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__title">Horários cadastrados</div>
@@ -66,11 +88,15 @@ ob_start();
                     <td><?= htmlspecialchars((string)$it['start_time'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$it['end_time'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td>
-                        <form method="post" action="/clinic/working-hours/delete" style="margin:0;">
-                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                            <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
-                        </form>
+                        <?php if ($can('clinics.update')): ?>
+                            <form method="post" action="/clinic/working-hours/delete" style="margin:0;">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
+                            </form>
+                        <?php else: ?>
+                            <span style="opacity:.7;">-</span>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

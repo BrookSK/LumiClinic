@@ -3,6 +3,26 @@ $title = 'Conteúdos do paciente';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $contents = $contents ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -21,8 +41,9 @@ ob_start();
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title">Cadastrar conteúdo (link)</div>
     <div class="lc-card__body">
-        <form method="post" action="/patients/content/create" class="lc-form">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+        <?php if ($can('patients.update')): ?>
+            <form method="post" action="/patients/content/create" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Tipo</label>
             <select class="lc-select" name="type">
@@ -46,8 +67,9 @@ ob_start();
             <label class="lc-label">Público-alvo (opcional)</label>
             <input class="lc-input" type="text" name="audience" />
 
-            <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
-        </form>
+                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+            </form>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -76,15 +98,19 @@ ob_start();
                             <td><?= htmlspecialchars((string)($c['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($c['url'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
-                                <form method="post" action="/patients/content/grant" class="lc-form lc-flex" style="gap:8px; align-items:flex-end;">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="content_id" value="<?= (int)($c['id'] ?? 0) ?>" />
-                                    <?php $cid = (int)($c['id'] ?? 0); ?>
-                                    <input class="lc-input" type="text" data-patient-search="<?= $cid ?>" placeholder="Buscar paciente" autocomplete="off" required />
-                                    <input type="hidden" name="patient_id" data-patient-id="<?= $cid ?>" value="" />
-                                    <div class="lc-autocomplete" data-patient-results="<?= $cid ?>" style="display:none;"></div>
-                                    <button class="lc-btn lc-btn--secondary" type="submit">Conceder</button>
-                                </form>
+                                <?php if ($can('patients.update')): ?>
+                                    <form method="post" action="/patients/content/grant" class="lc-form lc-flex" style="gap:8px; align-items:flex-end;">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="content_id" value="<?= (int)($c['id'] ?? 0) ?>" />
+                                        <?php $cid = (int)($c['id'] ?? 0); ?>
+                                        <input class="lc-input" type="text" data-patient-search="<?= $cid ?>" placeholder="Buscar paciente" autocomplete="off" required />
+                                        <input type="hidden" name="patient_id" data-patient-id="<?= $cid ?>" value="" />
+                                        <div class="lc-autocomplete" data-patient-results="<?= $cid ?>" style="display:none;"></div>
+                                        <button class="lc-btn lc-btn--secondary" type="submit">Conceder</button>
+                                    </form>
+                                <?php else: ?>
+                                    <span style="opacity:.7;">-</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

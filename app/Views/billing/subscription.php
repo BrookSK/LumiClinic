@@ -42,6 +42,15 @@ $planDisplay = trim($planName !== '' ? $planName : $planCode);
 
 $subStatus = (string)($subscription['status'] ?? '');
 
+$isOwnerOrSuperAdmin = (function (): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $roles = $_SESSION['role_codes'] ?? [];
+    return is_array($roles) && in_array('owner', $roles, true);
+})();
+
 ob_start();
 ?>
 
@@ -83,28 +92,30 @@ ob_start();
         </div>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:12px; align-items:center;">
-            <form method="post" action="/billing/subscription/change-plan" class="lc-flex" style="gap:8px; align-items:center;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <select class="lc-input" name="plan_id">
-                    <?php foreach (($plans ?? []) as $p): ?>
-                        <?php $pid = (int)($p['id'] ?? 0); ?>
-                        <option value="<?= $pid ?>" <?= ((int)($subscription['plan_id'] ?? 0) === $pid) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars((string)($p['name'] ?? $p['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <button class="lc-btn lc-btn--secondary" type="submit">Trocar plano</button>
-            </form>
+            <?php if ($isOwnerOrSuperAdmin): ?>
+                <form method="post" action="/billing/subscription/change-plan" class="lc-flex" style="gap:8px; align-items:center;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <select class="lc-input" name="plan_id">
+                        <?php foreach (($plans ?? []) as $p): ?>
+                            <?php $pid = (int)($p['id'] ?? 0); ?>
+                            <option value="<?= $pid ?>" <?= ((int)($subscription['plan_id'] ?? 0) === $pid) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars((string)($p['name'] ?? $p['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button class="lc-btn lc-btn--secondary" type="submit">Trocar plano</button>
+                </form>
 
-            <form method="post" action="/billing/subscription/ensure-gateway" style="margin:0;" onsubmit="return confirm('Atualizar cobrança no provedor?');">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Atualizar cobrança</button>
-            </form>
+                <form method="post" action="/billing/subscription/ensure-gateway" style="margin:0;" onsubmit="return confirm('Atualizar cobrança no provedor?');">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Atualizar cobrança</button>
+                </form>
 
-            <form method="post" action="/billing/subscription/cancel" style="margin:0;" onsubmit="return confirm('Cancelar assinatura?');">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <button class="lc-btn lc-btn--primary" type="submit">Cancelar</button>
-            </form>
+                <form method="post" action="/billing/subscription/cancel" style="margin:0;" onsubmit="return confirm('Cancelar assinatura?');">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <button class="lc-btn lc-btn--primary" type="submit">Cancelar</button>
+                </form>
+            <?php endif; ?>
         </div>
 
         <div class="lc-muted" style="margin-top:10px; font-size:12px; line-height:1.55;">

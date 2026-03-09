@@ -16,6 +16,26 @@ $page = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 100;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $ccMap = [];
 foreach ($cost_centers as $c) {
     $ccMap[(int)$c['id']] = $c;
@@ -49,57 +69,61 @@ ob_start();
     </div>
 </div>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Novo lançamento</div>
-    <div class="lc-card__body">
-        <div class="lc-flex lc-flex--between lc-flex--wrap" style="gap:10px; margin-bottom:10px;">
-            <div></div>
-            <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers">Centros de custo</a>
+<?php if ($can('finance.entries.create')): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Novo lançamento</div>
+        <div class="lc-card__body">
+            <div class="lc-flex lc-flex--between lc-flex--wrap" style="gap:10px; margin-bottom:10px;">
+                <div></div>
+                <?php if ($can('finance.cost_centers.manage')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers">Centros de custo</a>
+                <?php endif; ?>
+            </div>
+            <form method="post" action="/finance/entries/create" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 1fr 1fr 1fr 1fr 2fr;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="from" value="<?= htmlspecialchars($from, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="to" value="<?= htmlspecialchars($to, ENT_QUOTES, 'UTF-8') ?>" />
+
+                <div class="lc-field">
+                    <label class="lc-label">Tipo</label>
+                    <select class="lc-select" name="kind">
+                        <option value="in">Entrada</option>
+                        <option value="out">Saída</option>
+                    </select>
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Data</label>
+                    <input class="lc-input" type="date" name="occurred_on" value="<?= htmlspecialchars(date('Y-m-d'), ENT_QUOTES, 'UTF-8') ?>" />
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Valor (R$)</label>
+                    <input class="lc-input" type="text" name="amount" required />
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Centro de custo</label>
+                    <select class="lc-select" name="cost_center_id">
+                        <option value="0">-</option>
+                        <?php foreach ($cost_centers as $c): ?>
+                            <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars((string)$c['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="lc-field">
+                    <label class="lc-label">Descrição</label>
+                    <input class="lc-input" type="text" name="description" />
+                </div>
+
+                <div style="grid-column: 1 / -1;">
+                    <button class="lc-btn" type="submit">Adicionar</button>
+                </div>
+            </form>
         </div>
-        <form method="post" action="/finance/entries/create" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 1fr 1fr 1fr 1fr 2fr;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="from" value="<?= htmlspecialchars($from, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="to" value="<?= htmlspecialchars($to, ENT_QUOTES, 'UTF-8') ?>" />
-
-            <div class="lc-field">
-                <label class="lc-label">Tipo</label>
-                <select class="lc-select" name="kind">
-                    <option value="in">Entrada</option>
-                    <option value="out">Saída</option>
-                </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Data</label>
-                <input class="lc-input" type="date" name="occurred_on" value="<?= htmlspecialchars(date('Y-m-d'), ENT_QUOTES, 'UTF-8') ?>" />
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Valor (R$)</label>
-                <input class="lc-input" type="text" name="amount" required />
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Centro de custo</label>
-                <select class="lc-select" name="cost_center_id">
-                    <option value="0">-</option>
-                    <?php foreach ($cost_centers as $c): ?>
-                        <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars((string)$c['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Descrição</label>
-                <input class="lc-input" type="text" name="description" />
-            </div>
-
-            <div style="grid-column: 1 / -1;">
-                <button class="lc-btn" type="submit">Adicionar</button>
-            </div>
-        </form>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Totais</div>
@@ -152,11 +176,13 @@ ob_start();
                         <td><?= htmlspecialchars((string)($e['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= $linked === [] ? '-' : htmlspecialchars(implode(', ', $linked), ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
-                            <form method="post" action="/finance/entries/delete">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="entry_id" value="<?= (int)$e['id'] ?>" />
-                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Excluir</button>
-                            </form>
+                            <?php if ($can('finance.entries.delete')): ?>
+                                <form method="post" action="/finance/entries/delete">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="entry_id" value="<?= (int)$e['id'] ?>" />
+                                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Excluir</button>
+                                </form>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

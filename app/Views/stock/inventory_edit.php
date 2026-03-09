@@ -6,6 +6,26 @@
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Estoque - Inventário';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -48,10 +68,47 @@ ob_start();
         <?php if (($items ?? []) === []): ?>
             <div class="lc-muted">Sem itens.</div>
         <?php else: ?>
-            <form method="post" action="/stock/inventory/update" class="lc-form">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" value="<?= (int)$invId ?>" />
+            <?php if ($status === 'draft' && $can('stock.movements.create')): ?>
+                <form method="post" action="/stock/inventory/update" class="lc-form">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" value="<?= (int)$invId ?>" />
 
+                    <table class="lc-table">
+                        <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Un</th>
+                            <th>Qtde sistema (snapshot)</th>
+                            <th>Qtde contada</th>
+                            <th>Divergência</th>
+                            <th>Custo (delta)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach (($items ?? []) as $it): ?>
+                            <?php
+                                $mid = (int)($it['material_id'] ?? 0);
+                                $delta = (float)($it['qty_delta'] ?? 0);
+                            ?>
+                            <tr>
+                                <td><?= htmlspecialchars((string)($it['material_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($it['material_unit'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= number_format((float)($it['qty_system_snapshot'] ?? 0), 3, ',', '.') ?></td>
+                                <td>
+                                    <input class="lc-input" style="max-width:140px;" type="text" name="qty[<?= (int)$mid ?>]" value="<?= htmlspecialchars(number_format((float)($it['qty_counted'] ?? 0), 3, '.', ''), ENT_QUOTES, 'UTF-8') ?>" />
+                                </td>
+                                <td><?= number_format($delta, 3, ',', '.') ?></td>
+                                <td>R$ <?= number_format((float)($it['total_cost_delta_snapshot'] ?? 0), 2, ',', '.') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+
+                    <div class="lc-flex lc-gap-sm" style="margin-top:12px;">
+                        <button class="lc-btn" type="submit">Salvar contagem</button>
+                    </div>
+                </form>
+            <?php else: ?>
                 <table class="lc-table">
                     <thead>
                     <tr>
@@ -66,38 +123,25 @@ ob_start();
                     <tbody>
                     <?php foreach (($items ?? []) as $it): ?>
                         <?php
-                            $mid = (int)($it['material_id'] ?? 0);
                             $delta = (float)($it['qty_delta'] ?? 0);
                         ?>
                         <tr>
                             <td><?= htmlspecialchars((string)($it['material_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($it['material_unit'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= number_format((float)($it['qty_system_snapshot'] ?? 0), 3, ',', '.') ?></td>
-                            <td>
-                                <?php if ($status === 'draft'): ?>
-                                    <input class="lc-input" style="max-width:140px;" type="text" name="qty[<?= (int)$mid ?>]" value="<?= htmlspecialchars(number_format((float)($it['qty_counted'] ?? 0), 3, '.', ''), ENT_QUOTES, 'UTF-8') ?>" />
-                                <?php else: ?>
-                                    <?= number_format((float)($it['qty_counted'] ?? 0), 3, ',', '.') ?>
-                                <?php endif; ?>
-                            </td>
+                            <td><?= number_format((float)($it['qty_counted'] ?? 0), 3, ',', '.') ?></td>
                             <td><?= number_format($delta, 3, ',', '.') ?></td>
                             <td>R$ <?= number_format((float)($it['total_cost_delta_snapshot'] ?? 0), 2, ',', '.') ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
                 </table>
-
-                <?php if ($status === 'draft'): ?>
-                    <div class="lc-flex lc-gap-sm" style="margin-top:12px;">
-                        <button class="lc-btn" type="submit">Salvar contagem</button>
-                    </div>
-                <?php endif; ?>
-            </form>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>
 
-<?php if ($status === 'draft'): ?>
+<?php if ($status === 'draft' && $can('stock.movements.create')): ?>
     <div class="lc-card">
         <div class="lc-card__header">Confirmar inventário</div>
         <div class="lc-card__body">

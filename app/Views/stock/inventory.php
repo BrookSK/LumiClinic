@@ -5,6 +5,26 @@
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Estoque - Inventário';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -14,21 +34,23 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Novo inventário</div>
-    <div class="lc-card__body">
-        <form method="post" action="/stock/inventory/create" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <div class="lc-field" style="min-width:360px;">
-                <label class="lc-label">Observações</label>
-                <input class="lc-input" type="text" name="notes" placeholder="Ex: Contagem mensal" />
-            </div>
-            <button class="lc-btn" type="submit">Criar</button>
-            <a class="lc-btn lc-btn--secondary" href="/stock/materials">Materiais</a>
-            <a class="lc-btn lc-btn--secondary" href="/stock/movements">Movimentações</a>
-        </form>
+<?php if ($can('stock.movements.create')): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Novo inventário</div>
+        <div class="lc-card__body">
+            <form method="post" action="/stock/inventory/create" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <div class="lc-field" style="min-width:360px;">
+                    <label class="lc-label">Observações</label>
+                    <input class="lc-input" type="text" name="notes" placeholder="Ex: Contagem mensal" />
+                </div>
+                <button class="lc-btn" type="submit">Criar</button>
+                <a class="lc-btn lc-btn--secondary" href="/stock/materials">Materiais</a>
+                <a class="lc-btn lc-btn--secondary" href="/stock/movements">Movimentações</a>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__header">Inventários</div>
@@ -64,7 +86,11 @@ ob_start();
                         <td><?= htmlspecialchars((string)($it['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= ($it['confirmed_at'] ?? null) === null ? '-' : htmlspecialchars((string)$it['confirmed_at'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)($it['notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><a class="lc-btn lc-btn--secondary" href="/stock/inventory/edit?id=<?= (int)($it['id'] ?? 0) ?>">Abrir</a></td>
+                        <td>
+                            <?php if ($can('stock.movements.read')): ?>
+                                <a class="lc-btn lc-btn--secondary" href="/stock/inventory/edit?id=<?= (int)($it['id'] ?? 0) ?>">Abrir</a>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

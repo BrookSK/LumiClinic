@@ -3,6 +3,26 @@ $title = 'Timeline de imagens';
 $patient = $patient ?? null;
 $items = $items ?? [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -62,9 +82,11 @@ ob_start();
                                 <td><?= htmlspecialchars((string)($img['pose'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars((string)($img['original_filename'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td class="lc-flex lc-flex--wrap" style="gap:8px;">
-                                    <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= (int)$img['id'] ?>" target="_blank">Abrir</a>
-                                    <?php if (isset($img['comparison_key']) && (string)$img['comparison_key'] !== ''): ?>
-                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$img['comparison_key']) ?>">Comparar</a>
+                                    <?php if ($can('files.read')): ?>
+                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= (int)$img['id'] ?>" target="_blank">Abrir</a>
+                                        <?php if (isset($img['comparison_key']) && (string)$img['comparison_key'] !== ''): ?>
+                                            <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$img['comparison_key']) ?>">Comparar</a>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                             </tr>

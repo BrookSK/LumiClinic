@@ -15,6 +15,26 @@ $q = $q ?? '';
 $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -24,8 +44,10 @@ ob_start();
         <div class="lc-muted" style="margin-top:6px;">Automação de marketing</div>
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
-        <a class="lc-btn lc-btn--secondary" href="/marketing/automation/segments">Segmentos</a>
-        <a class="lc-btn lc-btn--secondary" href="/marketing/automation/campaigns">Campanhas</a>
+        <?php if ($can('marketing.automation.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/marketing/automation/segments">Segmentos</a>
+            <a class="lc-btn lc-btn--secondary" href="/marketing/automation/campaigns">Campanhas</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -113,11 +135,13 @@ ob_start();
                         <td><?= htmlspecialchars((string)($r['error_message'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)($r['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td style="text-align:right;">
-                            <form method="post" action="/marketing/automation/log/retry" onsubmit="return confirm('Reenfileirar envio?');">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="id" value="<?= $id ?>" />
-                                <button class="lc-btn lc-btn--secondary" type="submit">Tentar novamente</button>
-                            </form>
+                            <?php if ($can('marketing.automation.manage')): ?>
+                                <form method="post" action="/marketing/automation/log/retry" onsubmit="return confirm('Reenfileirar envio?');">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="id" value="<?= $id ?>" />
+                                    <button class="lc-btn lc-btn--secondary" type="submit">Tentar novamente</button>
+                                </form>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

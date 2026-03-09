@@ -8,6 +8,26 @@
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Materiais do serviço';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -62,33 +82,35 @@ ob_start();
     ?>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Adicionar material padrão</div>
-    <div class="lc-card__body">
-        <form method="post" action="/services/materials/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end; gap:12px;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="service_id" value="<?= (int)$service['id'] ?>" />
+<?php if ($can('services.manage')): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Adicionar material padrão</div>
+        <div class="lc-card__body">
+            <form method="post" action="/services/materials/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end; gap:12px;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="service_id" value="<?= (int)$service['id'] ?>" />
 
-            <div class="lc-field">
-                <label class="lc-label">Material</label>
-                <select class="lc-select" name="material_id">
-                    <?php foreach ($materials as $m): ?>
-                        <option value="<?= (int)$m['id'] ?>"><?= htmlspecialchars((string)$m['name'], ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars((string)$m['unit'], ENT_QUOTES, 'UTF-8') ?>)</option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Material</label>
+                    <select class="lc-select" name="material_id">
+                        <?php foreach ($materials as $m): ?>
+                            <option value="<?= (int)$m['id'] ?>"><?= htmlspecialchars((string)$m['name'], ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars((string)$m['unit'], ENT_QUOTES, 'UTF-8') ?>)</option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Qtd por sessão</label>
-                <input class="lc-input" type="text" name="quantity_per_session" required />
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Qtd por sessão</label>
+                    <input class="lc-input" type="text" name="quantity_per_session" required />
+                </div>
 
-            <div style="grid-column: 1 / -1;">
-                <button class="lc-btn" type="submit">Salvar</button>
-            </div>
-        </form>
+                <div style="grid-column: 1 / -1;">
+                    <button class="lc-btn" type="submit">Salvar</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__header">Materiais padrão</div>
@@ -110,12 +132,16 @@ ob_start();
                         <td><?= htmlspecialchars((string)$d['material_name'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= number_format((float)$d['quantity_per_session'], 3, ',', '.') ?> <?= htmlspecialchars((string)$d['material_unit'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td style="text-align:right;">
-                            <form method="post" action="/services/materials/delete" style="display:inline;" onsubmit="return confirm('Remover este material padrão?');">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="service_id" value="<?= (int)$service['id'] ?>" />
-                                <input type="hidden" name="id" value="<?= (int)$d['id'] ?>" />
-                                <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
-                            </form>
+                            <?php if ($can('services.manage')): ?>
+                                <form method="post" action="/services/materials/delete" style="display:inline;" onsubmit="return confirm('Remover este material padrão?');">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="service_id" value="<?= (int)$service['id'] ?>" />
+                                    <input type="hidden" name="id" value="<?= (int)$d['id'] ?>" />
+                                    <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
+                                </form>
+                            <?php else: ?>
+                                <span class="lc-muted">-</span>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

@@ -6,6 +6,26 @@
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Reagendar';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $apptId = (int)($appointment['id'] ?? 0);
 $serviceId = (int)($appointment['service_id'] ?? 0);
 $professionalId = (int)($appointment['professional_id'] ?? 0);
@@ -31,49 +51,53 @@ ob_start();
 <div class="lc-card">
     <div class="lc-card__header">Novo horário</div>
     <div class="lc-card__body">
-        <form method="post" action="/schedule/reschedule" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="id" value="<?= (int)$apptId ?>" />
+        <?php if ($can('scheduling.update')): ?>
+            <form method="post" action="/schedule/reschedule" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" value="<?= (int)$apptId ?>" />
 
-            <div class="lc-field">
-                <label class="lc-label">Serviço</label>
-                <select class="lc-select" name="service_id" id="service_id" required>
-                    <?php foreach ($services as $s): ?>
-                        <option value="<?= (int)$s['id'] ?>" <?= ((int)$s['id'] === $serviceId) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Serviço</label>
+                    <select class="lc-select" name="service_id" id="service_id" required>
+                        <?php foreach ($services as $s): ?>
+                            <option value="<?= (int)$s['id'] ?>" <?= ((int)$s['id'] === $serviceId) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Profissional</label>
-                <select class="lc-select" name="professional_id" id="professional_id" required>
-                    <?php foreach ($professionals as $p): ?>
-                        <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === $professionalId) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Profissional</label>
+                    <select class="lc-select" name="professional_id" id="professional_id" required>
+                        <?php foreach ($professionals as $p): ?>
+                            <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === $professionalId) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Data</label>
-                <input class="lc-input" type="date" id="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Data</label>
+                    <input class="lc-input" type="date" id="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Horário</label>
-                <select class="lc-select" name="start_at" id="start_at" required>
-                    <option value="">Selecione um serviço + profissional + data</option>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Horário</label>
+                    <select class="lc-select" name="start_at" id="start_at" required>
+                        <option value="">Selecione um serviço + profissional + data</option>
+                    </select>
+                </div>
 
-            <div style="grid-column: 1 / -1;">
-                <button class="lc-btn" type="submit">Salvar reagendamento</button>
-                <a class="lc-btn lc-btn--secondary" href="/schedule?date=<?= urlencode($date) ?>">Voltar</a>
-            </div>
-        </form>
+                <div style="grid-column: 1 / -1;">
+                    <button class="lc-btn" type="submit">Salvar reagendamento</button>
+                    <a class="lc-btn lc-btn--secondary" href="/schedule?date=<?= urlencode($date) ?>">Voltar</a>
+                </div>
+            </form>
+        <?php else: ?>
+            <a class="lc-btn lc-btn--secondary" href="/schedule?date=<?= urlencode($date) ?>">Voltar</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -84,6 +108,10 @@ ob_start();
   const startEl = document.getElementById('start_at');
   const dateEl = document.getElementById('date');
   const excludeId = <?= json_encode($apptId) ?>;
+
+  if (!serviceEl || !profEl || !startEl || !dateEl) {
+    return;
+  }
 
   async function loadSlots() {
     const serviceId = serviceEl.value;

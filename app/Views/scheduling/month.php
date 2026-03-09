@@ -5,6 +5,26 @@ $professionalId = isset($professional_id) ? (int)$professional_id : 0;
 $title = 'Agenda (Mês)';
 $statusClassMap = isset($status_class_map) && is_array($status_class_map) ? $status_class_map : [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $funnelStages = $funnel_stages ?? [];
 
 $dateDisplay = (string)($date ?? '');
@@ -67,7 +87,9 @@ ob_start();
                 <a class="lc-segmented__item lc-segmented__item--active" role="tab" aria-selected="true" href="/schedule?view=month&date=<?= urlencode((string)$date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
             </div>
 
-            <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode((string)$date) ?>">Operação</a>
+            <?php if ($can('scheduling.ops')): ?>
+                <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode((string)$date) ?>">Operação</a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -137,7 +159,7 @@ ob_start();
                     ?>
                     <button type="button"
                         style="display:block; width:100%; padding:0; border:0; background:transparent; text-align:left; cursor: <?= (!$isProfessional ? 'pointer' : 'default') ?>;"
-                        <?= !$isProfessional ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
+                        <?= (!$isProfessional && $can('scheduling.create')) ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
                     >
                         <div class="lc-card" style="margin:0; border-left: <?= htmlspecialchars($border, ENT_QUOTES, 'UTF-8') ?>; opacity: <?= htmlspecialchars($opacity, ENT_QUOTES, 'UTF-8') ?>;">
                             <div class="lc-card__body lc-flex" style="padding:12px; height:120px; overflow:hidden; flex-direction:column; gap:8px;">
@@ -196,7 +218,7 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<?php if (!$isProfessional): ?>
+<?php if (!$isProfessional && $can('scheduling.create')): ?>
     <div class="lc-modal" id="createAppointmentModal" aria-hidden="true">
         <div class="lc-modal__backdrop" data-close-modal></div>
         <div class="lc-modal__panel" role="dialog" aria-modal="true" aria-label="Novo agendamento">

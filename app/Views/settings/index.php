@@ -4,6 +4,28 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $settings = $settings ?? null;
 $anamnesisTemplates = $anamnesis_templates ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
+$ro = $can('settings.update') ? '' : 'disabled';
 ob_start();
 ?>
 <div class="lc-grid">
@@ -18,10 +40,10 @@ ob_start();
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Timezone</label>
-            <input class="lc-input" type="text" name="timezone" value="<?= htmlspecialchars((string)($settings['timezone'] ?? 'America/Sao_Paulo'), ENT_QUOTES, 'UTF-8') ?>" required />
+            <input class="lc-input" type="text" name="timezone" value="<?= htmlspecialchars((string)($settings['timezone'] ?? 'America/Sao_Paulo'), ENT_QUOTES, 'UTF-8') ?>" required <?= $ro ?> />
 
             <label class="lc-label">Idioma</label>
-            <input class="lc-input" type="text" name="language" value="<?= htmlspecialchars((string)($settings['language'] ?? 'pt-BR'), ENT_QUOTES, 'UTF-8') ?>" required />
+            <input class="lc-input" type="text" name="language" value="<?= htmlspecialchars((string)($settings['language'] ?? 'pt-BR'), ENT_QUOTES, 'UTF-8') ?>" required <?= $ro ?> />
 
             <?php
                 $weekStart = isset($settings['week_start_weekday']) ? (int)$settings['week_start_weekday'] : 1;
@@ -31,7 +53,7 @@ ob_start();
             <div class="lc-grid lc-grid--2 lc-gap-grid">
                 <div>
                     <label class="lc-label">Início da semana</label>
-                    <select class="lc-select" name="week_start_weekday">
+                    <select class="lc-select" name="week_start_weekday" <?= $ro ?>>
                         <?php for ($i=0; $i<7; $i++): ?>
                             <option value="<?= (int)$i ?>" <?= $weekStart === $i ? 'selected' : '' ?>><?= htmlspecialchars($weekdayNames[$i], ENT_QUOTES, 'UTF-8') ?></option>
                         <?php endfor; ?>
@@ -40,7 +62,7 @@ ob_start();
 
             <label class="lc-label">Anamnese (template padrão)</label>
             <?php $anamTpl = isset($settings['anamnesis_default_template_id']) ? (int)$settings['anamnesis_default_template_id'] : 0; ?>
-            <select class="lc-select" name="anamnesis_default_template_id">
+            <select class="lc-select" name="anamnesis_default_template_id" <?= $ro ?>>
                 <option value="0">(não configurado)</option>
                 <?php if (is_array($anamnesisTemplates)): ?>
                     <?php foreach ($anamnesisTemplates as $t): ?>
@@ -53,7 +75,7 @@ ob_start();
             <div class="lc-muted" style="margin-top:6px;">Usado para enviar anamnese automaticamente quando a consulta é confirmada.</div>
                 <div>
                     <label class="lc-label">Fim da semana</label>
-                    <select class="lc-select" name="week_end_weekday">
+                    <select class="lc-select" name="week_end_weekday" <?= $ro ?>>
                         <?php for ($i=0; $i<7; $i++): ?>
                             <option value="<?= (int)$i ?>" <?= $weekEnd === $i ? 'selected' : '' ?>><?= htmlspecialchars($weekdayNames[$i], ENT_QUOTES, 'UTF-8') ?></option>
                         <?php endfor; ?>
@@ -62,13 +84,17 @@ ob_start();
             </div>
 
             <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
-                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+                <?php if ($can('settings.update')): ?>
+                    <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+                <?php endif; ?>
                 <a class="lc-btn lc-btn--secondary" href="/settings/terminology">Editar terminologia</a>
                 <a class="lc-btn lc-btn--secondary" href="/settings/ai">Configurar IA</a>
                 <a class="lc-btn lc-btn--secondary" href="/settings/whatsapp">Configurar WhatsApp</a>
                 <a class="lc-btn lc-btn--secondary" href="/settings/google-calendar">Google Calendar</a>
-                <a class="lc-btn lc-btn--secondary" href="/whatsapp-templates">Templates WhatsApp</a>
-                <a class="lc-btn lc-btn--secondary" href="/whatsapp-logs">Logs WhatsApp</a>
+                <?php if ($can('settings.update')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/whatsapp-templates">Templates WhatsApp</a>
+                    <a class="lc-btn lc-btn--secondary" href="/whatsapp-logs">Logs WhatsApp</a>
+                <?php endif; ?>
             </div>
         </form>
     </div>

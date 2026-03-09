@@ -33,6 +33,26 @@ $conditionStatusLabel = [
     'resolved' => 'Resolvida',
 ];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -57,16 +77,19 @@ ob_start();
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= $patientId ?>">Voltar ao paciente</a>
-        <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= $patientId ?>">Prontuário</a>
+        <?php if ($can('medical_records.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= $patientId ?>">Prontuário</a>
+        <?php endif; ?>
     </div>
 </div>
 
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title">Alertas clínicos</div>
     <div class="lc-card__body">
-        <form method="post" action="/patients/clinical-sheet/alerts/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
+        <?php if ($can('patients.update')): ?>
+            <form method="post" action="/patients/clinical-sheet/alerts/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
 
             <div class="lc-field" style="grid-column: 1 / -1;">
                 <label class="lc-label">Título</label>
@@ -95,10 +118,11 @@ ob_start();
                 </select>
             </div>
 
-            <div class="lc-form__actions" style="grid-column: 1 / -1;">
-                <button class="lc-btn lc-btn--primary" type="submit">Adicionar alerta</button>
-            </div>
-        </form>
+                <div class="lc-form__actions" style="grid-column: 1 / -1;">
+                    <button class="lc-btn lc-btn--primary" type="submit">Adicionar alerta</button>
+                </div>
+            </form>
+        <?php endif; ?>
 
         <?php if ($alerts === []): ?>
             <div class="lc-muted" style="margin-top:12px;">Nenhum alerta cadastrado.</div>
@@ -132,20 +156,22 @@ ob_start();
                             <td><?= htmlspecialchars((string)($severityLabel[$sev] ?? $sev), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= $active ? 'Ativo' : 'Inativo' ?></td>
                             <td class="lc-td-actions" style="white-space:nowrap;">
-                                <?php if ($active): ?>
-                                    <form method="post" action="/patients/clinical-sheet/alerts/resolve" style="display:inline;" onsubmit="return confirm('Marcar como resolvido?');">
+                                <?php if ($can('patients.update')): ?>
+                                    <?php if ($active): ?>
+                                        <form method="post" action="/patients/clinical-sheet/alerts/resolve" style="display:inline;" onsubmit="return confirm('Marcar como resolvido?');">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
+                                            <input type="hidden" name="id" value="<?= $aid ?>" />
+                                            <button class="lc-btn lc-btn--secondary" type="submit">Resolver</button>
+                                        </form>
+                                    <?php endif; ?>
+                                    <form method="post" action="/patients/clinical-sheet/alerts/delete" style="display:inline;" onsubmit="return confirm('Remover este alerta?');">
                                         <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                         <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
                                         <input type="hidden" name="id" value="<?= $aid ?>" />
-                                        <button class="lc-btn lc-btn--secondary" type="submit">Resolver</button>
+                                        <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
                                     </form>
                                 <?php endif; ?>
-                                <form method="post" action="/patients/clinical-sheet/alerts/delete" style="display:inline;" onsubmit="return confirm('Remover este alerta?');">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
-                                    <input type="hidden" name="id" value="<?= $aid ?>" />
-                                    <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
-                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -159,9 +185,10 @@ ob_start();
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title">Alergias / Contraindicações</div>
     <div class="lc-card__body">
-        <form method="post" action="/patients/clinical-sheet/allergies/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 2fr 1fr; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
+        <?php if ($can('patients.update')): ?>
+            <form method="post" action="/patients/clinical-sheet/allergies/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 2fr 1fr; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
 
             <div class="lc-field">
                 <label class="lc-label">Tipo</label>
@@ -186,10 +213,11 @@ ob_start();
                 <label class="lc-label">Notas</label>
                 <textarea class="lc-input" name="notes" rows="2"></textarea>
             </div>
-            <div class="lc-form__actions" style="grid-column: 1 / -1;">
-                <button class="lc-btn lc-btn--primary" type="submit">Adicionar</button>
-            </div>
-        </form>
+                <div class="lc-form__actions" style="grid-column: 1 / -1;">
+                    <button class="lc-btn lc-btn--primary" type="submit">Adicionar</button>
+                </div>
+            </form>
+        <?php endif; ?>
 
         <?php if ($allergies === []): ?>
             <div class="lc-muted" style="margin-top:12px;">Nenhum item cadastrado.</div>
@@ -224,12 +252,14 @@ ob_start();
                             <td><?= htmlspecialchars((string)($it['reaction'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($it['severity'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="lc-td-actions">
-                                <form method="post" action="/patients/clinical-sheet/allergies/delete" style="display:inline;" onsubmit="return confirm('Remover este item?');">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
-                                    <input type="hidden" name="id" value="<?= $aid ?>" />
-                                    <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
-                                </form>
+                                <?php if ($can('patients.update')): ?>
+                                    <form method="post" action="/patients/clinical-sheet/allergies/delete" style="display:inline;" onsubmit="return confirm('Remover este item?');">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
+                                        <input type="hidden" name="id" value="<?= $aid ?>" />
+                                        <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
+                                    </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -243,9 +273,10 @@ ob_start();
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title">Condições</div>
     <div class="lc-card__body">
-        <form method="post" action="/patients/clinical-sheet/conditions/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
+        <?php if ($can('patients.update')): ?>
+            <form method="post" action="/patients/clinical-sheet/conditions/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
 
             <div class="lc-field">
                 <label class="lc-label">Condição</label>
@@ -271,6 +302,7 @@ ob_start();
                 <button class="lc-btn lc-btn--primary" type="submit">Adicionar</button>
             </div>
         </form>
+        <?php endif; ?>
 
         <?php if ($conditions === []): ?>
             <div class="lc-muted" style="margin-top:12px;">Nenhuma condição cadastrada.</div>
@@ -303,12 +335,14 @@ ob_start();
                             <td><?= htmlspecialchars((string)($conditionStatusLabel[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($c['onset_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="lc-td-actions">
-                                <form method="post" action="/patients/clinical-sheet/conditions/delete" style="display:inline;" onsubmit="return confirm('Remover esta condição?');">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
-                                    <input type="hidden" name="id" value="<?= $cid ?>" />
-                                    <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
-                                </form>
+                                <?php if ($can('patients.update')): ?>
+                                    <form method="post" action="/patients/clinical-sheet/conditions/delete" style="display:inline;" onsubmit="return confirm('Remover esta condição?');">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
+                                        <input type="hidden" name="id" value="<?= $cid ?>" />
+                                        <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
+                                    </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -322,3 +356,4 @@ ob_start();
 <?php
 $content = (string)ob_get_clean();
 require dirname(__DIR__) . '/layout/app.php';
+?>

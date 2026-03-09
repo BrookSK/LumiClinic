@@ -7,6 +7,26 @@ $patient_id = (int)($patient_id ?? 0);
 $patient_user = $patient_user ?? null;
 $reset_token = $reset_token ?? null;
 $reset_url = $reset_url ?? null;
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -38,15 +58,17 @@ ob_start();
             </div>
         </div>
 
-        <form method="post" class="lc-form" action="/patients/portal-access/ensure" style="margin-top:14px;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="patient_id" value="<?= (int)$patient_id ?>" />
+        <?php if ($can('patients.update')): ?>
+            <form method="post" class="lc-form" action="/patients/portal-access/ensure" style="margin-top:14px;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="patient_id" value="<?= (int)$patient_id ?>" />
 
-            <label class="lc-label">E-mail para login no Portal</label>
-            <input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($patient_user['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
+                <label class="lc-label">E-mail para login no Portal</label>
+                <input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($patient_user['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
 
-            <button class="lc-btn lc-btn--primary" type="submit">Criar/Atualizar acesso e gerar redefinição</button>
-        </form>
+                <button class="lc-btn lc-btn--primary" type="submit">Criar/Atualizar acesso e gerar redefinição</button>
+            </form>
+        <?php endif; ?>
 
         <?php if (is_string($reset_token) && $reset_token !== ''): ?>
             <div style="margin-top: 14px;">

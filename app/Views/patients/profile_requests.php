@@ -6,6 +6,26 @@ $status = (string)($status ?? 'pending');
 $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $statusLabelMap = [
     'pending' => 'Pendente',
     'approved' => 'Aprovada',
@@ -97,7 +117,7 @@ ob_start();
                             <?php endforeach; ?>
                         </td>
                         <td>
-                            <?php if ((string)($r['status'] ?? '') === 'pending'): ?>
+                            <?php if ((string)($r['status'] ?? '') === 'pending' && $can('patients.update')): ?>
                                 <form method="post" action="/patients/profile-requests/approve" style="display:inline-block; margin-right:6px;">
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                     <input type="hidden" name="id" value="<?= (int)$r['id'] ?>" />

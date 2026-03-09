@@ -24,6 +24,26 @@ $last = $monthDt->modify('last day of this month');
 $prev = $first->modify('-1 month')->format('Y-m-01');
 $next = $first->modify('+1 month')->format('Y-m-01');
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $byDay = [];
 foreach ($rows as $r) {
     $d = (string)($r['entry_date'] ?? '');
@@ -63,75 +83,77 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Novo item</div>
-    <div class="lc-card__body">
-        <form method="post" action="/marketing/calendar/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 160px 1fr 160px 160px 1fr 140px; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="month" value="<?= htmlspecialchars((string)$month, ENT_QUOTES, 'UTF-8') ?>" />
+<?php if ($can('marketing.calendar.manage')): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Novo item</div>
+        <div class="lc-card__body">
+            <form method="post" action="/marketing/calendar/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 160px 1fr 160px 160px 1fr 140px; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="month" value="<?= htmlspecialchars((string)$month, ENT_QUOTES, 'UTF-8') ?>" />
 
-            <div class="lc-field">
-                <label class="lc-label">Dia</label>
-                <input class="lc-input" type="date" name="entry_date" value="<?= htmlspecialchars($first->format('Y-m-d'), ENT_QUOTES, 'UTF-8') ?>" required />
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Dia</label>
+                    <input class="lc-input" type="date" name="entry_date" value="<?= htmlspecialchars($first->format('Y-m-d'), ENT_QUOTES, 'UTF-8') ?>" required />
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Título</label>
-                <input class="lc-input" type="text" name="title" required />
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Título</label>
+                    <input class="lc-input" type="text" name="title" required />
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Tipo</label>
-                <select class="lc-select" name="content_type">
-                    <option value="post">Post</option>
-                    <option value="story">Story</option>
-                    <option value="reel">Reel</option>
-                    <option value="video">Vídeo</option>
-                    <option value="email">Email</option>
-                    <option value="blog">Blog</option>
-                    <option value="ad">Anúncio</option>
-                    <option value="other">Outro</option>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Tipo</label>
+                    <select class="lc-select" name="content_type">
+                        <option value="post">Post</option>
+                        <option value="story">Story</option>
+                        <option value="reel">Reel</option>
+                        <option value="video">Vídeo</option>
+                        <option value="email">Email</option>
+                        <option value="blog">Blog</option>
+                        <option value="ad">Anúncio</option>
+                        <option value="other">Outro</option>
+                    </select>
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Status</label>
-                <select class="lc-select" name="status">
-                    <option value="planned">Planejado</option>
-                    <option value="produced">Produzido</option>
-                    <option value="posted">Postado</option>
-                    <option value="cancelled">Cancelado</option>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Status</label>
+                    <select class="lc-select" name="status">
+                        <option value="planned">Planejado</option>
+                        <option value="produced">Produzido</option>
+                        <option value="posted">Postado</option>
+                        <option value="cancelled">Cancelado</option>
+                    </select>
+                </div>
 
-            <div class="lc-field">
-                <label class="lc-label">Responsável (opcional)</label>
-                <select class="lc-select" name="assigned_user_id">
-                    <option value="">(opcional)</option>
-                    <?php foreach ($users as $u): ?>
-                        <?php $uid = (int)($u['id'] ?? 0); if ($uid <= 0) continue; ?>
-                        <?php
-                            $nm = trim((string)($u['name'] ?? ''));
-                            $em = trim((string)($u['email'] ?? ''));
-                            $lbl = $nm;
-                            if ($em !== '') {
-                                $lbl = $lbl !== '' ? ($lbl . ' (' . $em . ')') : $em;
-                            }
-                        ?>
-                        <option value="<?= $uid ?>"><?= htmlspecialchars($lbl !== '' ? $lbl : ('Usuário #' . $uid), ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <div class="lc-field">
+                    <label class="lc-label">Responsável (opcional)</label>
+                    <select class="lc-select" name="assigned_user_id">
+                        <option value="">(opcional)</option>
+                        <?php foreach ($users as $u): ?>
+                            <?php $uid = (int)($u['id'] ?? 0); if ($uid <= 0) continue; ?>
+                            <?php
+                                $nm = trim((string)($u['name'] ?? ''));
+                                $em = trim((string)($u['email'] ?? ''));
+                                $lbl = $nm;
+                                if ($em !== '') {
+                                    $lbl = $lbl !== '' ? ($lbl . ' (' . $em . ')') : $em;
+                                }
+                            ?>
+                            <option value="<?= $uid ?>"><?= htmlspecialchars($lbl !== '' ? $lbl : ('Usuário #' . $uid), ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <button class="lc-btn lc-btn--secondary" type="submit">Criar</button>
+                <button class="lc-btn lc-btn--secondary" type="submit">Criar</button>
 
-            <div class="lc-field" style="grid-column: 1 / -1;">
-                <label class="lc-label">Notas (opcional)</label>
-                <textarea class="lc-input" name="notes" rows="2"></textarea>
-            </div>
-        </form>
+                <div class="lc-field" style="grid-column: 1 / -1;">
+                    <label class="lc-label">Notas (opcional)</label>
+                    <textarea class="lc-input" name="notes" rows="2"></textarea>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__header">Mês</div>
@@ -173,7 +195,11 @@ ob_start();
                             if ($st === 'posted') $badge = 'lc-badge lc-badge--success';
                             if ($st === 'cancelled') $badge = 'lc-badge lc-badge--danger';
 
-                            echo '<a class="' . $badge . '" style="text-decoration:none;" href="/marketing/calendar/edit?id=' . $id . '">' . htmlspecialchars($ttl, ENT_QUOTES, 'UTF-8') . '</a>';
+                            if ($can('marketing.calendar.manage')) {
+                                echo '<a class="' . $badge . '" style="text-decoration:none;" href="/marketing/calendar/edit?id=' . $id . '">' . htmlspecialchars($ttl, ENT_QUOTES, 'UTF-8') . '</a>';
+                            } else {
+                                echo '<span class="' . $badge . '">' . htmlspecialchars($ttl, ENT_QUOTES, 'UTF-8') . '</span>';
+                            }
                         }
                         echo '</div>';
                     }

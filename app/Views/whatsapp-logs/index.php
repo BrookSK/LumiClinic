@@ -8,6 +8,26 @@ $page = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 50;
 $csrf = $_SESSION['_csrf'] ?? '';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $reconcileOk = isset($_GET['reconcile']) && (string)$_GET['reconcile'] !== '';
 
 $statusHuman = [
@@ -35,11 +55,15 @@ ob_start();
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:12px; gap:10px;">
     <div class="lc-badge lc-badge--primary">Logs WhatsApp</div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
-        <a class="lc-btn lc-btn--secondary" href="/settings/whatsapp">Abrir diagnóstico</a>
-        <form method="post" action="/whatsapp-logs/force-reconcile" style="display:inline;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <button class="lc-btn lc-btn--secondary" type="submit">Forçar reconcile agora</button>
-        </form>
+        <?php if ($can('settings.update')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/settings/whatsapp">Abrir diagnóstico</a>
+        <?php endif; ?>
+        <?php if ($can('settings.update')): ?>
+            <form method="post" action="/whatsapp-logs/force-reconcile" style="display:inline;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <button class="lc-btn lc-btn--secondary" type="submit">Forçar reconcile agora</button>
+            </form>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -139,7 +163,7 @@ ob_start();
                     <td><?= !empty($it['appointment_id']) ? ((int)$it['appointment_id']) : '-' ?></td>
                     <td>
                         <a class="lc-btn lc-btn--secondary" href="/whatsapp-logs/show?id=<?= (int)$it['id'] ?>">Ver</a>
-                        <?php if (in_array($stRow, ['failed', 'pending'], true)): ?>
+                        <?php if ($can('settings.update') && in_array($stRow, ['failed', 'pending'], true)): ?>
                             <form method="post" action="/whatsapp-logs/retry-send" style="display:inline;">
                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                 <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />

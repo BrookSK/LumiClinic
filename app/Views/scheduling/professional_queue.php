@@ -15,6 +15,26 @@ $statusLabelMap = [
     'cancelled' => 'Cancelado',
 ];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -51,13 +71,15 @@ ob_start();
                             <td><?= htmlspecialchars((string)($it['service_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($statusLabelMap[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></td>
                             <td style="white-space:nowrap; text-align:right;">
-                                <form method="post" action="/schedule/start" style="display:inline;">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= $apptId ?>" />
-                                    <input type="hidden" name="view" value="day" />
-                                    <input type="hidden" name="date" value="<?= htmlspecialchars(substr($startAt, 0, 10), ENT_QUOTES, 'UTF-8') ?>" />
-                                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Iniciar atendimento</button>
-                                </form>
+                                <?php if ($can('scheduling.finalize')): ?>
+                                    <form method="post" action="/schedule/start" style="display:inline;">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="id" value="<?= $apptId ?>" />
+                                        <input type="hidden" name="view" value="day" />
+                                        <input type="hidden" name="date" value="<?= htmlspecialchars(substr($startAt, 0, 10), ENT_QUOTES, 'UTF-8') ?>" />
+                                        <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Iniciar atendimento</button>
+                                    </form>
+                                <?php endif; ?>
                                 <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule?date=<?= urlencode(substr($startAt, 0, 10)) ?>&created=<?= $apptId ?>">Ver na agenda</a>
                             </td>
                         </tr>

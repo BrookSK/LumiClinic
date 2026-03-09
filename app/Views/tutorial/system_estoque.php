@@ -22,6 +22,26 @@ if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0
     }
 }
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $seo = isset($seo) && is_array($seo) ? $seo : [];
 $seoSiteName = trim((string)($seo['site_name'] ?? ''));
 $seoDefaultTitle = trim((string)($seo['default_title'] ?? ''));
@@ -83,7 +103,9 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="align-items:center; justify-content:flex-end;">
             <a class="lc-btn lc-btn--secondary" href="/tutorial/sistema">Voltar para o índice</a>
-            <a class="lc-btn lc-btn--secondary" href="/stock/materials">Abrir Estoque</a>
+            <?php if ($can('stock.materials.read')): ?>
+                <a class="lc-btn lc-btn--secondary" href="/stock/materials">Abrir Estoque</a>
+            <?php endif; ?>
         </div>
     </div>
 

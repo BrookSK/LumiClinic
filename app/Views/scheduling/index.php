@@ -37,6 +37,26 @@ $workingHours = $working_hours ?? [];
 $closedMap = isset($closed_map) && is_array($closed_map) ? $closed_map : [];
 $slotMinutes = isset($slot_minutes) && is_array($slot_minutes) ? $slot_minutes : [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -61,9 +81,11 @@ ob_start();
                 <a class="lc-segmented__item <?= $view === 'month' ? 'lc-segmented__item--active' : '' ?>" role="tab" aria-selected="<?= $view === 'month' ? 'true' : 'false' ?>" href="/schedule?view=month&date=<?= urlencode($date) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>">Mês</a>
             </div>
 
-            <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
+            <?php if ($can('scheduling.ops')): ?>
+                <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
+            <?php endif; ?>
 
-            <?php if (!$isProfessional): ?>
+            <?php if (!$isProfessional && $can('scheduling.create')): ?>
                 <button class="lc-btn lc-btn--primary" type="button" id="openCreateAppointment" data-open-modal="createAppointmentModal">Novo agendamento</button>
             <?php endif; ?>
         </div>
@@ -175,8 +197,8 @@ ob_start();
                             <div style="position:relative; background: <?= $isClosed ? 'rgba(239,68,68,0.05)' : 'transparent' ?>; border-radius: 10px;">
                                 <?php foreach ($slotMinutes as $mins): ?>
                                     <?php $slotTime = $fromMinutes((int)$mins); ?>
-                                    <div style="height: <?= (int)$rowHeight ?>px; border:1px solid rgba(17,24,39,0.06); border-radius:10px; margin-bottom:10px; padding:6px; <?= (!$isProfessional && !$isClosed) ? 'cursor:pointer;' : '' ?>"
-                                        <?= (!$isProfessional && !$isClosed)
+                                    <div style="height: <?= (int)$rowHeight ?>px; border:1px solid rgba(17,24,39,0.06); border-radius:10px; margin-bottom:10px; padding:6px; <?= (!$isProfessional && !$isClosed && $can('scheduling.create')) ? 'cursor:pointer;' : '' ?>"
+                                        <?= (!$isProfessional && !$isClosed && $can('scheduling.create'))
                                             ? ('data-open-create="1" data-create-date="' . htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') . '" data-create-time="' . htmlspecialchars($slotTime, ENT_QUOTES, 'UTF-8') . '" data-create-professional-id="' . (int)$professionalId . '"')
                                             : '' ?>
                                     ></div>
@@ -354,13 +376,17 @@ ob_start();
                         </td>
                         <td class="lc-td-actions">
                             <div class="lc-actions lc-actions--compact">
-                                <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
-                                <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
+                                <?php if ($can('scheduling.update')): ?>
+                                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
+                                <?php endif; ?>
+                                <?php if ($can('scheduling.logs')): ?>
+                                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
+                                <?php endif; ?>
 
                                 <details class="lc-actions__more">
                                     <summary class="lc-btn lc-btn--secondary lc-btn--sm">Ações</summary>
                                     <div class="lc-actions__menu">
-                                        <?php if ($canConfirm): ?>
+                                        <?php if ($canConfirm && $can('scheduling.finalize')): ?>
                                             <form method="post" action="/schedule/status">
                                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                                 <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
@@ -372,7 +398,7 @@ ob_start();
                                             </form>
                                         <?php endif; ?>
 
-                                        <?php if ($canCheckIn): ?>
+                                        <?php if ($canCheckIn && ($can('scheduling.finalize') || (!$isProfessional && $can('scheduling.update')))): ?>
                                             <form method="post" action="/schedule/check-in">
                                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                                 <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
@@ -383,7 +409,7 @@ ob_start();
                                             </form>
                                         <?php endif; ?>
 
-                                        <?php if ($canStart): ?>
+                                        <?php if ($canStart && $can('scheduling.finalize')): ?>
                                             <form method="post" action="/schedule/start">
                                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                                 <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
@@ -394,7 +420,7 @@ ob_start();
                                             </form>
                                         <?php endif; ?>
 
-                                        <?php if ($canInProgress): ?>
+                                        <?php if ($canInProgress && $can('scheduling.finalize')): ?>
                                             <form method="post" action="/schedule/status">
                                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                                 <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
@@ -406,7 +432,7 @@ ob_start();
                                             </form>
                                         <?php endif; ?>
 
-                                        <?php if ($canComplete): ?>
+                                        <?php if ($canComplete && $can('scheduling.finalize')): ?>
                                             <form method="post" action="/schedule/status">
                                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                                 <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
@@ -418,7 +444,7 @@ ob_start();
                                             </form>
                                         <?php endif; ?>
 
-                                        <?php if ($canNoShow): ?>
+                                        <?php if ($canNoShow && $can('scheduling.finalize')): ?>
                                             <form method="post" action="/schedule/status">
                                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                                 <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
@@ -430,11 +456,13 @@ ob_start();
                                             </form>
                                         <?php endif; ?>
 
-                                        <form method="post" action="/schedule/cancel">
-                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Cancelar</button>
-                                        </form>
+                                        <?php if ($can('scheduling.cancel')): ?>
+                                            <form method="post" action="/schedule/cancel">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Cancelar</button>
+                                            </form>
+                                        <?php endif; ?>
                                     </div>
                                 </details>
                             </div>
@@ -462,7 +490,7 @@ ob_start();
         </div>
     </div>
 
-    <?php if (!$isProfessional): ?>
+    <?php if (!$isProfessional && $can('scheduling.create')): ?>
         <div class="lc-modal" id="createAppointmentModal" aria-hidden="true">
             <div class="lc-modal__backdrop" data-close-modal></div>
             <div class="lc-modal__panel" role="dialog" aria-modal="true" aria-label="Novo agendamento">

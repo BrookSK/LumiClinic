@@ -99,7 +99,7 @@ final class UserController extends Controller
 
     public function edit(Request $request)
     {
-        $this->authorize('users.read');
+        $this->authorize('users.update');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {

@@ -5,6 +5,26 @@ $title = 'Profissionais';
 $users = $users ?? [];
 $error = $error ?? '';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $userLabel = [];
 foreach ($users as $u) {
     $id = (int)($u['id'] ?? 0);
@@ -29,11 +49,12 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Novo profissional</div>
-    <div class="lc-card__body">
-        <form method="post" action="/professionals/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 2fr 1fr 1fr; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+<?php if ($can('professionals.manage')): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Novo profissional</div>
+        <div class="lc-card__body">
+            <form method="post" action="/professionals/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 2fr 1fr 1fr; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field" style="grid-column: 1 / -1;">
                 <label class="lc-label">Como será o acesso do profissional?</label>
@@ -91,12 +112,13 @@ ob_start();
                 </select>
             </div>
 
-            <div style="grid-column: 1 / -1;">
-                <button class="lc-btn" type="submit">Salvar</button>
-            </div>
-        </form>
+                <div style="grid-column: 1 / -1;">
+                    <button class="lc-btn" type="submit">Salvar</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <script>
 (function(){
@@ -159,12 +181,14 @@ ob_start();
                         <td><?= $uid > 0 ? htmlspecialchars((string)($userLabel[$uid] ?? ('Usuário #' . $uid)), ENT_QUOTES, 'UTF-8') : '-' ?></td>
                         <td><?= ((int)$it['allow_online_booking'] === 1) ? 'Sim' : 'Não' ?></td>
                         <td class="lc-td-actions">
-                            <a class="lc-btn lc-btn--secondary" href="/professionals/edit?id=<?= (int)$it['id'] ?>">Editar</a>
-                            <form method="post" action="/professionals/delete" style="display:inline;" onsubmit="return confirm('Excluir (inativar) este profissional?');">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
-                            </form>
+                            <?php if ($can('professionals.manage')): ?>
+                                <a class="lc-btn lc-btn--secondary" href="/professionals/edit?id=<?= (int)$it['id'] ?>">Editar</a>
+                                <form method="post" action="/professionals/delete" style="display:inline;" onsubmit="return confirm('Excluir (inativar) este profissional?');">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                    <button class="lc-btn lc-btn--secondary" type="submit">Excluir</button>
+                                </form>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

@@ -6,6 +6,26 @@ $controls = $controls ?? [];
 $users = $users ?? [];
 $error = $error ?? '';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $policyStatusLabel = [
     'draft' => 'Rascunho',
     'active' => 'Ativa',
@@ -33,12 +53,13 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom:14px;">
-    <details class="lc-collapse" <?= $error !== '' ? 'open' : '' ?>>
-        <summary class="lc-card__title">Cadastrar nova política</summary>
-        <div class="lc-card__body">
-            <form method="post" action="/compliance/certifications/policies/create" class="lc-form">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+<?php if ($can('compliance.policies.create')): ?>
+    <div class="lc-card" style="margin-bottom:14px;">
+        <details class="lc-collapse" <?= $error !== '' ? 'open' : '' ?>>
+            <summary class="lc-card__title">Cadastrar nova política</summary>
+            <div class="lc-card__body">
+                <form method="post" action="/compliance/certifications/policies/create" class="lc-form">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Código</label>
             <input class="lc-input" type="text" name="code" placeholder="ex: iso27001-a.5" required />
@@ -82,18 +103,20 @@ ob_start();
             <label class="lc-label">Próxima revisão (AAAA-MM-DD HH:MM:SS)</label>
             <input class="lc-input" type="text" name="next_review_at" placeholder="opcional" />
 
-                <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
-            </form>
-        </div>
-    </details>
-</div>
+                    <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
+                </form>
+            </div>
+        </details>
+    </div>
+<?php endif; ?>
 
-<div class="lc-card" style="margin-bottom:14px;">
-    <details class="lc-collapse" <?= $error !== '' ? 'open' : '' ?>>
-        <summary class="lc-card__title">Cadastrar novo controle</summary>
-        <div class="lc-card__body">
-            <form method="post" action="/compliance/certifications/controls/create" class="lc-form">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+<?php if ($can('compliance.controls.create')): ?>
+    <div class="lc-card" style="margin-bottom:14px;">
+        <details class="lc-collapse" <?= $error !== '' ? 'open' : '' ?>>
+            <summary class="lc-card__title">Cadastrar novo controle</summary>
+            <div class="lc-card__body">
+                <form method="post" action="/compliance/certifications/controls/create" class="lc-form">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Política (opcional)</label>
             <select class="lc-select" name="policy_id">
@@ -152,11 +175,12 @@ ob_start();
             <label class="lc-label">Último teste em (AAAA-MM-DD HH:MM:SS)</label>
             <input class="lc-input" type="text" name="last_tested_at" placeholder="opcional" />
 
-            <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
-        </form>
-        </div>
-    </details>
-</div>
+                    <button class="lc-btn lc-btn--primary" type="submit">Cadastrar</button>
+                </form>
+            </div>
+        </details>
+    </div>
+<?php endif; ?>
 
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title">Políticas</div>
@@ -208,11 +232,12 @@ ob_start();
                                     $nextReviewAt = trim((string)($p['next_review_at'] ?? ''));
                                     if ($nextReviewAt === '0000-00-00 00:00:00') { $nextReviewAt = ''; }
                                 ?>
-                                <details>
-                                    <summary class="lc-btn lc-btn--secondary">Editar</summary>
-                                    <form method="post" action="/compliance/certifications/policies/update" class="lc-form lc-flex lc-flex--wrap" style="gap:8px; align-items:flex-end; margin-top:10px;">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= (int)($p['id'] ?? 0) ?>" />
+                                <?php if ($can('compliance.policies.update')): ?>
+                                    <details>
+                                        <summary class="lc-btn lc-btn--secondary">Editar</summary>
+                                        <form method="post" action="/compliance/certifications/policies/update" class="lc-form lc-flex lc-flex--wrap" style="gap:8px; align-items:flex-end; margin-top:10px;">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)($p['id'] ?? 0) ?>" />
 
                                         <select class="lc-select" name="status">
                                             <option value="draft" <?= (($p['status'] ?? '')==='draft')?'selected':'' ?>>Rascunho</option>
@@ -247,9 +272,10 @@ ob_start();
 
                                         <input class="lc-input" type="text" name="next_review_at" placeholder="Próxima revisão (AAAA-MM-DD HH:MM:SS)" value="<?= htmlspecialchars($nextReviewAt, ENT_QUOTES, 'UTF-8') ?>" />
 
-                                        <button class="lc-btn lc-btn--primary" type="submit">Salvar alterações</button>
-                                    </form>
-                                </details>
+                                            <button class="lc-btn lc-btn--primary" type="submit">Salvar alterações</button>
+                                        </form>
+                                    </details>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -332,11 +358,12 @@ ob_start();
                                     $lastTestedAt = trim((string)($c['last_tested_at'] ?? ''));
                                     if ($lastTestedAt === '0000-00-00 00:00:00') { $lastTestedAt = ''; }
                                 ?>
-                                <details>
-                                    <summary class="lc-btn lc-btn--secondary">Editar</summary>
-                                    <form method="post" action="/compliance/certifications/controls/update" class="lc-form lc-flex lc-flex--wrap" style="gap:8px; align-items:flex-end; margin-top:10px;">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= (int)($c['id'] ?? 0) ?>" />
+                                <?php if ($can('compliance.controls.update')): ?>
+                                    <details>
+                                        <summary class="lc-btn lc-btn--secondary">Editar</summary>
+                                        <form method="post" action="/compliance/certifications/controls/update" class="lc-form lc-flex lc-flex--wrap" style="gap:8px; align-items:flex-end; margin-top:10px;">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)($c['id'] ?? 0) ?>" />
 
                                         <select class="lc-select" name="policy_id">
                                             <option value="">(opcional)</option>
@@ -396,6 +423,7 @@ ob_start();
                                         <button class="lc-btn lc-btn--primary" type="submit">Salvar alterações</button>
                                     </form>
                                 </details>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

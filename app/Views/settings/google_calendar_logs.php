@@ -9,6 +9,26 @@ $ok = isset($ok) ? (string)$ok : '';
 $error = isset($error) ? (string)$error : '';
 $csrf = $_SESSION['_csrf'] ?? '';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $status = (string)($filters['status'] ?? '');
 $action = (string)($filters['action'] ?? '');
 $appointmentId = (string)($filters['appointment_id'] ?? '');
@@ -38,19 +58,21 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__header">Forçar sync</div>
-    <div class="lc-card__body">
-        <form method="post" action="/settings/google-calendar/logs/force-sync" class="lc-form lc-flex lc-gap-sm lc-flex--wrap" style="align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <div>
-                <label class="lc-label">Appointment ID</label>
-                <input class="lc-input" type="number" name="appointment_id" min="1" placeholder="123" />
-            </div>
-            <button class="lc-btn lc-btn--primary" type="submit">Enfileirar sync</button>
-        </form>
+<?php if ($can('settings.update')): ?>
+    <div class="lc-card" style="margin-bottom:14px;">
+        <div class="lc-card__header">Forçar sync</div>
+        <div class="lc-card__body">
+            <form method="post" action="/settings/google-calendar/logs/force-sync" class="lc-form lc-flex lc-gap-sm lc-flex--wrap" style="align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <div>
+                    <label class="lc-label">Appointment ID</label>
+                    <input class="lc-input" type="number" name="appointment_id" min="1" placeholder="123" />
+                </div>
+                <button class="lc-btn lc-btn--primary" type="submit">Enfileirar sync</button>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__header">Filtros</div>

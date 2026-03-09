@@ -6,6 +6,28 @@ $patient = $patient ?? null;
 $professionals = $professionals ?? [];
 $patientOrigins = $patient_origins ?? [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
+$ro = $can('patients.update') ? '' : 'disabled';
+
 $addressText = (string)($patient['address'] ?? '');
 $addressLines = preg_split('/\r\n|\r|\n/', $addressText) ?: [];
 $line1 = trim((string)($addressLines[0] ?? ''));
@@ -64,35 +86,35 @@ ob_start();
         <input type="hidden" name="id" value="<?= (int)($patient['id'] ?? 0) ?>" />
 
         <label class="lc-label">Nome</label>
-        <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
+        <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required <?= $ro ?> />
 
         <div class="lc-grid">
             <div>
                 <label class="lc-label">E-mail</label>
-                <input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
             <div>
                 <label class="lc-label">Telefone</label>
-                <input class="lc-input" type="text" name="phone" value="<?= htmlspecialchars((string)($patient['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="phone" value="<?= htmlspecialchars((string)($patient['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
         </div>
 
         <label class="lc-label" style="margin-top:10px;">WhatsApp</label>
         <?php $waOptIn = (int)($patient['whatsapp_opt_in'] ?? 1); ?>
         <label class="lc-checkbox" style="display:flex; gap:8px; align-items:center;">
-            <input type="checkbox" name="whatsapp_opt_in" value="1" <?= $waOptIn ? 'checked' : '' ?> />
+            <input type="checkbox" name="whatsapp_opt_in" value="1" <?= $waOptIn ? 'checked' : '' ?> <?= $ro ?> />
             <span>Receber lembretes por WhatsApp</span>
         </label>
 
         <div class="lc-grid">
             <div>
                 <label class="lc-label">Data de nascimento</label>
-                <input class="lc-input" type="date" name="birth_date" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="date" name="birth_date" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
             <div>
                 <label class="lc-label">Sexo</label>
                 <?php $sex = (string)($patient['sex'] ?? ''); ?>
-                <select class="lc-select" name="sex">
+                <select class="lc-select" name="sex" <?= $ro ?>>
                     <option value="" <?= $sex === '' ? 'selected' : '' ?>>Selecione</option>
                     <option value="female" <?= $sex === 'female' ? 'selected' : '' ?>>Feminino</option>
                     <option value="male" <?= $sex === 'male' ? 'selected' : '' ?>>Masculino</option>
@@ -102,11 +124,11 @@ ob_start();
         </div>
 
         <label class="lc-label">CPF</label>
-        <input class="lc-input" type="text" name="cpf" value="<?= htmlspecialchars((string)($patient['cpf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+        <input class="lc-input" type="text" name="cpf" value="<?= htmlspecialchars((string)($patient['cpf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
 
         <label class="lc-label">Profissional de referência</label>
         <?php $currentRef = (int)($patient['reference_professional_id'] ?? 0); ?>
-        <select class="lc-select" name="reference_professional_id">
+        <select class="lc-select" name="reference_professional_id" <?= $ro ?>>
             <option value="" <?= $currentRef === 0 ? 'selected' : '' ?>>Nenhum</option>
             <?php foreach ($professionals as $pr): ?>
                 <option value="<?= (int)$pr['id'] ?>" <?= (int)$pr['id'] === $currentRef ? 'selected' : '' ?>><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
@@ -115,7 +137,7 @@ ob_start();
 
         <label class="lc-label">Origem do paciente</label>
         <?php $currentOrigin = (int)($patient['patient_origin_id'] ?? 0); ?>
-        <select class="lc-select" name="patient_origin_id">
+        <select class="lc-select" name="patient_origin_id" <?= $ro ?>>
             <option value="" <?= $currentOrigin === 0 ? 'selected' : '' ?>>(opcional)</option>
             <?php foreach (($patientOrigins ?? []) as $o): ?>
                 <?php $oid = (int)($o['id'] ?? 0); ?>
@@ -127,50 +149,52 @@ ob_start();
         <div class="lc-grid lc-gap-grid">
             <div>
                 <label class="lc-label">Rua</label>
-                <input class="lc-input" type="text" name="address_street" value="<?= htmlspecialchars($address_street, ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="address_street" value="<?= htmlspecialchars($address_street, ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
             <div>
                 <label class="lc-label">Número</label>
-                <input class="lc-input" type="text" name="address_number" value="<?= htmlspecialchars($address_number, ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="address_number" value="<?= htmlspecialchars($address_number, ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
         </div>
         <div class="lc-grid lc-gap-grid">
             <div>
                 <label class="lc-label">Complemento</label>
-                <input class="lc-input" type="text" name="address_complement" value="<?= htmlspecialchars($address_complement, ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="address_complement" value="<?= htmlspecialchars($address_complement, ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
             <div>
                 <label class="lc-label">Bairro</label>
-                <input class="lc-input" type="text" name="address_district" value="<?= htmlspecialchars($address_district, ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="address_district" value="<?= htmlspecialchars($address_district, ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
         </div>
         <div class="lc-grid lc-gap-grid">
             <div>
                 <label class="lc-label">Cidade</label>
-                <input class="lc-input" type="text" name="address_city" value="<?= htmlspecialchars($address_city, ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="address_city" value="<?= htmlspecialchars($address_city, ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
             <div>
                 <label class="lc-label">UF</label>
-                <input class="lc-input" type="text" name="address_state" maxlength="2" placeholder="SP" value="<?= htmlspecialchars($address_state, ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="address_state" maxlength="2" placeholder="SP" value="<?= htmlspecialchars($address_state, ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
             </div>
         </div>
         <div>
             <label class="lc-label">CEP</label>
-            <input class="lc-input" type="text" name="address_zip" placeholder="00000-000" value="<?= htmlspecialchars($address_zip, ENT_QUOTES, 'UTF-8') ?>" />
+            <input class="lc-input" type="text" name="address_zip" placeholder="00000-000" value="<?= htmlspecialchars($address_zip, ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
         </div>
 
         <label class="lc-label">Observações</label>
-        <textarea class="lc-input" name="notes" rows="4"><?= htmlspecialchars((string)($patient['notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+        <textarea class="lc-input" name="notes" rows="4" <?= $ro ?>><?= htmlspecialchars((string)($patient['notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
 
         <label class="lc-label">Status</label>
         <?php $status = (string)($patient['status'] ?? 'active'); ?>
-        <select class="lc-select" name="status">
+        <select class="lc-select" name="status" <?= $ro ?>>
             <option value="active" <?= $status === 'active' ? 'selected' : '' ?>>Ativo</option>
             <option value="disabled" <?= $status === 'disabled' ? 'selected' : '' ?>>Desativado</option>
         </select>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-            <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+            <?php if ($can('patients.update')): ?>
+                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+            <?php endif; ?>
             <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar</a>
         </div>
     </form>

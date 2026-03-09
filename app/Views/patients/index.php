@@ -10,6 +10,27 @@ $patientsLabel = $patientLabel !== '' ? ($patientLabel . 's') : 'Pacientes';
 $page = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 25;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap lc-gap-md" style="margin-bottom:14px;">
@@ -21,7 +42,9 @@ ob_start();
             <input class="lc-input" style="width:260px;" type="text" name="q" value="<?= htmlspecialchars((string)$q, ENT_QUOTES, 'UTF-8') ?>" placeholder="Buscar por nome, email ou telefone" />
             <button class="lc-btn lc-btn--secondary" type="submit">Buscar</button>
         </form>
-        <a class="lc-btn lc-btn--primary" href="/patients/create">Novo <?= htmlspecialchars(mb_strtolower($patientLabel, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?></a>
+        <?php if ($can('patients.create')): ?>
+            <a class="lc-btn lc-btn--primary" href="/patients/create">Novo <?= htmlspecialchars(mb_strtolower($patientLabel, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?></a>
+        <?php endif; ?>
     </div>
 
     <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-sm" style="margin-top:12px;">
@@ -76,7 +99,9 @@ ob_start();
                     <td><?= htmlspecialchars((string)($statusLabelMap[(string)($p['status'] ?? '')] ?? (string)($p['status'] ?? '')), ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="lc-flex lc-flex--wrap" style="gap:8px;">
                         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)$p['id'] ?>">Abrir</a>
-                        <a class="lc-btn lc-btn--secondary" href="/patients/edit?id=<?= (int)$p['id'] ?>">Editar</a>
+                        <?php if ($can('patients.update')): ?>
+                            <a class="lc-btn lc-btn--secondary" href="/patients/edit?id=<?= (int)$p['id'] ?>">Editar</a>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

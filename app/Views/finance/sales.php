@@ -21,6 +21,26 @@ $hasNext = isset($has_next) ? (bool)$has_next : false;
 $patientId = isset($patient_id) ? (int)$patient_id : null;
 $patientId = $patientId !== null && $patientId > 0 ? $patientId : null;
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -30,7 +50,7 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<?php if (!isset($is_professional) || !$is_professional): ?>
+<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.create')): ?>
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Nova venda</div>
         <div class="lc-card__body">

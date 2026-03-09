@@ -13,6 +13,26 @@ $from = (string)($from ?? date('Y-m-d'));
 $to = (string)($to ?? date('Y-m-d'));
 $filterProfessionalId = (int)($filter_professional_id ?? 0);
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $profMap = [];
 foreach ($professionals as $p) {
     $profMap[(int)$p['id']] = (string)($p['name'] ?? '');
@@ -21,14 +41,15 @@ foreach ($professionals as $p) {
 ob_start();
 ?>
 
-<div class="lc-card">
-    <div class="lc-card__header">Criar bloqueio</div>
-    <div class="lc-card__body">
-        <?php if (is_string($error) && trim($error) !== ''): ?>
-            <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
-        <?php endif; ?>
-        <form method="post" action="/blocks/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 2fr 2fr 2fr; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+<?php if ($can('blocks.manage')): ?>
+    <div class="lc-card">
+        <div class="lc-card__header">Criar bloqueio</div>
+        <div class="lc-card__body">
+            <?php if (is_string($error) && trim($error) !== ''): ?>
+                <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php endif; ?>
+            <form method="post" action="/blocks/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 2fr 2fr 2fr; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field">
                 <label class="lc-label">Profissional</label>
@@ -67,9 +88,10 @@ ob_start();
             <div style="grid-column: 1 / -1;">
                 <button class="lc-btn" type="submit">Salvar</button>
             </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card" style="margin-top:16px;">
     <div class="lc-card__header">Bloqueios cadastrados</div>

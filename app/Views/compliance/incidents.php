@@ -5,6 +5,26 @@ $items = $items ?? [];
 $users = $users ?? [];
 $error = $error ?? '';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $severityLabel = [
     'low' => 'Baixa',
     'medium' => 'Média',
@@ -33,11 +53,12 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title">Registrar incidente</div>
-    <div class="lc-card__body">
-        <form method="post" action="/compliance/incidents/create" class="lc-form">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+<?php if ($can('compliance.incidents.create')): ?>
+    <div class="lc-card" style="margin-bottom:14px;">
+        <div class="lc-card__title">Registrar incidente</div>
+        <div class="lc-card__body">
+            <form method="post" action="/compliance/incidents/create" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Severidade</label>
             <select class="lc-select" name="severity">
@@ -53,10 +74,11 @@ ob_start();
             <label class="lc-label">Descrição</label>
             <textarea class="lc-textarea" name="description" rows="3"></textarea>
 
-            <button class="lc-btn lc-btn--primary" type="submit">Registrar</button>
-        </form>
+                <button class="lc-btn lc-btn--primary" type="submit">Registrar</button>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__title">Incidentes</div>
@@ -85,9 +107,10 @@ ob_start();
                             <td><?= htmlspecialchars((string)($it['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($it['detected_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td style="min-width:420px;">
-                                <form method="post" action="/compliance/incidents/update" class="lc-form lc-flex lc-flex--wrap" style="gap:8px; align-items:flex-end;">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= (int)($it['id'] ?? 0) ?>" />
+                                <?php if ($can('compliance.incidents.update')): ?>
+                                    <form method="post" action="/compliance/incidents/update" class="lc-form lc-flex lc-flex--wrap" style="gap:8px; align-items:flex-end;">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="id" value="<?= (int)($it['id'] ?? 0) ?>" />
 
                                     <select class="lc-select" name="status">
                                         <option value="open" <?= (($it['status'] ?? '')==='open')?'selected':'' ?>>Aberto</option>
@@ -117,8 +140,11 @@ ob_start();
 
                                     <input class="lc-input" type="text" name="corrective_action" placeholder="ação corretiva (opcional)" />
 
-                                    <button class="lc-btn lc-btn--secondary" type="submit">Atualizar</button>
-                                </form>
+                                        <button class="lc-btn lc-btn--secondary" type="submit">Atualizar</button>
+                                    </form>
+                                <?php else: ?>
+                                    <span style="opacity:.7;">-</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

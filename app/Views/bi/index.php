@@ -5,6 +5,27 @@ $period_start = $period_start ?? date('Y-m-01');
 $period_end = $period_end ?? date('Y-m-d');
 $metrics = $metrics ?? [];
 $computed_at = $computed_at ?? null;
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-card" style="margin-bottom:14px;">
@@ -20,15 +41,19 @@ ob_start();
             <button class="lc-btn lc-btn--primary" type="submit">Aplicar</button>
         </form>
 
-        <form method="post" action="/bi/refresh" style="margin-top:10px;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="from" value="<?= htmlspecialchars((string)$period_start, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="to" value="<?= htmlspecialchars((string)$period_end, ENT_QUOTES, 'UTF-8') ?>" />
-            <button class="lc-btn lc-btn--secondary" type="submit">Atualizar snapshot</button>
-            <?php if ($computed_at): ?>
-                <span style="margin-left:10px; opacity:0.8;">Última atualização: <?= htmlspecialchars((string)$computed_at, ENT_QUOTES, 'UTF-8') ?></span>
-            <?php endif; ?>
-        </form>
+        <?php if ($can('bi.refresh')): ?>
+            <form method="post" action="/bi/refresh" style="margin-top:10px;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="from" value="<?= htmlspecialchars((string)$period_start, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="to" value="<?= htmlspecialchars((string)$period_end, ENT_QUOTES, 'UTF-8') ?>" />
+                <button class="lc-btn lc-btn--secondary" type="submit">Atualizar snapshot</button>
+                <?php if ($computed_at): ?>
+                    <span style="margin-left:10px; opacity:0.8;">Última atualização: <?= htmlspecialchars((string)$computed_at, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php endif; ?>
+            </form>
+        <?php elseif ($computed_at): ?>
+            <div style="margin-top:10px; opacity:0.8;">Última atualização: <?= htmlspecialchars((string)$computed_at, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
     </div>
 </div>
 

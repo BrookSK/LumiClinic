@@ -10,6 +10,26 @@
 /** @var list<array<string,mixed>> $by_professional */
 
 $title = 'Relatórios de Estoque e Custos';
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
 ob_start();
 ?>
 
@@ -33,10 +53,16 @@ ob_start();
                     'to' => (string)$to,
                 ];
                 ?>
-                <a class="lc-btn lc-btn--secondary" href="/stock/reports/export.csv?<?= http_build_query($exportQuery) ?>">Exportar planilha</a>
-                <a class="lc-btn lc-btn--secondary" href="/stock/reports/export.pdf?<?= http_build_query($exportQuery) ?>">Exportar PDF</a>
-                <a class="lc-btn lc-btn--secondary" href="/stock/alerts">Alertas</a>
-                <a class="lc-btn lc-btn--secondary" href="/stock/movements">Movimentações</a>
+                <?php if ($can('stock.reports.read')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/stock/reports/export.csv?<?= http_build_query($exportQuery) ?>">Exportar planilha</a>
+                    <a class="lc-btn lc-btn--secondary" href="/stock/reports/export.pdf?<?= http_build_query($exportQuery) ?>">Exportar PDF</a>
+                <?php endif; ?>
+                <?php if ($can('stock.alerts.read')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/stock/alerts">Alertas</a>
+                <?php endif; ?>
+                <?php if ($can('stock.movements.read')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/stock/movements">Movimentações</a>
+                <?php endif; ?>
             </div>
         </form>
     </div>

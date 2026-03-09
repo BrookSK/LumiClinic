@@ -5,14 +5,35 @@
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Serviços';
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Novo serviço</div>
-    <div class="lc-card__body">
-        <form method="post" action="/services/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 2fr 2fr; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+<?php if ($can('services.manage')): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Novo serviço</div>
+        <div class="lc-card__body">
+            <form method="post" action="/services/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 2fr 2fr; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <div class="lc-field">
                 <label class="lc-label">Nome</label>
@@ -65,15 +86,20 @@ ob_start();
                         <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars((string)$c['name'], ENT_QUOTES, 'UTF-8') ?></option>
                     <?php endforeach; ?>
                 </select>
-                <div class="lc-muted" style="margin-top:6px;"><a href="/services/categories">Gerenciar categorias</a></div>
+                <div class="lc-muted" style="margin-top:6px;">
+                    <?php if ($can('services.manage')): ?>
+                        <a href="/services/categories">Gerenciar categorias</a>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div style="grid-column: 1 / -1;">
                 <button class="lc-btn" type="submit">Salvar</button>
             </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__header">Serviços</div>
@@ -112,7 +138,9 @@ ob_start();
                         </td>
                         <td><?= ((int)$it['allow_specific_professional'] === 1) ? 'Sim' : 'Não' ?></td>
                         <td style="text-align:right;">
-                            <a class="lc-btn lc-btn--secondary" href="/services/materials?service_id=<?= (int)$it['id'] ?>">Materiais</a>
+                            <?php if ($can('services.manage')): ?>
+                                <a class="lc-btn lc-btn--secondary" href="/services/materials?service_id=<?= (int)$it['id'] ?>">Materiais</a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

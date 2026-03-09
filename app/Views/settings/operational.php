@@ -8,6 +8,26 @@ $stages = isset($stages) && is_array($stages) ? $stages : [];
 $lostReasons = isset($lost_reasons) && is_array($lost_reasons) ? $lost_reasons : [];
 $origins = isset($origins) && is_array($origins) ? $origins : [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -36,20 +56,22 @@ ob_start();
         <div class="lc-card__body">
             <div class="lc-muted" style="margin-bottom:10px;">Ex.: Novo contato, Triagem, Orçamento, Agendamento, Convertido.</div>
 
-            <form method="post" action="/settings/operational/funnel-stages/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr; align-items:end;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <div class="lc-field">
-                    <label class="lc-label">Nome</label>
-                    <input class="lc-input" type="text" name="name" required />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Ordem</label>
-                    <input class="lc-input" type="number" name="sort_order" value="0" />
-                </div>
-                <div class="lc-form__actions" style="grid-column: 1 / -1;">
-                    <button class="lc-btn lc-btn--primary" type="submit">Adicionar etapa</button>
-                </div>
-            </form>
+            <?php if ($can('settings.update')): ?>
+                <form method="post" action="/settings/operational/funnel-stages/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr; align-items:end;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <div class="lc-field">
+                        <label class="lc-label">Nome</label>
+                        <input class="lc-input" type="text" name="name" required />
+                    </div>
+                    <div class="lc-field">
+                        <label class="lc-label">Ordem</label>
+                        <input class="lc-input" type="number" name="sort_order" value="0" />
+                    </div>
+                    <div class="lc-form__actions" style="grid-column: 1 / -1;">
+                        <button class="lc-btn lc-btn--primary" type="submit">Adicionar etapa</button>
+                    </div>
+                </form>
+            <?php endif; ?>
 
             <?php if ($stages === []): ?>
                 <div class="lc-muted" style="margin-top:12px;">Nenhuma etapa cadastrada.</div>
@@ -69,11 +91,13 @@ ob_start();
                                 <td><?= (int)($s['sort_order'] ?? 0) ?></td>
                                 <td><?= htmlspecialchars((string)($s['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td style="text-align:right;">
-                                    <form method="post" action="/settings/operational/funnel-stages/delete" style="display:inline;" onsubmit="return confirm('Remover esta etapa?');">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= (int)($s['id'] ?? 0) ?>" />
-                                        <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
-                                    </form>
+                                    <?php if ($can('settings.update')): ?>
+                                        <form method="post" action="/settings/operational/funnel-stages/delete" style="display:inline;" onsubmit="return confirm('Remover esta etapa?');">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)($s['id'] ?? 0) ?>" />
+                                            <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -89,20 +113,22 @@ ob_start();
         <div class="lc-card__body">
             <div class="lc-muted" style="margin-bottom:10px;">Use quando um atendimento não for adiante (ex.: sem orçamento, sem agenda, desistiu).</div>
 
-            <form method="post" action="/settings/operational/lost-reasons/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr; align-items:end;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <div class="lc-field">
-                    <label class="lc-label">Nome</label>
-                    <input class="lc-input" type="text" name="name" required />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Ordem</label>
-                    <input class="lc-input" type="number" name="sort_order" value="0" />
-                </div>
-                <div class="lc-form__actions" style="grid-column: 1 / -1;">
-                    <button class="lc-btn lc-btn--primary" type="submit">Adicionar motivo</button>
-                </div>
-            </form>
+            <?php if ($can('settings.update')): ?>
+                <form method="post" action="/settings/operational/lost-reasons/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr; align-items:end;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <div class="lc-field">
+                        <label class="lc-label">Nome</label>
+                        <input class="lc-input" type="text" name="name" required />
+                    </div>
+                    <div class="lc-field">
+                        <label class="lc-label">Ordem</label>
+                        <input class="lc-input" type="number" name="sort_order" value="0" />
+                    </div>
+                    <div class="lc-form__actions" style="grid-column: 1 / -1;">
+                        <button class="lc-btn lc-btn--primary" type="submit">Adicionar motivo</button>
+                    </div>
+                </form>
+            <?php endif; ?>
 
             <?php if ($lostReasons === []): ?>
                 <div class="lc-muted" style="margin-top:12px;">Nenhum motivo cadastrado.</div>
@@ -122,11 +148,13 @@ ob_start();
                                 <td><?= (int)($r['sort_order'] ?? 0) ?></td>
                                 <td><?= htmlspecialchars((string)($r['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td style="text-align:right;">
-                                    <form method="post" action="/settings/operational/lost-reasons/delete" style="display:inline;" onsubmit="return confirm('Remover este motivo?');">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
-                                        <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
-                                    </form>
+                                    <?php if ($can('settings.update')): ?>
+                                        <form method="post" action="/settings/operational/lost-reasons/delete" style="display:inline;" onsubmit="return confirm('Remover este motivo?');">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
+                                            <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -142,20 +170,22 @@ ob_start();
         <div class="lc-card__body">
             <div class="lc-muted" style="margin-bottom:10px;">Ex.: Instagram, Indicação, Google, Site, WhatsApp.</div>
 
-            <form method="post" action="/settings/operational/patient-origins/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr; align-items:end;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <div class="lc-field">
-                    <label class="lc-label">Nome</label>
-                    <input class="lc-input" type="text" name="name" required />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Ordem</label>
-                    <input class="lc-input" type="number" name="sort_order" value="0" />
-                </div>
-                <div class="lc-form__actions" style="grid-column: 1 / -1;">
-                    <button class="lc-btn lc-btn--primary" type="submit">Adicionar origem</button>
-                </div>
-            </form>
+            <?php if ($can('settings.update')): ?>
+                <form method="post" action="/settings/operational/patient-origins/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr; align-items:end;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <div class="lc-field">
+                        <label class="lc-label">Nome</label>
+                        <input class="lc-input" type="text" name="name" required />
+                    </div>
+                    <div class="lc-field">
+                        <label class="lc-label">Ordem</label>
+                        <input class="lc-input" type="number" name="sort_order" value="0" />
+                    </div>
+                    <div class="lc-form__actions" style="grid-column: 1 / -1;">
+                        <button class="lc-btn lc-btn--primary" type="submit">Adicionar origem</button>
+                    </div>
+                </form>
+            <?php endif; ?>
 
             <?php if ($origins === []): ?>
                 <div class="lc-muted" style="margin-top:12px;">Nenhuma origem cadastrada.</div>
@@ -175,11 +205,13 @@ ob_start();
                                 <td><?= (int)($o['sort_order'] ?? 0) ?></td>
                                 <td><?= htmlspecialchars((string)($o['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td style="text-align:right;">
-                                    <form method="post" action="/settings/operational/patient-origins/delete" style="display:inline;" onsubmit="return confirm('Remover esta origem?');">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= (int)($o['id'] ?? 0) ?>" />
-                                        <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
-                                    </form>
+                                    <?php if ($can('settings.update')): ?>
+                                        <form method="post" action="/settings/operational/patient-origins/delete" style="display:inline;" onsubmit="return confirm('Remover esta origem?');">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)($o['id'] ?? 0) ?>" />
+                                            <button class="lc-btn lc-btn--secondary" type="submit">Remover</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

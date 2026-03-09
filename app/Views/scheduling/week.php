@@ -69,6 +69,26 @@ $dtToMinutes = static function (string $dt) use ($toMinutes): int {
 $weekStart = \DateTimeImmutable::createFromFormat('Y-m-d', $week_start);
 $slotMinutes = isset($slot_minutes) && is_array($slot_minutes) ? $slot_minutes : [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -105,7 +125,9 @@ ob_start();
                 <a class="lc-segmented__item" role="tab" aria-selected="false" href="/schedule?view=month&date=<?= urlencode($date) ?><?= ((int)$professional_id > 0) ? ('&professional_id=' . (int)$professional_id) : '' ?>">Mês</a>
             </div>
 
-            <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
+            <?php if ($can('scheduling.ops')): ?>
+                <a class="lc-btn lc-btn--secondary" href="/schedule/ops?date=<?= urlencode($date) ?>">Operação</a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -235,8 +257,8 @@ ob_start();
                         <div style="position:relative; background: <?= htmlspecialchars($cellBg, ENT_QUOTES, 'UTF-8') ?>; border-radius: 10px;">
                             <?php foreach ($slotMinutes as $mins): ?>
                                 <?php $slotTime = $fromMinutes((int)$mins); ?>
-                                <div style="height: <?= (int)$rowHeight ?>px; border:1px solid rgba(17,24,39,0.06); border-radius:10px; margin-bottom:10px; padding:6px; <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working']) ? 'cursor:pointer;' : '' ?>"
-                                    <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working'])
+                                <div style="height: <?= (int)$rowHeight ?>px; border:1px solid rgba(17,24,39,0.06); border-radius:10px; margin-bottom:10px; padding:6px; <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working'] && $can('scheduling.create')) ? 'cursor:pointer;' : '' ?>"
+                                    <?= (!$isProfessional && !(bool)$day['is_closed'] && (bool)$day['has_working'] && $can('scheduling.create'))
                                         ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '" data-create-time="' . htmlspecialchars($slotTime, ENT_QUOTES, 'UTF-8') . '" data-create-professional-id="' . (int)$professional_id . '"')
                                         : '' ?>
                                 ></div>
@@ -355,7 +377,7 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<?php if (!$isProfessional): ?>
+<?php if (!$isProfessional && $can('scheduling.create')): ?>
     <div class="lc-modal" id="createAppointmentModal" aria-hidden="true">
         <div class="lc-modal__backdrop" data-close-modal></div>
         <div class="lc-modal__panel" role="dialog" aria-modal="true" aria-label="Novo agendamento">
@@ -465,82 +487,102 @@ ob_start();
         </div>
 
         <div class="lc-modal__footer" style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-start;">
-            <a class="lc-btn lc-btn--secondary" id="appt_reschedule" href="#">Reagendar</a>
-            <a class="lc-btn lc-btn--secondary" id="appt_logs" href="#">Logs</a>
+            <?php if ($can('scheduling.update')): ?>
+                <a class="lc-btn lc-btn--secondary" id="appt_reschedule" href="#">Reagendar</a>
+            <?php endif; ?>
+            <?php if ($can('scheduling.logs')): ?>
+                <a class="lc-btn lc-btn--secondary" id="appt_logs" href="#">Logs</a>
+            <?php endif; ?>
 
-            <form method="post" action="/schedule/status" id="appt_form_confirmed">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" id="appt_id_confirmed" value="" />
-                <input type="hidden" name="status" value="confirmed" />
-                <input type="hidden" name="view" value="week" />
-                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Confirmar</button>
-            </form>
+            <?php if ($can('scheduling.finalize')): ?>
+                <form method="post" action="/schedule/status" id="appt_form_confirmed">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" id="appt_id_confirmed" value="" />
+                    <input type="hidden" name="status" value="confirmed" />
+                    <input type="hidden" name="view" value="week" />
+                    <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Confirmar</button>
+                </form>
+            <?php endif; ?>
 
-            <form method="post" action="/schedule/check-in" id="appt_form_check_in">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" id="appt_id_check_in" value="" />
-                <input type="hidden" name="view" value="week" />
-                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Chegou (check-in)</button>
-            </form>
+            <?php if ($can('scheduling.finalize') || (!$isProfessional && $can('scheduling.update'))): ?>
+                <form method="post" action="/schedule/check-in" id="appt_form_check_in">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" id="appt_id_check_in" value="" />
+                    <input type="hidden" name="view" value="week" />
+                    <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Chegou (check-in)</button>
+                </form>
+            <?php endif; ?>
 
-            <form method="post" action="/schedule/start" id="appt_form_start">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" id="appt_id_start" value="" />
-                <input type="hidden" name="view" value="week" />
-                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Iniciar atendimento</button>
-            </form>
+            <?php if ($can('scheduling.finalize')): ?>
+                <form method="post" action="/schedule/start" id="appt_form_start">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" id="appt_id_start" value="" />
+                    <input type="hidden" name="view" value="week" />
+                    <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Iniciar atendimento</button>
+                </form>
+            <?php endif; ?>
 
-            <form method="post" action="/schedule/status" id="appt_form_in_progress">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" id="appt_id_in_progress" value="" />
-                <input type="hidden" name="status" value="in_progress" />
-                <input type="hidden" name="view" value="week" />
-                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Atender</button>
-            </form>
+            <?php if ($can('scheduling.finalize')): ?>
+                <form method="post" action="/schedule/status" id="appt_form_in_progress">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" id="appt_id_in_progress" value="" />
+                    <input type="hidden" name="status" value="in_progress" />
+                    <input type="hidden" name="view" value="week" />
+                    <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Atender</button>
+                </form>
+            <?php endif; ?>
 
-            <form method="post" action="/schedule/status" id="appt_form_completed">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" id="appt_id_completed" value="" />
-                <input type="hidden" name="status" value="completed" />
-                <input type="hidden" name="view" value="week" />
-                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Concluir</button>
-            </form>
+            <?php if ($can('scheduling.finalize')): ?>
+                <form method="post" action="/schedule/status" id="appt_form_completed">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" id="appt_id_completed" value="" />
+                    <input type="hidden" name="status" value="completed" />
+                    <input type="hidden" name="view" value="week" />
+                    <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Concluir</button>
+                </form>
+            <?php endif; ?>
 
-            <form method="post" action="/schedule/status" id="appt_form_no_show">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" id="appt_id_no_show" value="" />
-                <input type="hidden" name="status" value="no_show" />
-                <input type="hidden" name="view" value="week" />
-                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit" title="Marque como Faltou quando o paciente não compareceu.">Faltou</button>
-            </form>
+            <?php if ($can('scheduling.finalize')): ?>
+                <form method="post" action="/schedule/status" id="appt_form_no_show">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" id="appt_id_no_show" value="" />
+                    <input type="hidden" name="status" value="no_show" />
+                    <input type="hidden" name="view" value="week" />
+                    <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit" title="Marque como Faltou quando o paciente não compareceu.">Faltou</button>
+                </form>
+            <?php endif; ?>
 
-            <form method="post" action="/schedule/status" id="appt_form_reopen" style="display:none;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" id="appt_id_reopen" value="" />
-                <input type="hidden" name="status" value="in_progress" />
-                <input type="hidden" name="view" value="week" />
-                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Reabrir</button>
-            </form>
+            <?php if ($can('scheduling.finalize')): ?>
+                <form method="post" action="/schedule/status" id="appt_form_reopen" style="display:none;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" id="appt_id_reopen" value="" />
+                    <input type="hidden" name="status" value="in_progress" />
+                    <input type="hidden" name="view" value="week" />
+                    <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Reabrir</button>
+                </form>
+            <?php endif; ?>
 
-            <form method="post" action="/schedule/cancel" id="appt_form_cancel">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" id="appt_id_cancel" value="" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Cancelar</button>
-            </form>
+            <?php if ($can('scheduling.cancel')): ?>
+                <form method="post" action="/schedule/cancel" id="appt_form_cancel">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" id="appt_id_cancel" value="" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Cancelar</button>
+                </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -548,6 +590,7 @@ ob_start();
 
 <script>
 (function() {
+  const canFinalize = <?= json_encode((bool)$can('scheduling.finalize')) ?>;
   const dateFilterEl = document.getElementById('filter_date');
   const createModal = document.getElementById('createAppointmentModal');
   const detailsModal = document.getElementById('appointmentDetailsModal');
@@ -807,7 +850,7 @@ ob_start();
       const formInProgress = document.getElementById('appt_form_in_progress');
       const formCompleted = document.getElementById('appt_form_completed');
       const formNoShow = document.getElementById('appt_form_no_show');
-      const formReopen = document.getElementById('appt_form_reopen');
+      const formReopen = canFinalize ? document.getElementById('appt_form_reopen') : null;
       const formCancel = document.getElementById('appt_form_cancel');
 
       const show = {

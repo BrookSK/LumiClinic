@@ -41,6 +41,26 @@ foreach ($clinicalAlerts as $a) {
     }
 }
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -70,7 +90,9 @@ ob_start();
             <?php endforeach; ?>
         </div>
         <div style="margin-top:6px;">
-            <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= $patientId ?>">Abrir ficha clínica</a>
+            <?php if ($can('patients.read')): ?>
+                <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= $patientId ?>">Abrir ficha clínica</a>
+            <?php endif; ?>
         </div>
     </div>
 <?php endif; ?>
@@ -83,13 +105,17 @@ ob_start();
         </div>
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
-        <?php if ($patientId > 0): ?>
+        <?php if ($patientId > 0 && $can('patients.read')): ?>
             <a class="lc-btn lc-btn--secondary" href="/patients/appointments?patient_id=<?= $patientId ?>">Voltar</a>
         <?php else: ?>
             <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode(date('Y-m-d')) ?>">Voltar</a>
         <?php endif; ?>
-        <a class="lc-btn lc-btn--secondary" href="/schedule/reschedule?appointment_id=<?= $apptId ?>">Reagendar</a>
-        <a class="lc-btn lc-btn--secondary" href="/schedule/logs?appointment_id=<?= $apptId ?>">Logs</a>
+        <?php if ($can('scheduling.update')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/schedule/reschedule?appointment_id=<?= $apptId ?>">Reagendar</a>
+        <?php endif; ?>
+        <?php if ($can('scheduling.logs')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/schedule/logs?appointment_id=<?= $apptId ?>">Logs</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -106,9 +132,10 @@ ob_start();
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__header">Registrar execução</div>
     <div class="lc-card__body">
-        <form method="post" action="/patients/consultation/save" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="appointment_id" value="<?= $apptId ?>" />
+        <?php if ($can('patients.update')): ?>
+            <form method="post" action="/patients/consultation/save" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="appointment_id" value="<?= $apptId ?>" />
 
             <div class="lc-field">
                 <label class="lc-label">Executada em</label>
@@ -132,19 +159,21 @@ ob_start();
                 <textarea class="lc-input" name="notes" rows="5"><?= htmlspecialchars($notesValue, ENT_QUOTES, 'UTF-8') ?></textarea>
             </div>
 
-            <div style="grid-column: 1 / -1;" class="lc-flex lc-flex--end">
-                <button class="lc-btn lc-btn--primary" type="submit">Salvar execução</button>
-            </div>
-        </form>
+                <div style="grid-column: 1 / -1;" class="lc-flex lc-flex--end">
+                    <button class="lc-btn lc-btn--primary" type="submit">Salvar execução</button>
+                </div>
+            </form>
+        <?php endif; ?>
     </div>
 </div>
 
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__header">Anexos</div>
     <div class="lc-card__body">
-        <form method="post" action="/patients/consultation/attachments/upload" enctype="multipart/form-data" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 160px; align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="appointment_id" value="<?= $apptId ?>" />
+        <?php if ($can('patients.update')): ?>
+            <form method="post" action="/patients/consultation/attachments/upload" enctype="multipart/form-data" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 160px; align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="appointment_id" value="<?= $apptId ?>" />
 
             <div class="lc-field">
                 <label class="lc-label">Arquivo</label>
@@ -156,8 +185,9 @@ ob_start();
                 <input class="lc-input" type="text" name="note" placeholder="Ex: termo assinado" />
             </div>
 
-            <button class="lc-btn lc-btn--secondary" type="submit">Anexar</button>
-        </form>
+                <button class="lc-btn lc-btn--secondary" type="submit">Anexar</button>
+            </form>
+        <?php endif; ?>
 
         <?php if (!is_array($attachments) || $attachments === []): ?>
             <div class="lc-muted" style="margin-top:10px;">Nenhum anexo.</div>
@@ -192,7 +222,9 @@ ob_start();
                         <td><?= $size > 0 ? number_format($size / 1024, 1, ',', '.') . ' KB' : '-' ?></td>
                         <td><?= htmlspecialchars($createdAt, ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
-                            <a class="lc-btn lc-btn--secondary" href="/patients/consultation/attachments/file?id=<?= $aid ?>">Abrir</a>
+                            <?php if ($can('patients.read') && $can('files.read')): ?>
+                                <a class="lc-btn lc-btn--secondary" href="/patients/consultation/attachments/file?id=<?= $aid ?>">Abrir</a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

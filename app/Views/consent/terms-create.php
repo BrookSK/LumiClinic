@@ -3,6 +3,27 @@ $title = 'Novo termo';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? ($_GET['error'] ?? null);
 $procedureTypes = $procedure_types ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-card">
@@ -38,7 +59,9 @@ ob_start();
         <textarea class="lc-input" name="body" rows="12" required></textarea>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-            <button class="lc-btn lc-btn--primary" type="submit">Criar</button>
+            <?php if ($can('consent_terms.manage')): ?>
+                <button class="lc-btn lc-btn--primary" type="submit">Criar</button>
+            <?php endif; ?>
             <a class="lc-btn lc-btn--secondary" href="/consent-terms">Voltar</a>
         </div>
     </form>

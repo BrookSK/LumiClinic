@@ -2,6 +2,27 @@
 $title = 'Papéis e Permissões';
 $csrf = $_SESSION['_csrf'] ?? '';
 $roles = $roles ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center" style="margin-bottom:14px;">
@@ -30,14 +51,16 @@ ob_start();
                     <td><?= (int)$r['is_system'] === 1 ? 'Sistema' : 'Custom' ?></td>
                     <td><?= (int)$r['is_editable'] === 1 ? 'Sim' : 'Não' ?></td>
                     <td>
-                        <a class="lc-btn lc-btn--secondary" href="/rbac/edit?id=<?= (int)$r['id'] ?>">Abrir</a>
+                        <?php if ($can('rbac.manage')): ?>
+                            <a class="lc-btn lc-btn--secondary" href="/rbac/edit?id=<?= (int)$r['id'] ?>">Abrir</a>
 
-                        <form method="post" action="/rbac/clone" class="lc-flex" style="display:inline-flex; flex-wrap:nowrap; gap:8px; align-items:center; margin-left:10px; vertical-align:middle;">
-                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                            <input type="hidden" name="from_role_id" value="<?= (int)$r['id'] ?>" />
-                            <input class="lc-input" style="width:220px; min-width:160px;" type="text" name="name" placeholder="Clonar como..." />
-                            <button class="lc-btn lc-btn--primary" type="submit">Clonar</button>
-                        </form>
+                            <form method="post" action="/rbac/clone" class="lc-flex" style="display:inline-flex; flex-wrap:nowrap; gap:8px; align-items:center; margin-left:10px; vertical-align:middle;">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="from_role_id" value="<?= (int)$r['id'] ?>" />
+                                <input class="lc-input" style="width:220px; min-width:160px;" type="text" name="name" placeholder="Clonar como..." />
+                                <button class="lc-btn lc-btn--primary" type="submit">Clonar</button>
+                            </form>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

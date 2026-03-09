@@ -1,12 +1,35 @@
 <?php
 $title = 'Consentimento (Assinaturas) - Legado';
 $terms = $terms ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
     <div class="lc-badge lc-badge--primary">Consentimento (Legado)</div>
     <div>
-        <a class="lc-btn lc-btn--primary" href="/consent-terms/create">Novo termo</a>
+        <?php if ($can('consent_terms.manage')): ?>
+            <a class="lc-btn lc-btn--primary" href="/consent-terms/create">Novo termo</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -32,7 +55,9 @@ ob_start();
                     <td><?= htmlspecialchars((string)$t['title'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)$t['status'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td>
-                        <a class="lc-btn lc-btn--secondary" href="/consent-terms/edit?id=<?= (int)$t['id'] ?>">Editar</a>
+                        <?php if ($can('consent_terms.manage')): ?>
+                            <a class="lc-btn lc-btn--secondary" href="/consent-terms/edit?id=<?= (int)$t['id'] ?>">Editar</a>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

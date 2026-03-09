@@ -3,6 +3,26 @@ $title = 'Novo usuário';
 $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $roles = $roles ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
 ob_start();
 ?>
 <div class="lc-card">
@@ -12,8 +32,9 @@ ob_start();
         <div class="lc-alert lc-alert--danger"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
 
-    <form method="post" class="lc-form" action="/users/create">
-        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php if ($can('users.create')): ?>
+        <form method="post" class="lc-form" action="/users/create">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
         <label class="lc-label">Nome</label>
         <input class="lc-input" type="text" name="name" required />
@@ -32,11 +53,16 @@ ob_start();
             <?php endforeach; ?>
         </select>
 
+            <div class="lc-flex lc-gap-sm" style="margin-top:14px;">
+                <button class="lc-btn lc-btn--primary" type="submit">Criar</button>
+                <a class="lc-btn lc-btn--secondary" href="/users">Voltar</a>
+            </div>
+        </form>
+    <?php else: ?>
         <div class="lc-flex lc-gap-sm" style="margin-top:14px;">
-            <button class="lc-btn lc-btn--primary" type="submit">Criar</button>
             <a class="lc-btn lc-btn--secondary" href="/users">Voltar</a>
         </div>
-    </form>
+    <?php endif; ?>
 </div>
 <?php
 $content = (string)ob_get_clean();

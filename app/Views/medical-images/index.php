@@ -7,6 +7,26 @@ $professionals = $professionals ?? [];
 $pairs = $pairs ?? [];
 $records = $records ?? [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $kindLabel = [
     'before' => 'Antes',
     'after' => 'Depois',
@@ -45,9 +65,10 @@ ob_start();
             <div class="lc-card__body">
                 <div class="lc-muted" style="margin-bottom:10px;">Use para anexar uma imagem ao paciente (ex.: acompanhamento, exames, fotos).</div>
 
-                <form method="post" action="/medical-images/upload" enctype="multipart/form-data" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); align-items:end;">
-                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                    <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
+                <?php if ($can('medical_images.upload')): ?>
+                    <form method="post" action="/medical-images/upload" enctype="multipart/form-data" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); align-items:end;">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
 
                     <div class="lc-field" style="grid-column: 1 / -1;">
                         <label class="lc-label">Arquivo</label>
@@ -109,10 +130,11 @@ ob_start();
                         </select>
                     </div>
 
-                    <div class="lc-form__actions" style="grid-column: 1 / -1;">
-                        <button class="lc-btn lc-btn--primary" type="submit">Enviar imagem</button>
-                    </div>
-                </form>
+                        <div class="lc-form__actions" style="grid-column: 1 / -1;">
+                            <button class="lc-btn lc-btn--primary" type="submit">Enviar imagem</button>
+                        </div>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -122,9 +144,10 @@ ob_start();
                 <div class="lc-card__body">
                     <div class="lc-muted" style="margin-bottom:10px;">Use quando você tiver duas imagens do mesmo procedimento (antes e depois) e quiser comparar.</div>
 
-                    <form method="post" action="/medical-images/upload-pair" enctype="multipart/form-data" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); align-items:end;">
-                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                        <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
+                    <?php if ($can('medical_images.upload')): ?>
+                        <form method="post" action="/medical-images/upload-pair" enctype="multipart/form-data" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); align-items:end;">
+                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                            <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
 
                         <div class="lc-field">
                             <label class="lc-label">Antes</label>
@@ -181,10 +204,11 @@ ob_start();
                             </select>
                         </div>
 
-                        <div class="lc-form__actions" style="grid-column: 1 / -1;">
-                            <button class="lc-btn lc-btn--primary" type="submit">Criar comparação</button>
-                        </div>
-                    </form>
+                            <div class="lc-form__actions" style="grid-column: 1 / -1;">
+                                <button class="lc-btn lc-btn--primary" type="submit">Criar comparação</button>
+                            </div>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </details>
         </div>
@@ -213,7 +237,11 @@ ob_start();
                                     <td><?= htmlspecialchars((string)($p['taken_at'] ?? $p['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                     <td><?= htmlspecialchars((string)($p['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                     <td>
-                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$p['comparison_key']) ?>">Abrir</a>
+                                        <?php if ($can('files.read')): ?>
+                                            <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$p['comparison_key']) ?>">Abrir</a>
+                                        <?php else: ?>
+                                            <span style="opacity:.7;">-</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -254,8 +282,10 @@ ob_start();
                                 <td><?= htmlspecialchars((string)($img['pose'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars((string)($img['original_filename'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td class="lc-flex lc-flex--wrap" style="gap:8px;">
-                                    <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= (int)$img['id'] ?>" target="_blank">Abrir</a>
-                                    <a class="lc-btn lc-btn--secondary" href="/medical-images/annotate?id=<?= (int)$img['id'] ?>">Marcar</a>
+                                    <?php if ($can('files.read')): ?>
+                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= (int)$img['id'] ?>" target="_blank">Abrir</a>
+                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/annotate?id=<?= (int)$img['id'] ?>">Marcar</a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

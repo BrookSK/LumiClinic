@@ -31,6 +31,26 @@ foreach ($professionals as $p) {
     $profMap[(int)$p['id']] = $p;
 }
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -63,7 +83,9 @@ ob_start();
                         <td><?= htmlspecialchars((string)($pp['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
                             <?php if (($sale['patient_id'] ?? null) !== null): ?>
-                                <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode(date('Y-m-d')) ?>">Agendar</a>
+                                <?php if ($can('scheduling.read')): ?>
+                                    <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode(date('Y-m-d')) ?>">Agendar</a>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -85,7 +107,7 @@ ob_start();
     </div>
 </div>
 
-<?php if (!isset($is_professional) || !$is_professional): ?>
+<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.update')): ?>
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Status do orçamento</div>
         <div class="lc-card__body">
@@ -110,7 +132,7 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<?php if (!isset($is_professional) || !$is_professional): ?>
+<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.update') && $can('scheduling.create')): ?>
     <?php if (isset($procedures) && is_array($procedures) && $procedures !== [] && (string)($sale['budget_status'] ?? 'draft') === 'approved'): ?>
         <div class="lc-card" style="margin-bottom: 16px;">
             <div class="lc-card__header">Agendamentos automáticos</div>
@@ -134,7 +156,7 @@ ob_start();
     <?php endif; ?>
 <?php endif; ?>
 
-<?php if (!isset($is_professional) || !$is_professional): ?>
+<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.update')): ?>
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Adicionar item</div>
         <div class="lc-card__body">
@@ -304,7 +326,7 @@ ob_start();
     </div>
 </div>
 
-<?php if (!isset($is_professional) || !$is_professional): ?>
+<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.payments.create')): ?>
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Registrar pagamento</div>
         <div class="lc-card__body">
@@ -381,7 +403,7 @@ ob_start();
                         <td><?= number_format((float)$p['fees'], 2, ',', '.') ?></td>
                         <td><?= $p['paid_at'] === null ? '-' : htmlspecialchars((string)$p['paid_at'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
-                            <?php if ((!isset($is_professional) || !$is_professional) && (string)$p['status'] !== 'refunded'): ?>
+                            <?php if ((!isset($is_professional) || !$is_professional) && $can('finance.payments.refund') && (string)$p['status'] !== 'refunded'): ?>
                                 <form method="post" action="/finance/payments/refund">
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                     <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
@@ -403,7 +425,7 @@ ob_start();
     <div class="lc-card__body lc-flex lc-gap-md lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/finance/sales">Voltar</a>
 
-        <?php if (!isset($is_professional) || !$is_professional): ?>
+        <?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.cancel')): ?>
             <form method="post" action="/finance/sales/cancel">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                 <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />

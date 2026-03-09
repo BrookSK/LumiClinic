@@ -5,6 +5,26 @@ $rows = $rows ?? [];
 $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $statusLabelMap = [
     'active' => 'Ativo',
     'disabled' => 'Inativo',
@@ -31,19 +51,21 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Novo centro de custo</div>
-    <div class="lc-card__body">
-        <form method="post" action="/finance/cost-centers/create" class="lc-form lc-flex lc-gap-sm lc-flex--wrap" style="align-items:end;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <div class="lc-field" style="min-width:260px;">
-                <label class="lc-label">Nome</label>
-                <input class="lc-input" type="text" name="name" required />
-            </div>
-            <button class="lc-btn" type="submit">Criar</button>
-        </form>
+<?php if ($can('finance.cost_centers.manage')): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Novo centro de custo</div>
+        <div class="lc-card__body">
+            <form method="post" action="/finance/cost-centers/create" class="lc-form lc-flex lc-gap-sm lc-flex--wrap" style="align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <div class="lc-field" style="min-width:260px;">
+                    <label class="lc-label">Nome</label>
+                    <input class="lc-input" type="text" name="name" required />
+                </div>
+                <button class="lc-btn" type="submit">Criar</button>
+            </form>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 <div class="lc-card">
     <div class="lc-card__header">Lista</div>
@@ -75,20 +97,24 @@ ob_start();
                             <td><?= htmlspecialchars($stLabel, ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
                                 <div class="lc-flex lc-gap-sm lc-flex--wrap">
-                                    <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers/edit?id=<?= $id ?>">Editar</a>
+                                    <?php if ($can('finance.cost_centers.manage')): ?>
+                                        <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers/edit?id=<?= $id ?>">Editar</a>
 
-                                    <form method="post" action="/finance/cost-centers/status" style="margin:0;" onsubmit="return confirm('Alterar status?');">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= $id ?>" />
-                                        <input type="hidden" name="status" value="<?= htmlspecialchars($toggleTo, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <button class="lc-btn lc-btn--secondary" type="submit"><?= $st === 'active' ? 'Inativar' : 'Ativar' ?></button>
-                                    </form>
+                                        <form method="post" action="/finance/cost-centers/status" style="margin:0;" onsubmit="return confirm('Alterar status?');">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= $id ?>" />
+                                            <input type="hidden" name="status" value="<?= htmlspecialchars($toggleTo, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <button class="lc-btn lc-btn--secondary" type="submit"><?= $st === 'active' ? 'Inativar' : 'Ativar' ?></button>
+                                        </form>
 
-                                    <form method="post" action="/finance/cost-centers/delete" style="margin:0;" onsubmit="return confirm('Excluir centro de custo?');">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= $id ?>" />
-                                        <button class="lc-btn lc-btn--danger" type="submit">Excluir</button>
-                                    </form>
+                                        <form method="post" action="/finance/cost-centers/delete" style="margin:0;" onsubmit="return confirm('Excluir centro de custo?');">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= $id ?>" />
+                                            <button class="lc-btn lc-btn--danger" type="submit">Excluir</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span class="lc-muted">-</span>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

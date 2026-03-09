@@ -2,6 +2,27 @@
 $title = 'Moderação de uploads';
 $csrf = $_SESSION['_csrf'] ?? '';
 $pending = $pending ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -40,19 +61,23 @@ ob_start();
                             <td><?= htmlspecialchars((string)($u['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string)($u['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td class="lc-flex lc-flex--wrap" style="gap:10px;">
-                                <form method="post" action="/medical-images/moderation/approve" class="lc-form">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= (int)($u['id'] ?? 0) ?>" />
-                                    <input class="lc-input" type="text" name="note" placeholder="Obs (opcional)" />
-                                    <button class="lc-btn lc-btn--primary" type="submit">Aprovar</button>
-                                </form>
+                                <?php if ($can('medical_images.upload')): ?>
+                                    <form method="post" action="/medical-images/moderation/approve" class="lc-form">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="id" value="<?= (int)($u['id'] ?? 0) ?>" />
+                                        <input class="lc-input" type="text" name="note" placeholder="Obs (opcional)" />
+                                        <button class="lc-btn lc-btn--primary" type="submit">Aprovar</button>
+                                    </form>
 
-                                <form method="post" action="/medical-images/moderation/reject" class="lc-form">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= (int)($u['id'] ?? 0) ?>" />
-                                    <input class="lc-input" type="text" name="note" placeholder="Motivo (opcional)" />
-                                    <button class="lc-btn lc-btn--danger" type="submit">Rejeitar</button>
-                                </form>
+                                    <form method="post" action="/medical-images/moderation/reject" class="lc-form">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="id" value="<?= (int)($u['id'] ?? 0) ?>" />
+                                        <input class="lc-input" type="text" name="note" placeholder="Motivo (opcional)" />
+                                        <button class="lc-btn lc-btn--danger" type="submit">Rejeitar</button>
+                                    </form>
+                                <?php else: ?>
+                                    <span style="opacity:.7;">-</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

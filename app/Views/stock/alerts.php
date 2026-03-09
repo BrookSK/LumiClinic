@@ -7,6 +7,26 @@
 /** @var list<array<string,mixed>> $expired */
 
 $title = 'Alertas de Estoque';
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
 ob_start();
 ?>
 
@@ -20,8 +40,12 @@ ob_start();
             </div>
             <div>
                 <button class="lc-btn" type="submit">Atualizar</button>
-                <a class="lc-btn lc-btn--secondary" href="/stock/materials">Materiais</a>
-                <a class="lc-btn lc-btn--secondary" href="/stock/movements">Movimentações</a>
+                <?php if ($can('stock.materials.read')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/stock/materials">Materiais</a>
+                <?php endif; ?>
+                <?php if ($can('stock.movements.read')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/stock/movements">Movimentações</a>
+                <?php endif; ?>
             </div>
         </form>
     </div>

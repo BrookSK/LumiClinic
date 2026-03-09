@@ -6,6 +6,27 @@ $hasNext = (is_array($payload) && isset($payload['has_next'])) ? (bool)$payload[
 $filters = $filters ?? ['action' => '', 'from' => '', 'to' => ''];
 $page = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 50;
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-card" style="margin-bottom:16px;">
@@ -25,7 +46,9 @@ ob_start();
 
         <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
             <button class="lc-btn lc-btn--primary" type="submit">Aplicar</button>
-            <a class="lc-btn lc-btn--secondary" href="/audit-logs/export?action=<?= urlencode((string)$filters['action']) ?>&from=<?= urlencode((string)$filters['from']) ?>&to=<?= urlencode((string)$filters['to']) ?>">Exportar CSV</a>
+            <?php if ($can('audit.export')): ?>
+                <a class="lc-btn lc-btn--secondary" href="/audit-logs/export?action=<?= urlencode((string)$filters['action']) ?>&from=<?= urlencode((string)$filters['from']) ?>&to=<?= urlencode((string)$filters['to']) ?>">Exportar CSV</a>
+            <?php endif; ?>
         </div>
     </form>
 </div>

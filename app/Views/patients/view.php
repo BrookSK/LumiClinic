@@ -5,6 +5,26 @@ $patientUser = $patient_user ?? null;
 $portalDocs = $portal_legal_docs ?? [];
 $portalAcceptances = $portal_legal_acceptances ?? [];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 $statusLabelMap = [
     'active' => 'Ativo',
     'disabled' => 'Desativado',
@@ -26,16 +46,32 @@ ob_start();
     <div class="lc-badge lc-badge--primary">Perfil</div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients">Voltar</a>
-        <a class="lc-btn lc-btn--secondary" href="/patients/timeline?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Linha do tempo</a>
-        <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Ficha clínica</a>
-        <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Prontuário</a>
-        <a class="lc-btn lc-btn--secondary" href="/finance/sales?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Orçamentos</a>
-        <a class="lc-btn lc-btn--secondary" href="/patients/appointments?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Consultas</a>
-        <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Imagens</a>
-        <a class="lc-btn lc-btn--secondary" href="/anamnesis?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Anamnese</a>
-        <a class="lc-btn lc-btn--secondary" href="/consent?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Termos</a>
-        <a class="lc-btn lc-btn--secondary" href="/patients/portal-access?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Acesso ao Portal</a>
-        <a class="lc-btn lc-btn--primary" href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>">Editar</a>
+        <?php if ($can('patients.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/patients/timeline?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Linha do tempo</a>
+            <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Ficha clínica</a>
+        <?php endif; ?>
+        <?php if ($can('medical_records.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Prontuário</a>
+        <?php endif; ?>
+        <?php if ($can('finance.sales.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/finance/sales?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Orçamentos</a>
+        <?php endif; ?>
+        <?php if ($can('patients.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/patients/appointments?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Consultas</a>
+        <?php endif; ?>
+        <?php if ($can('medical_images.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Imagens</a>
+        <?php endif; ?>
+        <?php if ($can('anamnesis.fill')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/anamnesis?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Anamnese</a>
+        <?php endif; ?>
+        <?php if ($can('consent_terms.accept')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/consent?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Termos</a>
+        <?php endif; ?>
+        <?php if ($can('patients.update')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/patients/portal-access?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Acesso ao Portal</a>
+            <a class="lc-btn lc-btn--primary" href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>">Editar</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -94,7 +130,9 @@ ob_start();
         <div class="lc-card__title">LGPD / Termos do Portal</div>
         <div class="lc-card__body">
             <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-bottom:12px;">
-                <a class="lc-btn lc-btn--secondary" href="/clinic/legal-documents">Configurar textos</a>
+                <?php if ($can('clinics.read')): ?>
+                    <a class="lc-btn lc-btn--secondary" href="/clinic/legal-documents">Configurar textos</a>
+                <?php endif; ?>
             </div>
 
             <div class="lc-table-wrap">

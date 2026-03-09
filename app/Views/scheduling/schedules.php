@@ -7,6 +7,26 @@ $title = 'Regras de Agenda';
 
 $weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -27,12 +47,13 @@ ob_start();
 </div>
 
 <?php if ((int)$professional_id > 0): ?>
-    <div class="lc-card" style="margin-bottom: 16px;">
-        <div class="lc-card__header">Nova regra</div>
-        <div class="lc-card__body">
-            <form method="post" action="/schedule-rules/create" class="lc-form lc-grid lc-grid--5 lc-gap-grid" style="align-items:end;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+    <?php if ($can('schedule_rules.manage')): ?>
+        <div class="lc-card" style="margin-bottom: 16px;">
+            <div class="lc-card__header">Nova regra</div>
+            <div class="lc-card__body">
+                <form method="post" action="/schedule-rules/create" class="lc-form lc-grid lc-grid--5 lc-gap-grid" style="align-items:end;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
 
                 <div class="lc-field">
                     <label class="lc-label">Dia</label>
@@ -58,12 +79,13 @@ ob_start();
                     <input class="lc-input" type="number" name="interval_minutes" min="0" step="5" />
                 </div>
 
-                <div>
-                    <button class="lc-btn" type="submit">Salvar</button>
-                </div>
-            </form>
+                    <div>
+                        <button class="lc-btn" type="submit">Salvar</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
+    <?php endif; ?>
 
     <div class="lc-card">
         <div class="lc-card__header">Regras cadastradas</div>

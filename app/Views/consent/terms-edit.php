@@ -5,6 +5,27 @@ $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 $term = $term ?? null;
 $procedureTypes = $procedure_types ?? [];
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-card">
@@ -61,7 +82,9 @@ ob_start();
         <textarea class="lc-input" name="body" rows="12" required><?= htmlspecialchars((string)($term['body'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-            <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+            <?php if ($can('consent_terms.manage')): ?>
+                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+            <?php endif; ?>
             <a class="lc-btn lc-btn--secondary" href="/consent-terms">Voltar</a>
         </div>
     </form>

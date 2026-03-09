@@ -24,6 +24,26 @@ if ($entryDate !== '' && strlen($entryDate) >= 7) {
     $month = substr($entryDate, 0, 7) . '-01';
 }
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 
@@ -49,81 +69,110 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Cadastro</div>
     <div class="lc-card__body">
-        <form method="post" action="/marketing/calendar/update" class="lc-form">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="id" value="<?= $id ?>" />
-            <?php if ($month !== ''): ?>
-                <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
-            <?php endif; ?>
+        <?php if ($can('marketing.calendar.manage')): ?>
+            <form method="post" action="/marketing/calendar/update" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" value="<?= $id ?>" />
+                <?php if ($month !== ''): ?>
+                    <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
+                <?php endif; ?>
 
-            <div class="lc-grid lc-gap-grid" style="grid-template-columns: 180px 1fr; align-items:end;">
-                <div class="lc-field">
-                    <label class="lc-label">Dia</label>
-                    <input class="lc-input" type="date" name="entry_date" value="<?= htmlspecialchars($entryDate, ENT_QUOTES, 'UTF-8') ?>" required />
+                <div class="lc-grid lc-gap-grid" style="grid-template-columns: 180px 1fr; align-items:end;">
+                    <div class="lc-field">
+                        <label class="lc-label">Dia</label>
+                        <input class="lc-input" type="date" name="entry_date" value="<?= htmlspecialchars($entryDate, ENT_QUOTES, 'UTF-8') ?>" required />
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Título</label>
+                        <input class="lc-input" type="text" name="title" value="<?= htmlspecialchars($titleValue, ENT_QUOTES, 'UTF-8') ?>" required />
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Tipo</label>
+                        <select class="lc-select" name="content_type">
+                            <?php foreach (['post'=>'Post','story'=>'Story','reel'=>'Reel','video'=>'Vídeo','email'=>'Email','blog'=>'Blog','ad'=>'Anúncio','other'=>'Outro'] as $k=>$lbl): ?>
+                                <option value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>" <?= $contentType === $k ? 'selected' : '' ?>><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Status</label>
+                        <select class="lc-select" name="status">
+                            <?php foreach (['planned'=>'Planejado','produced'=>'Produzido','posted'=>'Postado','cancelled'=>'Cancelado'] as $k=>$lbl): ?>
+                                <option value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>" <?= $status === $k ? 'selected' : '' ?>><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="lc-field" style="grid-column: 1 / -1;">
+                        <label class="lc-label">Responsável (opcional)</label>
+                        <select class="lc-select" name="assigned_user_id">
+                            <option value="">(opcional)</option>
+                            <?php foreach ($users as $u): ?>
+                                <?php $uid = (int)($u['id'] ?? 0); if ($uid <= 0) continue; ?>
+                                <?php
+                                    $nm = trim((string)($u['name'] ?? ''));
+                                    $em = trim((string)($u['email'] ?? ''));
+                                    $lbl = $nm;
+                                    if ($em !== '') {
+                                        $lbl = $lbl !== '' ? ($lbl . ' (' . $em . ')') : $em;
+                                    }
+                                ?>
+                                <option value="<?= $uid ?>" <?= $assignedUserId === $uid ? 'selected' : '' ?>><?= htmlspecialchars($lbl !== '' ? $lbl : ('Usuário #' . $uid), ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="lc-field" style="grid-column: 1 / -1;">
+                        <label class="lc-label">Notas (opcional)</label>
+                        <textarea class="lc-input" name="notes" rows="4"><?= htmlspecialchars($notes, ENT_QUOTES, 'UTF-8') ?></textarea>
+                    </div>
                 </div>
 
-                <div class="lc-field">
-                    <label class="lc-label">Título</label>
-                    <input class="lc-input" type="text" name="title" value="<?= htmlspecialchars($titleValue, ENT_QUOTES, 'UTF-8') ?>" required />
+                <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
+                    <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+                    <a class="lc-btn lc-btn--secondary" href="/marketing/calendar<?= $month !== '' ? ('?month=' . urlencode($month)) : '' ?>">Voltar</a>
                 </div>
+            </form>
 
-                <div class="lc-field">
-                    <label class="lc-label">Tipo</label>
-                    <select class="lc-select" name="content_type">
-                        <?php foreach (['post'=>'Post','story'=>'Story','reel'=>'Reel','video'=>'Vídeo','email'=>'Email','blog'=>'Blog','ad'=>'Anúncio','other'=>'Outro'] as $k=>$lbl): ?>
-                            <option value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>" <?= $contentType === $k ? 'selected' : '' ?>><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
+            <form method="post" action="/marketing/calendar/delete" style="margin-top:12px;" onsubmit="return confirm('Excluir item?');">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" value="<?= $id ?>" />
+                <?php if ($month !== ''): ?>
+                    <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
+                <?php endif; ?>
+                <button class="lc-btn lc-btn--danger" type="submit">Excluir</button>
+            </form>
+        <?php else: ?>
+            <div class="lc-grid lc-gap-grid" style="grid-template-columns: 180px 1fr; align-items:start;">
+                <div>
+                    <div class="lc-muted">Dia</div>
+                    <div><?= htmlspecialchars($entryDate, ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
-
-                <div class="lc-field">
-                    <label class="lc-label">Status</label>
-                    <select class="lc-select" name="status">
-                        <?php foreach (['planned'=>'Planejado','produced'=>'Produzido','posted'=>'Postado','cancelled'=>'Cancelado'] as $k=>$lbl): ?>
-                            <option value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>" <?= $status === $k ? 'selected' : '' ?>><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div>
+                    <div class="lc-muted">Título</div>
+                    <div><?= htmlspecialchars($titleValue, ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
-
-                <div class="lc-field" style="grid-column: 1 / -1;">
-                    <label class="lc-label">Responsável (opcional)</label>
-                    <select class="lc-select" name="assigned_user_id">
-                        <option value="">(opcional)</option>
-                        <?php foreach ($users as $u): ?>
-                            <?php $uid = (int)($u['id'] ?? 0); if ($uid <= 0) continue; ?>
-                            <?php
-                                $nm = trim((string)($u['name'] ?? ''));
-                                $em = trim((string)($u['email'] ?? ''));
-                                $lbl = $nm;
-                                if ($em !== '') {
-                                    $lbl = $lbl !== '' ? ($lbl . ' (' . $em . ')') : $em;
-                                }
-                            ?>
-                            <option value="<?= $uid ?>" <?= $assignedUserId === $uid ? 'selected' : '' ?>><?= htmlspecialchars($lbl !== '' ? $lbl : ('Usuário #' . $uid), ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div>
+                    <div class="lc-muted">Tipo</div>
+                    <div><?= htmlspecialchars($contentType, ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
-
-                <div class="lc-field" style="grid-column: 1 / -1;">
-                    <label class="lc-label">Notas (opcional)</label>
-                    <textarea class="lc-input" name="notes" rows="4"><?= htmlspecialchars($notes, ENT_QUOTES, 'UTF-8') ?></textarea>
+                <div>
+                    <div class="lc-muted">Status</div>
+                    <div><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></div>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <div class="lc-muted">Notas</div>
+                    <div><?= nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8')) ?></div>
                 </div>
             </div>
 
             <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
                 <a class="lc-btn lc-btn--secondary" href="/marketing/calendar<?= $month !== '' ? ('?month=' . urlencode($month)) : '' ?>">Voltar</a>
             </div>
-        </form>
-
-        <form method="post" action="/marketing/calendar/delete" style="margin-top:12px;" onsubmit="return confirm('Excluir item?');">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="id" value="<?= $id ?>" />
-            <?php if ($month !== ''): ?>
-                <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
-            <?php endif; ?>
-            <button class="lc-btn lc-btn--danger" type="submit">Excluir</button>
-        </form>
+        <?php endif; ?>
     </div>
 </div>
 

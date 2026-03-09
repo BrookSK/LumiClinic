@@ -5,6 +5,26 @@ $row = $row ?? null;
 $error = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -29,18 +49,22 @@ ob_start();
 <div class="lc-card">
     <div class="lc-card__header">Cadastro</div>
     <div class="lc-card__body">
-        <form method="post" action="/finance/cost-centers/update" class="lc-form">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="id" value="<?= (int)($row['id'] ?? 0) ?>" />
+        <?php if ($can('finance.cost_centers.manage')): ?>
+            <form method="post" action="/finance/cost-centers/update" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" value="<?= (int)($row['id'] ?? 0) ?>" />
 
-            <label class="lc-label">Nome</label>
-            <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($row['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
+                <label class="lc-label">Nome</label>
+                <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($row['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
 
-            <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
-                <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers">Voltar</a>
-            </div>
-        </form>
+                <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
+                    <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+                    <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers">Voltar</a>
+                </div>
+            </form>
+        <?php else: ?>
+            <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers">Voltar</a>
+        <?php endif; ?>
     </div>
 </div>
 <?php

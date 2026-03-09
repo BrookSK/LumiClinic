@@ -553,6 +553,7 @@ $ico = [
                                 <?php endif; ?>
                                 <?php if ($can('compliance.lgpd.read')): ?>
                                     <?= $navItem('/compliance/lgpd-requests', 'LGPD (Solicitações)', $ico['shield'], $isActive('/compliance/lgpd-requests')) ?>
+                                    <?= $navItem('/compliance/lgpd-audit', 'LGPD (Auditoria)', $ico['shield'], $isActive('/compliance/lgpd-audit')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('compliance.policies.read')): ?>
                                     <?= $navItem('/compliance/certifications', 'Certificações', $ico['shield'], $isActive('/compliance/certifications')) ?>

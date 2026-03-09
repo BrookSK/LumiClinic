@@ -3,6 +3,27 @@ $title = 'LGPD (Solicitações)';
 $csrf = $_SESSION['_csrf'] ?? '';
 $items = $items ?? [];
 $status = $status ?? 'pending';
+
+$can = function (string $permissionCode): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+        return true;
+    }
+
+    $permissions = $_SESSION['permissions'] ?? [];
+    if (!is_array($permissions)) {
+        return false;
+    }
+
+    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
+        if (in_array($permissionCode, $permissions['deny'], true)) {
+            return false;
+        }
+        return in_array($permissionCode, $permissions['allow'], true);
+    }
+
+    return in_array($permissionCode, $permissions, true);
+};
+
 ob_start();
 ?>
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
@@ -70,31 +91,37 @@ ob_start();
                             <td><?= htmlspecialchars((string)($r['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                             <td style="min-width:420px;">
                                 <div class="lc-flex lc-flex--wrap" style="gap:8px;">
-                                    <a class="lc-btn lc-btn--secondary" href="/compliance/lgpd-requests/export?id=<?= (int)($r['id'] ?? 0) ?>">Export JSON</a>
+                                    <?php if ($can('compliance.lgpd.export')): ?>
+                                        <a class="lc-btn lc-btn--secondary" href="/compliance/lgpd-requests/export?id=<?= (int)($r['id'] ?? 0) ?>">Export JSON</a>
+                                    <?php endif; ?>
 
-                                    <form method="post" action="/compliance/lgpd-requests/process" class="lc-form lc-flex" style="gap:8px; align-items:flex-end;">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
-                                        <select class="lc-select" name="decision">
-                                            <option value="processed">Processar</option>
-                                            <option value="rejected">Rejeitar</option>
-                                        </select>
-                                        <input class="lc-input" type="text" name="note" placeholder="nota (opcional)" />
-                                        <button class="lc-btn lc-btn--primary" type="submit">OK</button>
-                                    </form>
-
-                                    <form method="post" action="/compliance/lgpd-requests/anonymize" class="lc-form">
-                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                        <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
-                                        <button class="lc-btn lc-btn--danger" type="submit">Anonimizar</button>
-                                    </form>
-
-                                    <?php if ((string)($r['type'] ?? '') === 'delete'): ?>
-                                        <form method="post" action="/compliance/lgpd-requests/delete" class="lc-form">
+                                    <?php if ($can('compliance.lgpd.process')): ?>
+                                        <form method="post" action="/compliance/lgpd-requests/process" class="lc-form lc-flex" style="gap:8px; align-items:flex-end;">
                                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                             <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
-                                            <button class="lc-btn lc-btn--danger" type="submit">Excluir (soft)</button>
+                                            <select class="lc-select" name="decision">
+                                                <option value="processed">Processar</option>
+                                                <option value="rejected">Rejeitar</option>
+                                            </select>
+                                            <input class="lc-input" type="text" name="note" placeholder="nota (opcional)" />
+                                            <button class="lc-btn lc-btn--primary" type="submit">OK</button>
                                         </form>
+                                    <?php endif; ?>
+
+                                    <?php if ($can('compliance.lgpd.anonymize')): ?>
+                                        <form method="post" action="/compliance/lgpd-requests/anonymize" class="lc-form">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
+                                            <button class="lc-btn lc-btn--danger" type="submit">Anonimizar</button>
+                                        </form>
+
+                                        <?php if ((string)($r['type'] ?? '') === 'delete'): ?>
+                                            <form method="post" action="/compliance/lgpd-requests/delete" class="lc-form">
+                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                                <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
+                                                <button class="lc-btn lc-btn--danger" type="submit">Excluir (soft)</button>
+                                            </form>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </td>
