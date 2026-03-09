@@ -16,6 +16,10 @@ final class ClinicSubscriptionRepository
                 cs.id,
                 cs.clinic_id,
                 cs.plan_id,
+                cs.pending_plan_id,
+                cs.pending_plan_effective_at,
+                cs.pending_upgrade_plan_id,
+                cs.pending_upgrade_payment_id,
                 cs.status,
                 cs.trial_ends_at,
                 cs.current_period_start,
@@ -35,6 +39,25 @@ final class ClinicSubscriptionRepository
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['clinic_id' => $clinicId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string,mixed>|null */
+    public function findByPendingUpgradePaymentId(string $paymentId): ?array
+    {
+        $paymentId = trim($paymentId);
+        if ($paymentId === '') {
+            return null;
+        }
+
+        $stmt = $this->pdo->prepare("\n            SELECT *
+            FROM clinic_subscriptions
+            WHERE pending_upgrade_payment_id = :id
+            LIMIT 1
+        ");
+        $stmt->execute(['id' => $paymentId]);
         $row = $stmt->fetch();
 
         return $row ?: null;
@@ -160,5 +183,45 @@ final class ClinicSubscriptionRepository
             'asaas_subscription_id' => $asaasSubscriptionId,
             'mp_preapproval_id' => $mpPreapprovalId,
         ]);
+    }
+
+    public function scheduleDowngrade(int $clinicId, int $pendingPlanId, ?string $effectiveAt): void
+    {
+        if ($clinicId <= 0 || $pendingPlanId <= 0) {
+            throw new \RuntimeException('Parâmetros inválidos.');
+        }
+
+        $stmt = $this->pdo->prepare("\n            UPDATE clinic_subscriptions\n            SET pending_plan_id = :pending_plan_id,\n                pending_plan_effective_at = :effective_at,\n                updated_at = NOW()\n            WHERE clinic_id = :clinic_id\n            LIMIT 1\n        ");
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'pending_plan_id' => $pendingPlanId,
+            'effective_at' => $effectiveAt,
+        ]);
+    }
+
+    public function clearScheduledDowngrade(int $clinicId): void
+    {
+        $stmt = $this->pdo->prepare("\n            UPDATE clinic_subscriptions\n            SET pending_plan_id = NULL,\n                pending_plan_effective_at = NULL,\n                updated_at = NOW()\n            WHERE clinic_id = :clinic_id\n            LIMIT 1\n        ");
+        $stmt->execute(['clinic_id' => $clinicId]);
+    }
+
+    public function setPendingUpgrade(int $clinicId, int $planId, string $paymentId): void
+    {
+        if ($clinicId <= 0 || $planId <= 0 || trim($paymentId) === '') {
+            throw new \RuntimeException('Parâmetros inválidos.');
+        }
+
+        $stmt = $this->pdo->prepare("\n            UPDATE clinic_subscriptions\n            SET pending_upgrade_plan_id = :plan_id,\n                pending_upgrade_payment_id = :payment_id,\n                updated_at = NOW()\n            WHERE clinic_id = :clinic_id\n            LIMIT 1\n        ");
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'plan_id' => $planId,
+            'payment_id' => $paymentId,
+        ]);
+    }
+
+    public function clearPendingUpgrade(int $clinicId): void
+    {
+        $stmt = $this->pdo->prepare("\n            UPDATE clinic_subscriptions\n            SET pending_upgrade_plan_id = NULL,\n                pending_upgrade_payment_id = NULL,\n                updated_at = NOW()\n            WHERE clinic_id = :clinic_id\n            LIMIT 1\n        ");
+        $stmt->execute(['clinic_id' => $clinicId]);
     }
 }

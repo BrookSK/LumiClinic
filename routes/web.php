@@ -73,6 +73,7 @@ use App\Controllers\Portal\PortalProfileController;
 use App\Controllers\Portal\PortalSecurityController;
 use App\Controllers\Portal\PortalSearchController;
 use App\Controllers\Portal\PortalLegalDocumentsController;
+use App\Controllers\Portal\RegisterPatientController;
 use App\Controllers\Api\ApiV1Controller;
 use App\Controllers\Billing\WebhookController;
 use App\Controllers\Billing\ClinicSubscriptionController;
@@ -91,11 +92,14 @@ use App\Controllers\Tutorial\PatientTutorialController;
 use App\Controllers\Account\MeController;
 use App\Controllers\Auth\AccessChoiceController;
 use App\Controllers\Public\AppointmentConfirmController;
+use App\Controllers\Public\ClinicSignupController;
 
 $router->get('/', [DashboardController::class, 'index']);
 
 $router->get('/login', [LoginController::class, 'show']);
 $router->post('/login', [LoginController::class, 'login']);
+$router->get('/criar-conta', [ClinicSignupController::class, 'show']);
+$router->post('/criar-conta', [ClinicSignupController::class, 'store']);
 $router->get('/choose-access', [AccessChoiceController::class, 'show']);
 $router->post('/choose-access', [AccessChoiceController::class, 'choose']);
 $router->get('/forgot', [LoginController::class, 'showForgot']);
@@ -116,6 +120,8 @@ $router->post('/legal/sign', [LegalDocumentsController::class, 'signStore']);
 
 $router->get('/portal/login', [AuthPatientController::class, 'showLogin']);
 $router->post('/portal/login', [AuthPatientController::class, 'login']);
+$router->get('/portal/register', [RegisterPatientController::class, 'show']);
+$router->post('/portal/register', [RegisterPatientController::class, 'submit']);
 $router->post('/portal/logout', [AuthPatientController::class, 'logout']);
 $router->get('/portal/forgot', [AuthPatientController::class, 'showForgot']);
 $router->post('/portal/forgot', [AuthPatientController::class, 'forgot']);
@@ -174,6 +180,8 @@ $router->post('/webhooks/mercadopago', [WebhookController::class, 'mercadopago']
 
 $router->get('/billing/subscription', [ClinicSubscriptionController::class, 'index']);
 $router->post('/billing/subscription/change-plan', [ClinicSubscriptionController::class, 'changePlan']);
+$router->get('/billing/subscription/checkout', [ClinicSubscriptionController::class, 'checkout']);
+$router->post('/billing/subscription/checkout', [ClinicSubscriptionController::class, 'checkoutSubmit']);
 $router->post('/billing/subscription/cancel', [ClinicSubscriptionController::class, 'cancel']);
 $router->post('/billing/subscription/ensure-gateway', [ClinicSubscriptionController::class, 'ensureGateway']);
 

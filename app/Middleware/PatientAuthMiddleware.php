@@ -26,6 +26,7 @@ final class PatientAuthMiddleware implements MiddlewareInterface
             '/portal/login',
             '/portal/forgot',
             '/portal/reset',
+            '/portal/register',
         ];
 
         if (in_array($path, $public, true)) {

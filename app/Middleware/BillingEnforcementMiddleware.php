@@ -25,6 +25,7 @@ final class BillingEnforcementMiddleware implements MiddlewareInterface
         if (
             $path === '/login' ||
             $path === '/logout' ||
+            str_starts_with($path, '/billing/subscription') ||
             str_starts_with($path, '/private/tutorial') ||
             $path === '/favicon.ico' ||
             str_starts_with($path, '/assets') ||

@@ -22,6 +22,96 @@ final class BillingGatewayService
         return (new AsaasClient($this->container))->listPaymentsBySubscription($asaasSubscriptionId, $limit);
     }
 
+    /** @param array<string,string> $card */
+    public function createAsaasCreditCardPaymentForUpgrade(
+        int $clinicId,
+        string $asaasCustomerId,
+        float $amount,
+        array $card,
+        string $ip,
+        ?string $userAgent = null
+    ): array {
+        if ($clinicId <= 0) {
+            throw new \RuntimeException('Clínica inválida.');
+        }
+        $asaasCustomerId = trim($asaasCustomerId);
+        if ($asaasCustomerId === '') {
+            throw new \RuntimeException('Customer Asaas inválido.');
+        }
+        if ($amount <= 0) {
+            throw new \RuntimeException('Valor inválido.');
+        }
+
+        $payload = [
+            'customer' => $asaasCustomerId,
+            'billingType' => 'CREDIT_CARD',
+            'value' => $amount,
+            'dueDate' => (new \DateTimeImmutable('now'))->format('Y-m-d'),
+            'description' => 'Upgrade de plano (clínica #' . $clinicId . ')',
+            'externalReference' => 'clinic:' . $clinicId . ':upgrade',
+            'creditCard' => [
+                'holderName' => trim((string)($card['cc_holder'] ?? '')),
+                'number' => preg_replace('/\D+/', '', (string)($card['cc_number'] ?? '')),
+                'expiryMonth' => preg_replace('/\D+/', '', (string)($card['cc_exp_month'] ?? '')),
+                'expiryYear' => preg_replace('/\D+/', '', (string)($card['cc_exp_year'] ?? '')),
+                'ccv' => preg_replace('/\D+/', '', (string)($card['cc_cvv'] ?? '')),
+            ],
+            'creditCardHolderInfo' => [
+                'name' => trim((string)($card['cc_holder'] ?? '')),
+                'cpfCnpj' => preg_replace('/\D+/', '', (string)($card['cpf'] ?? '')),
+                'postalCode' => preg_replace('/\D+/', '', (string)($card['postal_code'] ?? '')),
+                'addressNumber' => trim((string)($card['address_number'] ?? '')),
+                'phone' => trim((string)($card['phone'] ?? '')) !== '' ? preg_replace('/\D+/', '', (string)($card['phone'] ?? '')) : null,
+                'mobilePhone' => trim((string)($card['mobile'] ?? '')) !== '' ? preg_replace('/\D+/', '', (string)($card['mobile'] ?? '')) : null,
+            ],
+            'remoteIp' => $ip,
+        ];
+
+        return (new AsaasClient($this->container))->createPayment($payload);
+    }
+
+    /** @param array<string,string> $card */
+    public function ensureAsaasSubscriptionCreditCard(int $clinicId, array $card, string $ip, ?string $userAgent = null): void
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $subsRepo = new ClinicSubscriptionRepository($pdo);
+        $sub = $subsRepo->findByClinicId($clinicId);
+        if ($sub === null) {
+            return;
+        }
+
+        $provider = (string)($sub['gateway_provider'] ?? '');
+        if ($provider !== 'asaas') {
+            return;
+        }
+
+        $asaasSubId = trim((string)($sub['asaas_subscription_id'] ?? ''));
+        if ($asaasSubId === '') {
+            return;
+        }
+
+        $payload = [
+            'creditCard' => [
+                'holderName' => trim((string)($card['cc_holder'] ?? '')),
+                'number' => preg_replace('/\D+/', '', (string)($card['cc_number'] ?? '')),
+                'expiryMonth' => preg_replace('/\D+/', '', (string)($card['cc_exp_month'] ?? '')),
+                'expiryYear' => preg_replace('/\D+/', '', (string)($card['cc_exp_year'] ?? '')),
+                'ccv' => preg_replace('/\D+/', '', (string)($card['cc_cvv'] ?? '')),
+            ],
+            'creditCardHolderInfo' => [
+                'name' => trim((string)($card['cc_holder'] ?? '')),
+                'cpfCnpj' => preg_replace('/\D+/', '', (string)($card['cpf'] ?? '')),
+                'postalCode' => preg_replace('/\D+/', '', (string)($card['postal_code'] ?? '')),
+                'addressNumber' => trim((string)($card['address_number'] ?? '')),
+                'phone' => trim((string)($card['phone'] ?? '')) !== '' ? preg_replace('/\D+/', '', (string)($card['phone'] ?? '')) : null,
+                'mobilePhone' => trim((string)($card['mobile'] ?? '')) !== '' ? preg_replace('/\D+/', '', (string)($card['mobile'] ?? '')) : null,
+            ],
+            'remoteIp' => $ip,
+        ];
+
+        (new AsaasClient($this->container))->updateSubscriptionCreditCard($asaasSubId, $payload);
+    }
+
     public function syncGatewaySubscriptionAmount(int $clinicId): void
     {
         $pdo = $this->container->get(\PDO::class);

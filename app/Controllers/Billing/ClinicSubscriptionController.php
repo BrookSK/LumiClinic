@@ -52,14 +52,69 @@ final class ClinicSubscriptionController extends Controller
         $planId = (int)$request->input('plan_id', 0);
 
         try {
-            $res = (new ClinicSubscriptionSelfService($this->container))->changePlan($planId, $request->ip());
-            if (($res['gateway_synced'] ?? false) === true) {
-                return $this->redirect('/billing/subscription?ok=' . urlencode('Plano atualizado e cobrança sincronizada.'));
+            $res = (new ClinicSubscriptionSelfService($this->container))->beginPlanChange($planId, $request->ip());
+
+            if (($res['type'] ?? '') === 'noop') {
+                return $this->redirect('/billing/subscription?ok=' . urlencode('Plano já está selecionado.'));
+            }
+
+            if (($res['type'] ?? '') === 'downgrade_scheduled') {
+                return $this->redirect('/billing/subscription?ok=' . urlencode('Downgrade agendado para o próximo ciclo.'));
+            }
+
+            if (($res['type'] ?? '') === 'upgrade_checkout') {
+                $url = (string)($res['checkout_url'] ?? '');
+                if ($url !== '') {
+                    return $this->redirect($url);
+                }
+                return $this->redirect('/billing/subscription?error=' . urlencode('Não foi possível iniciar o checkout.'));
             }
 
             return $this->redirect('/billing/subscription?error=' . urlencode('Não foi possível atualizar o plano.'));
         } catch (\RuntimeException $e) {
             return $this->redirect('/billing/subscription?error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function checkout(Request $request)
+    {
+        $this->ensureOwnerOrSuperAdmin();
+
+        $planId = (int)$request->input('plan_id', 0);
+        try {
+            $data = (new ClinicSubscriptionSelfService($this->container))->getCheckoutData($planId);
+            return $this->view('billing/subscription_checkout', [
+                'subscription' => $data['subscription'],
+                'plan' => $data['plan'],
+                'error' => (string)$request->input('error', ''),
+            ]);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/billing/subscription?error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function checkoutSubmit(Request $request)
+    {
+        $this->ensureOwnerOrSuperAdmin();
+
+        $planId = (int)$request->input('plan_id', 0);
+        try {
+            (new ClinicSubscriptionSelfService($this->container))->payUpgradeAndApply($planId, [
+                'cc_holder' => (string)$request->input('cc_holder', ''),
+                'cc_number' => (string)$request->input('cc_number', ''),
+                'cc_exp_month' => (string)$request->input('cc_exp_month', ''),
+                'cc_exp_year' => (string)$request->input('cc_exp_year', ''),
+                'cc_cvv' => (string)$request->input('cc_cvv', ''),
+                'cpf' => (string)$request->input('cpf', ''),
+                'postal_code' => (string)$request->input('postal_code', ''),
+                'address_number' => (string)$request->input('address_number', ''),
+                'phone' => (string)$request->input('phone', ''),
+                'mobile' => (string)$request->input('mobile', ''),
+            ], $request->ip(), $request->header('user-agent'));
+
+            return $this->redirect('/billing/subscription?ok=' . urlencode('Pagamento aprovado e plano alterado.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/billing/subscription/checkout?plan_id=' . $planId . '&error=' . urlencode($e->getMessage()));
         }
     }
 

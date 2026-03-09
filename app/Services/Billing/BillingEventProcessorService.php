@@ -6,6 +6,7 @@ namespace App\Services\Billing;
 
 use App\Core\Container\Container;
 use App\Repositories\ClinicSubscriptionRepository;
+use App\Services\Billing\BillingGatewayService;
 
 final class BillingEventProcessorService
 {
@@ -31,6 +32,45 @@ final class BillingEventProcessorService
     private function processAsaas(array $event): void
     {
         $payload = $this->decodePayload($event);
+
+        $eventType = (string)($payload['event'] ?? $payload['type'] ?? '');
+        $paymentId = null;
+        if (isset($payload['payment']) && is_array($payload['payment']) && isset($payload['payment']['id'])) {
+            $paymentId = (string)$payload['payment']['id'];
+        } elseif (isset($payload['id']) && is_string($payload['id'])) {
+            $paymentId = (string)$payload['id'];
+        }
+
+        if ($paymentId !== null && trim($paymentId) !== '' && (stripos($eventType, 'PAYMENT_CONFIRMED') !== false || stripos($eventType, 'PAYMENT_RECEIVED') !== false)) {
+            $pdo = $this->container->get(\PDO::class);
+            $subsRepo = new ClinicSubscriptionRepository($pdo);
+            $sub = $subsRepo->findByPendingUpgradePaymentId($paymentId);
+            if ($sub !== null) {
+                $clinicId = (int)($sub['clinic_id'] ?? 0);
+                $pendingPlanId = isset($sub['pending_upgrade_plan_id']) && $sub['pending_upgrade_plan_id'] !== null ? (int)$sub['pending_upgrade_plan_id'] : 0;
+                if ($clinicId > 0 && $pendingPlanId > 0) {
+                    try {
+                        $pdo->beginTransaction();
+                        $stmt = $pdo->prepare("\n                            UPDATE clinic_subscriptions\n                            SET plan_id = :plan_id,\n                                pending_upgrade_plan_id = NULL,\n                                pending_upgrade_payment_id = NULL,\n                                status = 'active',\n                                past_due_since = NULL,\n                                updated_at = NOW()\n                            WHERE clinic_id = :clinic_id\n                            LIMIT 1\n                        ");
+                        $stmt->execute(['clinic_id' => $clinicId, 'plan_id' => $pendingPlanId]);
+                        $pdo->commit();
+                    } catch (\Throwable $e) {
+                        if ($pdo->inTransaction()) {
+                            $pdo->rollBack();
+                        }
+                        return;
+                    }
+
+                    try {
+                        $gw = new BillingGatewayService($this->container);
+                        $gw->ensureGatewaySubscription($clinicId);
+                        $gw->syncGatewaySubscriptionAmount($clinicId);
+                    } catch (\Throwable $e) {
+                        return;
+                    }
+                }
+            }
+        }
 
         $externalSubId = null;
         if (isset($payload['subscription']) && is_string($payload['subscription'])) {

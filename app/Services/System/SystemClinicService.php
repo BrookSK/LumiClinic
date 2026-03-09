@@ -68,6 +68,54 @@ final class SystemClinicService
         }
     }
 
+    /** @return array{clinic_id:int,owner_user_id:int} */
+    public function createClinicWithOwnerAndReturnIds(
+        string $clinicName,
+        ?string $tenantKey,
+        ?string $primaryDomain,
+        string $ownerName,
+        string $ownerEmail,
+        string $ownerPassword,
+        string $ip
+    ): array {
+        $pdo = $this->container->get(\PDO::class);
+        $pdo->beginTransaction();
+
+        try {
+            $repo = new SystemClinicRepository($pdo);
+
+            $clinicId = $repo->createClinic($clinicName, $tenantKey);
+            $repo->createClinicDefaults($clinicId);
+
+            $primaryDomain = $primaryDomain !== null ? strtolower(trim($primaryDomain)) : null;
+            if ($primaryDomain === '') {
+                $primaryDomain = null;
+            }
+            if ($primaryDomain !== null) {
+                $repo->createPrimaryDomain($clinicId, $primaryDomain);
+            }
+
+            $ownerPasswordHash = password_hash($ownerPassword, PASSWORD_BCRYPT);
+            if ($ownerPasswordHash === false) {
+                throw new \RuntimeException('Falha ao gerar hash de senha.');
+            }
+
+            $ownerUserId = $repo->createOwnerUser($clinicId, $ownerName, $ownerEmail, $ownerPasswordHash);
+            $roleOwnerId = $repo->seedRbacAndReturnOwnerRoleId($clinicId);
+            $repo->assignRole($clinicId, $ownerUserId, $roleOwnerId);
+
+            $audit = new AuditLogRepository($pdo);
+            $audit->log(null, null, 'public.clinic_signup.create', ['clinic_id' => $clinicId, 'tenant_key' => $tenantKey, 'primary_domain' => $primaryDomain], $ip);
+
+            $pdo->commit();
+
+            return ['clinic_id' => $clinicId, 'owner_user_id' => $ownerUserId];
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     /** @return array<string,mixed>|null */
     public function getClinic(int $clinicId): ?array
     {
