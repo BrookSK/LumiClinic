@@ -30,10 +30,29 @@ $fmtDateTime = function ($value): string {
     }
 };
 
+$fmtMoney = function (?int $cents): string {
+    if ($cents === null) {
+        return '-';
+    }
+    return 'R$ ' . number_format(max(0, (int)$cents) / 100, 2, ',', '.');
+};
+
+/** @return array<string,mixed> */
+$decodeLimits = function ($limitsJson): array {
+    if (is_array($limitsJson)) {
+        return $limitsJson;
+    }
+    $raw = trim((string)($limitsJson ?? ''));
+    if ($raw === '') {
+        return [];
+    }
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
+};
+
 $price = '-';
 if (is_array($plan) && isset($plan['price_cents'])) {
-    $cents = (int)$plan['price_cents'];
-    $price = 'R$ ' . number_format(max(0, $cents) / 100, 2, ',', '.');
+    $price = $fmtMoney((int)$plan['price_cents']);
 }
 
 $planName = is_array($plan) ? (string)($plan['name'] ?? '') : '';
@@ -41,6 +60,11 @@ $planCode = is_array($plan) ? (string)($plan['code'] ?? '') : '';
 $planDisplay = trim($planName !== '' ? $planName : $planCode);
 
 $subStatus = (string)($subscription['status'] ?? '');
+
+$pendingPlanId = isset($subscription['pending_plan_id']) && $subscription['pending_plan_id'] !== null ? (int)$subscription['pending_plan_id'] : null;
+$pendingPlanEffectiveAt = (string)($subscription['pending_plan_effective_at'] ?? '');
+$pendingUpgradePlanId = isset($subscription['pending_upgrade_plan_id']) && $subscription['pending_upgrade_plan_id'] !== null ? (int)$subscription['pending_upgrade_plan_id'] : null;
+$pendingUpgradePaymentId = (string)($subscription['pending_upgrade_payment_id'] ?? '');
 
 $isOwnerOrSuperAdmin = (function (): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
@@ -91,21 +115,39 @@ ob_start();
             </div>
         </div>
 
+        <div class="lc-grid lc-gap-grid" style="margin-top:10px; grid-template-columns: 1fr 1fr 1fr;">
+            <div>
+                <div class="lc-muted" style="font-size:12px;">Início do período</div>
+                <div><?= htmlspecialchars($fmtDateTime($subscription['current_period_start'] ?? null), ENT_QUOTES, 'UTF-8') ?></div>
+            </div>
+            <div>
+                <div class="lc-muted" style="font-size:12px;">Trial até</div>
+                <div><?= htmlspecialchars($fmtDateTime($subscription['trial_ends_at'] ?? null), ENT_QUOTES, 'UTF-8') ?></div>
+            </div>
+            <div>
+                <div class="lc-muted" style="font-size:12px;">Em atraso desde</div>
+                <div><?= htmlspecialchars($fmtDateTime($subscription['past_due_since'] ?? null), ENT_QUOTES, 'UTF-8') ?></div>
+            </div>
+        </div>
+
+        <?php if ($pendingPlanId !== null && $pendingPlanId > 0): ?>
+            <div class="lc-alert lc-alert--info" style="margin-top:12px;">
+                Downgrade agendado para o próximo ciclo.
+                <?php if (trim($pendingPlanEffectiveAt) !== ''): ?>
+                    <br />Efetiva em: <strong><?= htmlspecialchars($fmtDateTime($pendingPlanEffectiveAt), ENT_QUOTES, 'UTF-8') ?></strong>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($pendingUpgradePlanId !== null && $pendingUpgradePlanId > 0 && trim($pendingUpgradePaymentId) !== ''): ?>
+            <div class="lc-alert lc-alert--warning" style="margin-top:12px;">
+                Upgrade pendente de confirmação do pagamento.
+                <br />ID cobrança: <code><?= htmlspecialchars($pendingUpgradePaymentId, ENT_QUOTES, 'UTF-8') ?></code>
+            </div>
+        <?php endif; ?>
+
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:12px; align-items:center;">
             <?php if ($isOwnerOrSuperAdmin): ?>
-                <form method="post" action="/billing/subscription/change-plan" class="lc-flex" style="gap:8px; align-items:center;">
-                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                    <select class="lc-input" name="plan_id">
-                        <?php foreach (($plans ?? []) as $p): ?>
-                            <?php $pid = (int)($p['id'] ?? 0); ?>
-                            <option value="<?= $pid ?>" <?= ((int)($subscription['plan_id'] ?? 0) === $pid) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars((string)($p['name'] ?? $p['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button class="lc-btn lc-btn--secondary" type="submit">Trocar plano</button>
-                </form>
-
                 <form method="post" action="/billing/subscription/ensure-gateway" style="margin:0;" onsubmit="return confirm('Atualizar cobrança no provedor?');">
                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                     <button class="lc-btn lc-btn--secondary" type="submit">Atualizar cobrança</button>
@@ -121,6 +163,73 @@ ob_start();
         <div class="lc-muted" style="margin-top:10px; font-size:12px; line-height:1.55;">
             Forma de cobrança: <?= htmlspecialchars((string)($subscription['gateway_provider'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
         </div>
+    </div>
+</div>
+
+<div class="lc-card" style="margin-bottom:14px;">
+    <div class="lc-card__title">Planos</div>
+    <div class="lc-card__body">
+        <?php if (!is_array($plans) || $plans === []): ?>
+            <div class="lc-muted">Nenhum plano disponível.</div>
+        <?php else: ?>
+            <div class="lc-grid lc-gap-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                <?php foreach ($plans as $p): ?>
+                    <?php
+                    $pid = (int)($p['id'] ?? 0);
+                    $pName = (string)($p['name'] ?? $p['code'] ?? '');
+                    $pCents = isset($p['price_cents']) ? (int)$p['price_cents'] : null;
+                    $pPrice = $fmtMoney($pCents);
+                    $limits = $decodeLimits($p['limits_json'] ?? null);
+                    $isCurrent = ((int)($subscription['plan_id'] ?? 0) === $pid);
+                    ?>
+
+                    <div class="lc-card lc-card--soft" style="margin:0;">
+                        <div class="lc-card__header">
+                            <div class="lc-card__title">
+                                <?= htmlspecialchars($pName !== '' ? $pName : '-', ENT_QUOTES, 'UTF-8') ?>
+                                <?php if ($isCurrent): ?>
+                                    <span class="lc-badge lc-badge--primary" style="margin-left:8px;">Atual</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="lc-card__body">
+                            <div style="font-weight:700; font-size:18px; margin-bottom:8px;">
+                                <?= htmlspecialchars($pPrice, ENT_QUOTES, 'UTF-8') ?>
+                                <span class="lc-muted" style="font-size:12px; font-weight:400;">/ mês</span>
+                            </div>
+
+                            <div class="lc-muted" style="font-size:12px; line-height:1.55;">
+                                Usuários: <strong><?= htmlspecialchars((string)($limits['users'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <br />
+                                Pacientes: <strong><?= htmlspecialchars((string)($limits['patients'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <br />
+                                Armazenamento: <strong><?= htmlspecialchars((string)($limits['storage_mb'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong> MB
+                                <br />
+                                Portal: <strong><?= htmlspecialchars(((isset($limits['portal']) && (bool)$limits['portal'] === true) ? 'Sim' : 'Não'), ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                            <?php if ($isOwnerOrSuperAdmin): ?>
+                                <div style="margin-top:12px;">
+                                    <?php if ($isCurrent): ?>
+                                        <button class="lc-btn lc-btn--secondary" type="button" disabled>Plano atual</button>
+                                    <?php else: ?>
+                                        <form method="post" action="/billing/subscription/change-plan" style="margin:0;">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="plan_id" value="<?= $pid ?>" />
+                                            <button class="lc-btn lc-btn--primary" type="submit">Selecionar este plano</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="lc-muted" style="margin-top:10px; font-size:12px; line-height:1.55;">
+                Upgrade (mais caro) cobra o valor integral agora por cartão de crédito.
+                <br />Downgrade (mais barato) é agendado para o próximo ciclo.
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -150,11 +259,20 @@ ob_start();
                         $paidAt = (string)($p['paymentDate'] ?? $p['clientPaymentDate'] ?? '');
                         $invoiceUrl = (string)($p['invoiceUrl'] ?? '');
                         $bankSlipUrl = (string)($p['bankSlipUrl'] ?? $p['bankSlipUrl'] ?? '');
+                        $stUp = strtoupper($st);
+                        $stLabel = $st;
+                        if (in_array($stUp, ['RECEIVED', 'CONFIRMED'], true)) {
+                            $stLabel = 'Pago';
+                        } elseif (in_array($stUp, ['PENDING', 'AWAITING_RISK_ANALYSIS'], true)) {
+                            $stLabel = 'Pendente';
+                        } elseif (in_array($stUp, ['OVERDUE'], true)) {
+                            $stLabel = 'Vencido';
+                        }
                         ?>
                         <tr>
                             <td><?= htmlspecialchars($due !== '' ? $due : '-', ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars($value !== null ? ('R$ ' . number_format(max(0, $value), 2, ',', '.')) : '-', ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars($st !== '' ? $st : '-', ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars($stLabel !== '' ? $stLabel : '-', ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars($paidAt !== '' ? $paidAt : '-', ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
                                 <?php if ($invoiceUrl !== ''): ?>
