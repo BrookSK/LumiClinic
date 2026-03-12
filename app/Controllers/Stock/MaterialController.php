@@ -36,14 +36,60 @@ final class MaterialController extends Controller
             return $redirect;
         }
 
+        $tab = trim((string)$request->input('tab', 'materials'));
+        $allowedTabs = ['materials', 'movements', 'categories', 'units'];
+        if (!in_array($tab, $allowedTabs, true)) {
+            $tab = 'materials';
+        }
+
         $svc = new StockService($this->container);
         $meta = new MaterialMetaService($this->container);
-        return $this->view('stock/materials', [
+
+        $data = [
+            'tab' => $tab,
             'items' => $svc->listMaterials(),
             'categories' => $meta->listActiveCategories(),
             'units' => $meta->listActiveUnits(),
             'error' => trim((string)$request->input('error', '')),
-        ]);
+            'from' => null,
+            'to' => null,
+            'movements' => [],
+            'categories_all' => [],
+            'units_all' => [],
+            'page' => 1,
+            'per_page' => 100,
+            'has_next' => false,
+        ];
+
+        if ($tab === 'movements') {
+            $from = trim((string)$request->input('from', date('Y-m-01')));
+            $to = trim((string)$request->input('to', date('Y-m-d')));
+            $page = (int)$request->input('page', 1);
+            $perPage = (int)$request->input('per_page', 100);
+
+            $page = max(1, $page);
+            $perPage = max(25, min(200, $perPage));
+            $offset = ($page - 1) * $perPage;
+
+            $mvData = $svc->listMovements($from, $to, $perPage + 1, $offset);
+            $hasNext = count($mvData['movements']) > $perPage;
+            if ($hasNext) {
+                $mvData['movements'] = array_slice($mvData['movements'], 0, $perPage);
+            }
+
+            $data['from'] = $mvData['from'];
+            $data['to'] = $mvData['to'];
+            $data['movements'] = $mvData['movements'];
+            $data['page'] = $page;
+            $data['per_page'] = $perPage;
+            $data['has_next'] = $hasNext;
+        } elseif ($tab === 'categories') {
+            $data['categories_all'] = $meta->listCategories();
+        } elseif ($tab === 'units') {
+            $data['units_all'] = $meta->listUnits();
+        }
+
+        return $this->view('stock/materials', $data);
     }
 
     public function createForm(Request $request)

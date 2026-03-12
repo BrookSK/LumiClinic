@@ -333,6 +333,12 @@ final class FinancialController extends Controller
             'paid_sales' => $data['paid_sales'],
             'conversion_rate' => $data['conversion_rate'],
             'recurring_revenue' => $data['recurring_revenue'],
+            'kpi_in_total' => $data['kpi_in_total'] ?? 0,
+            'kpi_out_total' => $data['kpi_out_total'] ?? 0,
+            'kpi_net_total' => $data['kpi_net_total'] ?? 0,
+            'kpi_revenue_total' => $data['kpi_revenue_total'] ?? 0,
+            'recent_sales' => $data['recent_sales'] ?? [],
+            'recent_entries' => $data['recent_entries'] ?? [],
             'professionals' => $sales->listReferenceProfessionals(),
             'is_professional' => $this->isProfessionalRole(),
         ]);
@@ -475,9 +481,25 @@ final class FinancialController extends Controller
             $svcNameMap[(int)$s['id']] = (string)($s['name'] ?? '');
         }
 
+        $logoDataUri = null;
+        $logoPath = realpath(__DIR__ . '/../../../public/icone_1.png');
+        if (is_string($logoPath) && $logoPath !== '' && is_file($logoPath)) {
+            $bin = @file_get_contents($logoPath);
+            if (is_string($bin) && $bin !== '') {
+                $logoDataUri = 'data:image/png;base64,' . base64_encode($bin);
+            }
+        }
+
         $html = '<!doctype html><html><head><meta charset="utf-8" />'
-            . '<style>body{font-family:DejaVu Sans, sans-serif;font-size:12px}h1{font-size:16px;margin:0 0 8px}h2{font-size:13px;margin:14px 0 6px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px}th{background:#f5f5f5;text-align:left}</style>'
+            . '<style>body{font-family:DejaVu Sans, sans-serif;font-size:12px}h1{font-size:16px;margin:0 0 8px}h2{font-size:13px;margin:14px 0 6px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px}th{background:#f5f5f5;text-align:left}.lc-header{width:100%;margin-bottom:10px}.lc-header td{border:0;padding:0;vertical-align:middle}.lc-logo{width:46px;height:46px;object-fit:contain}</style>'
             . '</head><body>';
+
+        if ($logoDataUri !== null) {
+            $html .= '<table class="lc-header"><tr>'
+                . '<td style="width:60px"><img class="lc-logo" src="' . htmlspecialchars($logoDataUri, ENT_QUOTES, 'UTF-8') . '" alt="Logo" /></td>'
+                . '<td style="text-align:right"></td>'
+                . '</tr></table>';
+        }
 
         $html .= '<h1>Relatório Financeiro</h1>';
         $html .= '<div>Período: ' . htmlspecialchars((string)$data['from'], ENT_QUOTES, 'UTF-8') . ' a ' . htmlspecialchars((string)$data['to'], ENT_QUOTES, 'UTF-8') . '</div>';

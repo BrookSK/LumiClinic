@@ -87,7 +87,7 @@ ob_start();
     <div class="lc-card" style="margin-bottom: 16px;">
         <div class="lc-card__header">Novo item</div>
         <div class="lc-card__body">
-            <form method="post" action="/marketing/calendar/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 160px 1fr 160px 160px 1fr 140px; align-items:end;">
+            <form method="post" action="/marketing/calendar/create" class="lc-form lc-grid lc-gap-grid" style="grid-template-columns: 160px 1fr 160px 160px 110px 1fr 140px; align-items:end;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
                 <input type="hidden" name="month" value="<?= htmlspecialchars((string)$month, ENT_QUOTES, 'UTF-8') ?>" />
 
@@ -126,6 +126,11 @@ ob_start();
                 </div>
 
                 <div class="lc-field">
+                    <label class="lc-label">Cor</label>
+                    <input class="lc-input" type="color" name="color" value="#64748b" />
+                </div>
+
+                <div class="lc-field" style="grid-column: 1 / span 2;">
                     <label class="lc-label">Responsável (opcional)</label>
                     <select class="lc-select" name="assigned_user_id">
                         <option value="">(opcional)</option>
@@ -191,14 +196,28 @@ ob_start();
                             $ttl = trim((string)($it['title'] ?? ''));
                             if ($ttl === '') $ttl = 'Item #' . $id;
 
+                            $color = trim((string)($it['color'] ?? ''));
+                            $color = preg_match('/^#[0-9a-fA-F]{6}$/', $color) ? strtolower($color) : '';
+
                             $badge = 'lc-badge lc-badge--secondary';
                             if ($st === 'posted') $badge = 'lc-badge lc-badge--success';
                             if ($st === 'cancelled') $badge = 'lc-badge lc-badge--danger';
 
+                            $style = '';
+                            if ($color !== '') {
+                                $hex = ltrim($color, '#');
+                                $r = hexdec(substr($hex, 0, 2));
+                                $g = hexdec(substr($hex, 2, 2));
+                                $b = hexdec(substr($hex, 4, 2));
+                                $luma = (0.2126 * $r + 0.7152 * $g + 0.0722 * $b);
+                                $txt = $luma < 140 ? '#ffffff' : '#111827';
+                                $style = 'background:' . $color . '; color:' . $txt . '; border:1px solid rgba(0,0,0,.08);';
+                            }
+
                             if ($can('marketing.calendar.manage')) {
-                                echo '<a class="' . $badge . '" style="text-decoration:none;" href="/marketing/calendar/edit?id=' . $id . '">' . htmlspecialchars($ttl, ENT_QUOTES, 'UTF-8') . '</a>';
+                                echo '<a class="' . $badge . '" style="text-decoration:none; ' . $style . '" href="/marketing/calendar/edit?id=' . $id . '">' . htmlspecialchars($ttl, ENT_QUOTES, 'UTF-8') . '</a>';
                             } else {
-                                echo '<span class="' . $badge . '">' . htmlspecialchars($ttl, ENT_QUOTES, 'UTF-8') . '</span>';
+                                echo '<span class="' . $badge . '" style="' . $style . '">' . htmlspecialchars($ttl, ENT_QUOTES, 'UTF-8') . '</span>';
                             }
                         }
                         echo '</div>';

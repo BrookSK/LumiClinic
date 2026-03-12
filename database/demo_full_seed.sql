@@ -3,45 +3,7 @@ SET time_zone = '+00:00';
 
 START TRANSACTION;
 
-INSERT INTO clinics (
-    tenant_key,
-    name,
-    status,
-    contact_email,
-    contact_phone,
-    contact_whatsapp,
-    contact_address,
-    contact_website,
-    contact_instagram,
-    contact_facebook,
-    created_at
-) VALUES (
-    'demo',
-    'Clínica Lumi Demo',
-    'active',
-    'contato@clinicademo.local',
-    '+55 11 4000-0000',
-    '+55 11 99999-0000',
-    'Av. Paulista, 1000 - São Paulo/SP',
-    'https://clinicademo.local',
-    'https://instagram.com/clinicademo',
-    'https://facebook.com/clinicademo',
-    NOW()
-)
-ON DUPLICATE KEY UPDATE
-    id = LAST_INSERT_ID(id),
-    name = VALUES(name),
-    status = VALUES(status),
-    contact_email = VALUES(contact_email),
-    contact_phone = VALUES(contact_phone),
-    contact_whatsapp = VALUES(contact_whatsapp),
-    contact_address = VALUES(contact_address),
-    contact_website = VALUES(contact_website),
-    contact_instagram = VALUES(contact_instagram),
-    contact_facebook = VALUES(contact_facebook),
-    updated_at = NOW();
-
-SET @clinic_id = LAST_INSERT_ID();
+SET @clinic_id = 3;
 
 INSERT INTO clinic_domains (clinic_id, domain, is_primary, created_at)
 SELECT @clinic_id, 'demo.local', 1, NOW()
@@ -519,11 +481,27 @@ WHERE NOT EXISTS (
     LIMIT 1
 );
 
+INSERT INTO patient_notifications (clinic_id, patient_id, channel, type, title, body, reference_type, reference_id, created_at)
+SELECT @clinic_id, @pat2, 'in_app', 'appointment_reminder', 'Lembrete de consulta', 'Lembrete: você tem uma consulta agendada em breve.', 'appointment', NULL, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM patient_notifications n
+    WHERE n.clinic_id=@clinic_id AND n.patient_id=@pat2 AND n.type='appointment_reminder'
+    LIMIT 1
+);
+
 INSERT INTO user_notifications (clinic_id, user_id, channel, type, title, body, reference_type, reference_id, read_at, created_at)
 SELECT @clinic_id, @user_admin, 'in_app', 'system_notice', 'Bem-vindo', 'Notificação demo para admin.', 'clinic', @clinic_id, NULL, NOW()
 WHERE NOT EXISTS (
     SELECT 1 FROM user_notifications n
     WHERE n.clinic_id=@clinic_id AND n.user_id=@user_admin AND n.type='system_notice' AND n.deleted_at IS NULL
+    LIMIT 1
+);
+
+INSERT INTO user_notifications (clinic_id, user_id, channel, type, title, body, reference_type, reference_id, read_at, created_at)
+SELECT @clinic_id, @user_reception, 'in_app', 'agenda_alert', 'Agenda do dia', 'Há consultas agendadas para hoje. Verifique confirmações.', 'clinic', @clinic_id, NULL, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_notifications n
+    WHERE n.clinic_id=@clinic_id AND n.user_id=@user_reception AND n.type='agenda_alert' AND n.deleted_at IS NULL
     LIMIT 1
 );
 
@@ -872,11 +850,63 @@ WHERE @mkt_campaign IS NOT NULL
       LIMIT 1
   );
 
+INSERT INTO marketing_campaign_messages (clinic_id, campaign_id, patient_id, channel, status, scheduled_for, click_token, click_url_snapshot, payload_json, created_at)
+SELECT @clinic_id, @mkt_campaign, @pat2, 'email', 'queued', DATE_ADD(NOW(), INTERVAL 1 DAY), 'demo_click_002', 'https://clinicademo.local/agendar', JSON_OBJECT('demo', 2), NOW()
+WHERE @mkt_campaign IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM marketing_campaign_messages m
+      WHERE m.clinic_id=@clinic_id AND m.campaign_id=@mkt_campaign AND m.patient_id=@pat2 AND m.deleted_at IS NULL
+      LIMIT 1
+  );
+
+INSERT INTO marketing_campaigns (clinic_id, name, channel, segment_id, whatsapp_template_code, email_subject, email_body, click_url, status, scheduled_for, created_by_user_id, created_at)
+SELECT @clinic_id, 'Campanha Pós-Consulta', 'whatsapp', @mkt_seg_active, 'reminder_24h',
+       NULL, NULL, 'https://clinicademo.local/avaliar',
+       'scheduled', DATE_ADD(NOW(), INTERVAL 2 DAY), @user_admin, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM marketing_campaigns c
+    WHERE c.clinic_id=@clinic_id AND c.name='Campanha Pós-Consulta' AND c.deleted_at IS NULL
+    LIMIT 1
+);
+
+SET @mkt_campaign2 = (SELECT id FROM marketing_campaigns c WHERE c.clinic_id=@clinic_id AND c.name='Campanha Pós-Consulta' AND c.deleted_at IS NULL ORDER BY id DESC LIMIT 1);
+
+UPDATE marketing_campaigns
+   SET trigger_event = COALESCE(trigger_event, 'appointment_done'),
+       trigger_delay_minutes = COALESCE(trigger_delay_minutes, 30)
+ WHERE clinic_id = @clinic_id
+   AND id = @mkt_campaign2;
+
+INSERT INTO marketing_campaign_messages (clinic_id, campaign_id, patient_id, channel, status, scheduled_for, click_token, click_url_snapshot, payload_json, created_at)
+SELECT @clinic_id, @mkt_campaign2, @pat2, 'whatsapp', 'queued', DATE_ADD(NOW(), INTERVAL 2 DAY), 'demo_click_003', 'https://clinicademo.local/avaliar', JSON_OBJECT('template','reminder_24h'), NOW()
+WHERE @mkt_campaign2 IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM marketing_campaign_messages m
+      WHERE m.clinic_id=@clinic_id AND m.campaign_id=@mkt_campaign2 AND m.patient_id=@pat2 AND m.deleted_at IS NULL
+      LIMIT 1
+  );
+
 INSERT INTO marketing_calendar_entries (clinic_id, entry_date, content_type, status, title, notes, assigned_user_id, created_by_user_id, created_at)
 SELECT @clinic_id, DATE_ADD(CURDATE(), INTERVAL 3 DAY), 'post', 'planned', 'Post: Cuidados com a pele no inverno', 'Conteúdo demo para calendário.', @user_admin, @user_admin, NOW()
 WHERE NOT EXISTS (
     SELECT 1 FROM marketing_calendar_entries e
     WHERE e.clinic_id=@clinic_id AND e.title='Post: Cuidados com a pele no inverno' AND e.deleted_at IS NULL
+    LIMIT 1
+);
+
+INSERT INTO marketing_calendar_entries (clinic_id, entry_date, content_type, status, title, notes, assigned_user_id, created_by_user_id, created_at)
+SELECT @clinic_id, DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'story', 'planned', 'Stories: Bastidores da clínica', 'Sequência de stories (demo).', @user_admin, @user_admin, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM marketing_calendar_entries e
+    WHERE e.clinic_id=@clinic_id AND e.entry_date=DATE_ADD(CURDATE(), INTERVAL 7 DAY) AND e.title='Stories: Bastidores da clínica' AND e.deleted_at IS NULL
+    LIMIT 1
+);
+
+INSERT INTO marketing_calendar_entries (clinic_id, entry_date, content_type, status, title, notes, assigned_user_id, created_by_user_id, created_at)
+SELECT @clinic_id, DATE_ADD(CURDATE(), INTERVAL 10 DAY), 'email', 'planned', 'Newsletter: Promo de pacote', 'E-mail marketing de pacote (demo).', @user_admin, @user_admin, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM marketing_calendar_entries e
+    WHERE e.clinic_id=@clinic_id AND e.entry_date=DATE_ADD(CURDATE(), INTERVAL 10 DAY) AND e.title='Newsletter: Promo de pacote' AND e.deleted_at IS NULL
     LIMIT 1
 );
 
@@ -889,6 +919,50 @@ WHERE @appt_confirmed IS NOT NULL
       WHERE w.clinic_id=@clinic_id AND w.appointment_id=@appt_confirmed AND w.template_code='confirm_request'
       LIMIT 1
   );
+
+INSERT INTO appointments (clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes, created_by_user_id, created_at)
+SELECT @clinic_id, @prof2, @svc2, @pat2,
+       DATE_SUB(NOW(), INTERVAL 12 DAY),
+       DATE_ADD(DATE_SUB(NOW(), INTERVAL 12 DAY), INTERVAL 60 MINUTE),
+       'done', 'phone', 'Consulta realizada (demo)', @user_reception, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM appointments a
+    WHERE a.clinic_id=@clinic_id AND a.patient_id=@pat2 AND a.status='done' AND a.notes='Consulta realizada (demo)'
+    LIMIT 1
+);
+
+INSERT INTO appointments (clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes, created_by_user_id, created_at)
+SELECT @clinic_id, @prof1, @svc1, @pat2,
+       DATE_ADD(NOW(), INTERVAL 8 DAY),
+       DATE_ADD(DATE_ADD(NOW(), INTERVAL 8 DAY), INTERVAL 45 MINUTE),
+       'scheduled', 'whatsapp', 'Retorno (demo)', @user_reception, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM appointments a
+    WHERE a.clinic_id=@clinic_id AND a.patient_id=@pat2 AND a.status='scheduled' AND a.notes='Retorno (demo)'
+    LIMIT 1
+);
+
+INSERT INTO appointments (clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes, created_by_user_id, created_at)
+SELECT @clinic_id, @prof2, @svc2, @pat1,
+       DATE_ADD(NOW(), INTERVAL 15 DAY),
+       DATE_ADD(DATE_ADD(NOW(), INTERVAL 15 DAY), INTERVAL 60 MINUTE),
+       'scheduled', 'portal', 'Avaliação (demo)', @user_reception, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM appointments a
+    WHERE a.clinic_id=@clinic_id AND a.patient_id=@pat1 AND a.status='scheduled' AND a.notes='Avaliação (demo)'
+    LIMIT 1
+);
+
+INSERT INTO appointments (clinic_id, professional_id, service_id, patient_id, start_at, end_at, status, origin, notes, created_by_user_id, created_at)
+SELECT @clinic_id, @prof1, @svc1, @pat1,
+       DATE_SUB(NOW(), INTERVAL 2 DAY),
+       DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 DAY), INTERVAL 45 MINUTE),
+       'no_show', 'phone', 'Não compareceu (demo)', @user_reception, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM appointments a
+    WHERE a.clinic_id=@clinic_id AND a.patient_id=@pat1 AND a.status='no_show' AND a.notes='Não compareceu (demo)'
+    LIMIT 1
+);
 
 INSERT INTO anamnesis_templates (clinic_id, name, status, created_at)
 SELECT @clinic_id, 'Anamnese Geral', 'active', NOW()

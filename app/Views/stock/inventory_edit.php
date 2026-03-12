@@ -1,6 +1,8 @@
 <?php
 /** @var array<string,mixed> $inventory */
 /** @var list<array<string,mixed>> $items */
+/** @var list<array<string,mixed>> $inventories */
+/** @var list<array<string,mixed>> $materials */
 /** @var string $error */
 
 $csrf = $_SESSION['_csrf'] ?? '';
@@ -61,6 +63,48 @@ ob_start();
         </div>
     </div>
 </div>
+
+<?php if ($status === 'draft' && $can('stock.movements.create')): ?>
+    <div class="lc-card" style="margin-bottom: 16px;">
+        <div class="lc-card__header">Adicionar item</div>
+        <div class="lc-card__body">
+            <form method="post" action="/stock/inventory/items/add" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+
+                <div class="lc-field" style="min-width:260px;">
+                    <label class="lc-label">Inventário</label>
+                    <select class="lc-input" name="inventory_id" required>
+                        <?php foreach (($inventories ?? []) as $inv): ?>
+                            <?php $iid = (int)($inv['id'] ?? 0); ?>
+                            <option value="<?= (int)$iid ?>" <?= $iid === $invId ? 'selected' : '' ?>>
+                                #<?= (int)$iid ?> - <?= htmlspecialchars((string)($inv['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="lc-field" style="min-width:360px;">
+                    <label class="lc-label">Material</label>
+                    <select class="lc-input" name="material_id" required>
+                        <option value="">Selecione</option>
+                        <?php foreach (($materials ?? []) as $m): ?>
+                            <option value="<?= (int)($m['id'] ?? 0) ?>">
+                                <?= htmlspecialchars((string)($m['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="lc-field" style="min-width:180px;">
+                    <label class="lc-label">Qtde contada (opcional)</label>
+                    <input class="lc-input" type="text" name="qty_counted" placeholder="Ex: 10" />
+                </div>
+
+                <button class="lc-btn" type="submit">Adicionar</button>
+            </form>
+        </div>
+    </div>
+<?php endif; ?>
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Contagem</div>

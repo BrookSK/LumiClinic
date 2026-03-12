@@ -68,9 +68,6 @@ ob_start();
             <div class="lc-field">
                 <label class="lc-label">Tipos (csv)</label>
                 <input class="lc-input" type="text" name="types" value="<?= htmlspecialchars($types, ENT_QUOTES, 'UTF-8') ?>" placeholder="appointment,consultation,medical_record..." />
-                <div class="lc-muted" style="margin-top:6px;">
-                    Disponíveis: <?= htmlspecialchars(implode(', ', array_keys($availableTypes)), ENT_QUOTES, 'UTF-8') ?>
-                </div>
             </div>
 
             <div class="lc-field">

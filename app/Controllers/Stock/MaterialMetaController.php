@@ -52,12 +52,21 @@ final class MaterialMetaController extends Controller
         }
 
         $name = trim((string)$request->input('name', ''));
+        $returnTo = trim((string)$request->input('return_to', ''));
 
         try {
             (new MaterialMetaService($this->container))->createCategory($name, $request->ip());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                return $this->redirect($returnTo);
+            }
             return $this->redirect('/stock/categories');
         } catch (\RuntimeException $e) {
-            return $this->redirect('/stock/categories?error=' . urlencode($e->getMessage()));
+            $err = urlencode($e->getMessage());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                $sep = str_contains($returnTo, '?') ? '&' : '?';
+                return $this->redirect($returnTo . $sep . 'error=' . $err);
+            }
+            return $this->redirect('/stock/categories?error=' . $err);
         }
     }
 
@@ -71,12 +80,21 @@ final class MaterialMetaController extends Controller
         }
 
         $id = (int)$request->input('id', 0);
+        $returnTo = trim((string)$request->input('return_to', ''));
 
         try {
             (new MaterialMetaService($this->container))->deleteCategory($id, $request->ip());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                return $this->redirect($returnTo);
+            }
             return $this->redirect('/stock/categories');
         } catch (\RuntimeException $e) {
-            return $this->redirect('/stock/categories?error=' . urlencode($e->getMessage()));
+            $err = urlencode($e->getMessage());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                $sep = str_contains($returnTo, '?') ? '&' : '?';
+                return $this->redirect($returnTo . $sep . 'error=' . $err);
+            }
+            return $this->redirect('/stock/categories?error=' . $err);
         }
     }
 
@@ -107,12 +125,21 @@ final class MaterialMetaController extends Controller
 
         $code = trim((string)$request->input('code', ''));
         $name = trim((string)$request->input('name', ''));
+        $returnTo = trim((string)$request->input('return_to', ''));
 
         try {
             (new MaterialMetaService($this->container))->createUnit($code, $name === '' ? null : $name, $request->ip());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                return $this->redirect($returnTo);
+            }
             return $this->redirect('/stock/units');
         } catch (\RuntimeException $e) {
-            return $this->redirect('/stock/units?error=' . urlencode($e->getMessage()));
+            $err = urlencode($e->getMessage());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                $sep = str_contains($returnTo, '?') ? '&' : '?';
+                return $this->redirect($returnTo . $sep . 'error=' . $err);
+            }
+            return $this->redirect('/stock/units?error=' . $err);
         }
     }
 
@@ -126,12 +153,21 @@ final class MaterialMetaController extends Controller
         }
 
         $id = (int)$request->input('id', 0);
+        $returnTo = trim((string)$request->input('return_to', ''));
 
         try {
             (new MaterialMetaService($this->container))->deleteUnit($id, $request->ip());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                return $this->redirect($returnTo);
+            }
             return $this->redirect('/stock/units');
         } catch (\RuntimeException $e) {
-            return $this->redirect('/stock/units?error=' . urlencode($e->getMessage()));
+            $err = urlencode($e->getMessage());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                $sep = str_contains($returnTo, '?') ? '&' : '?';
+                return $this->redirect($returnTo . $sep . 'error=' . $err);
+            }
+            return $this->redirect('/stock/units?error=' . $err);
         }
     }
 }

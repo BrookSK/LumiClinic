@@ -37,13 +37,57 @@ final class StockReportsController extends Controller
             return $redirect;
         }
 
+        $tab = trim((string)$request->input('tab', 'summary'));
+        $allowedTabs = ['summary', 'movements', 'alerts'];
+        if (!in_array($tab, $allowedTabs, true)) {
+            $tab = 'summary';
+        }
+
+        $days = (int)$request->input('days', 30);
+        if ($days <= 0 || $days > 365) {
+            $days = 30;
+        }
+
         $from = trim((string)$request->input('from', date('Y-m-01')));
         $to = trim((string)$request->input('to', date('Y-m-d')));
+
+        $page = (int)$request->input('page', 1);
+        $perPage = (int)$request->input('per_page', 100);
+        $page = max(1, $page);
+        $perPage = max(25, min(200, $perPage));
+        $offset = ($page - 1) * $perPage;
 
         $svc = new StockService($this->container);
         $data = $svc->reports($from, $to);
 
+        $movements = [];
+        $materials = [];
+        $hasNext = false;
+
+        $lowStock = [];
+        $outOfStock = [];
+        $expiringSoon = [];
+        $expired = [];
+
+        if ($tab === 'movements') {
+            $mvData = $svc->listMovements($from, $to, $perPage + 1, $offset);
+            $hasNext = count($mvData['movements']) > $perPage;
+            if ($hasNext) {
+                $mvData['movements'] = array_slice($mvData['movements'], 0, $perPage);
+            }
+            $movements = $mvData['movements'];
+            $materials = $svc->listMaterials();
+        } elseif ($tab === 'alerts') {
+            $al = $svc->alerts($days);
+            $lowStock = $al['low_stock'] ?? [];
+            $outOfStock = $al['out_of_stock'] ?? [];
+            $expiringSoon = $al['expiring_soon'] ?? [];
+            $expired = $al['expired'] ?? [];
+        }
+
         return $this->view('stock/reports', [
+            'tab' => $tab,
+            'days' => $days,
             'from' => $data['from'],
             'to' => $data['to'],
             'summary' => $data['summary'],
@@ -52,6 +96,15 @@ final class StockReportsController extends Controller
             'losses_by_material' => $data['losses_by_material'] ?? [],
             'by_service' => $data['by_service'],
             'by_professional' => $data['by_professional'],
+            'movements' => $movements,
+            'materials' => $materials,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
+            'low_stock' => $lowStock,
+            'out_of_stock' => $outOfStock,
+            'expiring_soon' => $expiringSoon,
+            'expired' => $expired,
         ]);
     }
 
@@ -183,9 +236,25 @@ final class StockReportsController extends Controller
 
         $summary = is_array($data['summary'] ?? null) ? $data['summary'] : [];
 
+        $logoDataUri = null;
+        $logoPath = realpath(__DIR__ . '/../../../public/icone_1.png');
+        if (is_string($logoPath) && $logoPath !== '' && is_file($logoPath)) {
+            $bin = @file_get_contents($logoPath);
+            if (is_string($bin) && $bin !== '') {
+                $logoDataUri = 'data:image/png;base64,' . base64_encode($bin);
+            }
+        }
+
         $html = '<!doctype html><html><head><meta charset="utf-8" />'
-            . '<style>body{font-family:DejaVu Sans, sans-serif;font-size:12px}h1{font-size:16px;margin:0 0 8px}h2{font-size:13px;margin:14px 0 6px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px}th{background:#f5f5f5;text-align:left}</style>'
+            . '<style>body{font-family:DejaVu Sans, sans-serif;font-size:12px}h1{font-size:16px;margin:0 0 8px}h2{font-size:13px;margin:14px 0 6px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px}th{background:#f5f5f5;text-align:left}.lc-header{width:100%;margin-bottom:10px}.lc-header td{border:0;padding:0;vertical-align:middle}.lc-logo{width:46px;height:46px;object-fit:contain}</style>'
             . '</head><body>';
+
+        if ($logoDataUri !== null) {
+            $html .= '<table class="lc-header"><tr>'
+                . '<td style="width:60px"><img class="lc-logo" src="' . htmlspecialchars($logoDataUri, ENT_QUOTES, 'UTF-8') . '" alt="Logo" /></td>'
+                . '<td style="text-align:right"></td>'
+                . '</tr></table>';
+        }
 
         $html .= '<h1>Relatórios de Estoque e Custos</h1>';
         $html .= '<div>Período: ' . htmlspecialchars((string)$data['from'], ENT_QUOTES, 'UTF-8') . ' a ' . htmlspecialchars((string)$data['to'], ENT_QUOTES, 'UTF-8') . '</div>';

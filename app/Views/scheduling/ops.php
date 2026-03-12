@@ -40,12 +40,13 @@ ob_start();
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Indicadores do dia</div>
     <div class="lc-card__body">
-        <form method="get" action="/schedule/ops" class="lc-form lc-flex lc-gap-md lc-flex--wrap" style="align-items:end;">
-            <div class="lc-field">
+        <form method="get" action="/schedule/ops" class="lc-form" style="display:grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap:12px; align-items:end;">
+            <div class="lc-field" style="grid-column: span 2; min-width: 170px;">
                 <label class="lc-label">Data</label>
                 <input class="lc-input" type="date" name="date" value="<?= htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') ?>" />
             </div>
-            <div class="lc-field">
+
+            <div class="lc-field" style="grid-column: span 2; min-width: 160px;">
                 <label class="lc-label">Categoria</label>
                 <select class="lc-input" name="category">
                     <option value="all" <?= (($category ?? 'all') === 'all') ? 'selected' : '' ?>>Todos</option>
@@ -54,25 +55,28 @@ ob_start();
                 </select>
             </div>
 
-            <div class="lc-field">
+            <div class="lc-field" style="grid-column: span 3; min-width: 220px;">
                 <label class="lc-label">Paciente</label>
                 <input class="lc-input" type="text" name="patient_name" value="<?= htmlspecialchars((string)($patient_name ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="Nome" />
             </div>
-            <div class="lc-field">
+
+            <div class="lc-field" style="grid-column: span 2; min-width: 160px;">
                 <label class="lc-label">CPF</label>
                 <input class="lc-input" type="text" name="patient_cpf" value="<?= htmlspecialchars((string)($patient_cpf ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="CPF" />
             </div>
-            <div class="lc-field">
+
+            <div class="lc-field" style="grid-column: span 1; min-width: 120px;">
                 <label class="lc-label">Horário (de)</label>
                 <input class="lc-input" type="time" name="time_from" value="<?= htmlspecialchars((string)($time_from ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
             </div>
-            <div class="lc-field">
+
+            <div class="lc-field" style="grid-column: span 1; min-width: 120px;">
                 <label class="lc-label">Horário (até)</label>
                 <input class="lc-input" type="time" name="time_to" value="<?= htmlspecialchars((string)($time_to ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
             </div>
 
             <?php $profItems = is_array($professionals ?? null) ? (array)$professionals : []; ?>
-            <div class="lc-field">
+            <div class="lc-field" style="grid-column: span 3; min-width: 220px;">
                 <label class="lc-label">Profissional</label>
                 <select class="lc-input" name="filter_professional_id">
                     <option value="">Todos</option>
@@ -84,7 +88,7 @@ ob_start();
             </div>
 
             <?php $svcItems = is_array($services ?? null) ? (array)$services : []; ?>
-            <div class="lc-field">
+            <div class="lc-field" style="grid-column: span 3; min-width: 220px;">
                 <label class="lc-label">Serviço</label>
                 <select class="lc-input" name="filter_service_id">
                     <option value="">Todos</option>
@@ -96,7 +100,7 @@ ob_start();
             </div>
 
             <?php $catItems = is_array($service_categories ?? null) ? (array)$service_categories : []; ?>
-            <div class="lc-field">
+            <div class="lc-field" style="grid-column: span 3; min-width: 220px;">
                 <label class="lc-label">Categoria do serviço</label>
                 <select class="lc-input" name="filter_service_category_id">
                     <option value="">Todas</option>
@@ -106,21 +110,23 @@ ob_start();
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="lc-form__actions">
+
+            <div class="lc-form__actions" style="grid-column: span 3; display:flex; gap:10px; justify-content:flex-end;">
                 <button class="lc-btn" type="submit">Ver</button>
                 <a class="lc-btn lc-btn--secondary" href="/schedule?date=<?= urlencode((string)$date) ?>">Voltar à agenda</a>
             </div>
         </form>
 
-        <div class="lc-grid lc-grid--3 lc-gap-grid" style="margin-top:14px;">
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body">Total: <strong><?= (int)($counts['total'] ?? 0) ?></strong></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body">Pendentes: <strong><?= (int)($counts['pending'] ?? 0) ?></strong></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body">Finalizados: <strong><?= (int)($counts['finalized'] ?? 0) ?></strong></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body">Confirmados: <strong><?= (int)($counts['confirmed'] ?? 0) ?></strong></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body">Em atendimento: <strong><?= (int)($counts['in_progress'] ?? 0) ?></strong></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body">Concluídos: <strong><?= (int)($counts['completed'] ?? 0) ?></strong></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body">Cancelados: <strong><?= (int)($counts['cancelled'] ?? 0) ?></strong></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body">Faltou: <strong><?= (int)($counts['no_show'] ?? 0) ?></strong></div></div>
+        <div style="display:grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap:10px; margin-top:14px;">
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Total</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['total'] ?? 0) ?></div></div></div>
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Pendentes</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['pending'] ?? 0) ?></div></div></div>
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Finalizados</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['finalized'] ?? 0) ?></div></div></div>
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Agendados</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['scheduled'] ?? 0) ?></div></div></div>
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Confirmados</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['confirmed'] ?? 0) ?></div></div></div>
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Em atendimento</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['in_progress'] ?? 0) ?></div></div></div>
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Concluídos</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['completed'] ?? 0) ?></div></div></div>
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Cancelados</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['cancelled'] ?? 0) ?></div></div></div>
+            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px; display:flex; flex-direction:column; gap:4px;"><div class="lc-muted" style="font-size:12px;">Faltou</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)($counts['no_show'] ?? 0) ?></div></div></div>
         </div>
 
         <?php $pendingRequests = $pending_requests ?? []; ?>

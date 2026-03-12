@@ -6,6 +6,7 @@ namespace App\Controllers\MedicalRecords;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Core\Http\Response;
 use App\Services\MedicalRecords\MedicalRecordAudioService;
 
 final class MedicalRecordAudioController extends Controller
@@ -67,6 +68,50 @@ final class MedicalRecordAudioController extends Controller
             return $this->redirect('/medical-records/create?patient_id=' . $patientId . '&error=' . urlencode($e->getMessage()));
         } catch (\Throwable $e) {
             return $this->redirect('/medical-records/create?patient_id=' . $patientId . '&error=' . urlencode('Falha ao transcrever áudio.'));
+        }
+    }
+
+    public function transcribeJson(Request $request): Response
+    {
+        $this->authorize('medical_records.create');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return Response::json(['ok' => false, 'error' => 'Contexto inválido.'], 400);
+        }
+
+        $patientId = (int)$request->input('patient_id', 0);
+        if ($patientId <= 0) {
+            return Response::json(['ok' => false, 'error' => 'Paciente inválido.'], 400);
+        }
+
+        $medicalRecordId = (int)$request->input('medical_record_id', 0);
+        $appointmentId = (int)$request->input('appointment_id', 0);
+        $professionalId = (int)$request->input('professional_id', 0);
+
+        $file = $_FILES['audio'] ?? null;
+        if (!is_array($file)) {
+            return Response::json(['ok' => false, 'error' => 'Áudio não enviado.'], 400);
+        }
+
+        try {
+            $svc = new MedicalRecordAudioService($this->container);
+            $res = $svc->uploadAndTranscribe([
+                'patient_id' => $patientId,
+                'medical_record_id' => ($medicalRecordId > 0 ? $medicalRecordId : null),
+                'appointment_id' => ($appointmentId > 0 ? $appointmentId : null),
+                'professional_id' => ($professionalId > 0 ? $professionalId : null),
+            ], $file, $request->ip(), $request->header('user-agent'));
+
+            return Response::json([
+                'ok' => true,
+                'transcript' => (string)($res['transcript_text'] ?? ''),
+                'audio_note_id' => (int)($res['audio_note_id'] ?? 0),
+            ]);
+        } catch (\RuntimeException $e) {
+            return Response::json(['ok' => false, 'error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            return Response::json(['ok' => false, 'error' => 'Falha ao transcrever áudio.'], 500);
         }
     }
 }

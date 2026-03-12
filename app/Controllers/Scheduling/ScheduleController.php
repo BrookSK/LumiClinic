@@ -873,6 +873,53 @@ final class ScheduleController extends Controller
         ]);
     }
 
+    public function details(Request $request)
+    {
+        $this->authorize('scheduling.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return Response::json(['error' => 'Contexto inv?lido.'], 403);
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return Response::json(['error' => 'Agendamento inv?lido.'], 400);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::json(['error' => 'Contexto inv?lido.'], 403);
+        }
+
+        $repo = new AppointmentRepository($this->container->get(\PDO::class));
+        $appointment = $repo->findDetailedById($clinicId, $id);
+        if ($appointment === null) {
+            return Response::json(['error' => 'Agendamento inv?lido.'], 404);
+        }
+
+        if ($this->isProfessionalRole()) {
+            $ownProfessionalId = $this->forceProfessionalIdForCurrentUser($clinicId);
+            if ((int)$appointment['professional_id'] !== $ownProfessionalId) {
+                return Response::json(['error' => 'Acesso negado.'], 403);
+            }
+        }
+
+        return Response::json([
+            'item' => [
+                'id' => (int)($appointment['id'] ?? 0),
+                'patient_name' => (string)($appointment['patient_name'] ?? ''),
+                'service_name' => (string)($appointment['service_name'] ?? ''),
+                'professional_name' => (string)($appointment['professional_name'] ?? ''),
+                'start_at' => (string)($appointment['start_at'] ?? ''),
+                'end_at' => (string)($appointment['end_at'] ?? ''),
+                'status' => (string)($appointment['status'] ?? ''),
+                'notes' => (string)($appointment['notes'] ?? ''),
+            ],
+        ]);
+    }
+
     public function create(Request $request)
     {
         $this->authorize('scheduling.create');
@@ -885,6 +932,9 @@ final class ScheduleController extends Controller
         $serviceId = (int)$request->input('service_id', 0);
         $professionalId = (int)$request->input('professional_id', 0);
         $startAt = trim((string)$request->input('start_at', ''));
+        $returnDate = trim((string)$request->input('return_date', ''));
+        $returnView = trim((string)$request->input('return_view', ''));
+        $returnProfessionalId = (int)$request->input('return_professional_id', 0);
         $patientId = (int)$request->input('patient_id', 0);
         $patientPackageId = (int)$request->input('patient_package_id', 0);
         $notes = trim((string)$request->input('notes', ''));
@@ -918,7 +968,31 @@ final class ScheduleController extends Controller
                 $request->ip(),
             );
 
-            return $this->redirect('/schedule?created=' . $id);
+            $dateFromStartAt = '';
+            if ($startAt !== '' && strlen($startAt) >= 10) {
+                $dateFromStartAt = substr($startAt, 0, 10);
+            }
+
+            $query = [
+                'created' => $id,
+            ];
+
+            $finalDate = $returnDate !== '' ? $returnDate : $dateFromStartAt;
+            if ($finalDate !== '') {
+                $query['date'] = $finalDate;
+            }
+
+            $finalView = $returnView !== '' ? $returnView : 'day';
+            if ($finalView !== '') {
+                $query['view'] = $finalView;
+            }
+
+            $finalProfessionalId = $returnProfessionalId > 0 ? $returnProfessionalId : $professionalId;
+            if ($finalProfessionalId > 0) {
+                $query['professional_id'] = $finalProfessionalId;
+            }
+
+            return $this->redirect('/schedule?' . http_build_query($query));
         } catch (\RuntimeException $e) {
             return $this->redirect('/schedule?error=' . urlencode($e->getMessage()));
         } catch (\Throwable $e) {

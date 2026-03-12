@@ -86,6 +86,58 @@ final class StockInventoryItemRepository
         ]);
     }
 
+    public function createForMaterialIfMissing(int $clinicId, int $inventoryId, int $materialId, ?float $qtyCounted = null): void
+    {
+        $sql = "
+            INSERT INTO stock_inventory_items (
+                clinic_id, inventory_id, material_id,
+                qty_system_snapshot,
+                qty_counted,
+                qty_delta,
+                unit_cost_snapshot,
+                total_cost_delta_snapshot,
+                created_at
+            )
+            SELECT
+                m.clinic_id,
+                :inventory_id,
+                m.id,
+                m.stock_current,
+                :qty_counted,
+                (:qty_counted - m.stock_current),
+                m.unit_cost,
+                ROUND((:qty_counted - m.stock_current) * m.unit_cost, 2),
+                NOW()
+            FROM materials m
+            LEFT JOIN stock_inventory_items it
+                   ON it.clinic_id = m.clinic_id
+                  AND it.inventory_id = :inventory_id2
+                  AND it.material_id = m.id
+                  AND it.deleted_at IS NULL
+            WHERE m.clinic_id = :clinic_id
+              AND m.id = :material_id
+              AND m.deleted_at IS NULL
+              AND it.id IS NULL
+            LIMIT 1
+        ";
+
+        if ($qtyCounted === null) {
+            $stmt = $this->pdo->prepare("SELECT stock_current FROM materials WHERE clinic_id = :clinic_id AND id = :material_id AND deleted_at IS NULL LIMIT 1");
+            $stmt->execute(['clinic_id' => $clinicId, 'material_id' => $materialId]);
+            $row = $stmt->fetch();
+            $qtyCounted = (float)($row['stock_current'] ?? 0);
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'inventory_id' => $inventoryId,
+            'inventory_id2' => $inventoryId,
+            'material_id' => $materialId,
+            'qty_counted' => number_format($qtyCounted, 3, '.', ''),
+        ]);
+    }
+
     public function updateCounted(int $clinicId, int $inventoryId, int $materialId, float $qtyCounted): void
     {
         $sql = "

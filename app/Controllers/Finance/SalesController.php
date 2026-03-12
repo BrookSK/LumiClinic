@@ -91,6 +91,15 @@ final class SalesController extends Controller
             $patientId = null;
         }
 
+        $selectedPatient = null;
+        if ($patientId !== null) {
+            $selectedPatient = (new \App\Repositories\PatientRepository($this->container->get(\PDO::class)))
+                ->findById($clinicId, $patientId);
+            if ($selectedPatient === null) {
+                $patientId = null;
+            }
+        }
+
         $page = (int)$request->input('page', 1);
         $perPage = (int)$request->input('per_page', 50);
         $page = max(1, $page);
@@ -116,6 +125,7 @@ final class SalesController extends Controller
             'per_page' => $perPage,
             'has_next' => $hasNext,
             'patient_id' => $patientId,
+            'selected_patient' => $selectedPatient,
         ]);
     }
 

@@ -78,6 +78,7 @@ final class StockController extends Controller
         $qty = trim((string)$request->input('quantity', ''));
         $lossReason = trim((string)$request->input('loss_reason', ''));
         $notes = trim((string)$request->input('notes', ''));
+        $returnTo = trim((string)$request->input('return_to', ''));
 
         try {
             $svc = new StockService($this->container);
@@ -91,9 +92,17 @@ final class StockController extends Controller
                 null,
                 $request->ip()
             );
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                return $this->redirect($returnTo);
+            }
             return $this->redirect('/stock/movements');
         } catch (\RuntimeException $e) {
-            return $this->redirect('/stock/movements?error=' . urlencode($e->getMessage()));
+            $err = urlencode($e->getMessage());
+            if ($returnTo !== '' && str_starts_with($returnTo, '/')) {
+                $sep = str_contains($returnTo, '?') ? '&' : '?';
+                return $this->redirect($returnTo . $sep . 'error=' . $err);
+            }
+            return $this->redirect('/stock/movements?error=' . $err);
         }
     }
 }

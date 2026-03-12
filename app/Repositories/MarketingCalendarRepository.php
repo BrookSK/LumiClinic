@@ -23,7 +23,7 @@ final class MarketingCalendarRepository
 
         $sql = "
             SELECT
-                id, clinic_id, entry_date, content_type, status, title, notes,
+                id, clinic_id, entry_date, content_type, status, color, title, notes,
                 assigned_user_id, created_by_user_id,
                 created_at, updated_at
             FROM marketing_calendar_entries
@@ -53,7 +53,7 @@ final class MarketingCalendarRepository
 
         $sql = "
             SELECT
-                id, clinic_id, entry_date, content_type, status, title, notes,
+                id, clinic_id, entry_date, content_type, status, color, title, notes,
                 assigned_user_id, created_by_user_id,
                 created_at, updated_at
             FROM marketing_calendar_entries
@@ -79,7 +79,7 @@ final class MarketingCalendarRepository
     {
         $sql = "
             SELECT
-                id, clinic_id, entry_date, content_type, status, title, notes,
+                id, clinic_id, entry_date, content_type, status, color, title, notes,
                 assigned_user_id, created_by_user_id,
                 created_at, updated_at
             FROM marketing_calendar_entries
@@ -101,6 +101,7 @@ final class MarketingCalendarRepository
         string $entryDate,
         string $contentType,
         string $status,
+        ?string $color,
         string $title,
         ?string $notes,
         ?int $assignedUserId,
@@ -109,13 +110,13 @@ final class MarketingCalendarRepository
         $sql = "
             INSERT INTO marketing_calendar_entries (
                 clinic_id,
-                entry_date, content_type, status, title, notes,
+                entry_date, content_type, status, color, title, notes,
                 assigned_user_id,
                 created_by_user_id,
                 created_at
             ) VALUES (
                 :clinic_id,
-                :entry_date, :content_type, :status, :title, :notes,
+                :entry_date, :content_type, :status, :color, :title, :notes,
                 :assigned_user_id,
                 :created_by_user_id,
                 NOW()
@@ -128,6 +129,7 @@ final class MarketingCalendarRepository
             'entry_date' => $entryDate,
             'content_type' => $contentType,
             'status' => $status,
+            'color' => $color,
             'title' => $title,
             'notes' => ($notes === '' ? null : $notes),
             'assigned_user_id' => $assignedUserId,
@@ -143,6 +145,7 @@ final class MarketingCalendarRepository
         string $entryDate,
         string $contentType,
         string $status,
+        ?string $color,
         string $title,
         ?string $notes,
         ?int $assignedUserId
@@ -152,6 +155,7 @@ final class MarketingCalendarRepository
             SET entry_date = :entry_date,
                 content_type = :content_type,
                 status = :status,
+                color = :color,
                 title = :title,
                 notes = :notes,
                 assigned_user_id = :assigned_user_id,
@@ -169,6 +173,7 @@ final class MarketingCalendarRepository
             'entry_date' => $entryDate,
             'content_type' => $contentType,
             'status' => $status,
+            'color' => $color,
             'title' => $title,
             'notes' => ($notes === '' ? null : $notes),
             'assigned_user_id' => $assignedUserId,

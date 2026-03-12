@@ -9,6 +9,12 @@
 /** @var int $paid_sales */
 /** @var float $conversion_rate */
 /** @var float $recurring_revenue */
+/** @var float $kpi_in_total */
+/** @var float $kpi_out_total */
+/** @var float $kpi_net_total */
+/** @var float $kpi_revenue_total */
+/** @var list<array<string,mixed>> $recent_sales */
+/** @var list<array<string,mixed>> $recent_entries */
 /** @var list<array<string,mixed>> $professionals */
 /** @var bool $is_professional */
 
@@ -90,23 +96,136 @@ ob_start();
     </div>
 </div>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Ticket médio (vendas)</div>
-    <div class="lc-card__body">R$ <?= number_format((float)$ticket_medio, 2, ',', '.') ?></div>
+<div class="lc-grid lc-gap-grid" style="grid-template-columns: repeat(4, minmax(180px, 1fr)); margin-bottom: 16px;">
+    <div class="lc-card">
+        <div class="lc-card__header">Receita (vendas pagas)</div>
+        <div class="lc-card__body" style="font-size: 18px; font-weight: 700;">R$ <?= number_format((float)$kpi_revenue_total, 2, ',', '.') ?></div>
+        <div class="lc-card__body lc-muted" style="padding-top:0; font-size:12px;">Período selecionado</div>
+    </div>
+
+    <div class="lc-card">
+        <div class="lc-card__header">Entradas</div>
+        <div class="lc-card__body" style="font-size: 18px; font-weight: 700;">R$ <?= number_format((float)$kpi_in_total, 2, ',', '.') ?></div>
+        <div class="lc-card__body lc-muted" style="padding-top:0; font-size:12px;">Lançamentos financeiros</div>
+    </div>
+
+    <div class="lc-card">
+        <div class="lc-card__header">Saídas</div>
+        <div class="lc-card__body" style="font-size: 18px; font-weight: 700;">R$ <?= number_format((float)$kpi_out_total, 2, ',', '.') ?></div>
+        <div class="lc-card__body lc-muted" style="padding-top:0; font-size:12px;">Lançamentos financeiros</div>
+    </div>
+
+    <div class="lc-card">
+        <div class="lc-card__header">Saldo (Entradas - Saídas)</div>
+        <div class="lc-card__body" style="font-size: 18px; font-weight: 700;">R$ <?= number_format((float)$kpi_net_total, 2, ',', '.') ?></div>
+        <div class="lc-card__body lc-muted" style="padding-top:0; font-size:12px;">Não inclui custos por procedimento</div>
+    </div>
 </div>
 
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Conversão (agenda → venda paga)</div>
-    <div class="lc-card__body lc-grid lc-grid--3 lc-gap-grid">
-        <div><strong>Agendamentos:</strong> <?= (int)$appointments ?></div>
-        <div><strong>Vendas pagas:</strong> <?= (int)$paid_sales ?></div>
-        <div><strong>Taxa:</strong> <?= number_format(((float)$conversion_rate) * 100.0, 2, ',', '.') ?>%</div>
+<div class="lc-grid lc-gap-grid" style="grid-template-columns: repeat(4, minmax(180px, 1fr)); margin-bottom: 16px;">
+    <div class="lc-card">
+        <div class="lc-card__header">Ticket médio</div>
+        <div class="lc-card__body" style="font-size: 18px; font-weight: 700;">R$ <?= number_format((float)$ticket_medio, 2, ',', '.') ?></div>
+        <div class="lc-card__body lc-muted" style="padding-top:0; font-size:12px;">Somente vendas pagas</div>
+    </div>
+
+    <div class="lc-card">
+        <div class="lc-card__header">Agendamentos</div>
+        <div class="lc-card__body" style="font-size: 18px; font-weight: 700;"><?= (int)$appointments ?></div>
+        <div class="lc-card__body lc-muted" style="padding-top:0; font-size:12px;">Período selecionado</div>
+    </div>
+
+    <div class="lc-card">
+        <div class="lc-card__header">Vendas pagas</div>
+        <div class="lc-card__body" style="font-size: 18px; font-weight: 700;"><?= (int)$paid_sales ?></div>
+        <div class="lc-card__body lc-muted" style="padding-top:0; font-size:12px;">Período selecionado</div>
+    </div>
+
+    <div class="lc-card">
+        <div class="lc-card__header">Conversão</div>
+        <div class="lc-card__body" style="font-size: 18px; font-weight: 700;"><?= number_format(((float)$conversion_rate) * 100.0, 2, ',', '.') ?>%</div>
+        <div class="lc-card__body lc-muted" style="padding-top:0; font-size:12px;">Agenda → venda paga</div>
     </div>
 </div>
 
 <div class="lc-card" style="margin-bottom: 16px;">
     <div class="lc-card__header">Receita recorrente (assinaturas)</div>
-    <div class="lc-card__body">R$ <?= number_format((float)$recurring_revenue, 2, ',', '.') ?></div>
+    <div class="lc-card__body" style="font-size: 18px; font-weight: 700;">R$ <?= number_format((float)$recurring_revenue, 2, ',', '.') ?></div>
+</div>
+
+<div class="lc-grid lc-gap-grid" style="grid-template-columns: repeat(2, minmax(360px, 1fr)); margin-bottom: 16px;">
+    <div class="lc-card">
+        <div class="lc-card__header">Histórico recente - Vendas pagas</div>
+        <div class="lc-card__body">
+            <?php if (($recent_sales ?? []) === []): ?>
+                <div class="lc-muted">Sem dados no período.</div>
+            <?php else: ?>
+                <table class="lc-table">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Paciente</th>
+                        <th>Valor</th>
+                        <th>Data</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($recent_sales as $rs): ?>
+                        <?php $sid = (int)($rs['id'] ?? 0); ?>
+                        <tr>
+                            <td>#<?= (int)$sid ?></td>
+                            <td><?= htmlspecialchars((string)($rs['patient_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td>R$ <?= number_format((float)($rs['total_liquido'] ?? 0), 2, ',', '.') ?></td>
+                            <td><?= htmlspecialchars((string)($rs['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td>
+                                <a class="lc-btn lc-btn--secondary" href="/finance/sales/view?id=<?= (int)$sid ?>">Abrir</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="lc-card">
+        <div class="lc-card__header">Histórico recente - Lançamentos</div>
+        <div class="lc-card__body">
+            <?php if (($recent_entries ?? []) === []): ?>
+                <div class="lc-muted">Sem dados no período.</div>
+            <?php else: ?>
+                <table class="lc-table">
+                    <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Valor</th>
+                        <th>Descrição</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($recent_entries as $re): ?>
+                        <?php
+                            $kind = (string)($re['kind'] ?? '');
+                            $kindLbl = $kind === 'out' ? 'Saída' : 'Entrada';
+                        ?>
+                        <tr>
+                            <td><?= htmlspecialchars((string)($re['occurred_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><?= htmlspecialchars($kindLbl, ENT_QUOTES, 'UTF-8') ?></td>
+                            <td>R$ <?= number_format((float)($re['amount'] ?? 0), 2, ',', '.') ?></td>
+                            <td><?= htmlspecialchars((string)($re['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 10px;">
+                    <a class="lc-btn lc-btn--secondary" href="/finance/cashflow?from=<?= urlencode((string)$from) ?>&to=<?= urlencode((string)$to) ?>">Ver fluxo de caixa</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
 </div>
 
 <div class="lc-card" style="margin-bottom: 16px;">

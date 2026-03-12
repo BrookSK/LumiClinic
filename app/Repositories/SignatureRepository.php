@@ -15,7 +15,7 @@ final class SignatureRepository
         ?int $medicalRecordId,
         string $storagePath,
         string $mimeType,
-        int $signedByUserId,
+        ?int $signedByUserId,
         string $ip
     ): int {
         $sql = "

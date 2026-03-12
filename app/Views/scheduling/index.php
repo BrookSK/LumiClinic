@@ -141,6 +141,205 @@ ob_start();
         </div>
     </div>
 
+    <div class="lc-card" style="margin-bottom:14px;">
+        <div class="lc-card__title">Agendamentos</div>
+        <div class="lc-card__actions">
+            <span class="lc-muted">Página <?= (int)$page ?></span>
+        </div>
+    </div>
+
+    <?php if (is_array($blocks) && $blocks !== []): ?>
+        <div class="lc-card" style="margin-bottom:14px;">
+            <div class="lc-card__title">Bloqueios do dia</div>
+            <div class="lc-card__body">
+                <?php foreach ($blocks as $b): ?>
+                    <?php
+                        $bst = (string)($b['start_at'] ?? '');
+                        $ben = (string)($b['end_at'] ?? '');
+                        $reason = trim((string)($b['reason'] ?? ''));
+                        $type = trim((string)($b['type'] ?? ''));
+                    ?>
+                    <div class="lc-muted" style="margin-bottom:6px;">
+                        <strong><?= htmlspecialchars($bst !== '' ? substr($bst, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars($ben !== '' ? substr($ben, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?></strong>
+                        <?= $reason !== '' ? (' • ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8')) : '' ?>
+                        <?= $type !== '' ? (' (' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . ')') : '' ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <div class="lc-card__body">
+    <?php if ($items === []): ?>
+        <div class="lc-muted">Nenhum agendamento.</div>
+    <?php else: ?>
+        <div class="lc-table-wrap">
+            <table class="lc-table">
+            <thead>
+            <tr>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Profissional</th>
+                <th>Serviço</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($items as $it): ?>
+                <?php
+                    $pid = (int)$it['professional_id'];
+                    $sid = (int)$it['service_id'];
+                    $pname = isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : ('#' . $pid);
+                    $sname = isset($svcMap[$sid]) ? (string)$svcMap[$sid]['name'] : ('#' . $sid);
+                    $status = (string)$it['status'];
+                    $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
+
+                    $checkedInAt = isset($it['checked_in_at']) ? (string)$it['checked_in_at'] : '';
+                    $startedAt = isset($it['started_at']) ? (string)$it['started_at'] : '';
+
+                    $statusLabelMap = [
+                        'scheduled' => 'Agendado',
+                        'confirmed' => 'Confirmado',
+                        'in_progress' => 'Em atendimento',
+                        'completed' => 'Concluído',
+                        'no_show' => 'Faltou',
+                        'cancelled' => 'Cancelado',
+                    ];
+                    $statusLabel = $statusLabelMap[$status] ?? $status;
+
+                    $canConfirm = in_array($status, ['scheduled'], true);
+                    $canCheckIn = in_array($status, ['scheduled', 'confirmed', 'in_progress'], true) && $checkedInAt === '';
+                    $canStart = in_array($status, ['scheduled', 'confirmed'], true) && $startedAt === '';
+                    $canInProgress = in_array($status, ['scheduled', 'confirmed', 'completed'], true);
+                    $canComplete = in_array($status, ['in_progress'], true);
+                    $canNoShow = in_array($status, ['scheduled', 'confirmed', 'in_progress'], true);
+                ?>
+                <tr>
+                    <td><?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars(substr((string)$it['end_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>
+                        <span class="lc-badge lc-badge--status lc-badge--status-<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>">
+                            <?= htmlspecialchars((string)$statusLabel, ENT_QUOTES, 'UTF-8') ?>
+                        </span>
+                    </td>
+                    <td class="lc-td-actions">
+                        <div class="lc-actions lc-actions--compact">
+                            <?php if ($can('scheduling.update')): ?>
+                                <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
+                            <?php endif; ?>
+                            <?php if ($can('scheduling.logs')): ?>
+                                <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
+                            <?php endif; ?>
+
+                            <details class="lc-actions__more">
+                                <summary class="lc-btn lc-btn--secondary lc-btn--sm">Ações</summary>
+                                <div class="lc-actions__menu">
+                                    <?php if ($canConfirm && $can('scheduling.finalize')): ?>
+                                        <form method="post" action="/schedule/status">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                            <input type="hidden" name="status" value="confirmed" />
+                                            <input type="hidden" name="view" value="day" />
+                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Confirmar</button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <?php if ($canCheckIn && ($can('scheduling.finalize') || (!$isProfessional && $can('scheduling.update')))): ?>
+                                        <form method="post" action="/schedule/check-in">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                            <input type="hidden" name="view" value="day" />
+                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Chegou (check-in)</button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <?php if ($canStart && $can('scheduling.finalize')): ?>
+                                        <form method="post" action="/schedule/start">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                            <input type="hidden" name="view" value="day" />
+                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Iniciar atendimento</button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <?php if ($canInProgress && $can('scheduling.finalize')): ?>
+                                        <form method="post" action="/schedule/status">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                            <input type="hidden" name="status" value="in_progress" />
+                                            <input type="hidden" name="view" value="day" />
+                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit"><?= $status === 'completed' ? 'Reabrir' : 'Atender' ?></button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <?php if ($canComplete && $can('scheduling.finalize')): ?>
+                                        <form method="post" action="/schedule/status">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                            <input type="hidden" name="status" value="completed" />
+                                            <input type="hidden" name="view" value="day" />
+                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Concluir</button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <?php if ($canNoShow && $can('scheduling.finalize')): ?>
+                                        <form method="post" action="/schedule/status">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                            <input type="hidden" name="status" value="no_show" />
+                                            <input type="hidden" name="view" value="day" />
+                                            <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
+                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" title="Marque como Faltou quando o paciente não compareceu.">Faltou</button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <?php if ($can('scheduling.cancel')): ?>
+                                        <form method="post" action="/schedule/cancel">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Cancelar</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            </details>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+
+                <div class="lc-pager">
+                    <div></div>
+                    <div class="lc-pager__actions">
+                        <?php if ($page > 1): ?>
+                            <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
+                        <?php endif; ?>
+                        <?php if ($hasNext): ?>
+                            <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?>">Próxima</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="lc-card lc-card--soft">
         <?php
             $canRenderGrid = is_array($slotMinutes) && $slotMinutes !== [];
@@ -272,15 +471,17 @@ ob_start();
                                             $status = (string)($it['status'] ?? '');
                                             $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
                                         ?>
-                                        <div class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
-                                             style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; overflow:hidden; border:0; z-index:5;">
+                                        <button type="button"
+                                             class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
+                                             data-appointment-id="<?= (int)($it['id'] ?? 0) ?>"
+                                             style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; overflow:hidden; border:0; z-index:5; cursor:pointer;">
                                             <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Agendamento #<?= (int)($it['id'] ?? 0) ?></div>
                                             <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                                 <?= htmlspecialchars(substr($st, 11, 5), ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(substr($en, 11, 5), ENT_QUOTES, 'UTF-8') ?>
                                                 <?= $professionalName !== '' ? (' • ' . htmlspecialchars($professionalName, ENT_QUOTES, 'UTF-8')) : '' ?>
                                                 <?= $serviceName !== '' ? (' • ' . htmlspecialchars($serviceName, ENT_QUOTES, 'UTF-8')) : '' ?>
                                             </div>
-                                        </div>
+                                        </button>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </div>
@@ -289,206 +490,6 @@ ob_start();
                 </div>
             </div>
         <?php endif; ?>
-
-        <div class="lc-card" style="margin-bottom:14px;">
-            <div class="lc-card__title">Agendamentos</div>
-            <div class="lc-card__actions">
-                <span class="lc-muted">Página <?= (int)$page ?></span>
-            </div>
-        </div>
-
-        <?php if (is_array($blocks) && $blocks !== []): ?>
-            <div class="lc-card" style="margin-bottom:14px;">
-                <div class="lc-card__title">Bloqueios do dia</div>
-                <div class="lc-card__body">
-                    <?php foreach ($blocks as $b): ?>
-                        <?php
-                            $bst = (string)($b['start_at'] ?? '');
-                            $ben = (string)($b['end_at'] ?? '');
-                            $reason = trim((string)($b['reason'] ?? ''));
-                            $type = trim((string)($b['type'] ?? ''));
-                        ?>
-                        <div class="lc-muted" style="margin-bottom:6px;">
-                            <strong><?= htmlspecialchars($bst !== '' ? substr($bst, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars($ben !== '' ? substr($ben, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?></strong>
-                            <?= $reason !== '' ? (' • ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8')) : '' ?>
-                            <?= $type !== '' ? (' (' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . ')') : '' ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <div class="lc-card__body">
-        <?php if ($items === []): ?>
-            <div class="lc-muted">Nenhum agendamento.</div>
-        <?php else: ?>
-            <div class="lc-table-wrap">
-                <table class="lc-table">
-                <thead>
-                <tr>
-                    <th>Início</th>
-                    <th>Fim</th>
-                    <th>Profissional</th>
-                    <th>Serviço</th>
-                    <th>Status</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($items as $it): ?>
-                    <?php
-                        $pid = (int)$it['professional_id'];
-                        $sid = (int)$it['service_id'];
-                        $pname = isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : ('#' . $pid);
-                        $sname = isset($svcMap[$sid]) ? (string)$svcMap[$sid]['name'] : ('#' . $sid);
-                        $status = (string)$it['status'];
-                        $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
-
-                        $checkedInAt = isset($it['checked_in_at']) ? (string)$it['checked_in_at'] : '';
-                        $startedAt = isset($it['started_at']) ? (string)$it['started_at'] : '';
-
-                        $statusLabelMap = [
-                            'scheduled' => 'Agendado',
-                            'confirmed' => 'Confirmado',
-                            'in_progress' => 'Em atendimento',
-                            'completed' => 'Concluído',
-                            'no_show' => 'Faltou',
-                            'cancelled' => 'Cancelado',
-                        ];
-                        $statusLabel = $statusLabelMap[$status] ?? $status;
-
-                        $canConfirm = in_array($status, ['scheduled'], true);
-                        $canCheckIn = in_array($status, ['scheduled', 'confirmed', 'in_progress'], true) && $checkedInAt === '';
-                        $canStart = in_array($status, ['scheduled', 'confirmed'], true) && $startedAt === '';
-                        $canInProgress = in_array($status, ['scheduled', 'confirmed', 'completed'], true);
-                        $canComplete = in_array($status, ['in_progress'], true);
-                        $canNoShow = in_array($status, ['scheduled', 'confirmed', 'in_progress'], true);
-                    ?>
-                    <tr>
-                        <td><?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars(substr((string)$it['end_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?></td>
-                        <td>
-                            <span class="lc-badge lc-badge--status lc-badge--status-<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars((string)$statusLabel, ENT_QUOTES, 'UTF-8') ?>
-                            </span>
-                        </td>
-                        <td class="lc-td-actions">
-                            <div class="lc-actions lc-actions--compact">
-                                <?php if ($can('scheduling.update')): ?>
-                                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
-                                <?php endif; ?>
-                                <?php if ($can('scheduling.logs')): ?>
-                                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
-                                <?php endif; ?>
-
-                                <details class="lc-actions__more">
-                                    <summary class="lc-btn lc-btn--secondary lc-btn--sm">Ações</summary>
-                                    <div class="lc-actions__menu">
-                                        <?php if ($canConfirm && $can('scheduling.finalize')): ?>
-                                            <form method="post" action="/schedule/status">
-                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                                <input type="hidden" name="status" value="confirmed" />
-                                                <input type="hidden" name="view" value="day" />
-                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Confirmar</button>
-                                            </form>
-                                        <?php endif; ?>
-
-                                        <?php if ($canCheckIn && ($can('scheduling.finalize') || (!$isProfessional && $can('scheduling.update')))): ?>
-                                            <form method="post" action="/schedule/check-in">
-                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                                <input type="hidden" name="view" value="day" />
-                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Chegou (check-in)</button>
-                                            </form>
-                                        <?php endif; ?>
-
-                                        <?php if ($canStart && $can('scheduling.finalize')): ?>
-                                            <form method="post" action="/schedule/start">
-                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                                <input type="hidden" name="view" value="day" />
-                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Iniciar atendimento</button>
-                                            </form>
-                                        <?php endif; ?>
-
-                                        <?php if ($canInProgress && $can('scheduling.finalize')): ?>
-                                            <form method="post" action="/schedule/status">
-                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                                <input type="hidden" name="status" value="in_progress" />
-                                                <input type="hidden" name="view" value="day" />
-                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit"><?= $status === 'completed' ? 'Reabrir' : 'Atender' ?></button>
-                                            </form>
-                                        <?php endif; ?>
-
-                                        <?php if ($canComplete && $can('scheduling.finalize')): ?>
-                                            <form method="post" action="/schedule/status">
-                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                                <input type="hidden" name="status" value="completed" />
-                                                <input type="hidden" name="view" value="day" />
-                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Concluir</button>
-                                            </form>
-                                        <?php endif; ?>
-
-                                        <?php if ($canNoShow && $can('scheduling.finalize')): ?>
-                                            <form method="post" action="/schedule/status">
-                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                                <input type="hidden" name="status" value="no_show" />
-                                                <input type="hidden" name="view" value="day" />
-                                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="professional_id" value="<?= (int)$professionalId ?>" />
-                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" title="Marque como Faltou quando o paciente não compareceu.">Faltou</button>
-                                            </form>
-                                        <?php endif; ?>
-
-                                        <?php if ($can('scheduling.cancel')): ?>
-                                            <form method="post" action="/schedule/cancel">
-                                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Cancelar</button>
-                                            </form>
-                                        <?php endif; ?>
-                                    </div>
-                                </details>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-
-                    <div class="lc-pager">
-                        <div></div>
-                        <div class="lc-pager__actions">
-                            <?php if ($page > 1): ?>
-                                <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
-                            <?php endif; ?>
-                            <?php if ($hasNext): ?>
-                                <a class="lc-btn lc-btn--secondary" href="/schedule?view=day&date=<?= urlencode((string)$date) ?><?= $professionalId>0 ? ('&professional_id=' . (int)$professionalId) : '' ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page + 1) ?>">Próxima</a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <?php if (!$isProfessional && $can('scheduling.create')): ?>
         <div class="lc-modal" id="createAppointmentModal" aria-hidden="true">
@@ -504,6 +505,9 @@ ob_start();
 
                 <form method="post" action="/schedule/create" class="lc-modal__body">
                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="return_date" value="<?= htmlspecialchars((string)$date, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="return_view" value="<?= htmlspecialchars((string)$view, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="return_professional_id" value="<?= (int)$professionalId ?>" />
 
                     <div class="lc-field" style="grid-column: 1 / -1; position:relative;">
                         <label class="lc-label">Paciente</label>
@@ -575,6 +579,22 @@ ob_start();
             </div>
         </div>
     <?php endif; ?>
+
+    <div class="lc-modal" id="appointmentDetailsModal" aria-hidden="true">
+        <div class="lc-modal__backdrop" data-close-modal></div>
+        <div class="lc-modal__panel" role="dialog" aria-modal="true" aria-label="Detalhes do agendamento">
+            <div class="lc-modal__header">
+                <div>
+                    <div class="lc-modal__title">Detalhes do agendamento</div>
+                    <div class="lc-modal__subtitle" id="appointmentDetailsSubtitle">&nbsp;</div>
+                </div>
+                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="button" data-close-modal>Fechar</button>
+            </div>
+            <div class="lc-modal__body" id="appointmentDetailsBody">
+                <div class="lc-muted">Carregando...</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -592,6 +612,10 @@ ob_start();
   const modalProfEl = document.getElementById('modal_professional_id');
   const modalDateEl = document.getElementById('modal_date');
   const modalStartEl = document.getElementById('modal_start_at');
+
+  const detailsModal = document.getElementById('appointmentDetailsModal');
+  const detailsBody = document.getElementById('appointmentDetailsBody');
+  const detailsSubtitle = document.getElementById('appointmentDetailsSubtitle');
 
   let desiredSlotTime = '';
   let desiredDate = '';
@@ -616,6 +640,18 @@ ob_start();
     modal.classList.remove('lc-modal--open');
   }
 
+  function openDetailsModal() {
+    if (!detailsModal) return;
+    detailsModal.setAttribute('aria-hidden', 'false');
+    detailsModal.classList.add('lc-modal--open');
+  }
+
+  function closeDetailsModal() {
+    if (!detailsModal) return;
+    detailsModal.setAttribute('aria-hidden', 'true');
+    detailsModal.classList.remove('lc-modal--open');
+  }
+
   if (openBtn && modal) {
     openBtn.addEventListener('click', openModal);
     modal.addEventListener('click', function(e) {
@@ -626,9 +662,91 @@ ob_start();
       }
     });
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeModal();
+      if (e.key === 'Escape') {
+        closeModal();
+        closeDetailsModal();
+      }
     });
   }
+
+  if (detailsModal) {
+    detailsModal.addEventListener('click', function(e) {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      if (t.hasAttribute('data-close-modal')) {
+        closeDetailsModal();
+      }
+    });
+  }
+
+  function esc(s) {
+    return (s || '').toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function fmtStatus(st) {
+    const map = {
+      scheduled: 'Agendado',
+      confirmed: 'Confirmado',
+      in_progress: 'Em atendimento',
+      completed: 'Concluído',
+      no_show: 'Faltou',
+      cancelled: 'Cancelado'
+    };
+    const key = (st || '').toString();
+    return map[key] || key;
+  }
+
+  async function loadAppointmentDetails(id) {
+    if (!detailsBody) return;
+    detailsBody.innerHTML = '<div class="lc-muted">Carregando...</div>';
+    if (detailsSubtitle) detailsSubtitle.innerHTML = '&nbsp;';
+
+    const url = '/schedule/details?id=' + encodeURIComponent(String(id || ''));
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const data = await res.json().catch(function() { return {}; });
+    if (!res.ok || !data || data.error) {
+      const msg = (data && data.error) ? data.error : 'Erro ao carregar detalhes.';
+      detailsBody.innerHTML = '<div class="lc-alert lc-alert--danger">' + esc(msg) + '</div>';
+      return;
+    }
+
+    const it = data.item || {};
+    const title = 'Agendamento #' + String(it.id || '');
+    if (detailsSubtitle) {
+      const st = (it.start_at || '').toString();
+      const en = (it.end_at || '').toString();
+      const subtitle = (st ? (st.substring(11, 16)) : '') + (en ? (' - ' + en.substring(11, 16)) : '');
+      detailsSubtitle.textContent = subtitle || ' '; 
+    }
+
+    detailsBody.innerHTML =
+      '<div style="display:grid; grid-template-columns: 1fr; gap:10px;">' +
+        '<div><strong>' + esc(title) + '</strong></div>' +
+        '<div><span class="lc-muted">Paciente:</span> ' + esc(it.patient_name || '') + '</div>' +
+        '<div><span class="lc-muted">Serviço:</span> ' + esc(it.service_name || '') + '</div>' +
+        '<div><span class="lc-muted">Profissional:</span> ' + esc(it.professional_name || '') + '</div>' +
+        '<div><span class="lc-muted">Status:</span> ' + esc(fmtStatus(it.status || '')) + '</div>' +
+        '<div><span class="lc-muted">Observações:</span> ' + esc(it.notes || '') + '</div>' +
+      '</div>';
+  }
+
+  document.addEventListener('click', function(e) {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    const btn = t.closest('[data-appointment-id]');
+    if (!btn) return;
+    const id = btn.getAttribute('data-appointment-id');
+    if (!id) return;
+    openDetailsModal();
+    loadAppointmentDetails(id).catch(function() {
+      if (detailsBody) detailsBody.innerHTML = '<div class="lc-alert lc-alert--danger">Erro ao carregar detalhes.</div>';
+    });
+  });
 
   document.addEventListener('click', function(e) {
     const t = e.target;

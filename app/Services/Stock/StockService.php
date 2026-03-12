@@ -185,6 +185,75 @@ final class StockService
         }
     }
 
+    public function addInventoryItem(int $inventoryId, int $materialId, ?string $qtyCountedRaw, string $ip): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($inventoryId <= 0) {
+            throw new \RuntimeException('Inventário inválido.');
+        }
+        if ($materialId <= 0) {
+            throw new \RuntimeException('Material inválido.');
+        }
+
+        $qtyCounted = null;
+        if ($qtyCountedRaw !== null) {
+            $s = trim($qtyCountedRaw);
+            if ($s !== '') {
+                $qtyCounted = $this->parseQty($s);
+                if ($qtyCounted < 0) {
+                    $qtyCounted = 0.0;
+                }
+            }
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $invRepo = new StockInventoryRepository($pdo);
+        $itemRepo = new StockInventoryItemRepository($pdo);
+        $matRepo = new MaterialRepository($pdo);
+
+        try {
+            $pdo->beginTransaction();
+
+            $inventory = $invRepo->findById($clinicId, $inventoryId);
+            if ($inventory === null) {
+                throw new \RuntimeException('Inventário inválido.');
+            }
+            if ((string)($inventory['status'] ?? '') !== 'draft') {
+                throw new \RuntimeException('Inventário não está em rascunho.');
+            }
+
+            $mat = $matRepo->findById($clinicId, $materialId);
+            if ($mat === null) {
+                throw new \RuntimeException('Material inválido.');
+            }
+
+            $itemRepo->createForMaterialIfMissing(
+                $clinicId,
+                $inventoryId,
+                $materialId,
+                $qtyCounted
+            );
+
+            (new AuditLogRepository($pdo))->log($userId, $clinicId, 'stock.inventory_items.add', [
+                'inventory_id' => $inventoryId,
+                'material_id' => $materialId,
+            ], $ip);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     /** @return list<array<string,mixed>> */
     public function listMaterials(): array
     {
@@ -227,13 +296,11 @@ final class StockService
 
         $pdo = $this->container->get(\PDO::class);
         $invRepo = new StockInventoryRepository($pdo);
-        $itemRepo = new StockInventoryItemRepository($pdo);
 
         try {
             $pdo->beginTransaction();
 
             $id = $invRepo->create($clinicId, $notes, $userId);
-            $itemRepo->createSnapshotForAllMaterials($clinicId, $id);
 
             (new AuditLogRepository($pdo))->log($userId, $clinicId, 'stock.inventory.create', [
                 'inventory_id' => $id,

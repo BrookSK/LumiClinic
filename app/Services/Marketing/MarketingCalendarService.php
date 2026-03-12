@@ -65,6 +65,7 @@ final class MarketingCalendarService
         $entryDate = trim((string)($data['entry_date'] ?? ''));
         $contentType = trim((string)($data['content_type'] ?? 'post'));
         $status = trim((string)($data['status'] ?? 'planned'));
+        $color = trim((string)($data['color'] ?? ''));
         $title = trim((string)($data['title'] ?? ''));
         $notes = trim((string)($data['notes'] ?? ''));
         $assignedUserId = (int)($data['assigned_user_id'] ?? 0);
@@ -78,6 +79,7 @@ final class MarketingCalendarService
 
         $contentType = $this->sanitizeContentType($contentType);
         $status = $this->sanitizeStatus($status);
+        $color = $this->sanitizeColor($color);
 
         $repo = new MarketingCalendarRepository($this->container->get(\PDO::class));
         $id = $repo->create(
@@ -85,6 +87,7 @@ final class MarketingCalendarService
             $entryDate,
             $contentType,
             $status,
+            $color,
             $title,
             ($notes === '' ? null : $notes),
             ($assignedUserId > 0 ? $assignedUserId : null),
@@ -110,6 +113,7 @@ final class MarketingCalendarService
         $entryDate = trim((string)($data['entry_date'] ?? ''));
         $contentType = trim((string)($data['content_type'] ?? 'post'));
         $status = trim((string)($data['status'] ?? 'planned'));
+        $color = trim((string)($data['color'] ?? ''));
         $title = trim((string)($data['title'] ?? ''));
         $notes = trim((string)($data['notes'] ?? ''));
         $assignedUserId = (int)($data['assigned_user_id'] ?? 0);
@@ -126,6 +130,7 @@ final class MarketingCalendarService
 
         $contentType = $this->sanitizeContentType($contentType);
         $status = $this->sanitizeStatus($status);
+        $color = $this->sanitizeColor($color);
 
         $repo = new MarketingCalendarRepository($this->container->get(\PDO::class));
         $repo->update(
@@ -134,6 +139,7 @@ final class MarketingCalendarService
             $entryDate,
             $contentType,
             $status,
+            $color,
             $title,
             ($notes === '' ? null : $notes),
             ($assignedUserId > 0 ? $assignedUserId : null)
@@ -177,5 +183,19 @@ final class MarketingCalendarService
         $status = trim($status);
         $allowed = ['planned', 'produced', 'posted', 'cancelled'];
         return in_array($status, $allowed, true) ? $status : 'planned';
+    }
+
+    private function sanitizeColor(string $color): ?string
+    {
+        $color = trim($color);
+        if ($color === '') {
+            return null;
+        }
+
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
+            throw new \RuntimeException('Cor inválida.');
+        }
+
+        return strtolower($color);
     }
 }

@@ -248,7 +248,7 @@ final class ConsentService
                 null,
                 $relative,
                 'image/png',
-                $actorId,
+                null,
                 $ip
             );
 

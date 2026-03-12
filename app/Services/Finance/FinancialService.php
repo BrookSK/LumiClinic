@@ -530,6 +530,62 @@ final class FinancialService
         $rowR = $stmt6->fetch();
         $recurring = is_array($rowR) && isset($rowR['recurring']) ? (float)$rowR['recurring'] : 0.0;
 
+        $inOut = (new FinancialEntryRepository($pdo))->summarizeTotalsByClinicRange((int)$clinicId, $from, $to);
+        $inTotal = (float)($inOut['in_total'] ?? 0);
+        $outTotal = (float)($inOut['out_total'] ?? 0);
+
+        $sqlRevenue = "
+            SELECT
+                COALESCE(SUM(s.total_liquido), 0) AS revenue
+            FROM sales s
+            " . ($professionalId !== null && $professionalId > 0
+                ? " INNER JOIN sale_items si
+                        ON si.sale_id = s.id
+                       AND si.deleted_at IS NULL
+                       AND si.professional_id = :professional_id "
+                : "") . "
+            WHERE s.clinic_id = :clinic_id
+              AND s.deleted_at IS NULL
+              AND s.status = 'paid'
+              AND s.created_at BETWEEN :from_dt AND :to_dt
+        ";
+        $stmtRev = $pdo->prepare($sqlRevenue);
+        $stmtRev->execute($params);
+        $rowRev = $stmtRev->fetch();
+        $revenueTotal = is_array($rowRev) && isset($rowRev['revenue']) ? (float)$rowRev['revenue'] : 0.0;
+
+        $sqlRecentSales = "
+            SELECT DISTINCT
+                   s.id,
+                   s.patient_id,
+                   COALESCE(p.name, '') AS patient_name,
+                   s.total_liquido,
+                   s.status,
+                   s.created_at
+            FROM sales s
+            LEFT JOIN patients p
+                   ON p.id = s.patient_id
+                  AND p.clinic_id = s.clinic_id
+                  AND p.deleted_at IS NULL
+            " . ($professionalId !== null && $professionalId > 0
+                ? " INNER JOIN sale_items si
+                        ON si.sale_id = s.id
+                       AND si.deleted_at IS NULL
+                       AND si.professional_id = :professional_id "
+                : "") . "
+            WHERE s.clinic_id = :clinic_id
+              AND s.deleted_at IS NULL
+              AND s.status = 'paid'
+              AND s.created_at BETWEEN :from_dt AND :to_dt
+            ORDER BY s.id DESC
+            LIMIT 10
+        ";
+        $stmtRS = $pdo->prepare($sqlRecentSales);
+        $stmtRS->execute($params);
+        $recentSales = $stmtRS->fetchAll();
+
+        $recentEntries = (new FinancialEntryRepository($pdo))->listByClinicRange((int)$clinicId, $from, $to, 10, 0);
+
         return [
             'from' => $from,
             'to' => $to,
@@ -540,6 +596,12 @@ final class FinancialService
             'paid_sales' => $paidSales,
             'conversion_rate' => $conversion,
             'recurring_revenue' => $recurring,
+            'kpi_in_total' => $inTotal,
+            'kpi_out_total' => $outTotal,
+            'kpi_net_total' => ($inTotal - $outTotal),
+            'kpi_revenue_total' => $revenueTotal,
+            'recent_sales' => is_array($recentSales) ? $recentSales : [],
+            'recent_entries' => is_array($recentEntries) ? $recentEntries : [],
         ];
     }
 

@@ -241,7 +241,7 @@ $ico = [
                                         || $isActive('/whatsapp-logs');
                                 ?>
                                 <details class="lc-navgroup" <?= $generalActive ? 'open' : '' ?> style="margin-left:10px;">
-                                    <summary class="lc-nav__item lc-navgroup__summary<?= $generalActive ? ' lc-nav__item--active' : '' ?>">
+                                    <summary class="lc-nav__item lc-navgroup__summary">
                                         <span class="lc-nav__icon" aria-hidden="true"><?= $ico['settings'] ?></span>
                                         <span class="lc-nav__label">Geral</span>
                                         <span class="lc-navgroup__chev" aria-hidden="true">
@@ -250,7 +250,7 @@ $ico = [
                                     </summary>
                                     <div class="lc-navgroup__children">
                                         <div class="lc-nav__sub">
-                                            <?= $navItem('/settings', 'Geral', $ico['settings'], $isActive('/settings') && !$isActive('/settings/legal-documents')) ?>
+                                            <?= $navItem('/settings', 'Visão geral', $ico['settings'], $isActive('/settings') && !$isActive('/settings/legal-documents')) ?>
                                             <?= $navItem('/settings/terminology', 'Terminologia', $ico['settings'], $isActive('/settings/terminology')) ?>
                                             <?= $navItem('/settings/operational', 'Operacional', $ico['settings'], $isActive('/settings/operational')) ?>
                                             <?= $navItem('/settings/ai', 'IA', $ico['settings'], $isActive('/settings/ai')) ?>

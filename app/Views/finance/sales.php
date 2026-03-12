@@ -11,6 +11,7 @@
 /** @var int $per_page */
 /** @var bool $has_next */
 /** @var int|null $patient_id */
+/** @var array<string,mixed>|null $selected_patient */
 
 $csrf = $_SESSION['_csrf'] ?? '';
 $title = 'Financeiro - Vendas';
@@ -20,6 +21,7 @@ $perPage = isset($per_page) ? (int)$per_page : 50;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
 $patientId = isset($patient_id) ? (int)$patient_id : null;
 $patientId = $patientId !== null && $patientId > 0 ? $patientId : null;
+$selectedPatient = isset($selected_patient) && is_array($selected_patient) ? $selected_patient : null;
 
 $can = function (string $permissionCode): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
@@ -59,8 +61,8 @@ ob_start();
 
                 <div class="lc-field" style="position:relative;">
                     <label class="lc-label">Paciente</label>
-                    <input class="lc-input" type="text" id="sale_patient_search" placeholder="Buscar por nome, e-mail ou telefone" autocomplete="off" />
-                    <input type="hidden" name="patient_id" id="sale_patient_id" value="" />
+                    <input class="lc-input" type="text" id="sale_patient_search" placeholder="Buscar por nome, e-mail ou telefone" autocomplete="off" value="<?= htmlspecialchars((string)($selectedPatient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="patient_id" id="sale_patient_id" value="<?= (int)($selectedPatient['id'] ?? 0) ?>" />
                     <div class="lc-autocomplete" id="sale_patient_results" style="display:none;"></div>
                 </div>
 

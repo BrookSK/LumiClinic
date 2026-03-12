@@ -238,7 +238,9 @@ ob_start();
                                     <td><?= htmlspecialchars((string)($p['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                     <td>
                                         <?php if ($can('files.read')): ?>
-                                            <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$p['comparison_key']) ?>">Abrir</a>
+                                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                                                <a class="lc-btn lc-btn--secondary" style="min-width:84px; text-align:center;" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)$p['comparison_key']) ?>">Abrir</a>
+                                            </div>
                                         <?php else: ?>
                                             <span style="opacity:.7;">-</span>
                                         <?php endif; ?>
@@ -281,10 +283,10 @@ ob_start();
                                 <td><?= htmlspecialchars((string)($img['session_number'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars((string)($img['pose'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars((string)($img['original_filename'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                                <td class="lc-flex lc-flex--wrap" style="gap:8px;">
+                                <td style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; white-space:nowrap;">
                                     <?php if ($can('files.read')): ?>
-                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= (int)$img['id'] ?>" target="_blank">Abrir</a>
-                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/annotate?id=<?= (int)$img['id'] ?>">Marcar</a>
+                                        <a class="lc-btn lc-btn--secondary" style="min-width:84px; text-align:center;" href="/medical-images/file?id=<?= (int)$img['id'] ?>" target="_blank">Abrir</a>
+                                        <a class="lc-btn lc-btn--secondary" style="min-width:84px; text-align:center;" href="/medical-images/annotate?id=<?= (int)$img['id'] ?>">Marcar</a>
                                     <?php endif; ?>
                                 </td>
                             </tr>

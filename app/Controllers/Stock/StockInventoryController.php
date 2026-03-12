@@ -80,13 +80,44 @@ final class StockInventoryController extends Controller
             $svc = new StockService($this->container);
             $data = $svc->getInventory($id);
 
+            $inventories = $svc->listInventories();
+            $materials = $svc->listMaterials();
+
             return $this->view('stock/inventory_edit', [
                 'inventory' => $data['inventory'],
                 'items' => $data['items'],
+                'inventories' => $inventories,
+                'materials' => $materials,
                 'error' => trim((string)$request->input('error', '')),
             ]);
         } catch (\RuntimeException $e) {
             return $this->redirect('/stock/inventory?error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function addItem(Request $request)
+    {
+        $this->authorize('stock.movements.create');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $inventoryId = (int)$request->input('inventory_id', 0);
+        $materialId = (int)$request->input('material_id', 0);
+        $qtyCounted = $request->input('qty_counted', null);
+
+        if ($inventoryId <= 0) {
+            return $this->redirect('/stock/inventory?error=' . urlencode('Inventário inválido.'));
+        }
+
+        try {
+            $svc = new StockService($this->container);
+            $svc->addInventoryItem($inventoryId, $materialId, is_string($qtyCounted) ? $qtyCounted : null, $request->ip());
+            return $this->redirect('/stock/inventory/edit?id=' . (int)$inventoryId);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/stock/inventory/edit?id=' . (int)$inventoryId . '&error=' . urlencode($e->getMessage()));
         }
     }
 

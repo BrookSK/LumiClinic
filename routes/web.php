@@ -342,6 +342,7 @@ $router->post('/bi/refresh', [BiController::class, 'refresh']);
 
 $router->get('/schedule', [ScheduleController::class, 'index']);
 $router->get('/schedule/available', [ScheduleController::class, 'available']);
+$router->get('/schedule/details', [ScheduleController::class, 'details']);
 $router->post('/schedule/create', [ScheduleController::class, 'create']);
 $router->post('/schedule/cancel', [ScheduleController::class, 'cancel']);
 $router->post('/schedule/check-in', [ScheduleController::class, 'checkIn']);
@@ -421,6 +422,7 @@ $router->post('/stock/movements/create', [StockController::class, 'createMovemen
 $router->get('/stock/inventory', [StockInventoryController::class, 'index']);
 $router->post('/stock/inventory/create', [StockInventoryController::class, 'create']);
 $router->get('/stock/inventory/edit', [StockInventoryController::class, 'edit']);
+$router->post('/stock/inventory/items/add', [StockInventoryController::class, 'addItem']);
 $router->post('/stock/inventory/update', [StockInventoryController::class, 'update']);
 $router->post('/stock/inventory/confirm', [StockInventoryController::class, 'confirm']);
 $router->get('/stock/alerts', [StockAlertsController::class, 'index']);
@@ -515,6 +517,7 @@ $router->post('/medical-records/create', [MedicalRecordController::class, 'store
 $router->get('/medical-records/edit', [MedicalRecordController::class, 'edit']);
 $router->post('/medical-records/edit', [MedicalRecordController::class, 'update']);
 $router->post('/medical-records/audio/transcribe', [\App\Controllers\MedicalRecords\MedicalRecordAudioController::class, 'transcribe']);
+$router->post('/medical-records/audio/transcribe-json', [\App\Controllers\MedicalRecords\MedicalRecordAudioController::class, 'transcribeJson']);
 
 $router->get('/medical-record-templates', [MedicalRecordTemplateController::class, 'index']);
 $router->get('/medical-record-templates/create', [MedicalRecordTemplateController::class, 'create']);

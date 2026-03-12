@@ -70,6 +70,9 @@ final class MedicalRecordController extends Controller
         return $this->view('medical-records/index', [
             'patient' => $data['patient'],
             'records' => $data['records'],
+            'alerts' => $data['alerts'] ?? [],
+            'allergies' => $data['allergies'] ?? [],
+            'conditions' => $data['conditions'] ?? [],
             'templates' => $tplService->listTemplates(),
             'professionals' => $service->listProfessionals(),
             'filters' => $filters,

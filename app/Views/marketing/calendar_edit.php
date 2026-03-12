@@ -15,6 +15,7 @@ $id = (int)($row['id'] ?? 0);
 $entryDate = (string)($row['entry_date'] ?? '');
 $contentType = (string)($row['content_type'] ?? 'post');
 $status = (string)($row['status'] ?? 'planned');
+$color = (string)($row['color'] ?? '#64748b');
 $titleValue = (string)($row['title'] ?? '');
 $notes = (string)($row['notes'] ?? '');
 $assignedUserId = (int)($row['assigned_user_id'] ?? 0);
@@ -104,6 +105,11 @@ ob_start();
                                 <option value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>" <?= $status === $k ? 'selected' : '' ?>><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+
+                    <div class="lc-field">
+                        <label class="lc-label">Cor</label>
+                        <input class="lc-input" type="color" name="color" value="<?= htmlspecialchars($color !== '' ? $color : '#64748b', ENT_QUOTES, 'UTF-8') ?>" />
                     </div>
 
                     <div class="lc-field" style="grid-column: 1 / -1;">

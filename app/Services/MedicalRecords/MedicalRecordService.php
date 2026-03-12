@@ -9,6 +9,9 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\MedicalRecordRepository;
 use App\Repositories\MedicalRecordTemplateFieldRepository;
 use App\Repositories\MedicalRecordTemplateRepository;
+use App\Repositories\PatientAllergyRepository;
+use App\Repositories\PatientClinicalAlertRepository;
+use App\Repositories\PatientConditionRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Services\Auth\AuthService;
@@ -18,7 +21,7 @@ final class MedicalRecordService
 {
     public function __construct(private readonly Container $container) {}
 
-    /** @return array{patient:array<string,mixed>,records:list<array<string,mixed>>} */
+    /** @return array{patient:array<string,mixed>,records:list<array<string,mixed>>,alerts:list<array<string,mixed>>,allergies:list<array<string,mixed>>,conditions:list<array<string,mixed>>} */
     public function timeline(int $patientId, string $ip, ?string $userAgent = null): array
     {
         $auth = new AuthService($this->container);
@@ -38,6 +41,10 @@ final class MedicalRecordService
 
         $repo = new MedicalRecordRepository($pdo);
         $records = $repo->listByPatient($clinicId, $patientId, 200);
+
+        $alerts = (new PatientClinicalAlertRepository($pdo))->listByPatient($clinicId, $patientId, 200);
+        $allergies = (new PatientAllergyRepository($pdo))->listByPatient($clinicId, $patientId, 200);
+        $conditions = (new PatientConditionRepository($pdo))->listByPatient($clinicId, $patientId, 200);
 
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
@@ -62,12 +69,18 @@ final class MedicalRecordService
             $userAgent
         );
 
-        return ['patient' => $patient, 'records' => $records];
+        return [
+            'patient' => $patient,
+            'records' => $records,
+            'alerts' => $alerts,
+            'allergies' => $allergies,
+            'conditions' => $conditions,
+        ];
     }
 
     /**
      * @param array{template_id?:?int,professional_id?:?int,date_from?:?string,date_to?:?string} $filters
-     * @return array{patient:array<string,mixed>,records:list<array<string,mixed>>}
+     * @return array{patient:array<string,mixed>,records:list<array<string,mixed>>,alerts:list<array<string,mixed>>,allergies:list<array<string,mixed>>,conditions:list<array<string,mixed>>}
      */
     public function timelineFiltered(int $patientId, array $filters, string $ip, ?string $userAgent = null): array
     {
@@ -88,6 +101,10 @@ final class MedicalRecordService
 
         $repo = new MedicalRecordRepository($pdo);
         $records = $repo->listByPatientFiltered($clinicId, $patientId, $filters, 200);
+
+        $alerts = (new PatientClinicalAlertRepository($pdo))->listByPatient($clinicId, $patientId, 200);
+        $allergies = (new PatientAllergyRepository($pdo))->listByPatient($clinicId, $patientId, 200);
+        $conditions = (new PatientConditionRepository($pdo))->listByPatient($clinicId, $patientId, 200);
 
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
@@ -112,7 +129,13 @@ final class MedicalRecordService
             $userAgent
         );
 
-        return ['patient' => $patient, 'records' => $records];
+        return [
+            'patient' => $patient,
+            'records' => $records,
+            'alerts' => $alerts,
+            'allergies' => $allergies,
+            'conditions' => $conditions,
+        ];
     }
 
     /** @return list<array<string, mixed>> */

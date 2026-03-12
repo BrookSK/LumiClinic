@@ -158,7 +158,8 @@ final class AppointmentRepository
               AND a.deleted_at IS NULL
               AND a.checked_in_at IS NOT NULL
               AND a.checked_in_at <> ''
-              AND (a.started_at IS NULL OR a.started_at = '')
+              AND a.checked_in_at <> '0000-00-00 00:00:00'
+              AND (a.started_at IS NULL OR a.started_at = '' OR a.started_at = '0000-00-00 00:00:00')
               AND a.status IN ('scheduled','confirmed','in_progress')
             ORDER BY a.checked_in_at ASC
             LIMIT " . (int)$limit . "
