@@ -60,15 +60,51 @@ final class MedicalRecordAudioService
         }
 
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime = (string)$finfo->file($tmp);
+        $mimeDetected = (string)$finfo->file($tmp);
+        $mimeClient = isset($file['type']) ? trim((string)$file['type']) : '';
+        $originalName = isset($file['name']) ? (string)$file['name'] : null;
+
         $allowed = [
             'audio/webm' => 'webm',
+            'video/webm' => 'webm',
             'audio/ogg' => 'ogg',
+            'application/ogg' => 'ogg',
             'audio/mpeg' => 'mp3',
             'audio/mp4' => 'm4a',
+            'video/mp4' => 'm4a',
             'audio/wav' => 'wav',
             'audio/x-wav' => 'wav',
         ];
+
+        $mime = $mimeDetected;
+        if (!isset($allowed[$mime]) && $mimeClient !== '' && isset($allowed[$mimeClient])) {
+            $mime = $mimeClient;
+        }
+
+        if (!isset($allowed[$mime])) {
+            $extFromName = '';
+            if (is_string($originalName) && $originalName !== '' && str_contains($originalName, '.')) {
+                $extFromName = strtolower((string)pathinfo($originalName, PATHINFO_EXTENSION));
+            }
+
+            if (in_array($extFromName, ['webm', 'ogg', 'mp3', 'm4a', 'mp4', 'wav'], true)) {
+                if ($extFromName === 'mp4') {
+                    $extFromName = 'm4a';
+                }
+                if ($extFromName === 'wav') {
+                    $mime = 'audio/wav';
+                } elseif ($extFromName === 'mp3') {
+                    $mime = 'audio/mpeg';
+                } elseif ($extFromName === 'm4a') {
+                    $mime = 'audio/mp4';
+                } elseif ($extFromName === 'ogg') {
+                    $mime = 'audio/ogg';
+                } else {
+                    $mime = 'audio/webm';
+                }
+            }
+        }
+
         if (!isset($allowed[$mime])) {
             throw new \RuntimeException('Formato de áudio não suportado.');
         }
@@ -78,7 +114,6 @@ final class MedicalRecordAudioService
         $relative = 'medical_record_audio/patient_' . $patientId . '/' . date('Ymd') . '_' . $token . '.' . $ext;
         PrivateStorage::put($clinicId, $relative, $bytes);
 
-        $originalName = isset($file['name']) ? (string)$file['name'] : null;
         $size = isset($file['size']) ? (int)$file['size'] : null;
 
         $repo = new MedicalRecordAudioNoteRepository($pdo);
