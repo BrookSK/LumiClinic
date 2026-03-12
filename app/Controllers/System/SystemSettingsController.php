@@ -18,6 +18,38 @@ final class SystemSettingsController extends Controller
         }
     }
 
+    public function whatsapp(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $service = new SystemSettingsService($this->container);
+        $saved = trim((string)$request->input('saved', ''));
+        $error = trim((string)$request->input('error', ''));
+
+        return $this->view('system/settings/whatsapp', array_merge($service->getWhatsappSettings(), [
+            'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
+            'error' => $error !== '' ? $error : null,
+        ]));
+    }
+
+    public function whatsappSubmit(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $baseUrl = trim((string)$request->input('evolution_base_url', ''));
+        if ($baseUrl === '') {
+            (new SystemSettingsService($this->container))->saveWhatsappSettings(['evolution_base_url' => null]);
+            return $this->redirect('/sys/settings/whatsapp?saved=1');
+        }
+
+        if (!preg_match('#^https?://#i', $baseUrl)) {
+            return $this->redirect('/sys/settings/whatsapp?error=' . urlencode('Base URL inválida. Use http:// ou https://'));
+        }
+
+        (new SystemSettingsService($this->container))->saveWhatsappSettings(['evolution_base_url' => $baseUrl]);
+        return $this->redirect('/sys/settings/whatsapp?saved=1');
+    }
+
     public function webpush(Request $request)
     {
         $this->ensureSuperAdmin();

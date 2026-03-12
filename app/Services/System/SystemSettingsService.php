@@ -50,6 +50,23 @@ final class SystemSettingsService
         }
     }
 
+    /** @return array{evolution_base_url:string} */
+    public function getWhatsappSettings(): array
+    {
+        return [
+            'evolution_base_url' => (string)($this->getText('whatsapp.evolution.base_url') ?? ''),
+        ];
+    }
+
+    /** @param array<string,mixed> $input */
+    public function saveWhatsappSettings(array $input): void
+    {
+        if (array_key_exists('evolution_base_url', $input)) {
+            $val = trim((string)$input['evolution_base_url']);
+            $this->setText('whatsapp.evolution.base_url', $val === '' ? null : $val);
+        }
+    }
+
     /** @return array<string, string> */
     public function getBillingSettings(): array
     {

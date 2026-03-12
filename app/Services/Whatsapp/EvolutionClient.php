@@ -6,6 +6,7 @@ namespace App\Services\Whatsapp;
 
 use App\Core\Container\Container;
 use App\Services\Http\HttpClient;
+use App\Services\System\SystemSettingsService;
 
 final class EvolutionClient
 {
@@ -13,6 +14,12 @@ final class EvolutionClient
 
     private function baseUrl(): string
     {
+        $settings = new SystemSettingsService($this->container);
+        $global = trim((string)($settings->getText('whatsapp.evolution.base_url') ?? ''));
+        if ($global !== '') {
+            return rtrim($global, '/');
+        }
+
         $config = $this->container->has('config') ? $this->container->get('config') : null;
         $baseUrl = is_array($config)
             && isset($config['whatsapp'])
