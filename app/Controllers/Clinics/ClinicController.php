@@ -196,10 +196,17 @@ final class ClinicController extends Controller
             return $redirect;
         }
 
+        $editId = (int)$request->input('edit_id', 0);
+
         $service = new ClinicService($this->container);
+        $editItem = null;
+        if ($editId > 0) {
+            $editItem = $service->findClosedDayById($editId);
+        }
 
         return $this->view('clinics/closed-days', [
             'items' => $service->listClosedDays(),
+            'edit_item' => $editItem,
         ]);
     }
 
@@ -278,5 +285,33 @@ final class ClinicController extends Controller
         $service->deleteClosedDay($id, $request->ip());
 
         return $this->redirect('/clinic/closed-days');
+    }
+
+    public function updateClosedDay(Request $request)
+    {
+        $this->authorize('clinics.update');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        $date = trim((string)$request->input('closed_date', ''));
+        $reason = trim((string)$request->input('reason', ''));
+        $isOpen = (int)$request->input('is_open', 0);
+        $isOpen = $isOpen === 1 ? 1 : 0;
+
+        try {
+            $service = new ClinicService($this->container);
+            $service->updateClosedDay($id, $date, $reason === '' ? null : $reason, $isOpen, $request->ip());
+            return $this->redirect('/clinic/closed-days');
+        } catch (\RuntimeException $e) {
+            $service = new ClinicService($this->container);
+            return $this->view('clinics/closed-days', [
+                'items' => $service->listClosedDays(),
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -256,6 +256,7 @@ $router->post('/clinic/working-hours/delete', [ClinicController::class, 'deleteW
 
 $router->get('/clinic/closed-days', [ClinicController::class, 'closedDays']);
 $router->post('/clinic/closed-days', [ClinicController::class, 'storeClosedDay']);
+$router->post('/clinic/closed-days/update', [ClinicController::class, 'updateClosedDay']);
 $router->post('/clinic/closed-days/ai', [ClinicController::class, 'aiGenerateClosedDays']);
 $router->post('/clinic/closed-days/delete', [ClinicController::class, 'deleteClosedDay']);
 

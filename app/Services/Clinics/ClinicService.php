@@ -167,6 +167,24 @@ final class ClinicService
         return $repo->listByClinic($clinicId);
     }
 
+    /** @return array<string, mixed>|null */
+    public function findClosedDayById(int $id): ?array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($id <= 0) {
+            return null;
+        }
+
+        $repo = new ClinicClosedDaysRepository($this->container->get(\PDO::class));
+        return $repo->findById($clinicId, $id);
+    }
+
     public function createClosedDay(string $date, string $reason, string $ip): void
     {
         $auth = new AuthService($this->container);
@@ -202,6 +220,44 @@ final class ClinicService
             $clinicId,
             'clinics.closed_days_upsert',
             ['date' => $date, 'is_open' => $isOpen === 1 ? 1 : 0],
+            $ip
+        );
+    }
+
+    public function updateClosedDay(int $id, string $date, ?string $reason, int $isOpen, string $ip): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($id <= 0) {
+            throw new \RuntimeException('Item inválido.');
+        }
+
+        $date = trim($date);
+        if ($date === '') {
+            throw new \RuntimeException('Data é obrigatória.');
+        }
+
+        $isOpen = $isOpen === 1 ? 1 : 0;
+
+        $repo = new ClinicClosedDaysRepository($this->container->get(\PDO::class));
+        $existing = $repo->findById($clinicId, $id);
+        if ($existing === null) {
+            throw new \RuntimeException('Item não encontrado.');
+        }
+
+        $repo->updateById($clinicId, $id, $date, $reason, $isOpen);
+
+        (new AuditLogRepository($this->container->get(\PDO::class)))->log(
+            $userId,
+            $clinicId,
+            'clinics.closed_days_update',
+            ['id' => $id, 'date' => $date, 'is_open' => $isOpen],
             $ip
         );
     }

@@ -8,6 +8,30 @@ final class ClinicClosedDaysRepository
 {
     public function __construct(private readonly \PDO $pdo) {}
 
+    /** @return array<string, mixed>|null */
+    public function findById(int $clinicId, int $id): ?array
+    {
+        $sql = "
+            SELECT id, closed_date, reason, is_open, created_at
+            FROM clinic_closed_days
+            WHERE clinic_id = :clinic_id
+              AND id = :id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'id' => $id]);
+
+        $row = $stmt->fetch();
+        if (!is_array($row)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> */
+        return $row;
+    }
+
     /** @return list<array<string, mixed>> */
     public function listByClinic(int $clinicId): array
     {
@@ -97,5 +121,28 @@ final class ClinicClosedDaysRepository
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $id, 'clinic_id' => $clinicId]);
+    }
+
+    public function updateById(int $clinicId, int $id, string $date, ?string $reason, int $isOpen): void
+    {
+        $sql = "
+            UPDATE clinic_closed_days
+               SET closed_date = :closed_date,
+                   reason = :reason,
+                   is_open = :is_open,
+                   updated_at = NOW()
+             WHERE id = :id
+               AND clinic_id = :clinic_id
+               AND deleted_at IS NULL
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'closed_date' => $date,
+            'reason' => ($reason !== null && trim($reason) !== '' ? trim($reason) : null),
+            'is_open' => $isOpen === 1 ? 1 : 0,
+            'id' => $id,
+            'clinic_id' => $clinicId,
+        ]);
     }
 }
