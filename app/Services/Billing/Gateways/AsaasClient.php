@@ -36,7 +36,25 @@ final class AsaasClient
         ], $payload);
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
-            throw new \RuntimeException('Falha ao criar customer no Asaas.');
+            $msg = 'Falha ao criar customer no Asaas.';
+            if (is_array($resp['json']) && isset($resp['json']['errors']) && is_array($resp['json']['errors'])) {
+                $parts = [];
+                foreach ($resp['json']['errors'] as $e) {
+                    if (is_array($e)) {
+                        $desc = trim((string)($e['description'] ?? ''));
+                        $code = trim((string)($e['code'] ?? ''));
+                        if ($desc !== '') {
+                            $parts[] = $desc;
+                        } elseif ($code !== '') {
+                            $parts[] = $code;
+                        }
+                    }
+                }
+                if ($parts !== []) {
+                    $msg .= ' ' . implode(' | ', array_slice($parts, 0, 4));
+                }
+            }
+            throw new \RuntimeException($msg);
         }
 
         $json = $resp['json'];
@@ -73,7 +91,25 @@ final class AsaasClient
         ], $payload);
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
-            throw new \RuntimeException('Falha ao criar assinatura no Asaas.');
+            $msg = 'Falha ao criar assinatura no Asaas.';
+            if (is_array($resp['json']) && isset($resp['json']['errors']) && is_array($resp['json']['errors'])) {
+                $parts = [];
+                foreach ($resp['json']['errors'] as $e) {
+                    if (is_array($e)) {
+                        $desc = trim((string)($e['description'] ?? ''));
+                        $code = trim((string)($e['code'] ?? ''));
+                        if ($desc !== '') {
+                            $parts[] = $desc;
+                        } elseif ($code !== '') {
+                            $parts[] = $code;
+                        }
+                    }
+                }
+                if ($parts !== []) {
+                    $msg .= ' ' . implode(' | ', array_slice($parts, 0, 4));
+                }
+            }
+            throw new \RuntimeException($msg);
         }
 
         $json = $resp['json'];

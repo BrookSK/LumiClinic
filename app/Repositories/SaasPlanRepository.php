@@ -105,7 +105,7 @@ final class SaasPlanRepository
                 :price_cents, :currency,
                 :interval_unit, :interval_count,
                 :trial_days,
-                CAST(:limits_json AS JSON),
+                :limits_json,
                 :status,
                 NOW()
             )
@@ -145,7 +145,7 @@ final class SaasPlanRepository
                 interval_unit = :interval_unit,
                 interval_count = :interval_count,
                 trial_days = :trial_days,
-                limits_json = CAST(:limits_json AS JSON),
+                limits_json = :limits_json,
                 updated_at = NOW()
             WHERE id = :id
             LIMIT 1

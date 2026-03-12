@@ -142,6 +142,24 @@ ob_start();
                     $intervalUnit = (string)($it['interval_unit'] ?? 'month');
                     $intervalCount = (int)($it['interval_count'] ?? 1);
                     $trialDays = (int)($it['trial_days'] ?? 0);
+
+                    $statusLabel = $status;
+                    if ($status === 'active') {
+                        $statusLabel = 'Ativo';
+                    } elseif ($status === 'inactive') {
+                        $statusLabel = 'Inativo';
+                    }
+
+                    $intervalUnitLabel = $intervalUnit;
+                    if ($intervalUnit === 'day') {
+                        $intervalUnitLabel = 'dia';
+                    } elseif ($intervalUnit === 'week') {
+                        $intervalUnitLabel = 'semana';
+                    } elseif ($intervalUnit === 'month') {
+                        $intervalUnitLabel = 'mês';
+                    } elseif ($intervalUnit === 'year') {
+                        $intervalUnitLabel = 'ano';
+                    }
                     $limits = (string)($it['limits_json'] ?? '{}');
                     $limitsDecoded = [];
                     $tmp = json_decode($limits, true);
@@ -158,9 +176,9 @@ ob_start();
                     <td><?= htmlspecialchars((string)($it['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($it['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td>R$ <?= number_format(max(0, $price) / 100, 2, ',', '.') ?></td>
-                    <td><?= htmlspecialchars((string)$intervalCount . ' ' . $intervalUnit, ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)$intervalCount . ' ' . $intervalUnitLabel, ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= (int)$trialDays ?> dias</td>
-                    <td><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?></td>
                     <td>
                         <details class="lc-card" style="margin:0; padding:10px; box-shadow:none;">
                             <summary class="lc-link" style="cursor:pointer;">Editar</summary>

@@ -47,6 +47,7 @@ final class SystemBillingAdminController extends Controller
 
         return $this->view('system/billing/view', [
             'row' => $row,
+            'plans' => $service->listActivePlans(),
             'ok' => (string)$request->input('ok', ''),
             'error' => (string)$request->input('error', ''),
         ]);
@@ -59,9 +60,12 @@ final class SystemBillingAdminController extends Controller
         $clinicId = (int)$request->input('clinic_id', 0);
         $planId = (int)$request->input('plan_id', 0);
 
-        (new SystemBillingService($this->container))->setPlan($clinicId, $planId, $request->ip());
-
-        return $this->redirect('/sys/billing');
+        try {
+            (new SystemBillingService($this->container))->setPlan($clinicId, $planId, $request->ip());
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&ok=' . urlencode('Plano atualizado.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&error=' . urlencode($e->getMessage()));
+        }
     }
 
     public function setStatus(Request $request)
@@ -71,9 +75,12 @@ final class SystemBillingAdminController extends Controller
         $clinicId = (int)$request->input('clinic_id', 0);
         $status = (string)$request->input('status', '');
 
-        (new SystemBillingService($this->container))->setStatus($clinicId, $status, $request->ip());
-
-        return $this->redirect('/sys/billing');
+        try {
+            (new SystemBillingService($this->container))->setStatus($clinicId, $status, $request->ip());
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&ok=' . urlencode('Status atualizado.'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&error=' . urlencode($e->getMessage()));
+        }
     }
 
     public function setGateway(Request $request)

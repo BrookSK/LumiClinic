@@ -47,25 +47,39 @@ final class SystemClinicController extends Controller
         $primaryDomain = trim((string)$request->input('primary_domain', ''));
 
         $ownerName = trim((string)$request->input('owner_name', ''));
-        $ownerEmail = trim((string)$request->input('owner_email', ''));
+        $ownerEmail = strtolower(trim((string)$request->input('owner_email', '')));
         $ownerPassword = (string)$request->input('owner_password', '');
 
         if ($clinicName === '' || $ownerName === '' || $ownerEmail === '' || $ownerPassword === '') {
             return $this->view('system/clinics/create', ['error' => 'Preencha todos os campos obrigatórios.']);
         }
 
-        $service = new SystemClinicService($this->container);
-        $service->createClinicWithOwner(
-            $clinicName,
-            ($tenantKey === '' ? null : $tenantKey),
-            ($primaryDomain === '' ? null : $primaryDomain),
-            $ownerName,
-            $ownerEmail,
-            $ownerPassword,
-            $request->ip()
-        );
+        if (!filter_var($ownerEmail, FILTER_VALIDATE_EMAIL)) {
+            return $this->view('system/clinics/create', ['error' => 'E-mail inválido.']);
+        }
 
-        return $this->redirect('/sys/clinics');
+        if (strlen($ownerPassword) < 8) {
+            return $this->view('system/clinics/create', ['error' => 'Senha deve ter pelo menos 8 caracteres.']);
+        }
+
+        try {
+            $service = new SystemClinicService($this->container);
+            $service->createClinicWithOwner(
+                $clinicName,
+                ($tenantKey === '' ? null : $tenantKey),
+                ($primaryDomain === '' ? null : $primaryDomain),
+                $ownerName,
+                $ownerEmail,
+                $ownerPassword,
+                $request->ip()
+            );
+
+            return $this->redirect('/sys/clinics');
+        } catch (\RuntimeException $e) {
+            return $this->view('system/clinics/create', ['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return $this->view('system/clinics/create', ['error' => 'Falha ao criar clínica.']);
+        }
     }
 
     public function edit(Request $request)

@@ -223,10 +223,7 @@ final class BillingGatewayService
         }
 
         if ($subscriptionId === '') {
-            $cfg = $this->container->get('config');
-            $settings = new SystemSettingsService($this->container);
-            $billingType = $settings->getText('billing.asaas.billing_type') ?? (string)($cfg['billing']['asaas']['billing_type'] ?? 'BOLETO');
-            $created = $client->createSubscription($customerId, $amount, $billingType);
+            $created = $client->createSubscription($customerId, $amount, 'CREDIT_CARD');
             $subscriptionId = isset($created['id']) ? (string)$created['id'] : '';
         }
 

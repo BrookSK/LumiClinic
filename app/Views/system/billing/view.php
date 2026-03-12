@@ -2,6 +2,7 @@
 $title = 'Assinatura';
 $csrf = $_SESSION['_csrf'] ?? '';
 $row = $row ?? [];
+$plans = $plans ?? [];
 $ok = isset($ok) ? (string)$ok : '';
 $error = isset($error) ? (string)$error : '';
 
@@ -19,6 +20,13 @@ $gatewayLabel = [
     'mercadopago' => 'Mercado Pago',
     '' => 'Não definida',
 ];
+
+$planLabel = [];
+foreach ($plans as $p) {
+    $code = (string)($p['code'] ?? '');
+    $name = (string)($p['name'] ?? '');
+    $planLabel[(int)($p['id'] ?? 0)] = trim($name !== '' ? $name : $code);
+}
 
 $fmtDateTime = function ($value): string {
     $v = (string)($value ?? '');
@@ -126,7 +134,8 @@ ob_start();
             </div>
             <div>
                 <div class="lc-muted" style="font-size:12px;">Forma de cobrança</div>
-                <div><?= htmlspecialchars((string)($gatewayLabel[$gateway] ?? $gateway), ENT_QUOTES, 'UTF-8') ?></div>
+                <div>Cartão de crédito</div>
+                <div class="lc-muted" style="font-size:12px; margin-top:2px;">Gateway: <?= htmlspecialchars((string)($gatewayLabel[$gateway] ?? ($gateway !== '' ? $gateway : '-')), ENT_QUOTES, 'UTF-8') ?></div>
             </div>
         </div>
 
@@ -169,6 +178,47 @@ ob_start();
             Use estas ações para liberar acesso quando necessário.
             <br />
             "Pular 1 mês" aqui significa conceder mais 1 mês de acesso (mês grátis).
+        </div>
+
+        <div class="lc-card" style="padding:12px; margin-bottom:12px;">
+            <div class="lc-card__title">Plano e status</div>
+            <div class="lc-card__body" style="padding:0;">
+                <div class="lc-grid lc-gap-grid" style="margin-top:10px;">
+                    <form method="post" action="/sys/billing/set-plan" class="lc-form" style="margin:0;">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="clinic_id" value="<?= (int)($row['id'] ?? 0) ?>" />
+                        <label class="lc-label">Plano</label>
+                        <select class="lc-select" name="plan_id" required>
+                            <?php $curPlanId = (int)($row['plan_id'] ?? 0); ?>
+                            <?php foreach ($plans as $p): ?>
+                                <option value="<?= (int)$p['id'] ?>" <?= ((int)$p['id'] === $curPlanId) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars((string)($planLabel[(int)$p['id']] ?? (string)($p['code'] ?? '')), ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div style="margin-top:10px;">
+                            <button class="lc-btn lc-btn--secondary" type="submit">Salvar plano</button>
+                        </div>
+                    </form>
+
+                    <form method="post" action="/sys/billing/set-status" class="lc-form" style="margin:0;">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="clinic_id" value="<?= (int)($row['id'] ?? 0) ?>" />
+                        <label class="lc-label">Status</label>
+                        <select class="lc-select" name="status" required>
+                            <?php $cur = (string)($row['subscription_status'] ?? ''); ?>
+                            <?php foreach (['trial','active','past_due','canceled','suspended'] as $st): ?>
+                                <option value="<?= htmlspecialchars($st, ENT_QUOTES, 'UTF-8') ?>" <?= ($cur === $st) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars((string)($statusLabel[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div style="margin-top:10px;">
+                            <button class="lc-btn lc-btn--secondary" type="submit">Salvar status</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
 
         <div class="lc-flex lc-gap-sm lc-flex--wrap">
