@@ -113,6 +113,29 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Checklist para sua clínica funcionar (Admin/Dono)</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            1) Configurações da agenda
+            <br />- Vá em <strong>Configurações</strong> e defina os <strong>horários de funcionamento</strong>.
+            <br />- Cadastre <strong>feriados e recessos</strong> (dias fechados / dias abertos especiais).
+            <br />- Configure <strong>regras</strong> e <strong>bloqueios</strong> (ex: horários indisponíveis).
+            <br /><br />
+            2) Pessoas e acesso
+            <br />- Crie os <strong>usuários</strong> (recepção, financeiro, admin).
+            <br />- Cadastre os <strong>profissionais</strong> (médicos/esteticistas) e confira permissões.
+            <br /><br />
+            3) Cadastros essenciais
+            <br />- Cadastre <strong>serviços</strong> para conseguir agendar e registrar atendimentos.
+            <br />- Cadastre <strong>pacientes</strong> (ou faça isso na hora do agendamento).
+            <br /><br />
+            4) Fluxo completo (do agendamento ao atendimento)
+            <br />- Vá em <strong>Agenda</strong> e crie um <strong>agendamento</strong>.
+            <br />- Em <strong>Operações da agenda</strong>, verifique as informações do agendamento e use filtros quando necessário.
+            <br />- Acesse como <strong>Profissional</strong> e acompanhe o atendimento na sua visão (agenda e registros).
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
         <div class="lc-card__title">Sair</div>
         <div class="lc-card__body" style="line-height:1.6;">
             - No topo à direita, abra o menu do usuário e clique em <strong>Sair</strong>.

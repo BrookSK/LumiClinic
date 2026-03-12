@@ -18,11 +18,11 @@ final class SecurityHeadersMiddleware implements MiddlewareInterface
             ->withHeader('X-Content-Type-Options', 'nosniff')
             ->withHeader('X-Frame-Options', 'DENY')
             ->withHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-            ->withHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+            ->withHeader('Permissions-Policy', 'geolocation=(), microphone=(self), camera=()')
             ->withHeader('Cross-Origin-Opener-Policy', 'same-origin')
             ->withHeader('Cross-Origin-Resource-Policy', 'same-origin');
 
-        $response = $response->withHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' blob:; script-src-elem 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
+        $response = $response->withHeader('Content-Security-Policy', "default-src 'self'; connect-src 'self' https://www.google-analytics.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' blob:; script-src-elem 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
 
         return $response;
     }
