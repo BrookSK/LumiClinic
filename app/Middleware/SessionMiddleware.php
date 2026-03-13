@@ -15,19 +15,25 @@ final class SessionMiddleware implements MiddlewareInterface
 
     public function handle(Request $request, callable $next): Response
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            $path = $request->path();
-            $isPortal = str_starts_with($path, '/portal');
-            $sessionName = $this->config['name'];
-            if ($isPortal && isset($this->config['name_patient']) && is_string($this->config['name_patient']) && $this->config['name_patient'] !== '') {
-                $sessionName = $this->config['name_patient'];
-            }
+        $path = $request->path();
+        $isPortal = str_starts_with($path, '/portal');
+        $sessionName = $this->config['name'];
+        if ($isPortal && isset($this->config['name_patient']) && is_string($this->config['name_patient']) && $this->config['name_patient'] !== '') {
+            $sessionName = $this->config['name_patient'];
+        }
 
-            $cookiePath = '/';
-            if (isset($this->config['path']) && is_string($this->config['path']) && $this->config['path'] !== '') {
-                $cookiePath = $this->config['path'];
-            }
+        $cookiePath = '/';
+        if (isset($this->config['path']) && is_string($this->config['path']) && $this->config['path'] !== '') {
+            $cookiePath = $this->config['path'];
+        }
 
+        $active = session_status() === PHP_SESSION_ACTIVE;
+        if ($active && session_name() !== $sessionName) {
+            session_write_close();
+            $active = false;
+        }
+
+        if (!$active) {
             session_name($sessionName);
             session_set_cookie_params([
                 'path' => $cookiePath,
