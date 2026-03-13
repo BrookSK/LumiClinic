@@ -12,6 +12,56 @@ final class EvolutionClient
 {
     public function __construct(private readonly Container $container) {}
 
+    private function isInstanceMissingResponse(int $status, string $body): bool
+    {
+        if ($status !== 404) {
+            return false;
+        }
+
+        $body = trim($body);
+        if ($body === '') {
+            return false;
+        }
+
+        return stripos($body, 'instance does not exist') !== false;
+    }
+
+    /** @return array<string,mixed> */
+    private function createInstance(string $instance, int $timeoutSeconds = 30): array
+    {
+        $instance = trim($instance);
+        if ($instance === '') {
+            throw new \RuntimeException('Instância inválida.');
+        }
+
+        $apiKey = $this->apiKey();
+        $url = $this->baseUrl() . '/instance/create';
+
+        $http = new HttpClient();
+        $resp = $http->request('POST', $url, ['apikey' => $apiKey], [
+            'instanceName' => $instance,
+            'integration' => 'WHATSAPP-BAILEYS',
+            'qrcode' => true,
+        ], $timeoutSeconds);
+
+        if ($resp['status'] < 200 || $resp['status'] >= 300) {
+            $body = isset($resp['body']) ? (string)$resp['body'] : '';
+            $body = trim($body);
+            if (strlen($body) > 500) {
+                $body = substr($body, 0, 500) . '...';
+            }
+            $suffix = $body !== '' ? (' Resposta: ' . $body) : '';
+            throw new \RuntimeException('Falha ao criar instância na Evolution API (HTTP ' . (int)$resp['status'] . ').' . $suffix);
+        }
+
+        $json = $resp['json'];
+        if (!is_array($json)) {
+            return ['raw' => $resp['body']];
+        }
+
+        return $json;
+    }
+
     private function apiKey(): string
     {
         $settings = new SystemSettingsService($this->container);
@@ -58,6 +108,12 @@ final class EvolutionClient
     /** @return array<string,mixed> */
     public function connectInstance(string $instance, ?string $phone = null, int $timeoutSeconds = 30): array
     {
+        return $this->connectInstanceInternal($instance, $phone, $timeoutSeconds, 0);
+    }
+
+    /** @return array<string,mixed> */
+    private function connectInstanceInternal(string $instance, ?string $phone, int $timeoutSeconds, int $attempt): array
+    {
         $instance = trim($instance);
         if ($instance === '') {
             throw new \RuntimeException('Instância inválida.');
@@ -77,6 +133,12 @@ final class EvolutionClient
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
             $body = isset($resp['body']) ? (string)$resp['body'] : '';
+
+            if ($attempt === 0 && $this->isInstanceMissingResponse((int)$resp['status'], $body)) {
+                $this->createInstance($instance, $timeoutSeconds);
+                return $this->connectInstanceInternal($instance, $phone, $timeoutSeconds, 1);
+            }
+
             $body = trim($body);
             if (strlen($body) > 500) {
                 $body = substr($body, 0, 500) . '...';
