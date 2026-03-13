@@ -6,16 +6,18 @@ namespace App\Controllers\Settings;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Core\Http\Response;
+use App\Repositories\WhatsappMessageLogQueryRepository;
+use App\Repositories\WhatsappTemplateRepository;
 use App\Services\Ai\AiConfigService;
 use App\Services\Ai\OpenAiClient;
-use App\Repositories\WhatsappTemplateRepository;
-use App\Repositories\WhatsappMessageLogQueryRepository;
-use App\Services\Anamnesis\AnamnesisService;
-use App\Services\Settings\SettingsService;
 use App\Services\Auth\AuthService;
-use App\Services\Whatsapp\WhatsappConfigService;
+use App\Services\Settings\SettingsService;
+use App\Services\Anamnesis\AnamnesisService;
 use App\Services\Whatsapp\EvolutionClient;
+use App\Services\Whatsapp\WhatsappConfigService;
 use App\Services\System\SystemSettingsService;
+use App\Services\System\SystemErrorLogService;
 
 final class SettingsController extends Controller
 {
@@ -244,11 +246,31 @@ final class SettingsController extends Controller
         try {
             $conn = (new EvolutionClient($this->container))->connectInstance($instance);
         } catch (\Throwable $e) {
+            $requestId = '';
+            try {
+                $requestId = bin2hex(random_bytes(8));
+            } catch (\Throwable $ignore) {
+                $requestId = (string)time();
+            }
+
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                502,
+                'whatsapp.evolution.connect',
+                $e->getMessage(),
+                $e,
+                [
+                    'request_id' => $requestId,
+                    'clinic_id' => $clinicId,
+                    'instance' => $instance,
+                ]
+            );
+
             return $this->view('settings/whatsapp', [
                 'evolution_instance' => $data['evolution_instance'] ?? null,
                 'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
                 'global_configured' => $globalConfigured,
-                'error' => $e->getMessage(),
+                'error' => $e->getMessage() . ' (Ref: ' . $requestId . ')',
             ]);
         }
 
