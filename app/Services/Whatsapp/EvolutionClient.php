@@ -76,7 +76,13 @@ final class EvolutionClient
         $resp = $http->request('GET', $url, ['apikey' => $apiKey], null, $timeoutSeconds);
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
-            throw new \RuntimeException('Falha ao solicitar QR Code na Evolution API.');
+            $body = isset($resp['body']) ? (string)$resp['body'] : '';
+            $body = trim($body);
+            if (strlen($body) > 500) {
+                $body = substr($body, 0, 500) . '...';
+            }
+            $suffix = $body !== '' ? (' Resposta: ' . $body) : '';
+            throw new \RuntimeException('Falha ao solicitar QR Code na Evolution API (HTTP ' . (int)$resp['status'] . ').' . $suffix);
         }
 
         $json = $resp['json'];
