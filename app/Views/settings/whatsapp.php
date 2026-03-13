@@ -4,8 +4,10 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $success = $success ?? null;
 $diagnose = $diagnose ?? null;
+$connectData = $connect_data ?? null;
 $evolutionInstance = $evolution_instance ?? null;
 $evolutionApiKeySet = $evolution_apikey_set ?? false;
+$globalConfigured = $global_configured ?? false;
 
 $can = function (string $permissionCode): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
@@ -40,29 +42,51 @@ ob_start();
     <?php endif; ?>
 
     <div class="lc-card__body">
-        <div class="lc-muted" style="margin-bottom:10px;">
-            A API key é salva criptografada por clínica. Não exibimos o valor após salvar.
-        </div>
+        <?php if ($globalConfigured): ?>
+            <div class="lc-alert lc-alert--info" style="margin-bottom:10px;">
+                O WhatsApp está configurado globalmente pelo administrador do sistema.
+            </div>
+        <?php else: ?>
+            <div class="lc-muted" style="margin-bottom:10px;">
+                A API key é salva criptografada por clínica. Não exibimos o valor após salvar.
+            </div>
+        <?php endif; ?>
 
         <?php if ($can('settings.update')): ?>
             <form method="post" class="lc-form" action="/settings/whatsapp">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
             <label class="lc-label">Status</label>
-            <div class="lc-badge <?= ($evolutionInstance !== null && $evolutionInstance !== '' && $evolutionApiKeySet) ? 'lc-badge--success' : 'lc-badge--secondary' ?>">
-                <?= ($evolutionInstance !== null && $evolutionInstance !== '' && $evolutionApiKeySet) ? 'Configurado' : 'Não configurado' ?>
+            <?php
+            $isConfigured = $globalConfigured || ($evolutionInstance !== null && $evolutionInstance !== '' && $evolutionApiKeySet);
+            ?>
+            <div class="lc-badge <?= $isConfigured ? 'lc-badge--success' : 'lc-badge--secondary' ?>">
+                <?= $isConfigured ? 'Configurado' : 'Não configurado' ?>
             </div>
 
-            <label class="lc-label" style="margin-top:12px;">Instância</label>
-            <input class="lc-input" type="text" name="evolution_instance" value="<?= htmlspecialchars((string)($evolutionInstance ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="nome-da-instancia" autocomplete="off" />
-
-            <label class="lc-label" style="margin-top:12px;">API Key</label>
-            <input class="lc-input" type="password" name="evolution_apikey" placeholder="apikey" autocomplete="off" />
-
-                <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
-                    <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
-                    <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
+            <?php if ($globalConfigured): ?>
+                <div class="lc-flex lc-gap-sm" style="margin-top:10px; align-items:center;">
+                    <form method="post" action="/settings/whatsapp/connect" class="lc-form" style="margin:0;">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <button class="lc-btn lc-btn--primary" type="submit">Conectar (Gerar QR Code)</button>
+                    </form>
                 </div>
+            <?php endif; ?>
+
+            <?php if (!$globalConfigured): ?>
+                <label class="lc-label" style="margin-top:12px;">Instância</label>
+                <input class="lc-input" type="text" name="evolution_instance" value="<?= htmlspecialchars((string)($evolutionInstance ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="nome-da-instancia" autocomplete="off" />
+
+                <label class="lc-label" style="margin-top:12px;">API Key</label>
+                <input class="lc-input" type="password" name="evolution_apikey" placeholder="apikey" autocomplete="off" />
+            <?php endif; ?>
+
+            <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
+                <?php if (!$globalConfigured): ?>
+                    <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+                <?php endif; ?>
+                <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
+            </div>
             </form>
         <?php else: ?>
             <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
@@ -77,6 +101,45 @@ ob_start();
             </form>
         <?php endif; ?>
 
+        <?php if (is_array($connectData)): ?>
+            <?php
+            $pairingCode = isset($connectData['pairingCode']) ? trim((string)$connectData['pairingCode']) : '';
+            $code = isset($connectData['code']) ? trim((string)$connectData['code']) : '';
+            $count = isset($connectData['count']) ? (int)$connectData['count'] : null;
+            $imgSrc = null;
+            if ($code !== '') {
+                if (stripos($code, 'data:image') === 0) {
+                    $imgSrc = $code;
+                } elseif (preg_match('/^[A-Za-z0-9+\/\r\n]+=*$/', $code) && strlen($code) > 120) {
+                    $imgSrc = 'data:image/png;base64,' . $code;
+                }
+            }
+            ?>
+            <div class="lc-card" style="margin-top:14px;">
+                <div class="lc-card__title">Conectar WhatsApp</div>
+                <div class="lc-card__body">
+                    <?php if ($imgSrc !== null): ?>
+                        <div style="display:flex; justify-content:center;">
+                            <img src="<?= htmlspecialchars($imgSrc, ENT_QUOTES, 'UTF-8') ?>" alt="QR Code" style="max-width:260px; width:100%; height:auto;" />
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($pairingCode !== ''): ?>
+                        <div class="lc-muted" style="margin-top:10px;">Pairing code: <code><?= htmlspecialchars($pairingCode, ENT_QUOTES, 'UTF-8') ?></code></div>
+                    <?php endif; ?>
+
+                    <?php if ($count !== null): ?>
+                        <div class="lc-muted" style="margin-top:6px;">Tentativa: <?= htmlspecialchars((string)$count, ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php endif; ?>
+
+                    <?php if ($imgSrc === null && $code !== ''): ?>
+                        <div class="lc-muted" style="margin-top:10px;">Código retornado pela Evolution:</div>
+                        <pre style="white-space:pre-wrap; word-break:break-word; margin-top:6px;"><code><?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?></code></pre>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <?php if ($can('settings.update')): ?>
             <form method="post" class="lc-form" action="/settings/whatsapp/diagnose" style="margin-top:10px;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
@@ -87,7 +150,9 @@ ob_start();
         <?php if ($can('settings.update')): ?>
             <form method="post" class="lc-form" action="/settings/whatsapp/clear" style="margin-top:10px;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <button class="lc-btn lc-btn--danger" type="submit" onclick="return confirm('Remover a configuração de WhatsApp desta clínica?');">Remover configuração</button>
+                <?php if (!$globalConfigured): ?>
+                    <button class="lc-btn lc-btn--danger" type="submit" onclick="return confirm('Remover a configuração de WhatsApp desta clínica?');">Remover configuração</button>
+                <?php endif; ?>
             </form>
         <?php endif; ?>
 

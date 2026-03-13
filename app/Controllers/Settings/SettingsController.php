@@ -15,9 +15,18 @@ use App\Services\Settings\SettingsService;
 use App\Services\Auth\AuthService;
 use App\Services\Whatsapp\WhatsappConfigService;
 use App\Services\Whatsapp\EvolutionClient;
+use App\Services\System\SystemSettingsService;
 
 final class SettingsController extends Controller
 {
+    private function isWhatsappGlobalConfigured(): bool
+    {
+        $svc = new SystemSettingsService($this->container);
+        $baseUrl = trim((string)($svc->getText('whatsapp.evolution.base_url') ?? ''));
+        $token = trim((string)($svc->getText('whatsapp.evolution.token') ?? ''));
+        return $baseUrl !== '' && $token !== '';
+    }
+
     public function index(Request $request)
     {
         $this->authorize('settings.read');
@@ -197,6 +206,61 @@ final class SettingsController extends Controller
         }
     }
 
+    public function whatsappConnect(Request $request)
+    {
+        $this->authorize('settings.update');
+
+        $globalConfigured = $this->isWhatsappGlobalConfigured();
+        if (!$globalConfigured) {
+            return $this->redirect('/settings/whatsapp?error=' . urlencode('O WhatsApp ainda não foi configurado pelo administrador do sistema.'));
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/settings');
+        }
+
+        $svc = new WhatsappConfigService($this->container);
+        $data = $svc->getWhatsappSettings();
+        $instance = $data['evolution_instance'] ?? null;
+        $instance = $instance === null ? '' : trim((string)$instance);
+
+        if ($instance === '') {
+            $instance = 'lc-' . $clinicId;
+            try {
+                $svc->setEvolutionInstance($instance, $request->ip());
+                $data = $svc->getWhatsappSettings();
+            } catch (\Throwable $e) {
+                return $this->view('settings/whatsapp', [
+                    'evolution_instance' => $data['evolution_instance'] ?? null,
+                    'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                    'global_configured' => $globalConfigured,
+                    'error' => 'Falha ao preparar instância do WhatsApp. Tente novamente.',
+                ]);
+            }
+        }
+
+        try {
+            $conn = (new EvolutionClient($this->container))->connectInstance($instance);
+        } catch (\Throwable $e) {
+            return $this->view('settings/whatsapp', [
+                'evolution_instance' => $data['evolution_instance'] ?? null,
+                'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                'global_configured' => $globalConfigured,
+                'error' => 'Falha ao gerar QR Code. Verifique a Evolution e tente novamente.',
+            ]);
+        }
+
+        return $this->view('settings/whatsapp', [
+            'evolution_instance' => $data['evolution_instance'] ?? null,
+            'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+            'global_configured' => $globalConfigured,
+            'connect_data' => $conn,
+            'success' => 'QR Code gerado. Escaneie com o WhatsApp para conectar.',
+        ]);
+    }
+
     public function aiClear(Request $request)
     {
         $this->authorize('settings.update');
@@ -209,6 +273,8 @@ final class SettingsController extends Controller
     {
         $this->authorize('settings.read');
 
+        $globalConfigured = $this->isWhatsappGlobalConfigured();
+
         $svc = new WhatsappConfigService($this->container);
         $data = $svc->getWhatsappSettings();
 
@@ -216,6 +282,7 @@ final class SettingsController extends Controller
         return $this->view('settings/whatsapp', [
             'evolution_instance' => $data['evolution_instance'] ?? null,
             'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+            'global_configured' => $globalConfigured,
             'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
         ]);
     }
@@ -223,6 +290,10 @@ final class SettingsController extends Controller
     public function whatsappUpdate(Request $request)
     {
         $this->authorize('settings.update');
+
+        if ($this->isWhatsappGlobalConfigured()) {
+            return $this->redirect('/settings/whatsapp?error=' . urlencode('O WhatsApp está configurado pelo administrador do sistema.'));
+        }
 
         $instance = trim((string)$request->input('evolution_instance', ''));
         $apiKey = trim((string)$request->input('evolution_apikey', ''));
@@ -268,6 +339,10 @@ final class SettingsController extends Controller
     {
         $this->authorize('settings.update');
 
+        if ($this->isWhatsappGlobalConfigured()) {
+            return $this->redirect('/settings/whatsapp?error=' . urlencode('O WhatsApp está configurado pelo administrador do sistema.'));
+        }
+
         (new WhatsappConfigService($this->container))->clearEvolutionConfig($request->ip());
         return $this->redirect('/settings/whatsapp?saved=1');
     }
@@ -275,6 +350,8 @@ final class SettingsController extends Controller
     public function whatsappDiagnose(Request $request)
     {
         $this->authorize('settings.update');
+
+        $globalConfigured = $this->isWhatsappGlobalConfigured();
 
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -290,13 +367,13 @@ final class SettingsController extends Controller
 
         $checks = [];
 
-        $isConfigured = trim($instance) !== '' && $apiKeySet;
+        $isConfigured = $globalConfigured || (trim($instance) !== '' && $apiKeySet);
         $checks[] = [
             'title' => 'Configuração da Evolution API',
             'ok' => $isConfigured,
             'message' => $isConfigured
                 ? 'Credenciais configuradas.'
-                : 'Preencha a instância e a apikey e clique em Salvar.',
+                : 'A configuração deve ser feita pelo administrador do sistema.',
             'action_label' => $isConfigured ? null : 'Ir para configuração',
             'action_url' => $isConfigured ? null : '/settings/whatsapp',
         ];
@@ -358,6 +435,7 @@ final class SettingsController extends Controller
         return $this->view('settings/whatsapp', [
             'evolution_instance' => $data['evolution_instance'] ?? null,
             'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+            'global_configured' => $globalConfigured,
             'diagnose' => [
                 'checks' => $checks,
             ],

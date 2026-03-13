@@ -56,6 +56,38 @@ final class EvolutionClient
     }
 
     /** @return array<string,mixed> */
+    public function connectInstance(string $instance, ?string $phone = null, int $timeoutSeconds = 30): array
+    {
+        $instance = trim($instance);
+        if ($instance === '') {
+            throw new \RuntimeException('Instância inválida.');
+        }
+
+        $apiKey = $this->apiKey();
+        $url = $this->baseUrl() . '/instance/connect/' . rawurlencode($instance);
+        if ($phone !== null) {
+            $phone = trim($phone);
+            if ($phone !== '') {
+                $url .= '?phone=' . rawurlencode($phone);
+            }
+        }
+
+        $http = new HttpClient();
+        $resp = $http->request('GET', $url, ['apikey' => $apiKey], null, $timeoutSeconds);
+
+        if ($resp['status'] < 200 || $resp['status'] >= 300) {
+            throw new \RuntimeException('Falha ao solicitar QR Code na Evolution API.');
+        }
+
+        $json = $resp['json'];
+        if (!is_array($json)) {
+            return ['raw' => $resp['body']];
+        }
+
+        return $json;
+    }
+
+    /** @return array<string,mixed> */
     public function sendText(string $phone, string $message, int $timeoutSeconds = 30): array
     {
         $settings = new WhatsappConfigService($this->container);

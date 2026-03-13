@@ -278,6 +278,7 @@ $router->post('/settings/ai/clear', [SettingsController::class, 'aiClear']);
 
 $router->get('/settings/whatsapp', [SettingsController::class, 'whatsapp']);
 $router->post('/settings/whatsapp', [SettingsController::class, 'whatsappUpdate']);
+$router->post('/settings/whatsapp/connect', [SettingsController::class, 'whatsappConnect']);
 $router->post('/settings/whatsapp/test', [SettingsController::class, 'whatsappTest']);
 $router->post('/settings/whatsapp/clear', [SettingsController::class, 'whatsappClear']);
 $router->post('/settings/whatsapp/diagnose', [SettingsController::class, 'whatsappDiagnose']);
@@ -591,13 +592,6 @@ $router->get('/sys/plans', [SystemPlanAdminController::class, 'index']);
 $router->post('/sys/plans/create', [SystemPlanAdminController::class, 'create']);
 $router->post('/sys/plans/update', [SystemPlanAdminController::class, 'update']);
 $router->post('/sys/plans/set-status', [SystemPlanAdminController::class, 'setStatus']);
-
-$router->get('/sys/settings/whatsapp', [\App\Controllers\System\SystemSettingsController::class, 'whatsapp']);
-$router->post('/sys/settings/whatsapp', [\App\Controllers\System\SystemSettingsController::class, 'whatsappSubmit']);
-
-$router->get('/sys/settings/webpush', [\App\Controllers\System\SystemSettingsController::class, 'webpush']);
-$router->post('/sys/settings/webpush', [\App\Controllers\System\SystemSettingsController::class, 'webpushSubmit']);
-$router->post('/sys/settings/webpush/generate', [\App\Controllers\System\SystemSettingsController::class, 'webpushGenerate']);
 
 $router->get('/sys/settings/google-oauth', [\App\Controllers\System\SystemGoogleOauthSettingsController::class, 'index']);
 $router->post('/sys/settings/google-oauth', [\App\Controllers\System\SystemGoogleOauthSettingsController::class, 'submit']);
