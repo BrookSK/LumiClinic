@@ -279,6 +279,7 @@ $router->post('/settings/ai/clear', [SettingsController::class, 'aiClear']);
 $router->get('/settings/whatsapp', [SettingsController::class, 'whatsapp']);
 $router->post('/settings/whatsapp', [SettingsController::class, 'whatsappUpdate']);
 $router->post('/settings/whatsapp/connect', [SettingsController::class, 'whatsappConnect']);
+$router->post('/settings/whatsapp/connect-reset', [SettingsController::class, 'whatsappConnectReset']);
 $router->post('/settings/whatsapp/test', [SettingsController::class, 'whatsappTest']);
 $router->post('/settings/whatsapp/clear', [SettingsController::class, 'whatsappClear']);
 $router->post('/settings/whatsapp/diagnose', [SettingsController::class, 'whatsappDiagnose']);

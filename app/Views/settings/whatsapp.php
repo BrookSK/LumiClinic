@@ -67,6 +67,11 @@ ob_start();
                     <button class="lc-btn lc-btn--primary" type="submit">Conectar (Gerar QR Code)</button>
                 </form>
 
+                <form method="post" action="/settings/whatsapp/connect-reset" class="lc-form" style="margin-top:10px;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <button class="lc-btn lc-btn--secondary" type="submit">Gerar novo QR Code (resetar)</button>
+                </form>
+
                 <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
                     <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
                 </div>

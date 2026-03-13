@@ -196,6 +196,30 @@ final class EvolutionClient
         return $json;
     }
 
+    public function logoutInstance(string $instance, int $timeoutSeconds = 30): void
+    {
+        $instance = trim($instance);
+        if ($instance === '') {
+            throw new \RuntimeException('Instância inválida.');
+        }
+
+        $apiKey = $this->apiKey();
+        $url = $this->baseUrl() . '/instance/logout/' . rawurlencode($instance);
+
+        $http = new HttpClient();
+        $resp = $http->request('POST', $url, ['apikey' => $apiKey], null, $timeoutSeconds);
+
+        if ($resp['status'] < 200 || $resp['status'] >= 300) {
+            $body = isset($resp['body']) ? (string)$resp['body'] : '';
+            $body = trim($body);
+            if (strlen($body) > 500) {
+                $body = substr($body, 0, 500) . '...';
+            }
+            $suffix = $body !== '' ? (' Resposta: ' . $body) : '';
+            throw new \RuntimeException('Falha ao resetar sessão do WhatsApp (logout) na Evolution API (HTTP ' . (int)$resp['status'] . ').' . $suffix);
+        }
+    }
+
     public function instanceStatus(int $timeoutSeconds = 15): bool
     {
         $settings = new WhatsappConfigService($this->container);

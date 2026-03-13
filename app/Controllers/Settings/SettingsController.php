@@ -283,6 +283,112 @@ final class SettingsController extends Controller
         ]);
     }
 
+    public function whatsappConnectReset(Request $request)
+    {
+        $this->authorize('settings.update');
+
+        $globalConfigured = $this->isWhatsappGlobalConfigured();
+        if (!$globalConfigured) {
+            return $this->redirect('/settings/whatsapp?error=' . urlencode('O WhatsApp ainda não foi configurado pelo administrador do sistema.'));
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/settings');
+        }
+
+        $svc = new WhatsappConfigService($this->container);
+        $data = $svc->getWhatsappSettings();
+        $instance = $data['evolution_instance'] ?? null;
+        $instance = $instance === null ? '' : trim((string)$instance);
+
+        if ($instance === '') {
+            $instance = 'lc-' . $clinicId;
+            try {
+                $svc->setEvolutionInstance($instance, $request->ip());
+                $data = $svc->getWhatsappSettings();
+            } catch (\Throwable $e) {
+                return $this->view('settings/whatsapp', [
+                    'evolution_instance' => $data['evolution_instance'] ?? null,
+                    'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                    'global_configured' => $globalConfigured,
+                    'error' => 'Falha ao preparar instância do WhatsApp. Tente novamente.',
+                ]);
+            }
+        }
+
+        try {
+            (new EvolutionClient($this->container))->logoutInstance($instance);
+        } catch (\Throwable $e) {
+            $requestId = '';
+            try {
+                $requestId = bin2hex(random_bytes(8));
+            } catch (\Throwable $ignore) {
+                $requestId = (string)time();
+            }
+
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                502,
+                'whatsapp.evolution.logout',
+                $e->getMessage(),
+                $e,
+                [
+                    'request_id' => $requestId,
+                    'clinic_id' => $clinicId,
+                    'instance' => $instance,
+                ]
+            );
+
+            return $this->view('settings/whatsapp', [
+                'evolution_instance' => $data['evolution_instance'] ?? null,
+                'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                'global_configured' => $globalConfigured,
+                'error' => $e->getMessage() . ' (Ref: ' . $requestId . ')',
+            ]);
+        }
+
+        try {
+            $conn = (new EvolutionClient($this->container))->connectInstance($instance);
+        } catch (\Throwable $e) {
+            $requestId = '';
+            try {
+                $requestId = bin2hex(random_bytes(8));
+            } catch (\Throwable $ignore) {
+                $requestId = (string)time();
+            }
+
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                502,
+                'whatsapp.evolution.connect_after_logout',
+                $e->getMessage(),
+                $e,
+                [
+                    'request_id' => $requestId,
+                    'clinic_id' => $clinicId,
+                    'instance' => $instance,
+                ]
+            );
+
+            return $this->view('settings/whatsapp', [
+                'evolution_instance' => $data['evolution_instance'] ?? null,
+                'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                'global_configured' => $globalConfigured,
+                'error' => $e->getMessage() . ' (Ref: ' . $requestId . ')',
+            ]);
+        }
+
+        return $this->view('settings/whatsapp', [
+            'evolution_instance' => $data['evolution_instance'] ?? null,
+            'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+            'global_configured' => $globalConfigured,
+            'connect_data' => $conn,
+            'success' => 'QR Code gerado. Escaneie com o WhatsApp para conectar.',
+        ]);
+    }
+
     public function aiClear(Request $request)
     {
         $this->authorize('settings.update');
