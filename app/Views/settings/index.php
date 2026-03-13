@@ -28,7 +28,7 @@ $can = function (string $permissionCode): bool {
 $ro = $can('settings.update') ? '' : 'disabled';
 ob_start();
 ?>
-<div class="lc-grid">
+<div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr;">
     <div class="lc-card">
         <div class="lc-card__title">Geral</div>
 

@@ -207,9 +207,6 @@ ob_start();
                             <?php if ($can('scheduling.update')): ?>
                                 <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
                             <?php endif; ?>
-                            <?php if ($can('scheduling.logs')): ?>
-                                <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
-                            <?php endif; ?>
 
                             <details class="lc-actions__more">
                                 <summary class="lc-btn lc-btn--secondary lc-btn--sm">Ações</summary>
@@ -724,13 +721,33 @@ ob_start();
     }
 
     detailsBody.innerHTML =
-      '<div style="display:grid; grid-template-columns: 1fr; gap:10px;">' +
-        '<div><strong>' + esc(title) + '</strong></div>' +
-        '<div><span class="lc-muted">Paciente:</span> ' + esc(it.patient_name || '') + '</div>' +
-        '<div><span class="lc-muted">Serviço:</span> ' + esc(it.service_name || '') + '</div>' +
-        '<div><span class="lc-muted">Profissional:</span> ' + esc(it.professional_name || '') + '</div>' +
-        '<div><span class="lc-muted">Status:</span> ' + esc(fmtStatus(it.status || '')) + '</div>' +
-        '<div><span class="lc-muted">Observações:</span> ' + esc(it.notes || '') + '</div>' +
+      '<div style="grid-column: 1 / -1; display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; align-items:start;">' +
+        '<div class="lc-card" style="margin:0;">' +
+          '<div class="lc-card__body">' +
+            '<div style="font-weight:850; margin-bottom:10px;">' + esc(title) + '</div>' +
+            '<div style="display:grid; grid-template-columns: 1fr; gap:8px;">' +
+              '<div><span class="lc-muted">Paciente</span><div style="font-weight:700;">' + esc(it.patient_name || '') + '</div></div>' +
+              '<div><span class="lc-muted">Serviço</span><div style="font-weight:700;">' + esc(it.service_name || '') + '</div></div>' +
+              '<div><span class="lc-muted">Profissional</span><div style="font-weight:700;">' + esc(it.professional_name || '') + '</div></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="lc-card" style="margin:0;">' +
+          '<div class="lc-card__body">' +
+            '<div style="display:grid; grid-template-columns: 1fr; gap:8px;">' +
+              '<div><span class="lc-muted">Início</span><div style="font-weight:700;">' + esc((it.start_at || '').toString().replace('T', ' ')) + '</div></div>' +
+              '<div><span class="lc-muted">Fim</span><div style="font-weight:700;">' + esc((it.end_at || '').toString().replace('T', ' ')) + '</div></div>' +
+              '<div><span class="lc-muted">Status</span><div style="font-weight:700;">' + esc(fmtStatus(it.status || '')) + '</div></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="lc-card" style="margin:0; grid-column: 1 / -1;">' +
+          '<div class="lc-card__body">' +
+            '<div><span class="lc-muted">Observações</span><div style="font-weight:700;">' + esc(it.notes || '') + '</div></div>' +
+          '</div>' +
+        '</div>' +
       '</div>';
   }
 

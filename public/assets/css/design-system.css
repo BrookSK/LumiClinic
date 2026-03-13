@@ -232,6 +232,17 @@ a.lc-btn{display:inline-flex}
     outline:none;
 }
 
+.lc-input[type="color"]{
+    width: 54px;
+    height: 42px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.lc-input[type="color"]::-webkit-color-swatch-wrapper{padding:6px;border-radius:12px}
+.lc-input[type="color"]::-webkit-color-swatch{border:0;border-radius:10px}
+.lc-input[type="color"]::-moz-color-swatch{border:0;border-radius:10px}
+
 .lc-input:focus{border-color: rgba(0,176,240,0.55); box-shadow: 0 0 0 4px rgba(0,176,240,0.14)}
 
 textarea.lc-input,
