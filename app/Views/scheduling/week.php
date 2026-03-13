@@ -452,7 +452,7 @@ ob_start();
 
 <div class="lc-modal" id="appointmentDetailsModal" aria-hidden="true">
     <div class="lc-modal__backdrop" data-close-modal></div>
-    <div class="lc-modal__panel" role="dialog" aria-modal="true" aria-label="Agendamento">
+    <div class="lc-modal__panel" role="dialog" aria-modal="true" aria-label="Agendamento" style="max-width: 860px;">
         <div class="lc-modal__header">
             <div>
                 <div class="lc-modal__title" id="appt_title">Agendamento</div>
@@ -461,7 +461,7 @@ ob_start();
             <button class="lc-btn lc-btn--secondary lc-btn--sm" type="button" data-close-modal>Fechar</button>
         </div>
 
-        <div class="lc-modal__body">
+        <div class="lc-modal__body" style="grid-template-columns: 1fr;">
             <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr;">
                 <div class="lc-card" style="margin:0;">
                     <div class="lc-card__body">
