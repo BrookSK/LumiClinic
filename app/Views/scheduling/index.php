@@ -146,30 +146,7 @@ ob_start();
         <div class="lc-card__actions">
             <span class="lc-muted">Página <?= (int)$page ?></span>
         </div>
-    </div>
-
-    <?php if (is_array($blocks) && $blocks !== []): ?>
-        <div class="lc-card" style="margin-bottom:14px;">
-            <div class="lc-card__title">Bloqueios do dia</div>
-            <div class="lc-card__body">
-                <?php foreach ($blocks as $b): ?>
-                    <?php
-                        $bst = (string)($b['start_at'] ?? '');
-                        $ben = (string)($b['end_at'] ?? '');
-                        $reason = trim((string)($b['reason'] ?? ''));
-                        $type = trim((string)($b['type'] ?? ''));
-                    ?>
-                    <div class="lc-muted" style="margin-bottom:6px;">
-                        <strong><?= htmlspecialchars($bst !== '' ? substr($bst, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars($ben !== '' ? substr($ben, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?></strong>
-                        <?= $reason !== '' ? (' • ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8')) : '' ?>
-                        <?= $type !== '' ? (' (' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . ')') : '' ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <div class="lc-card__body">
+        <div class="lc-card__body">
     <?php if ($items === []): ?>
         <div class="lc-muted">Nenhum agendamento.</div>
     <?php else: ?>
@@ -339,6 +316,29 @@ ob_start();
             </div>
         </div>
     </div>
+        </div>
+    </div>
+
+    <?php if (is_array($blocks) && $blocks !== []): ?>
+        <div class="lc-card" style="margin-bottom:14px;">
+            <div class="lc-card__title">Bloqueios do dia</div>
+            <div class="lc-card__body">
+                <?php foreach ($blocks as $b): ?>
+                    <?php
+                        $bst = (string)($b['start_at'] ?? '');
+                        $ben = (string)($b['end_at'] ?? '');
+                        $reason = trim((string)($b['reason'] ?? ''));
+                        $type = trim((string)($b['type'] ?? ''));
+                    ?>
+                    <div class="lc-muted" style="margin-bottom:6px;">
+                        <strong><?= htmlspecialchars($bst !== '' ? substr($bst, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars($ben !== '' ? substr($ben, 11, 5) : '', ENT_QUOTES, 'UTF-8') ?></strong>
+                        <?= $reason !== '' ? (' • ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8')) : '' ?>
+                        <?= $type !== '' ? (' (' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . ')') : '' ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <div class="lc-card lc-card--soft">
         <?php
