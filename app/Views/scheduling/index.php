@@ -316,8 +316,6 @@ ob_start();
             </div>
         </div>
     </div>
-        </div>
-    </div>
 
     <?php if (is_array($blocks) && $blocks !== []): ?>
         <div class="lc-card" style="margin-bottom:14px;">
