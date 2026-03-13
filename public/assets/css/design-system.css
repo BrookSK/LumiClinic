@@ -614,13 +614,13 @@ button.lc-statusbar .lc-muted{color: rgba(31,41,55,0.72)}
 
 .lc-field--full{grid-column: 1 / -1}
 
-.lc-td-actions{text-align:right}
+.lc-td-actions{text-align:right;position:relative;overflow:visible}
 
 .lc-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 
 .lc-actions--compact{gap:6px}
 
-.lc-actions__more{position:relative}
+.lc-actions__more{position:relative;overflow:visible}
 
 .lc-actions__more > summary{cursor:pointer}
 
@@ -628,6 +628,8 @@ button.lc-statusbar .lc-muted{color: rgba(31,41,55,0.72)}
 .lc-actions__more > summary::-webkit-details-marker{display:none}
 
 .lc-actions__more[open] > summary{border-color: rgba(0,176,240,0.26); background: rgba(0,176,240,0.10)}
+
+.lc-actions__more[open]{z-index: 40}
 
 .lc-actions__menu{
     position:absolute;

@@ -150,7 +150,7 @@ ob_start();
     <?php if ($items === []): ?>
         <div class="lc-muted">Nenhum agendamento.</div>
     <?php else: ?>
-        <div class="lc-table-wrap">
+        <div>
             <table class="lc-table">
             <thead>
             <tr>
