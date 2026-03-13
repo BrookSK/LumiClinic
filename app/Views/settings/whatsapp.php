@@ -42,11 +42,7 @@ ob_start();
     <?php endif; ?>
 
     <div class="lc-card__body">
-        <?php if ($globalConfigured): ?>
-            <div class="lc-alert lc-alert--info" style="margin-bottom:10px;">
-                O WhatsApp está configurado globalmente pelo administrador do sistema.
-            </div>
-        <?php else: ?>
+        <?php if (!$globalConfigured): ?>
             <div class="lc-muted" style="margin-bottom:10px;">
                 A API key é salva criptografada por clínica. Não exibimos o valor após salvar.
             </div>
@@ -69,13 +65,10 @@ ob_start();
                     <div class="lc-muted" style="margin-top:6px;">Instância: <code><?= htmlspecialchars((string)($evolutionInstance ?? ''), ENT_QUOTES, 'UTF-8') ?></code></div>
                 </details>
 
-                <div class="lc-flex lc-gap-sm" style="margin-top:10px; align-items:center;">
+                <div class="lc-flex lc-gap-sm" style="margin-top:10px; align-items:center; flex-wrap:wrap;">
                     <button id="lc-wa-connect" class="lc-btn lc-btn--primary" type="button" style="width:auto; padding:8px 12px;">Conectar</button>
                     <button id="lc-wa-disconnect" class="lc-btn lc-btn--danger" type="button" style="display:none; width:auto; padding:8px 12px;">Desconectar</button>
-                </div>
-
-                <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
-                    <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
+                    <a class="lc-btn lc-btn--secondary" href="/settings" style="width:auto; padding:8px 12px;">Voltar</a>
                 </div>
             <?php else: ?>
                 <form method="post" class="lc-form" action="/settings/whatsapp">
@@ -419,7 +412,7 @@ ob_start();
         <?php if ($can('settings.update')): ?>
             <form method="post" class="lc-form" action="/settings/whatsapp/diagnose" style="margin-top:10px;">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Resolver problemas do WhatsApp</button>
+                <button class="lc-btn lc-btn--secondary" type="submit" style="width:auto; padding:8px 12px;">Resolver problemas do WhatsApp</button>
             </form>
         <?php endif; ?>
 
