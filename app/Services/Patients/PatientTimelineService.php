@@ -10,6 +10,9 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\ConsentAcceptanceRepository;
 use App\Repositories\MedicalImageRepository;
 use App\Repositories\MedicalRecordRepository;
+use App\Repositories\PatientAllergyRepository;
+use App\Repositories\PatientClinicalAlertRepository;
+use App\Repositories\PatientConditionRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\SignatureRepository;
 use App\Services\Auth\AuthService;
@@ -57,6 +60,76 @@ final class PatientTimelineService
                         'appointment_id' => (int)($r['appointment_id'] ?? 0),
                     ],
                     'link' => '/patients/consultation?appointment_id=' . (int)($r['appointment_id'] ?? 0),
+                ];
+            }
+        }
+
+        if ($this->typeAllowed($types, 'clinical_alert')) {
+            $repo = new PatientClinicalAlertRepository($pdo);
+            foreach ($repo->listByPatient($clinicId, $patientId, $limit) as $r) {
+                $at = (string)($r['created_at'] ?? '');
+                if (!$this->dateAllowed($at, $from, $to)) {
+                    continue;
+                }
+
+                $active = isset($r['active']) && (int)$r['active'] === 1;
+                $sev = trim((string)($r['severity'] ?? ''));
+                $sevLabel = $sev === 'critical' ? 'Crítico' : ($sev === 'warning' ? 'Atenção' : 'Info');
+                $title = trim((string)($r['title'] ?? ''));
+
+                $items[] = [
+                    'type' => 'clinical_alert',
+                    'occurred_at' => $at,
+                    'title' => 'Alerta clínico',
+                    'description' => trim(($title !== '' ? $title : '') . ($sevLabel !== '' ? (' • ' . $sevLabel) : '') . ($active ? '' : ' • Resolvido')),
+                    'ref' => ['patient_clinical_alert_id' => (int)($r['id'] ?? 0)],
+                    'link' => '/patients/clinical-sheet?patient_id=' . $patientId,
+                ];
+            }
+        }
+
+        if ($this->typeAllowed($types, 'allergy')) {
+            $repo = new PatientAllergyRepository($pdo);
+            foreach ($repo->listByPatient($clinicId, $patientId, $limit) as $r) {
+                $at = (string)($r['created_at'] ?? '');
+                if (!$this->dateAllowed($at, $from, $to)) {
+                    continue;
+                }
+
+                $t = (string)($r['type'] ?? '');
+                $typeLabel = $t === 'contraindication' ? 'Contraindicação' : 'Alergia';
+                $trg = trim((string)($r['trigger_name'] ?? ''));
+
+                $items[] = [
+                    'type' => 'allergy',
+                    'occurred_at' => $at,
+                    'title' => $typeLabel,
+                    'description' => $trg,
+                    'ref' => ['patient_allergy_id' => (int)($r['id'] ?? 0), 'type' => $t],
+                    'link' => '/patients/clinical-sheet?patient_id=' . $patientId,
+                ];
+            }
+        }
+
+        if ($this->typeAllowed($types, 'condition')) {
+            $repo = new PatientConditionRepository($pdo);
+            foreach ($repo->listByPatient($clinicId, $patientId, $limit) as $r) {
+                $at = (string)($r['created_at'] ?? '');
+                if (!$this->dateAllowed($at, $from, $to)) {
+                    continue;
+                }
+
+                $nm = trim((string)($r['condition_name'] ?? ''));
+                $st = trim((string)($r['status'] ?? ''));
+                $stLabel = $st === 'inactive' ? 'Inativa' : ($st === 'resolved' ? 'Resolvida' : 'Ativa');
+
+                $items[] = [
+                    'type' => 'condition',
+                    'occurred_at' => $at,
+                    'title' => 'Condição',
+                    'description' => trim(($nm !== '' ? $nm : '') . ($stLabel !== '' ? (' • ' . $stLabel) : '')),
+                    'ref' => ['patient_condition_id' => (int)($r['id'] ?? 0), 'status' => $st],
+                    'link' => '/patients/clinical-sheet?patient_id=' . $patientId,
                 ];
             }
         }
@@ -234,7 +307,7 @@ final class PatientTimelineService
             return [];
         }
         $parts = array_values(array_filter(array_map('trim', explode(',', $raw)), fn ($v) => is_string($v) && $v !== ''));
-        $allowed = ['appointment', 'consultation', 'consultation_attachment', 'medical_record', 'medical_image', 'consent_acceptance', 'signature'];
+        $allowed = ['appointment', 'consultation', 'consultation_attachment', 'medical_record', 'medical_image', 'clinical_alert', 'allergy', 'condition', 'consent_acceptance', 'signature'];
         $out = [];
         foreach ($parts as $p) {
             if (in_array($p, $allowed, true) && !in_array($p, $out, true)) {

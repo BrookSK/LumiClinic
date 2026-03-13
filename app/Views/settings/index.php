@@ -60,19 +60,21 @@ ob_start();
                     </select>
                 </div>
 
-            <label class="lc-label">Anamnese (template padrão)</label>
-            <?php $anamTpl = isset($settings['anamnesis_default_template_id']) ? (int)$settings['anamnesis_default_template_id'] : 0; ?>
-            <select class="lc-select" name="anamnesis_default_template_id" <?= $ro ?>>
-                <option value="0">(não configurado)</option>
-                <?php if (is_array($anamnesisTemplates)): ?>
-                    <?php foreach ($anamnesisTemplates as $t): ?>
-                        <option value="<?= (int)($t['id'] ?? 0) ?>" <?= ((int)($t['id'] ?? 0) === $anamTpl) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars((string)($t['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                        </option>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </select>
-            <div class="lc-muted" style="margin-top:6px;">Usado para enviar anamnese automaticamente quando a consulta é confirmada.</div>
+                <div>
+                    <label class="lc-label">Anamnese (template padrão)</label>
+                    <?php $anamTpl = isset($settings['anamnesis_default_template_id']) ? (int)$settings['anamnesis_default_template_id'] : 0; ?>
+                    <select class="lc-select" name="anamnesis_default_template_id" <?= $ro ?>>
+                        <option value="0">(não configurado)</option>
+                        <?php if (is_array($anamnesisTemplates)): ?>
+                            <?php foreach ($anamnesisTemplates as $t): ?>
+                                <option value="<?= (int)($t['id'] ?? 0) ?>" <?= ((int)($t['id'] ?? 0) === $anamTpl) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars((string)($t['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                    <div class="lc-muted" style="margin-top:6px;">Usado para enviar anamnese automaticamente quando a consulta é confirmada.</div>
+                </div>
                 <div>
                     <label class="lc-label">Fim da semana</label>
                     <select class="lc-select" name="week_end_weekday" <?= $ro ?>>

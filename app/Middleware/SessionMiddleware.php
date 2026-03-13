@@ -10,7 +10,7 @@ use App\Core\Middleware\MiddlewareInterface;
 
 final class SessionMiddleware implements MiddlewareInterface
 {
-    /** @param array{name:string,secure:bool,httponly:bool,samesite:string} $config */
+    /** @param array{name:string,secure:bool,httponly:bool,samesite:string,path?:string,name_patient?:string} $config */
     public function __construct(private readonly array $config) {}
 
     public function handle(Request $request, callable $next): Response
@@ -23,8 +23,14 @@ final class SessionMiddleware implements MiddlewareInterface
                 $sessionName = $this->config['name_patient'];
             }
 
+            $cookiePath = '/';
+            if (isset($this->config['path']) && is_string($this->config['path']) && $this->config['path'] !== '') {
+                $cookiePath = $this->config['path'];
+            }
+
             session_name($sessionName);
             session_set_cookie_params([
+                'path' => $cookiePath,
                 'secure' => $this->config['secure'],
                 'httponly' => $this->config['httponly'],
                 'samesite' => $this->config['samesite'],

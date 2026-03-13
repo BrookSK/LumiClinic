@@ -26,28 +26,20 @@ ob_start();
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
     <div class="lc-card__body">
-        CPF: <?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '' ?>
+        <?php
+            $cpfLast4 = '';
+            if (isset($patient['cpf_last4']) && (string)$patient['cpf_last4'] !== '') {
+                $cpfLast4 = (string)$patient['cpf_last4'];
+            } elseif (isset($patient['cpf']) && (string)$patient['cpf'] !== '') {
+                $digits = preg_replace('/\D+/', '', (string)$patient['cpf']);
+                $digits = $digits === null ? '' : $digits;
+                if (strlen($digits) >= 4) {
+                    $cpfLast4 = substr($digits, -4);
+                }
+            }
+        ?>
+        CPF: <?= $cpfLast4 !== '' ? ('***.' . htmlspecialchars($cpfLast4, ENT_QUOTES, 'UTF-8')) : '' ?>
     </div>
-</div>
-
-<div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title">Aceitar termo</div>
-
-    <form method="get" action="/consent/accept" class="lc-form">
-        <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
-
-        <label class="lc-label">Termo</label>
-        <select class="lc-select" name="term_id" required>
-            <option value="">Selecione</option>
-            <?php foreach ($terms as $t): ?>
-                <option value="<?= (int)$t['id'] ?>"><?= htmlspecialchars((string)$t['procedure_type'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars((string)$t['title'], ENT_QUOTES, 'UTF-8') ?></option>
-            <?php endforeach; ?>
-        </select>
-
-        <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">
-            <button class="lc-btn lc-btn--primary" type="submit">Continuar</button>
-        </div>
-    </form>
 </div>
 
 <div class="lc-card" style="margin-bottom:14px;">

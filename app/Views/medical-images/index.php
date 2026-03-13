@@ -28,8 +28,9 @@ $can = function (string $permissionCode): bool {
 };
 
 $kindLabel = [
-    'before' => 'Antes',
-    'after' => 'Depois',
+    'photo' => 'Foto',
+    'exam' => 'Exame',
+    'progress' => 'Acompanhamento',
     'other' => 'Outro',
 ];
 ob_start();
@@ -52,7 +53,19 @@ ob_start();
                 <?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
             </div>
             <div class="lc-muted">
-                CPF: <?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '' ?>
+                <?php
+                    $cpfLast4 = '';
+                    if (isset($patient['cpf_last4']) && (string)$patient['cpf_last4'] !== '') {
+                        $cpfLast4 = (string)$patient['cpf_last4'];
+                    } elseif (isset($patient['cpf']) && (string)$patient['cpf'] !== '') {
+                        $digits = preg_replace('/\D+/', '', (string)$patient['cpf']);
+                        $digits = $digits === null ? '' : $digits;
+                        if (strlen($digits) >= 4) {
+                            $cpfLast4 = substr($digits, -4);
+                        }
+                    }
+                ?>
+                CPF: <?= $cpfLast4 !== '' ? ('***.' . htmlspecialchars($cpfLast4, ENT_QUOTES, 'UTF-8')) : '' ?>
             </div>
         </div>
     </div>
@@ -78,9 +91,10 @@ ob_start();
                     <div class="lc-field">
                         <label class="lc-label">Tipo</label>
                         <select class="lc-select" name="kind">
+                            <option value="photo">Foto</option>
+                            <option value="exam">Exame</option>
+                            <option value="progress">Acompanhamento</option>
                             <option value="other">Outro</option>
-                            <option value="before">Antes</option>
-                            <option value="after">Depois</option>
                         </select>
                     </div>
                     <div class="lc-field">

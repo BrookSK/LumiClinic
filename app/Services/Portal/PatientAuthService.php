@@ -72,6 +72,8 @@ final class PatientAuthService
         $_SESSION['clinic_id'] = (int)$user['clinic_id'];
         $_SESSION['patient_two_factor_required'] = ((int)($user['two_factor_enabled'] ?? 0) === 1) ? 1 : 0;
 
+        session_regenerate_id(true);
+
         $patient = (new PatientRepository($pdo))->findClinicalById($clinicId, (int)$user['patient_id']);
         if ($patient !== null) {
             $_SESSION['patient_name'] = (string)($patient['name'] ?? '');
@@ -132,6 +134,8 @@ final class PatientAuthService
         $_SESSION['patient_id'] = (int)$user['patient_id'];
         $_SESSION['clinic_id'] = (int)$user['clinic_id'];
         $_SESSION['patient_two_factor_required'] = ((int)($user['two_factor_enabled'] ?? 0) === 1) ? 1 : 0;
+
+        session_regenerate_id(true);
 
         $patient = (new PatientRepository($pdo))->findClinicalById($clinicId, (int)$user['patient_id']);
         if ($patient !== null) {

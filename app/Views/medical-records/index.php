@@ -5,7 +5,8 @@ $records = $records ?? [];
 $alerts = $alerts ?? [];
 $allergies = $allergies ?? [];
 $conditions = $conditions ?? [];
-$templates = $templates ?? [];
+$images = $images ?? [];
+$imagePairs = $image_pairs ?? [];
 $professionals = $professionals ?? [];
 $filters = $filters ?? [];
 ob_start();
@@ -21,7 +22,19 @@ ob_start();
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
     <div class="lc-card__body">
-        CPF: <?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '' ?>
+        <?php
+            $cpfLast4 = '';
+            if (isset($patient['cpf_last4']) && (string)$patient['cpf_last4'] !== '') {
+                $cpfLast4 = (string)$patient['cpf_last4'];
+            } elseif (isset($patient['cpf']) && (string)$patient['cpf'] !== '') {
+                $digits = preg_replace('/\D+/', '', (string)$patient['cpf']);
+                $digits = $digits === null ? '' : $digits;
+                if (strlen($digits) >= 4) {
+                    $cpfLast4 = substr($digits, -4);
+                }
+            }
+        ?>
+        CPF: <?= $cpfLast4 !== '' ? ('***.' . htmlspecialchars($cpfLast4, ENT_QUOTES, 'UTF-8')) : '' ?>
     </div>
 </div>
 
@@ -47,7 +60,78 @@ ob_start();
                     <div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)count($conditions) ?></div>
                 </div>
             </div>
+            <div class="lc-card" style="margin:0;">
+                <div class="lc-card__body" style="padding:10px;">
+                    <div class="lc-muted" style="font-size:12px;">Imagens</div>
+                    <div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)count($images) ?></div>
+                </div>
+            </div>
         </div>
+
+        <?php if ($imagePairs !== [] || $images !== []): ?>
+            <div style="margin-top:12px;">
+                <div class="lc-label">Imagens clínicas</div>
+                <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:8px;">
+                    <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Abrir imagens</a>
+                </div>
+
+                <?php if ($imagePairs !== []): ?>
+                    <div class="lc-table-wrap" style="margin-top:10px;">
+                        <table class="lc-table" style="margin:0;">
+                            <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Data</th>
+                                <th>Procedimento</th>
+                                <th style="width:1%; white-space:nowrap;">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($imagePairs as $p): ?>
+                                <tr>
+                                    <td>Comparação</td>
+                                    <td><?= htmlspecialchars((string)($p['taken_at'] ?? $p['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars((string)($p['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td>
+                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/compare?patient_id=<?= (int)($patient['id'] ?? 0) ?>&key=<?= urlencode((string)($p['comparison_key'] ?? '')) ?>">Abrir</a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($images !== []): ?>
+                    <div class="lc-table-wrap" style="margin-top:10px;">
+                        <table class="lc-table" style="margin:0;">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tipo</th>
+                                <th>Data</th>
+                                <th>Procedimento</th>
+                                <th style="width:1%; white-space:nowrap;">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach (array_slice($images, 0, 10) as $img): ?>
+                                <tr>
+                                    <td><?= (int)($img['id'] ?? 0) ?></td>
+                                    <td><?= htmlspecialchars((string)($img['kind'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars((string)($img['taken_at'] ?? $img['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars((string)($img['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td>
+                                        <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= (int)($img['id'] ?? 0) ?>" target="_blank">Abrir</a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
 
         <?php if ($alerts !== []): ?>
             <div style="margin-top:12px;">
@@ -174,17 +258,6 @@ ob_start();
             <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
 
             <div class="lc-field">
-                <label class="lc-label">Template</label>
-                <?php $curTpl = (int)($filters['template_id'] ?? 0); ?>
-                <select class="lc-select" name="template_id">
-                    <option value="">(todos)</option>
-                    <?php foreach ($templates as $t): ?>
-                        <option value="<?= (int)$t['id'] ?>" <?= (int)$t['id'] === $curTpl ? 'selected' : '' ?>><?= htmlspecialchars((string)$t['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="lc-field">
                 <label class="lc-label">Profissional</label>
                 <?php $curProf = (int)($filters['professional_id'] ?? 0); ?>
                 <select class="lc-select" name="professional_id">
@@ -219,9 +292,6 @@ ob_start();
                 <div class="lc-card__title">Atendimento em <?= htmlspecialchars((string)$r['attended_at'], ENT_QUOTES, 'UTF-8') ?></div>
                 <div class="lc-card__body">
                     <?= htmlspecialchars((string)($r['procedure_type'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                    <?php if (($r['template_name_snapshot'] ?? '') !== ''): ?>
-                        <div class="lc-muted" style="margin-top:6px;">Template: <?= htmlspecialchars((string)$r['template_name_snapshot'], ENT_QUOTES, 'UTF-8') ?></div>
-                    <?php endif; ?>
                 </div>
             </div>
             <div>

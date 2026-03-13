@@ -18,6 +18,9 @@ $availableTypes = [
     'consultation_attachment' => 'Anexos de consulta',
     'medical_record' => 'Prontuário',
     'medical_image' => 'Imagens',
+    'clinical_alert' => 'Alertas clínicos',
+    'allergy' => 'Alergias/Contraindicações',
+    'condition' => 'Condições',
     'consent_acceptance' => 'Aceites de termo',
     'signature' => 'Assinaturas',
 ];
