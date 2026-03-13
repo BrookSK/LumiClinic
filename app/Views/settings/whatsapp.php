@@ -102,7 +102,19 @@ ob_start();
         <?php if (is_array($connectData)): ?>
             <?php
             $pairingCode = isset($connectData['pairingCode']) ? trim((string)$connectData['pairingCode']) : '';
-            $code = isset($connectData['code']) ? trim((string)$connectData['code']) : '';
+            $code = '';
+            if (isset($connectData['qrcode']) && is_array($connectData['qrcode'])) {
+                $code = isset($connectData['qrcode']['base64']) ? trim((string)$connectData['qrcode']['base64']) : $code;
+                if ($code === '') {
+                    $code = isset($connectData['qrcode']['code']) ? trim((string)$connectData['qrcode']['code']) : $code;
+                }
+            }
+            if ($code === '') {
+                $code = isset($connectData['base64']) ? trim((string)$connectData['base64']) : $code;
+            }
+            if ($code === '') {
+                $code = isset($connectData['code']) ? trim((string)$connectData['code']) : $code;
+            }
             $count = isset($connectData['count']) ? (int)$connectData['count'] : null;
             $imgSrc = null;
             if ($code !== '') {
