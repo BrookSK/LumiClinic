@@ -248,7 +248,7 @@ final class SettingsController extends Controller
                 'evolution_instance' => $data['evolution_instance'] ?? null,
                 'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
                 'global_configured' => $globalConfigured,
-                'error' => 'Falha ao gerar QR Code. Verifique a Evolution e tente novamente.',
+                'error' => $e->getMessage(),
             ]);
         }
 
