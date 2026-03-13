@@ -283,6 +283,169 @@ final class SettingsController extends Controller
         ]);
     }
 
+    public function whatsappStatusJson(Request $request): Response
+    {
+        $this->authorize('settings.read');
+
+        $globalConfigured = $this->isWhatsappGlobalConfigured();
+        if (!$globalConfigured) {
+            return Response::json([
+                'ok' => false,
+                'error' => 'O WhatsApp ainda não foi configurado pelo administrador do sistema.',
+            ], 400);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::json(['ok' => false, 'error' => 'Contexto inválido.'], 400);
+        }
+
+        try {
+            $state = (new EvolutionClient($this->container))->connectionState();
+        } catch (\Throwable $e) {
+            $requestId = '';
+            try {
+                $requestId = bin2hex(random_bytes(8));
+            } catch (\Throwable $ignore) {
+                $requestId = (string)time();
+            }
+
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                502,
+                'whatsapp.evolution.status',
+                $e->getMessage(),
+                $e,
+                ['request_id' => $requestId, 'clinic_id' => $clinicId]
+            );
+
+            return Response::json([
+                'ok' => false,
+                'error' => $e->getMessage() . ' (Ref: ' . $requestId . ')',
+            ], 502);
+        }
+
+        return Response::json([
+            'ok' => true,
+            'connected' => (bool)($state['connected'] ?? false),
+            'state' => $state['state'] ?? null,
+        ]);
+    }
+
+    public function whatsappConnectJson(Request $request): Response
+    {
+        $this->authorize('settings.update');
+
+        $globalConfigured = $this->isWhatsappGlobalConfigured();
+        if (!$globalConfigured) {
+            return Response::json([
+                'ok' => false,
+                'error' => 'O WhatsApp ainda não foi configurado pelo administrador do sistema.',
+            ], 400);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::json(['ok' => false, 'error' => 'Contexto inválido.'], 400);
+        }
+
+        $svc = new WhatsappConfigService($this->container);
+        $data = $svc->getWhatsappSettings();
+        $instance = $data['evolution_instance'] ?? null;
+        $instance = $instance === null ? '' : trim((string)$instance);
+
+        if ($instance === '') {
+            $instance = 'lc-' . $clinicId;
+            $svc->setEvolutionInstance($instance, $request->ip());
+        }
+
+        try {
+            $conn = (new EvolutionClient($this->container))->connectInstance($instance);
+        } catch (\Throwable $e) {
+            $requestId = '';
+            try {
+                $requestId = bin2hex(random_bytes(8));
+            } catch (\Throwable $ignore) {
+                $requestId = (string)time();
+            }
+
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                502,
+                'whatsapp.evolution.connect_json',
+                $e->getMessage(),
+                $e,
+                ['request_id' => $requestId, 'clinic_id' => $clinicId, 'instance' => $instance]
+            );
+
+            return Response::json([
+                'ok' => false,
+                'error' => $e->getMessage() . ' (Ref: ' . $requestId . ')',
+            ], 502);
+        }
+
+        return Response::json([
+            'ok' => true,
+            'connect_data' => $conn,
+        ]);
+    }
+
+    public function whatsappDisconnect(Request $request): Response
+    {
+        $this->authorize('settings.update');
+
+        $globalConfigured = $this->isWhatsappGlobalConfigured();
+        if (!$globalConfigured) {
+            return Response::json([
+                'ok' => false,
+                'error' => 'O WhatsApp ainda não foi configurado pelo administrador do sistema.',
+            ], 400);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::json(['ok' => false, 'error' => 'Contexto inválido.'], 400);
+        }
+
+        $svc = new WhatsappConfigService($this->container);
+        $data = $svc->getWhatsappSettings();
+        $instance = $data['evolution_instance'] ?? null;
+        $instance = $instance === null ? '' : trim((string)$instance);
+        if ($instance === '') {
+            return Response::json(['ok' => false, 'error' => 'Instância não configurada.'], 400);
+        }
+
+        try {
+            (new EvolutionClient($this->container))->logoutInstance($instance);
+        } catch (\Throwable $e) {
+            $requestId = '';
+            try {
+                $requestId = bin2hex(random_bytes(8));
+            } catch (\Throwable $ignore) {
+                $requestId = (string)time();
+            }
+
+            (new SystemErrorLogService($this->container))->logHttpError(
+                $request,
+                502,
+                'whatsapp.evolution.disconnect',
+                $e->getMessage(),
+                $e,
+                ['request_id' => $requestId, 'clinic_id' => $clinicId, 'instance' => $instance]
+            );
+
+            return Response::json([
+                'ok' => false,
+                'error' => $e->getMessage() . ' (Ref: ' . $requestId . ')',
+            ], 502);
+        }
+
+        return Response::json(['ok' => true]);
+    }
+
     public function whatsappConnectReset(Request $request)
     {
         $this->authorize('settings.update');
@@ -444,6 +607,8 @@ final class SettingsController extends Controller
     {
         $this->authorize('settings.update');
 
+        $globalConfigured = $this->isWhatsappGlobalConfigured();
+
         $svc = new WhatsappConfigService($this->container);
         $data = $svc->getWhatsappSettings();
 
@@ -452,12 +617,14 @@ final class SettingsController extends Controller
             return $this->view('settings/whatsapp', [
                 'evolution_instance' => $data['evolution_instance'] ?? null,
                 'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                'global_configured' => $globalConfigured,
                 'success' => $ok ? 'Conexão com Evolution API OK.' : 'Falha ao testar WhatsApp.',
             ]);
         } catch (\Throwable $e) {
             return $this->view('settings/whatsapp', [
                 'evolution_instance' => $data['evolution_instance'] ?? null,
                 'evolution_apikey_set' => (bool)($data['evolution_apikey_set'] ?? false),
+                'global_configured' => $globalConfigured,
                 'error' => 'Falha ao testar WhatsApp. Verifique as credenciais e tente novamente.',
             ]);
         }

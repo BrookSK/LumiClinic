@@ -220,6 +220,43 @@ final class EvolutionClient
         }
     }
 
+    /** @return array{connected:bool,state:?string,raw:mixed} */
+    public function connectionState(int $timeoutSeconds = 15): array
+    {
+        $settings = new WhatsappConfigService($this->container);
+        $data = $settings->getWhatsappSettings();
+
+        $instance = $data['evolution_instance'] ?? null;
+        if ($instance === null || trim($instance) === '') {
+            throw new \RuntimeException('WhatsApp (Evolution API) não configurado: instância.');
+        }
+
+        $apiKey = $this->apiKey();
+        $url = $this->baseUrl() . '/instance/connectionState/' . rawurlencode(trim((string)$instance));
+
+        $http = new HttpClient();
+        $resp = $http->request('GET', $url, ['apikey' => $apiKey], null, $timeoutSeconds);
+
+        if ($resp['status'] < 200 || $resp['status'] >= 300) {
+            return ['connected' => false, 'state' => null, 'raw' => $resp['body']];
+        }
+
+        $json = $resp['json'];
+        if (!is_array($json)) {
+            return ['connected' => true, 'state' => null, 'raw' => $resp['body']];
+        }
+
+        $state = null;
+        if (isset($json['instance']) && is_array($json['instance'])) {
+            $state = isset($json['instance']['state']) ? (string)$json['instance']['state'] : null;
+        }
+
+        $state = $state === null ? null : trim($state);
+        $connected = $state === 'open';
+
+        return ['connected' => $connected, 'state' => ($state === '' ? null : $state), 'raw' => $json];
+    }
+
     public function instanceStatus(int $timeoutSeconds = 15): bool
     {
         $settings = new WhatsappConfigService($this->container);
