@@ -37,16 +37,23 @@ final class SystemSettingsController extends Controller
         $this->ensureSuperAdmin();
 
         $baseUrl = trim((string)$request->input('evolution_base_url', ''));
-        if ($baseUrl === '') {
-            (new SystemSettingsService($this->container))->saveWhatsappSettings(['evolution_base_url' => null]);
-            return $this->redirect('/sys/settings/whatsapp?saved=1');
-        }
-
-        if (!preg_match('#^https?://#i', $baseUrl)) {
+        if ($baseUrl !== '' && !preg_match('#^https?://#i', $baseUrl)) {
             return $this->redirect('/sys/settings/whatsapp?error=' . urlencode('Base URL inválida. Use http:// ou https://'));
         }
 
-        (new SystemSettingsService($this->container))->saveWhatsappSettings(['evolution_base_url' => $baseUrl]);
+        $token = trim((string)$request->input('evolution_token', ''));
+        $clearToken = trim((string)$request->input('clear_evolution_token', '')) !== '';
+
+        $payload = [
+            'evolution_base_url' => $baseUrl === '' ? null : $baseUrl,
+        ];
+        if ($clearToken) {
+            $payload['evolution_token'] = null;
+        } elseif ($token !== '') {
+            $payload['evolution_token'] = $token;
+        }
+
+        (new SystemSettingsService($this->container))->saveWhatsappSettings($payload);
         return $this->redirect('/sys/settings/whatsapp?saved=1');
     }
 

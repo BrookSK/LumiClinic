@@ -3,6 +3,7 @@ $title = 'Admin do Sistema';
 $csrf = $_SESSION['_csrf'] ?? '';
 
 $evolution_base_url = isset($evolution_base_url) ? (string)$evolution_base_url : '';
+$evolution_token_set = isset($evolution_token_set) ? (bool)$evolution_token_set : false;
 $success = isset($success) ? (string)$success : '';
 $error = isset($error) ? (string)$error : '';
 
@@ -42,6 +43,19 @@ ob_start();
                 <label class="lc-label">Base URL</label>
                 <input class="lc-input" type="text" name="evolution_base_url" value="<?= htmlspecialchars($evolution_base_url, ENT_QUOTES, 'UTF-8') ?>" placeholder="https://seu-host:porta" />
                 <div class="lc-muted" style="margin-top:6px;">Ex.: <code>http://127.0.0.1:8080</code> ou <code>https://evolution.seudominio.com</code></div>
+            </div>
+
+            <div class="lc-field" style="grid-column: 1 / -1;">
+                <label class="lc-label">Token (API Key)</label>
+                <input class="lc-input" type="password" name="evolution_token" value="" placeholder="cole o token aqui" autocomplete="off" />
+                <div class="lc-muted" style="margin-top:6px;">
+                    Status: <strong><?= $evolution_token_set ? 'configurado' : 'não configurado' ?></strong>. O valor não é exibido após salvar.
+                </div>
+                <label class="lc-label" style="margin-top:8px; font-weight:600;">Remover token</label>
+                <label class="lc-flex lc-gap-sm" style="align-items:center; margin-top:6px;">
+                    <input type="checkbox" name="clear_evolution_token" value="1" />
+                    <span class="lc-muted">Marque para remover o token salvo.</span>
+                </label>
             </div>
 
             <div class="lc-flex lc-flex--end lc-gap-sm" style="grid-column: 1 / -1;">

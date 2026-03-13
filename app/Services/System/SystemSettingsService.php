@@ -50,11 +50,13 @@ final class SystemSettingsService
         }
     }
 
-    /** @return array{evolution_base_url:string} */
+    /** @return array{evolution_base_url:string,evolution_token_set:bool} */
     public function getWhatsappSettings(): array
     {
+        $token = trim((string)($this->getText('whatsapp.evolution.token') ?? ''));
         return [
             'evolution_base_url' => (string)($this->getText('whatsapp.evolution.base_url') ?? ''),
+            'evolution_token_set' => $token !== '',
         ];
     }
 
@@ -64,6 +66,11 @@ final class SystemSettingsService
         if (array_key_exists('evolution_base_url', $input)) {
             $val = trim((string)$input['evolution_base_url']);
             $this->setText('whatsapp.evolution.base_url', $val === '' ? null : $val);
+        }
+
+        if (array_key_exists('evolution_token', $input)) {
+            $val = trim((string)$input['evolution_token']);
+            $this->setText('whatsapp.evolution.token', $val === '' ? null : $val);
         }
     }
 

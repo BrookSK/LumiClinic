@@ -12,6 +12,24 @@ final class EvolutionClient
 {
     public function __construct(private readonly Container $container) {}
 
+    private function apiKey(): string
+    {
+        $settings = new SystemSettingsService($this->container);
+        $global = trim((string)($settings->getText('whatsapp.evolution.token') ?? ''));
+        if ($global !== '') {
+            return $global;
+        }
+
+        $clinicSettings = new WhatsappConfigService($this->container);
+        $apiKey = $clinicSettings->getEvolutionApiKeyPlain();
+        $apiKey = $apiKey === null ? '' : trim($apiKey);
+        if ($apiKey === '') {
+            throw new \RuntimeException('WhatsApp (Evolution API) não configurado: token/apikey.');
+        }
+
+        return $apiKey;
+    }
+
     private function baseUrl(): string
     {
         $settings = new SystemSettingsService($this->container);
@@ -48,10 +66,7 @@ final class EvolutionClient
             throw new \RuntimeException('WhatsApp (Evolution API) não configurado: instância.');
         }
 
-        $apiKey = $settings->getEvolutionApiKeyPlain();
-        if ($apiKey === null || trim($apiKey) === '') {
-            throw new \RuntimeException('WhatsApp (Evolution API) não configurado: apikey.');
-        }
+        $apiKey = $this->apiKey();
 
         $phoneDigits = preg_replace('/\D+/', '', $phone);
         $phoneDigits = $phoneDigits === null ? '' : $phoneDigits;
@@ -91,10 +106,7 @@ final class EvolutionClient
             throw new \RuntimeException('WhatsApp (Evolution API) não configurado: instância.');
         }
 
-        $apiKey = $settings->getEvolutionApiKeyPlain();
-        if ($apiKey === null || trim($apiKey) === '') {
-            throw new \RuntimeException('WhatsApp (Evolution API) não configurado: apikey.');
-        }
+        $apiKey = $this->apiKey();
 
         $url = $this->baseUrl() . '/instance/connectionState/' . rawurlencode(trim($instance));
 
