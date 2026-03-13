@@ -53,9 +53,6 @@ ob_start();
         <?php endif; ?>
 
         <?php if ($can('settings.update')): ?>
-            <form method="post" class="lc-form" action="/settings/whatsapp">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-
             <label class="lc-label">Status</label>
             <?php
             $isConfigured = $globalConfigured || ($evolutionInstance !== null && $evolutionInstance !== '' && $evolutionApiKeySet);
@@ -65,29 +62,30 @@ ob_start();
             </div>
 
             <?php if ($globalConfigured): ?>
-                <div class="lc-flex lc-gap-sm" style="margin-top:10px; align-items:center;">
-                    <form method="post" action="/settings/whatsapp/connect" class="lc-form" style="margin:0;">
-                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                        <button class="lc-btn lc-btn--primary" type="submit">Conectar (Gerar QR Code)</button>
-                    </form>
+                <form method="post" action="/settings/whatsapp/connect" class="lc-form" style="margin-top:10px;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <button class="lc-btn lc-btn--primary" type="submit">Conectar (Gerar QR Code)</button>
+                </form>
+
+                <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
+                    <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
                 </div>
+            <?php else: ?>
+                <form method="post" class="lc-form" action="/settings/whatsapp">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+
+                    <label class="lc-label" style="margin-top:12px;">Instância</label>
+                    <input class="lc-input" type="text" name="evolution_instance" value="<?= htmlspecialchars((string)($evolutionInstance ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="nome-da-instancia" autocomplete="off" />
+
+                    <label class="lc-label" style="margin-top:12px;">API Key</label>
+                    <input class="lc-input" type="password" name="evolution_apikey" placeholder="apikey" autocomplete="off" />
+
+                    <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
+                        <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+                        <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
+                    </div>
+                </form>
             <?php endif; ?>
-
-            <?php if (!$globalConfigured): ?>
-                <label class="lc-label" style="margin-top:12px;">Instância</label>
-                <input class="lc-input" type="text" name="evolution_instance" value="<?= htmlspecialchars((string)($evolutionInstance ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="nome-da-instancia" autocomplete="off" />
-
-                <label class="lc-label" style="margin-top:12px;">API Key</label>
-                <input class="lc-input" type="password" name="evolution_apikey" placeholder="apikey" autocomplete="off" />
-            <?php endif; ?>
-
-            <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
-                <?php if (!$globalConfigured): ?>
-                    <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
-                <?php endif; ?>
-                <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
-            </div>
-            </form>
         <?php else: ?>
             <div class="lc-flex lc-gap-sm" style="margin-top:14px; align-items:center;">
                 <a class="lc-btn lc-btn--secondary" href="/settings">Voltar</a>
