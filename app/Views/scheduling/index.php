@@ -490,6 +490,7 @@ ob_start();
                 </div>
             </div>
         <?php endif; ?>
+    </div>
 
     <?php if (!$isProfessional && $can('scheduling.create')): ?>
         <div class="lc-modal" id="createAppointmentModal" aria-hidden="true">
