@@ -49,6 +49,9 @@ ob_start();
         <?php if ($can('medical_records.read')): ?>
             <a class="lc-btn lc-btn--primary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Prontuário</a>
         <?php endif; ?>
+        <?php if ($can('medical_records.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/patients/prescriptions?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Receituário</a>
+        <?php endif; ?>
         <?php if ($can('patients.read')): ?>
             <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Ficha clínica</a>
             <a class="lc-btn lc-btn--secondary" href="/patients/timeline?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Linha do tempo</a>

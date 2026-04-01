@@ -339,16 +339,9 @@ $ico = [
                                     </summary>
                                     <div class="lc-navgroup__children">
                                         <div class="lc-nav__sub">
-                                            <?php if ($can('settings.read')): ?>
-                                                <?= $navItem('/settings/legal-documents', 'Equipe', $ico['shield'], $isActive('/settings/legal-documents')) ?>
-                                            <?php endif; ?>
                                             <?php if ($can('clinics.read')): ?>
-                                                <?= $navItem('/clinic/legal-documents', 'Portal (modelos)', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
-                                                <?= $navItem('/clinic/legal-acceptances/portal', 'Portal (aceites)', $ico['shield'], $isActive('/clinic/legal-acceptances/portal')) ?>
-                                                <?= $navItem('/clinic/legal-signatures', 'Assinaturas (trilha)', $ico['shield'], $isActive('/clinic/legal-signatures')) ?>
-                                            <?php endif; ?>
-                                            <?php if ($can('consent_terms.manage')): ?>
-                                                <?= $navItem('/consent-terms', 'Consentimento (Legado)', $ico['shield'], $isActive('/consent-terms')) ?>
+                                                <?= $navItem('/clinic/legal-documents', 'Termos do Portal', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
+                                                <?= $navItem('/clinic/legal-signatures', 'Assinaturas', $ico['shield'], $isActive('/clinic/legal-signatures')) ?>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -512,7 +505,6 @@ $ico = [
                                 <?php if ($can('marketing.automation.read')): ?>
                                     <?= $navItem('/marketing/automation/segments', 'Automação - Segmentos', $ico['calendar'], $isActive('/marketing/automation/segments') || $isActive('/marketing/automation/segment')) ?>
                                     <?= $navItem('/marketing/automation/campaigns', 'Automação - Campanhas', $ico['calendar'], $isActive('/marketing/automation/campaigns') || $isActive('/marketing/automation/campaign')) ?>
-                                    <?= $navItem('/marketing/automation/logs', 'Automação - Logs', $ico['calendar'], $isActive('/marketing/automation/logs') || $isActive('/marketing/automation/log')) ?>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -569,7 +561,8 @@ $ico = [
                     <?= $configNav ?>
                 <?php endif; ?>
 
-                <?= $navItem('/tutorial/sistema', 'Ajuda', $ico['help'], $isActive('/tutorial/sistema')) ?>
+                <?= $navItem('/tutorial/sistema', 'Ajuda', $ico['help'], $isActive('/tutorial/sistema') && !$isActive('/tutorial/sistema/configuracao-inicial')) ?>
+                <?= $navItem('/tutorial/sistema/configuracao-inicial', 'Configuração inicial', $ico['help'], $isActive('/tutorial/sistema/configuracao-inicial')) ?>
             <?php endif; ?>
         </nav>
 

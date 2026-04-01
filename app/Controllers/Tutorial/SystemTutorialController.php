@@ -14,6 +14,11 @@ final class SystemTutorialController extends Controller
         return $this->view('tutorial/system');
     }
 
+    public function onboarding(Request $request)
+    {
+        return $this->view('tutorial/onboarding');
+    }
+
     public function primeirosPassos(Request $request)
     {
         return $this->view('tutorial/system_primeiros_passos');

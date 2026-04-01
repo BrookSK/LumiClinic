@@ -211,6 +211,7 @@ $router->post('/private/tutorial/clinic', [PrivateTutorialController::class, 'cl
 $router->get('/tutorial/api-tokens/paciente', [ApiTokensTutorialController::class, 'patient']);
 
 $router->get('/tutorial/sistema', [SystemTutorialController::class, 'index']);
+$router->get('/tutorial/sistema/configuracao-inicial', [SystemTutorialController::class, 'onboarding']);
 $router->get('/tutorial/sistema/primeiros-passos', [SystemTutorialController::class, 'primeirosPassos']);
 $router->get('/tutorial/sistema/dashboard', [SystemTutorialController::class, 'dashboard']);
 $router->get('/tutorial/sistema/agenda', [SystemTutorialController::class, 'agenda']);
@@ -493,6 +494,13 @@ $router->get('/patients/appointments', [\App\Controllers\Patients\PatientAppoint
 $router->get('/patients/birthdays', [\App\Controllers\Patients\PatientReportsController::class, 'birthdays']);
 $router->get('/patients/follow-up', [\App\Controllers\Patients\PatientReportsController::class, 'followUp']);
 $router->post('/patients/whatsapp/send-json', [\App\Controllers\Patients\PatientWhatsappController::class, 'sendJson']);
+
+$router->get('/patients/prescriptions', [\App\Controllers\Patients\PrescriptionController::class, 'index']);
+$router->post('/patients/prescriptions/create', [\App\Controllers\Patients\PrescriptionController::class, 'store']);
+$router->get('/patients/prescription/edit', [\App\Controllers\Patients\PrescriptionController::class, 'edit']);
+$router->post('/patients/prescriptions/update', [\App\Controllers\Patients\PrescriptionController::class, 'update']);
+$router->post('/patients/prescriptions/delete', [\App\Controllers\Patients\PrescriptionController::class, 'delete']);
+$router->get('/patients/prescription/print', [\App\Controllers\Patients\PrescriptionController::class, 'print']);
 
 $router->get('/patients/timeline', [\App\Controllers\Patients\PatientTimelineController::class, 'index']);
 $router->get('/patients/timeline/export.csv', [\App\Controllers\Patients\PatientTimelineController::class, 'exportCsv']);
