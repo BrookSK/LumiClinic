@@ -44,7 +44,13 @@ final class PatientTimelineController extends Controller
             return $this->redirect('/patients');
         }
 
-        $types = trim((string)$request->input('types', ''));
+        $typesRaw = $request->input('types', '');
+        // Suporta tanto array (types[]) quanto string CSV (legado)
+        if (is_array($typesRaw)) {
+            $types = implode(',', array_filter(array_map('trim', $typesRaw)));
+        } else {
+            $types = trim((string)$typesRaw);
+        }
         $from = trim((string)$request->input('from', ''));
         $to = trim((string)$request->input('to', ''));
         $limit = (int)$request->input('limit', 200);

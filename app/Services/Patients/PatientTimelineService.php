@@ -186,7 +186,7 @@ final class PatientTimelineService
                     'title' => 'Prontuário',
                     'description' => trim((string)($r['procedure_type'] ?? '')),
                     'ref' => ['medical_record_id' => (int)($r['id'] ?? 0)],
-                    'link' => '/medical-records?patient_id=' . $patientId . '#mr-' . (int)($r['id'] ?? 0),
+                    'link' => '/medical-records/edit?patient_id=' . $patientId . '&id=' . (int)($r['id'] ?? 0),
                 ];
             }
         }
