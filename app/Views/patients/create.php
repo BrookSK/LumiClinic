@@ -43,11 +43,20 @@ ob_start();
         <div class="lc-grid">
             <div>
                 <label class="lc-label">E-mail</label>
-                <input class="lc-input" type="email" name="email" />
+                <input class="lc-input" type="email" name="email" id="patient_email" />
             </div>
             <div>
                 <label class="lc-label">Telefone</label>
                 <input class="lc-input" type="text" name="phone" />
+            </div>
+        </div>
+
+        <div class="lc-card lc-card--soft" style="margin-top:12px; padding:14px;">
+            <div style="font-weight:600; margin-bottom:4px;">Acesso ao Portal do Paciente</div>
+            <div class="lc-muted" style="font-size:12px; margin-bottom:10px;">Preencha a senha para criar o acesso. O e-mail de login será o campo "E-mail" acima. O paciente pode trocar a senha após o primeiro acesso.</div>
+            <div class="lc-flex lc-gap-sm" style="align-items:center;">
+                <input class="lc-input" type="text" name="portal_password" id="portal_password" placeholder="Deixe em branco para não criar acesso" autocomplete="off" style="flex:1;" />
+                <button type="button" class="lc-btn lc-btn--secondary" onclick="(function(){var c='abcdefghjkmnpqrstuvwxyz23456789';var p='';for(var i=0;i<8;i++)p+=c[Math.floor(Math.random()*c.length)];document.getElementById('portal_password').value=p;})()">Gerar senha</button>
             </div>
         </div>
 

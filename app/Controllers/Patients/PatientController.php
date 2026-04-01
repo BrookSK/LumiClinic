@@ -150,6 +150,17 @@ final class PatientController extends Controller
             'patient_origin_id' => ($patientOriginId > 0 ? $patientOriginId : null),
         ], $request->ip());
 
+        // Criar acesso ao portal se senha foi informada
+        $portalPassword = trim((string)$request->input('portal_password', ''));
+        if ($portalPassword !== '' && $email !== '') {
+            try {
+                (new \App\Services\Portal\PatientPortalAccessService($this->container))
+                    ->createWithPassword($id, strtolower($email), $portalPassword, $request->ip());
+            } catch (\Throwable $ignore) {
+                // Não bloqueia o cadastro por falha no portal
+            }
+        }
+
         return $this->redirect('/patients/view?id=' . $id);
     }
 

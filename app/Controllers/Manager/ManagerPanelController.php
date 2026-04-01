@@ -19,6 +19,11 @@ final class ManagerPanelController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Painel oculto — acesso restrito temporariamente
+        if (!isset($_SESSION['is_super_admin']) || (int)$_SESSION['is_super_admin'] !== 1) {
+            return $this->redirect('/');
+        }
+
         $this->authorize('scheduling.read');
 
         $auth = new AuthService($this->container);

@@ -72,7 +72,6 @@ ob_start();
             <a class="lc-btn lc-btn--secondary" href="/consent?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Termos</a>
         <?php endif; ?>
         <?php if ($can('patients.update')): ?>
-            <a class="lc-btn lc-btn--secondary" href="/patients/portal-access?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Acesso ao Portal</a>
             <a class="lc-btn lc-btn--secondary" href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>">Editar</a>
         <?php endif; ?>
     </div>

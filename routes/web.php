@@ -319,6 +319,10 @@ $router->get('/settings/legal-documents', [SettingsLegalDocumentsController::cla
 $router->get('/settings/legal-documents/edit', [SettingsLegalDocumentsController::class, 'edit']);
 $router->post('/settings/legal-documents/save', [SettingsLegalDocumentsController::class, 'save']);
 
+$router->get('/settings/lgpd', [\App\Controllers\Settings\LegalDocumentsUnifiedController::class, 'index']);
+$router->get('/settings/lgpd/edit', [\App\Controllers\Settings\LegalDocumentsUnifiedController::class, 'edit']);
+$router->post('/settings/lgpd/save', [\App\Controllers\Settings\LegalDocumentsUnifiedController::class, 'save']);
+
 $router->get('/settings/terminology', [SettingsController::class, 'terminology']);
 $router->post('/settings/terminology', [SettingsController::class, 'updateTerminology']);
 

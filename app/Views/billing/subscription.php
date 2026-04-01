@@ -153,10 +153,20 @@ ob_start();
                     <button class="lc-btn lc-btn--secondary" type="submit">Atualizar cobrança</button>
                 </form>
 
-                <form method="post" action="/billing/subscription/cancel" style="margin:0;" onsubmit="return confirm('Cancelar assinatura?');">
-                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                    <button class="lc-btn lc-btn--primary" type="submit">Cancelar</button>
-                </form>
+                <details style="margin:0;">
+                    <summary class="lc-muted" style="font-size:12px; cursor:pointer; list-style:none; user-select:none;">
+                        Mais opções
+                    </summary>
+                    <div style="margin-top:8px; padding:12px; border:1px solid rgba(185,28,28,.2); border-radius:8px; background:rgba(185,28,28,.04);">
+                        <div class="lc-muted" style="font-size:12px; margin-bottom:8px;">
+                            Atenção: o cancelamento encerra sua assinatura ao fim do período atual.
+                        </div>
+                        <form method="post" action="/billing/subscription/cancel" style="margin:0;" onsubmit="return confirm('Tem certeza que deseja cancelar a assinatura? Esta ação não pode ser desfeita.');">
+                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                            <button class="lc-btn lc-btn--secondary" type="submit" style="font-size:12px; color:#b91c1c; border-color:rgba(185,28,28,.3);">Cancelar assinatura</button>
+                        </form>
+                    </div>
+                </details>
             <?php endif; ?>
         </div>
 

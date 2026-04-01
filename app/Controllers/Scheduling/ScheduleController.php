@@ -359,6 +359,13 @@ final class ScheduleController extends Controller
             if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
             if ($view !== '') { $q[] = 'view=' . urlencode($view); }
             if ($professionalId > 0) { $q[] = 'professional_id=' . $professionalId; }
+
+            // Retornar para ops se solicitado
+            $returnOps = trim((string)$request->input('return_ops', ''));
+            if ($returnOps === '1') {
+                return $this->redirect('/schedule/ops?date=' . urlencode($returnDate !== '' ? $returnDate : date('Y-m-d')));
+            }
+
             return $this->redirect('/schedule' . ($q ? ('?' . implode('&', $q)) : ''));
         } catch (\RuntimeException $e) {
             return $this->redirect('/schedule?error=' . urlencode($e->getMessage()));
@@ -1119,6 +1126,12 @@ final class ScheduleController extends Controller
             if ($returnDate !== '') { $q[] = 'date=' . urlencode($returnDate); }
             if ($view !== '') { $q[] = 'view=' . urlencode($view); }
             if ($professionalId > 0) { $q[] = 'professional_id=' . $professionalId; }
+
+            $returnOps = trim((string)$request->input('return_ops', ''));
+            if ($returnOps === '1') {
+                return $this->redirect('/schedule/ops?date=' . urlencode($returnDate !== '' ? $returnDate : date('Y-m-d')));
+            }
+
             return $this->redirect('/schedule' . ($q ? ('?' . implode('&', $q)) : ''));
         } catch (\RuntimeException $e) {
             return $this->redirect('/schedule?error=' . urlencode($e->getMessage()));

@@ -516,14 +516,6 @@ ob_start();
                         <div class="lc-muted" id="patientHint" style="margin-top:6px; display:none;">Selecione um paciente da lista.</div>
                     </div>
 
-                    <div class="lc-field" style="grid-column: 1 / -1;">
-                        <label class="lc-label">Pacote (opcional)</label>
-                        <select class="lc-select" name="patient_package_id" id="patient_package_id">
-                            <option value="">(sem pacote)</option>
-                        </select>
-                        <div class="lc-muted" id="patientPackageHint" style="margin-top:6px; display:none;">Selecione um paciente para listar pacotes.</div>
-                    </div>
-
                     <div class="lc-field">
                         <label class="lc-label">Serviço</label>
                         <select class="lc-select" name="service_id" id="modal_service_id" required>

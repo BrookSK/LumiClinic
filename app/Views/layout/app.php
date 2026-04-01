@@ -194,7 +194,7 @@ $ico = [
                 <?= $navItem('/', 'Dashboard', $ico['dashboard'], $isActive('/')) ?>
 
                 <?php if ($can('scheduling.read')): ?>
-                    <?= $navItem('/manager/panel', 'Painel Gestor', $ico['dashboard'], $isActive('/manager/panel')) ?>
+                    <?php // Painel Gestor oculto — acesso restrito ?>
                 <?php endif; ?>
 
                 <?php
@@ -340,7 +340,7 @@ $ico = [
                                     <div class="lc-navgroup__children">
                                         <div class="lc-nav__sub">
                                             <?php if ($can('clinics.read')): ?>
-                                                <?= $navItem('/clinic/legal-documents', 'Termos do Portal', $ico['shield'], $isActive('/clinic/legal-documents')) ?>
+                                                <?= $navItem('/settings/lgpd', 'Documentos LGPD', $ico['shield'], $isActive('/settings/lgpd')) ?>
                                                 <?= $navItem('/clinic/legal-signatures', 'Assinaturas', $ico['shield'], $isActive('/clinic/legal-signatures')) ?>
                                             <?php endif; ?>
                                         </div>

@@ -143,7 +143,8 @@ final class AppointmentRepository
                 a.started_at,
                 a.status,
                 COALESCE(pat.name, '') AS patient_name,
-                COALESCE(s.name, '') AS service_name
+                COALESCE(s.name, '') AS service_name,
+                COALESCE(pro.name, '') AS professional_name
             FROM appointments a
             LEFT JOIN patients pat
                    ON pat.id = a.patient_id
@@ -153,20 +154,30 @@ final class AppointmentRepository
                    ON s.id = a.service_id
                   AND s.clinic_id = a.clinic_id
                   AND s.deleted_at IS NULL
+            LEFT JOIN professionals pro
+                   ON pro.id = a.professional_id
+                  AND pro.clinic_id = a.clinic_id
+                  AND pro.deleted_at IS NULL
             WHERE a.clinic_id = :clinic_id
-              AND a.professional_id = :professional_id
               AND a.deleted_at IS NULL
               AND a.checked_in_at IS NOT NULL
               AND a.checked_in_at <> ''
               AND a.checked_in_at <> '0000-00-00 00:00:00'
               AND (a.started_at IS NULL OR a.started_at = '' OR a.started_at = '0000-00-00 00:00:00')
               AND a.status IN ('scheduled','confirmed','in_progress')
-            ORDER BY a.checked_in_at ASC
-            LIMIT " . (int)$limit . "
         ";
 
+        $params = ['clinic_id' => $clinicId];
+
+        if ($professionalId > 0) {
+            $sql .= " AND a.professional_id = :professional_id ";
+            $params['professional_id'] = $professionalId;
+        }
+
+        $sql .= " ORDER BY a.checked_in_at ASC LIMIT " . (int)$limit;
+
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(['clinic_id' => $clinicId, 'professional_id' => $professionalId]);
+        $stmt->execute($params);
 
         /** @var list<array<string,mixed>> */
         return $stmt->fetchAll();

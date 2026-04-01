@@ -29,7 +29,7 @@ final class ProfessionalQueueController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorize('scheduling.finalize');
+        $this->authorize('scheduling.read');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -44,23 +44,35 @@ final class ProfessionalQueueController extends Controller
         }
 
         $pdo = $this->container->get(\PDO::class);
-
         $profRepo = new ProfessionalRepository($pdo);
-        $prof = $profRepo->findByUserId($clinicId, $userId);
-        if ($prof === null) {
-            throw new \RuntimeException('Profissional não vinculado ao usuário.');
-        }
 
-        $professionalId = (int)($prof['id'] ?? 0);
-        if ($professionalId <= 0) {
-            throw new \RuntimeException('Profissional inválido.');
-        }
+        // Verificar se o usuário logado é um profissional
+        $prof = $profRepo->findByUserId($clinicId, $userId);
+
+        // Roles do usuário
+        $roleCodes = $_SESSION['role_codes'] ?? [];
+        $isOwnerOrAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1
+            || (is_array($roleCodes) && (in_array('owner', $roleCodes, true) || in_array('admin', $roleCodes, true)));
 
         $repo = new AppointmentRepository($pdo);
-        $items = $repo->listCheckedInQueueForProfessional($clinicId, $professionalId, 100);
+
+        if ($prof !== null && !$isOwnerOrAdmin) {
+            // Profissional: vê só a fila dele
+            $professionalId = (int)($prof['id'] ?? 0);
+            $items = $repo->listCheckedInQueueForProfessional($clinicId, $professionalId, 100);
+            $viewingAll = false;
+            $profName = (string)($prof['name'] ?? '');
+        } else {
+            // Owner/Admin: vê todos
+            $items = $repo->listCheckedInQueueForProfessional($clinicId, 0, 200);
+            $viewingAll = true;
+            $profName = '';
+        }
 
         return $this->view('scheduling/professional_queue', [
-            'items' => $items,
+            'items'       => $items,
+            'viewing_all' => $viewingAll,
+            'prof_name'   => $profName,
         ]);
     }
 }
