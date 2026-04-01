@@ -159,6 +159,19 @@ final class PrescriptionController extends Controller
             return Response::html('Receita não encontrada.', 404);
         }
 
-        return $this->view('patients/prescription_print', ['rx' => $rx]);
+        $clinic = (new \App\Repositories\ClinicRepository($pdo))->findById($clinicId);
+
+        // Buscar specialty do profissional se houver
+        $professionalSpecialty = '';
+        if (!empty($rx['professional_id'])) {
+            $prof = (new \App\Repositories\ProfessionalRepository($pdo))->findById($clinicId, (int)$rx['professional_id']);
+            $professionalSpecialty = trim((string)($prof['specialty'] ?? ''));
+        }
+
+        return $this->view('patients/prescription_print', [
+            'rx'                    => $rx,
+            'clinic'                => $clinic,
+            'professional_specialty' => $professionalSpecialty,
+        ]);
     }
 }
