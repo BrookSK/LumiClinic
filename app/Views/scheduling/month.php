@@ -157,12 +157,11 @@ ob_start();
                         $border = $ymd === $today ? '4px solid #2563eb' : '1px solid rgba(17,24,39,0.08)';
                         $opacity = $inMonth ? '1' : '0.45';
                     ?>
-                    <div style="min-width:0;">
                     <button type="button"
-                        style="display:block; width:100%; padding:0; border:0; background:transparent; text-align:left; cursor: <?= (!$isProfessional ? 'pointer' : 'default') ?>; min-width:0;"
+                        style="display:block; width:100%; height:100%; padding:0; border:0; background:transparent; text-align:left; cursor: <?= (!$isProfessional ? 'pointer' : 'default') ?>;"
                         <?= (!$isProfessional && $can('scheduling.create')) ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
                     >
-                        <div class="lc-card" style="margin:0; border-left: <?= htmlspecialchars($border, ENT_QUOTES, 'UTF-8') ?>; opacity: <?= htmlspecialchars($opacity, ENT_QUOTES, 'UTF-8') ?>;">
+                        <div class="lc-card" style="margin:0; height:100%; border-left: <?= htmlspecialchars($border, ENT_QUOTES, 'UTF-8') ?>; opacity: <?= htmlspecialchars($opacity, ENT_QUOTES, 'UTF-8') ?>;">
                             <div class="lc-card__body lc-flex" style="padding:12px; height:120px; overflow:hidden; flex-direction:column; gap:8px;">
                                 <div class="lc-flex lc-flex--between" style="align-items:baseline;">
                                     <div style="font-weight: 700;">
@@ -227,7 +226,6 @@ ob_start();
                             </div>
                         </div>
                     </button>
-                    </div>
                 <?php endfor; ?>
             </div>
         </div>
