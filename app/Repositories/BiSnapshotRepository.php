@@ -31,7 +31,7 @@ final class BiSnapshotRepository
                 computed_by_user_id, computed_at, created_at
             ) VALUES (
                 :clinic_id, :metric_key, :period_start, :period_end,
-                CAST(:data_json AS JSON),
+                :data_json,
                 :computed_by_user_id, NOW(), NOW()
             )
             ON DUPLICATE KEY UPDATE

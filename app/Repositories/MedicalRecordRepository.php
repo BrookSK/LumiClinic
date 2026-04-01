@@ -157,7 +157,7 @@ final class MedicalRecordRepository
                 :clinic_id, :patient_id, :professional_id,
                 :attended_at, :procedure_type,
                 :template_id, :template_name_snapshot, :template_updated_at_snapshot,
-                CAST(:template_fields_snapshot_json AS JSON), CAST(:fields_json AS JSON),
+                :template_fields_snapshot_json, :fields_json,
                 :clinical_description, :clinical_evolution, :notes,
                 :created_by_user_id,
                 NOW()
@@ -209,8 +209,8 @@ final class MedicalRecordRepository
                 template_id = :template_id,
                 template_name_snapshot = :template_name_snapshot,
                 template_updated_at_snapshot = :template_updated_at_snapshot,
-                template_fields_snapshot_json = CAST(:template_fields_snapshot_json AS JSON),
-                fields_json = CAST(:fields_json AS JSON),
+                template_fields_snapshot_json = :template_fields_snapshot_json,
+                fields_json = :fields_json,
                 clinical_description = :clinical_description,
                 clinical_evolution = :clinical_evolution,
                 notes = :notes,
@@ -255,7 +255,7 @@ final class MedicalRecordRepository
             )
             VALUES (
                 :clinic_id, :medical_record_id, :version_no,
-                CAST(:snapshot_json AS JSON), :edited_by_user_id, :ip_address,
+                :snapshot_json, :edited_by_user_id, :ip_address,
                 NOW()
             )
         ";

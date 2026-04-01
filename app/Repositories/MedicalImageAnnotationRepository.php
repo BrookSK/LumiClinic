@@ -47,7 +47,7 @@ final class MedicalImageAnnotationRepository
                 created_at
             ) VALUES (
                 :clinic_id, :medical_image_id,
-                CAST(:payload_json AS JSON), :note,
+                :payload_json, :note,
                 :created_by_user_id,
                 NOW()
             )

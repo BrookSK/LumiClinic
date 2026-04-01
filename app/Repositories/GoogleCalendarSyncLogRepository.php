@@ -19,7 +19,7 @@ final class GoogleCalendarSyncLogRepository
         ?string $message,
         ?array $meta
     ): int {
-        $stmt = $this->pdo->prepare("\n            INSERT INTO google_calendar_sync_logs (\n                clinic_id, user_id, token_id, appointment_id,\n                action, status, message, meta_json,\n                created_at\n            ) VALUES (\n                :clinic_id, :user_id, :token_id, :appointment_id,\n                :action, :status, :message, CAST(:meta_json AS JSON),\n                NOW()\n            )\n        ");
+        $stmt = $this->pdo->prepare("\n            INSERT INTO google_calendar_sync_logs (\n                clinic_id, user_id, token_id, appointment_id,\n                action, status, message, meta_json,\n                created_at\n            ) VALUES (\n                :clinic_id, :user_id, :token_id, :appointment_id,\n                :action, :status, :message, :meta_json,\n                NOW()\n            )\n        ");
 
         $metaJson = null;
         if (is_array($meta)) {
