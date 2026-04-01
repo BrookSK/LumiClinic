@@ -7,72 +7,76 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    font-size: 13px;
-    color: #1a1a1a;
-    background: #f0f0f0;
+:root {
+    --gold:    #eeb810;
+    --gold-dk: #815901;
+    --gold-md: #b5841e;
+    --surface: #fffdf8;
+    --text:    #2a2a2a;
+    --muted:   rgba(42,42,42,.55);
+    --border:  rgba(17,24,39,.12);
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", sans-serif;
 }
 
+body {
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text);
+    background: #e8e4dc;
+}
+
+/* ── PÁGINA A4 ── */
 .page {
     width: 210mm;
     min-height: 297mm;
     margin: 20px auto;
-    background: #fff;
-    padding: 0;
+    background: var(--surface);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0,0,0,.15);
+    box-shadow: 0 6px 32px rgba(0,0,0,.18);
+    display: flex;
+    flex-direction: column;
 }
 
-/* Decoração de fundo — círculos suaves nos cantos */
+/* Decoração de fundo — círculos dourados suaves */
 .page::before {
     content: '';
     position: absolute;
-    top: -60px; right: -60px;
-    width: 220px; height: 220px;
+    top: -70px; right: -70px;
+    width: 240px; height: 240px;
     border-radius: 50%;
-    background: rgba(180,120,120,.08);
+    background: rgba(238,184,16,.10);
     pointer-events: none;
+    z-index: 0;
 }
 .page::after {
     content: '';
     position: absolute;
-    bottom: -80px; right: -40px;
-    width: 280px; height: 280px;
+    bottom: -90px; right: -50px;
+    width: 300px; height: 300px;
     border-radius: 50%;
-    background: rgba(180,120,120,.06);
+    background: rgba(238,184,16,.07);
     pointer-events: none;
+    z-index: 0;
 }
 
 /* ── CABEÇALHO ── */
 .header {
-    padding: 28px 36px 20px;
+    padding: 26px 36px 18px;
     display: flex;
     align-items: center;
-    gap: 18px;
-    border-bottom: 2px solid #c8a0a0;
+    gap: 16px;
+    border-bottom: 2.5px solid var(--gold);
+    position: relative;
+    z-index: 1;
 }
 
 .header-logo {
-    width: 64px;
-    height: 64px;
+    width: 60px;
+    height: 60px;
     object-fit: contain;
+    border-radius: 10px;
     flex-shrink: 0;
-}
-
-.header-logo-placeholder {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #c8a0a0, #e8c8c8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 22px;
-    color: #fff;
-    font-weight: 700;
 }
 
 .header-info {
@@ -80,90 +84,95 @@ body {
 }
 
 .header-clinic-name {
-    font-size: 22px;
-    font-weight: 700;
-    color: #8b4a4a;
-    letter-spacing: 0.3px;
-    font-style: italic;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--gold-dk);
+    letter-spacing: 0.2px;
 }
 
 .header-specialty {
     font-size: 12px;
-    color: #a06060;
-    margin-top: 2px;
-    letter-spacing: 0.5px;
+    color: var(--gold-md);
+    margin-top: 3px;
+    font-weight: 500;
+}
+
+.header-date {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.7;
+    flex-shrink: 0;
 }
 
 /* ── CORPO ── */
 .body {
-    padding: 32px 36px;
-    min-height: 180mm;
+    padding: 30px 36px 100px;
+    flex: 1;
+    position: relative;
+    z-index: 1;
 }
 
-/* Dados do paciente */
 .patient-block {
-    margin-bottom: 28px;
+    margin-bottom: 24px;
 }
 
 .patient-name {
     font-size: 15px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 4px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
 }
 
 .patient-meta {
     font-size: 12px;
-    color: #555;
+    color: var(--muted);
 }
 
-/* Separador */
 .divider {
     border: none;
-    border-top: 1px solid #ddd;
-    margin: 20px 0;
+    border-top: 1px solid var(--border);
+    margin: 18px 0;
 }
 
-/* Tipo de receita */
 .rx-type {
-    font-size: 13px;
-    font-weight: 600;
-    color: #555;
-    margin-bottom: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold-md);
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 1px;
+    margin-bottom: 18px;
 }
 
-/* Conteúdo */
 .rx-body {
     font-size: 14px;
     line-height: 1.9;
     white-space: pre-wrap;
-    color: #1a1a1a;
+    color: var(--text);
     min-height: 80px;
 }
 
 /* ── ASSINATURA ── */
 .signature-area {
-    margin-top: 48px;
+    margin-top: 52px;
     text-align: center;
 }
 
 .signature-line {
-    width: 240px;
-    border-top: 1px solid #1a1a1a;
+    width: 220px;
+    border-top: 1.5px solid var(--text);
     margin: 0 auto 8px;
 }
 
 .signature-name {
     font-size: 13px;
-    font-weight: 600;
-    color: #1a1a1a;
+    font-weight: 700;
+    color: var(--text);
 }
 
 .signature-detail {
     font-size: 11px;
-    color: #666;
+    color: var(--muted);
     margin-top: 2px;
 }
 
@@ -171,46 +180,44 @@ body {
 .footer {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    padding: 14px 36px;
-    border-top: 1px solid #e0c8c8;
+    padding: 12px 36px;
+    border-top: 1px solid rgba(238,184,16,.35);
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
     font-size: 11px;
-    color: #a06060;
-    background: rgba(248,240,240,.6);
+    color: var(--gold-md);
+    background: rgba(253,229,159,.15);
+    z-index: 1;
 }
 
-.footer-left {
-    line-height: 1.6;
-}
+.footer-col { line-height: 1.7; }
+.footer-col--right { text-align: right; }
 
-.footer-right {
-    text-align: right;
-    line-height: 1.6;
-}
-
-/* ── BOTÕES (não imprime) ── */
+/* ── BOTÕES ── */
 .no-print {
     width: 210mm;
-    margin: 0 auto 24px;
+    margin: 0 auto 28px;
     display: flex;
     gap: 12px;
     justify-content: center;
     padding: 16px 0;
 }
 
-.btn-print, .btn-close {
-    padding: 10px 28px;
+.btn {
+    padding: 10px 32px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 14px;
+    font-family: var(--font);
+    font-weight: 600;
     cursor: pointer;
-    font-family: Arial, sans-serif;
+    transition: opacity .15s;
 }
+.btn:hover { opacity: .88; }
 
 .btn-print {
-    background: #8b4a4a;
+    background: linear-gradient(135deg, #fde59f, var(--gold-dk));
     color: #fff;
 }
 
@@ -233,7 +240,6 @@ $clinicName    = trim((string)($clinic['name'] ?? 'LumiClinic'));
 $clinicPhone   = trim((string)($clinic['contact_phone'] ?? ''));
 $clinicAddress = trim((string)($clinic['contact_address'] ?? ''));
 $clinicEmail   = trim((string)($clinic['contact_email'] ?? ''));
-$clinicInitial = mb_strtoupper(mb_substr($clinicName, 0, 1, 'UTF-8'), 'UTF-8');
 
 $patientName   = trim((string)($rx['patient_name'] ?? ''));
 $profName      = trim((string)($rx['professional_name'] ?? ''));
@@ -242,7 +248,7 @@ $issuedAt      = trim((string)($rx['issued_at'] ?? ''));
 $rxTitle       = trim((string)($rx['title'] ?? 'Receita'));
 $rxBody        = trim((string)($rx['body'] ?? ''));
 
-// Formatar data
+// Formatar data dd/mm/aaaa
 $issuedFmt = $issuedAt;
 if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $issuedAt, $m)) {
     $issuedFmt = $m[3] . '/' . $m[2] . '/' . $m[1];
@@ -253,14 +259,16 @@ if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $issuedAt, $m)) {
 
     <!-- Cabeçalho -->
     <div class="header">
-        <div class="header-logo-placeholder"><?= htmlspecialchars($clinicInitial, ENT_QUOTES, 'UTF-8') ?></div>
+        <img src="/icone_1.png" alt="<?= htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') ?>" class="header-logo" />
         <div class="header-info">
             <div class="header-clinic-name"><?= htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') ?></div>
             <?php if ($profSpecialty !== ''): ?>
                 <div class="header-specialty"><?= htmlspecialchars($profSpecialty, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php elseif ($profName !== ''): ?>
+                <div class="header-specialty"><?= htmlspecialchars($profName, ENT_QUOTES, 'UTF-8') ?></div>
             <?php endif; ?>
         </div>
-        <div style="text-align:right; font-size:11px; color:#a06060; line-height:1.7;">
+        <div class="header-date">
             <div><?= htmlspecialchars($issuedFmt, ENT_QUOTES, 'UTF-8') ?></div>
             <?php if ($clinicPhone !== ''): ?>
                 <div><?= htmlspecialchars($clinicPhone, ENT_QUOTES, 'UTF-8') ?></div>
@@ -271,12 +279,9 @@ if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $issuedAt, $m)) {
     <!-- Corpo -->
     <div class="body">
 
-        <!-- Dados do paciente -->
+        <!-- Paciente -->
         <div class="patient-block">
-            <div class="patient-name">Paciente: <?= htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') ?></div>
-            <?php if ($clinicAddress !== ''): ?>
-                <div class="patient-meta"><?= htmlspecialchars($clinicAddress, ENT_QUOTES, 'UTF-8') ?></div>
-            <?php endif; ?>
+            <div class="patient-name"><?= htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') ?></div>
         </div>
 
         <hr class="divider" />
@@ -298,13 +303,13 @@ if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $issuedAt, $m)) {
 
     </div>
 
-    <!-- Rodapé -->
+    <!-- Rodapé — dados da clínica/profissional -->
     <div class="footer">
-        <div class="footer-left">
+        <div class="footer-col">
             <?php if ($clinicPhone !== ''): ?><div>Tel: <?= htmlspecialchars($clinicPhone, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
             <?php if ($clinicEmail !== ''): ?><div><?= htmlspecialchars($clinicEmail, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
         </div>
-        <div class="footer-right">
+        <div class="footer-col footer-col--right">
             <?php if ($clinicAddress !== ''): ?><div><?= htmlspecialchars($clinicAddress, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
             <div><?= htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') ?></div>
         </div>
@@ -313,8 +318,8 @@ if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $issuedAt, $m)) {
 </div>
 
 <div class="no-print">
-    <button class="btn-print" onclick="window.print()">Imprimir</button>
-    <button class="btn-close" onclick="window.close()">Fechar</button>
+    <button class="btn btn-print" onclick="window.print()">Imprimir</button>
+    <button class="btn btn-close" onclick="window.close()">Fechar</button>
 </div>
 
 </body>
