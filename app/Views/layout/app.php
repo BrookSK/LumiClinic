@@ -407,9 +407,6 @@ $ico = [
                                 <?php if ($can('scheduling.finalize') && $hasClinicContext): ?>
                                     <?= $navItem('/schedule/queue', 'Fila de chegada', $ico['calendar'], $isExact('/schedule/queue')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('scheduling.logs') && $hasClinicContext): ?>
-                                    <?= $navItem('/schedule/logs', 'Logs da agenda', $ico['calendar'], $isExact('/schedule/logs')) ?>
-                                <?php endif; ?>
                             </div>
                         </div>
                     </details>
@@ -488,7 +485,6 @@ $ico = [
                                 <?php endif; ?>
                                 <?php if ($can('stock.movements.read')): ?>
                                     <?= $navItem('/stock/movements', 'Movimentações', $ico['stock'], $isActive('/stock/movements')) ?>
-                                    <?= $navItem('/stock/inventory', 'Inventário', $ico['stock'], $isActive('/stock/inventory')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('stock.alerts.read')): ?>
                                     <?= $navItem('/stock/alerts', 'Alertas', $ico['stock'], $isActive('/stock/alerts')) ?>
@@ -548,20 +544,20 @@ $ico = [
                                 <?php if ($can('stock.reports.read')): ?>
                                     <?= $navItem('/stock/reports', 'Estoque', $ico['stock'], $isActive('/stock/reports')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('audit.read')): ?>
+                                <?php if ($isSuperAdmin && $can('audit.read')): ?>
                                     <?= $navItem('/audit-logs', 'Auditoria', $ico['shield'], $isActive('/audit-logs')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('bi.read')): ?>
+                                <?php if ($isSuperAdmin && $can('bi.read')): ?>
                                     <?= $navItem('/bi', 'BI', $ico['dashboard'], $isActiveSegment('/bi')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('compliance.lgpd.read')): ?>
+                                <?php if ($isSuperAdmin && $can('compliance.lgpd.read')): ?>
                                     <?= $navItem('/compliance/lgpd-requests', 'LGPD (Solicitações)', $ico['shield'], $isActive('/compliance/lgpd-requests')) ?>
                                     <?= $navItem('/compliance/lgpd-audit', 'LGPD (Auditoria)', $ico['shield'], $isActive('/compliance/lgpd-audit')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('compliance.policies.read')): ?>
+                                <?php if ($isSuperAdmin && $can('compliance.policies.read')): ?>
                                     <?= $navItem('/compliance/certifications', 'Certificações', $ico['shield'], $isActive('/compliance/certifications')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('compliance.incidents.read')): ?>
+                                <?php if ($isSuperAdmin && $can('compliance.incidents.read')): ?>
                                     <?= $navItem('/compliance/incidents', 'Incidentes', $ico['shield'], $isActive('/compliance/incidents')) ?>
                                 <?php endif; ?>
                             </div>
@@ -597,25 +593,6 @@ $ico = [
                 </div>
                 <div class="lc-topbar__right">
                     <div class="lc-topbar__pill"><?= $isSuperAdmin ? 'ADMINISTRADOR' : 'CLÍNICA' ?></div>
-
-                    <?php
-                    // Botão de suporte (item 12.1)
-                    $supportWa = '';
-                    $supportEmail = '';
-                    if (isset($support_settings) && is_array($support_settings)) {
-                        $supportWa = trim((string)($support_settings['support_whatsapp_number'] ?? ''));
-                        $supportEmail = trim((string)($support_settings['support_email'] ?? ''));
-                    }
-                    if ($supportWa !== '' || $supportEmail !== ''):
-                        $supportHref = $supportWa !== ''
-                            ? ('https://wa.me/' . preg_replace('/\D/', '', $supportWa))
-                            : ('mailto:' . $supportEmail);
-                    ?>
-                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="<?= htmlspecialchars($supportHref, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" title="Suporte" style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px;">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.82 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></svg>
-                        Suporte
-                    </a>
-                    <?php endif; ?>
 
                     <details class="lc-actions__more">
                         <summary class="lc-topbar__icon" aria-label="Menu do usuário">

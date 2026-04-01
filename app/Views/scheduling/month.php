@@ -193,19 +193,33 @@ ob_start();
                                                 $sname = isset($svcMap[$sid]) ? (string)$svcMap[$sid]['name'] : ('#' . $sid);
                                                 $status = (string)$it['status'];
                                                 $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
+                                                $patientNameMonth = trim((string)($it['patient_name'] ?? ''));
                                             ?>
-                                            <div class="lc-flex lc-gap-sm" style="align-items:center;">
-                                                <span class="lc-dot lc-dot--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"></span>
+                                            <button
+                                                type="button"
+                                                class="lc-flex lc-gap-sm"
+                                                style="align-items:center; background:none; border:none; padding:0; cursor:pointer; text-align:left; width:100%;"
+                                                onclick="event.stopPropagation(); openApptDetail(<?= (int)$it['id'] ?>);"
+                                                title="<?= htmlspecialchars(($patientNameMonth !== '' ? $patientNameMonth . ' — ' : '') . $sname . ' (' . substr((string)$it['start_at'], 11, 5) . ')', ENT_QUOTES, 'UTF-8') ?>"
+                                            >
+                                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0;" class="lc-dot lc-dot--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"></span>
                                                 <div style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                                    <span style="font-weight:600;">
-                                                        <?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?>
-                                                    </span>
-                                                    <span class="lc-muted">• <?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?> • <?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?></span>
+                                                    <span style="font-weight:600;"><?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></span>
+                                                    <?php if ($patientNameMonth !== ''): ?>
+                                                        <span class="lc-muted">• <?= htmlspecialchars($patientNameMonth, ENT_QUOTES, 'UTF-8') ?></span>
+                                                    <?php else: ?>
+                                                        <span class="lc-muted">• <?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></span>
+                                                    <?php endif; ?>
                                                 </div>
-                                            </div>
+                                            </button>
                                         <?php endforeach; ?>
                                         <?php if ($count > $maxShow): ?>
-                                            <div class="lc-muted" style="font-size:12px;">+<?= (int)($count - $maxShow) ?>...</div>
+                                            <a
+                                                href="/schedule?view=day&date=<?= urlencode($ymd) ?><?= $professionalId > 0 ? ('&professional_id=' . (int)$professionalId) : '' ?>"
+                                                class="lc-muted"
+                                                style="font-size:12px; text-decoration:none;"
+                                                onclick="event.stopPropagation();"
+                                            >+<?= (int)($count - $maxShow) ?> mais...</a>
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
@@ -477,6 +491,99 @@ ob_start();
 <?php endif; ?>
 
 </div>
+
+<!-- Modal de detalhes do agendamento -->
+<div id="apptDetailModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; align-items:center; justify-content:center; padding:18px;">
+    <div style="width:100%; max-width:480px; background:#fff; border-radius:14px; box-shadow:0 16px 50px rgba(0,0,0,.3); overflow:hidden;">
+        <div style="padding:14px 16px; border-bottom:1px solid rgba(0,0,0,.08); display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:800; font-size:16px;">Detalhes do agendamento</div>
+            <button type="button" onclick="closeApptDetail();" style="background:none; border:none; cursor:pointer; font-size:20px; line-height:1; color:#6b7280;">×</button>
+        </div>
+        <div id="apptDetailBody" style="padding:16px;">
+            <div class="lc-muted">Carregando...</div>
+        </div>
+        <div id="apptDetailFooter" style="padding:12px 16px; border-top:1px solid rgba(0,0,0,.08); display:flex; gap:10px; flex-wrap:wrap;"></div>
+    </div>
+</div>
+
+<script>
+(function(){
+    var modal = document.getElementById('apptDetailModal');
+    var body = document.getElementById('apptDetailBody');
+    var footer = document.getElementById('apptDetailFooter');
+
+    window.openApptDetail = function(id) {
+        if (!modal || !body || !footer) return;
+        body.innerHTML = '<div class="lc-muted">Carregando...</div>';
+        footer.innerHTML = '';
+        modal.style.display = 'flex';
+
+        fetch('/schedule/details?id=' + encodeURIComponent(id), { headers: { 'Accept': 'application/json' } })
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                var it = data.item;
+                if (!it) { body.innerHTML = '<div class="lc-muted">Não encontrado.</div>'; return; }
+
+                var statusLabels = {
+                    'scheduled': 'Agendado', 'confirmed': 'Confirmado',
+                    'in_progress': 'Em atendimento', 'completed': 'Concluído',
+                    'no_show': 'Faltou', 'cancelled': 'Cancelado'
+                };
+                var statusLabel = statusLabels[it.status] || it.status;
+
+                var startDate = it.start_at ? it.start_at.slice(0,10).split('-').reverse().join('/') : '';
+                var startTime = it.start_at ? it.start_at.slice(11,16) : '';
+                var endTime = it.end_at ? it.end_at.slice(11,16) : '';
+
+                body.innerHTML = [
+                    row('Paciente', it.patient_name || '—'),
+                    row('Serviço', it.service_name || '—'),
+                    row('Profissional', it.professional_name || '—'),
+                    row('Data', startDate),
+                    row('Horário', startTime + (endTime ? ' – ' + endTime : '')),
+                    row('Status', statusLabel),
+                    it.notes ? row('Observações', it.notes) : '',
+                ].join('');
+
+                footer.innerHTML = '';
+
+                var btnDay = document.createElement('a');
+                btnDay.href = '/schedule?view=day&date=' + (it.start_at ? it.start_at.slice(0,10) : '');
+                btnDay.className = 'lc-btn lc-btn--secondary';
+                btnDay.textContent = 'Ver na agenda do dia';
+                footer.appendChild(btnDay);
+
+                var btnClose = document.createElement('button');
+                btnClose.type = 'button';
+                btnClose.className = 'lc-btn lc-btn--secondary';
+                btnClose.textContent = 'Fechar';
+                btnClose.onclick = closeApptDetail;
+                footer.appendChild(btnClose);
+            })
+            .catch(function(){
+                body.innerHTML = '<div class="lc-muted">Erro ao carregar detalhes.</div>';
+            });
+    };
+
+    window.closeApptDetail = function() {
+        if (modal) modal.style.display = 'none';
+    };
+
+    function row(label, value) {
+        return '<div style="margin-bottom:10px;"><div style="font-size:12px; color:#6b7280; margin-bottom:2px;">' +
+            escHtml(label) + '</div><div style="font-weight:600;">' + escHtml(String(value || '')) + '</div></div>';
+    }
+
+    function escHtml(s) {
+        return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    if (modal) {
+        modal.addEventListener('click', function(e){ if (e.target === modal) closeApptDetail(); });
+    }
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeApptDetail(); });
+})();
+</script>
 
 <?php
 $content = (string)ob_get_clean();

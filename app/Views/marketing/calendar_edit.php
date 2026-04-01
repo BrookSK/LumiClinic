@@ -133,8 +133,22 @@ ob_start();
                     </div>
 
                     <div class="lc-field" style="grid-column: 1 / -1;">
-                        <label class="lc-label">Link de referência (opcional)</label>
-                        <input class="lc-input" type="url" name="link_url" value="<?= htmlspecialchars($linkUrl, ENT_QUOTES, 'UTF-8') ?>" placeholder="https://..." />
+                        <label class="lc-label">Links de referência (opcional)</label>
+                        <div id="linksContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;">
+                            <?php
+                            $existingLinks = \App\Services\Marketing\MarketingCalendarService::decodeLinks($linkUrl !== '' ? $linkUrl : null);
+                            if ($existingLinks === []) {
+                                $existingLinks = [''];
+                            }
+                            foreach ($existingLinks as $lk):
+                            ?>
+                            <div class="lc-flex lc-gap-sm" style="align-items:center;">
+                                <input class="lc-input" type="url" name="links[]" value="<?= htmlspecialchars($lk, ENT_QUOTES, 'UTF-8') ?>" placeholder="https://..." style="flex:1;" />
+                                <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="removeLink(this)" title="Remover">✕</button>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="addLink()">+ Adicionar link</button>
                     </div>
 
                     <div class="lc-field" style="grid-column: 1 / -1;">
@@ -175,6 +189,15 @@ ob_start();
                     <div class="lc-muted">Status</div>
                     <div><?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
+                <?php $readLinks = \App\Services\Marketing\MarketingCalendarService::decodeLinks($linkUrl !== '' ? $linkUrl : null); ?>
+                <?php if ($readLinks !== []): ?>
+                <div style="grid-column: 1 / -1;">
+                    <div class="lc-muted">Links</div>
+                    <?php foreach ($readLinks as $lk): ?>
+                        <div><a href="<?= htmlspecialchars($lk, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars($lk, ENT_QUOTES, 'UTF-8') ?></a></div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
                 <div style="grid-column: 1 / -1;">
                     <div class="lc-muted">Notas</div>
                     <div><?= nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8')) ?></div>
@@ -185,6 +208,33 @@ ob_start();
                 <a class="lc-btn lc-btn--secondary" href="/marketing/calendar<?= $month !== '' ? ('?month=' . urlencode($month)) : '' ?>">Voltar</a>
             </div>
         <?php endif; ?>
+    </div>
+</div>
+
+<script>
+function addLink() {
+    var c = document.getElementById('linksContainer');
+    if (!c) return;
+    var row = document.createElement('div');
+    row.className = 'lc-flex lc-gap-sm';
+    row.style.alignItems = 'center';
+    row.innerHTML = '<input class="lc-input" type="url" name="links[]" placeholder="https://..." style="flex:1;" />' +
+        '<button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="removeLink(this)" title="Remover">✕</button>';
+    c.appendChild(row);
+    row.querySelector('input').focus();
+}
+function removeLink(btn) {
+    var row = btn.closest('.lc-flex');
+    var c = document.getElementById('linksContainer');
+    if (!c || !row) return;
+    // Manter pelo menos 1 linha
+    if (c.children.length <= 1) {
+        row.querySelector('input').value = '';
+        return;
+    }
+    row.remove();
+}
+</script>
     </div>
 </div>
 

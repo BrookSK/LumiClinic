@@ -492,6 +492,7 @@ $router->get('/patients/appointments', [\App\Controllers\Patients\PatientAppoint
 
 $router->get('/patients/birthdays', [\App\Controllers\Patients\PatientReportsController::class, 'birthdays']);
 $router->get('/patients/follow-up', [\App\Controllers\Patients\PatientReportsController::class, 'followUp']);
+$router->post('/patients/whatsapp/send-json', [\App\Controllers\Patients\PatientWhatsappController::class, 'sendJson']);
 
 $router->get('/patients/timeline', [\App\Controllers\Patients\PatientTimelineController::class, 'index']);
 $router->get('/patients/timeline/export.csv', [\App\Controllers\Patients\PatientTimelineController::class, 'exportCsv']);

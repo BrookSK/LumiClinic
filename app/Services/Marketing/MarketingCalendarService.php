@@ -68,7 +68,7 @@ final class MarketingCalendarService
         $color = trim((string)($data['color'] ?? ''));
         $title = trim((string)($data['title'] ?? ''));
         $notes = trim((string)($data['notes'] ?? ''));
-        $linkUrl = trim((string)($data['link_url'] ?? ''));
+        $linkUrl = $this->parseLinksToJson($data['link_url'] ?? null, $data['links'] ?? null);
         $assignedUserId = (int)($data['assigned_user_id'] ?? 0);
 
         if ($entryDate === '' || \DateTimeImmutable::createFromFormat('Y-m-d', $entryDate) === false) {
@@ -118,7 +118,7 @@ final class MarketingCalendarService
         $color = trim((string)($data['color'] ?? ''));
         $title = trim((string)($data['title'] ?? ''));
         $notes = trim((string)($data['notes'] ?? ''));
-        $linkUrl = trim((string)($data['link_url'] ?? ''));
+        $linkUrl = $this->parseLinksToJson($data['link_url'] ?? null, $data['links'] ?? null);
         $assignedUserId = (int)($data['assigned_user_id'] ?? 0);
 
         if ($id <= 0) {
@@ -201,5 +201,69 @@ final class MarketingCalendarService
         }
 
         return strtolower($color);
+    }
+
+    /**
+     * Recebe links como array (do campo links[]) ou string única (link_url legado)
+     * e retorna JSON serializado ou null.
+     * @param mixed $linkUrlLegacy
+     * @param mixed $linksArray
+     */
+    private function parseLinksToJson(mixed $linkUrlLegacy, mixed $linksArray): ?string
+    {
+        $links = [];
+
+        // Novo formato: array de links enviados como links[]
+        if (is_array($linksArray)) {
+            foreach ($linksArray as $l) {
+                $l = trim((string)$l);
+                if ($l !== '') {
+                    $links[] = $l;
+                }
+            }
+        }
+
+        // Legado: campo único link_url (pode ser JSON antigo ou URL simples)
+        if ($links === [] && $linkUrlLegacy !== null) {
+            $raw = trim((string)$linkUrlLegacy);
+            if ($raw !== '') {
+                // Tentar decodificar como JSON existente
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $l) {
+                        $l = trim((string)$l);
+                        if ($l !== '') {
+                            $links[] = $l;
+                        }
+                    }
+                } else {
+                    $links[] = $raw;
+                }
+            }
+        }
+
+        if ($links === []) {
+            return null;
+        }
+
+        return (string)json_encode(array_values($links), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Decodifica o campo link_url (JSON ou string legada) para array de strings.
+     * @return list<string>
+     */
+    public static function decodeLinks(?string $raw): array
+    {
+        if ($raw === null || trim($raw) === '') {
+            return [];
+        }
+        $raw = trim($raw);
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            return array_values(array_filter(array_map('strval', $decoded)));
+        }
+        // Legado: string simples
+        return [$raw];
     }
 }

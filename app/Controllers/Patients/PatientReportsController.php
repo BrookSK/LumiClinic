@@ -7,6 +7,7 @@ namespace App\Controllers\Patients;
 use App\Controllers\Controller;
 use App\Core\Http\Request;
 use App\Repositories\PatientRepository;
+use App\Repositories\WhatsappTemplateRepository;
 use App\Services\Auth\AuthService;
 
 final class PatientReportsController extends Controller
@@ -24,6 +25,11 @@ final class PatientReportsController extends Controller
         }
 
         return null;
+    }
+
+    private function getWaTemplates(int $clinicId): array
+    {
+        return (new WhatsappTemplateRepository($this->container->get(\PDO::class)))->listByClinic($clinicId);
     }
 
     public function birthdays(Request $request)
@@ -48,10 +54,12 @@ final class PatientReportsController extends Controller
 
         $repo = new PatientRepository($this->container->get(\PDO::class));
         $patients = $repo->listBirthdaysByMonth($clinicId, $month);
+        $waTemplates = $this->getWaTemplates($clinicId);
 
         return $this->view('patients/birthdays', [
-            'patients' => $patients,
-            'month' => $month,
+            'patients'    => $patients,
+            'month'       => $month,
+            'wa_templates' => $waTemplates,
         ]);
     }
 
@@ -80,10 +88,12 @@ final class PatientReportsController extends Controller
 
         $repo = new PatientRepository($this->container->get(\PDO::class));
         $patients = $repo->listInactivePatients($clinicId, $days);
+        $waTemplates = $this->getWaTemplates($clinicId);
 
         return $this->view('patients/follow_up', [
-            'patients' => $patients,
-            'days' => $days,
+            'patients'    => $patients,
+            'days'        => $days,
+            'wa_templates' => $waTemplates,
         ]);
     }
 }

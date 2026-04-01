@@ -152,10 +152,42 @@ ob_start();
                 <button class="lc-btn lc-btn--secondary" type="submit">Criar</button>
 
                 <div class="lc-field" style="grid-column: 1 / -1;">
+                    <label class="lc-label">Links de referência (opcional)</label>
+                    <div id="createLinksContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;">
+                        <div class="lc-flex lc-gap-sm" style="align-items:center;">
+                            <input class="lc-input" type="url" name="links[]" placeholder="https://..." style="flex:1;" />
+                            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="removeCreateLink(this)" title="Remover">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="addCreateLink()">+ Adicionar link</button>
+                </div>
+
+                <div class="lc-field" style="grid-column: 1 / -1;">
                     <label class="lc-label">Notas (opcional)</label>
                     <textarea class="lc-input" name="notes" rows="2"></textarea>
                 </div>
             </form>
+
+<script>
+function addCreateLink() {
+    var c = document.getElementById('createLinksContainer');
+    if (!c) return;
+    var row = document.createElement('div');
+    row.className = 'lc-flex lc-gap-sm';
+    row.style.alignItems = 'center';
+    row.innerHTML = '<input class="lc-input" type="url" name="links[]" placeholder="https://..." style="flex:1;" />' +
+        '<button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="removeCreateLink(this)" title="Remover">✕</button>';
+    c.appendChild(row);
+    row.querySelector('input').focus();
+}
+function removeCreateLink(btn) {
+    var row = btn.closest('.lc-flex');
+    var c = document.getElementById('createLinksContainer');
+    if (!c || !row) return;
+    if (c.children.length <= 1) { row.querySelector('input').value = ''; return; }
+    row.remove();
+}
+</script>
         </div>
     </div>
 <?php endif; ?>
@@ -219,7 +251,18 @@ ob_start();
                             } else {
                                 echo '<span class="' . $badge . '" style="' . $style . '">' . htmlspecialchars($ttl, ENT_QUOTES, 'UTF-8') . '</span>';
                             }
-                        }
+
+                            // Exibir links de referência
+                            $itemLinks = \App\Services\Marketing\MarketingCalendarService::decodeLinks(
+                                isset($it['link_url']) && (string)$it['link_url'] !== '' ? (string)$it['link_url'] : null
+                            );
+                            foreach ($itemLinks as $lk) {
+                                $lkShort = parse_url($lk, PHP_URL_HOST) ?: $lk;
+                                if (strlen($lkShort) > 30) $lkShort = substr($lkShort, 0, 28) . '…';
+                                echo '<a href="' . htmlspecialchars($lk, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener" '
+                                    . 'class="lc-muted" style="font-size:11px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-decoration:underline;" '
+                                    . 'title="' . htmlspecialchars($lk, ENT_QUOTES, 'UTF-8') . '">🔗 ' . htmlspecialchars($lkShort, ENT_QUOTES, 'UTF-8') . '</a>';
+                            }                        }
                         echo '</div>';
                     }
 
