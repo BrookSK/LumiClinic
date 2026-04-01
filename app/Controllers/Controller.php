@@ -27,6 +27,14 @@ abstract class Controller
             $data['terminology'] = (new SettingsService($this->container))->getTerminology();
         }
 
+        if (!array_key_exists('support_settings', $data)) {
+            try {
+                $data['support_settings'] = (new SystemSettingsService($this->container))->getSupportSettings();
+            } catch (\Throwable $ignore) {
+                $data['support_settings'] = [];
+            }
+        }
+
         return Response::html(View::render($view, $data));
     }
 

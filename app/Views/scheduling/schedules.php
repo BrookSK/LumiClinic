@@ -100,6 +100,7 @@ ob_start();
                         <th>Início</th>
                         <th>Fim</th>
                         <th>Intervalo</th>
+                        <?php if ($can('schedule_rules.manage')): ?><th></th><?php endif; ?>
                     </tr>
                     </thead>
                     <tbody>
@@ -109,6 +110,16 @@ ob_start();
                             <td><?= htmlspecialchars(substr((string)$it['start_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars(substr((string)$it['end_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= $it['interval_minutes'] === null ? '-' : (int)$it['interval_minutes'] ?></td>
+                            <?php if ($can('schedule_rules.manage')): ?>
+                            <td>
+                                <form method="post" action="/schedule-rules/delete" onsubmit="return confirm('Excluir esta regra?');">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                                    <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit">Excluir</button>
+                                </form>
+                            </td>
+                            <?php endif; ?>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>

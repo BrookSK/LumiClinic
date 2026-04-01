@@ -1,0 +1,34 @@
+# Dependências
+/vendor/
+/node_modules/
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Arquivos de transcrição/reunião (não subir no repositório)
+Trsnacrição_Reunião_lumiclinic.txt
+Transcricao_Reuniao*.txt
+*_Reuniao_*.txt
+
+# Logs
+*.log
+/storage/logs/
+
+# Cache
+/storage/cache/
+/storage/framework/cache/
+
+# Uploads privados
+/storage/private/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

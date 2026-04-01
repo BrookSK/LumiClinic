@@ -458,6 +458,7 @@ $router->post('/blocks/create', [BlockController::class, 'create']);
 
 $router->get('/schedule-rules', [ProfessionalScheduleController::class, 'index']);
 $router->post('/schedule-rules/create', [ProfessionalScheduleController::class, 'create']);
+$router->post('/schedule-rules/delete', [ProfessionalScheduleController::class, 'delete']);
 
 $router->get('/procedures', [ProcedureController::class, 'index']);
 $router->post('/procedures/create', [ProcedureController::class, 'create']);
@@ -488,6 +489,9 @@ $router->get('/patients/search-json', [PatientController::class, 'searchJson']);
 $router->get('/patients/packages-json', [PatientController::class, 'packagesJson']);
 
 $router->get('/patients/appointments', [\App\Controllers\Patients\PatientAppointmentsController::class, 'index']);
+
+$router->get('/patients/birthdays', [\App\Controllers\Patients\PatientReportsController::class, 'birthdays']);
+$router->get('/patients/follow-up', [\App\Controllers\Patients\PatientReportsController::class, 'followUp']);
 
 $router->get('/patients/timeline', [\App\Controllers\Patients\PatientTimelineController::class, 'index']);
 $router->get('/patients/timeline/export.csv', [\App\Controllers\Patients\PatientTimelineController::class, 'exportCsv']);

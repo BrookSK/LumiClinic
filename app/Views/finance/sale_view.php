@@ -122,6 +122,7 @@ ob_start();
                         <option value="draft" <?= $cur === 'draft' ? 'selected' : '' ?>>Rascunho</option>
                         <option value="sent" <?= $cur === 'sent' ? 'selected' : '' ?>>Enviado</option>
                         <option value="approved" <?= $cur === 'approved' ? 'selected' : '' ?>>Aprovado</option>
+                        <option value="standby" <?= $cur === 'standby' ? 'selected' : '' ?>>Em espera (Standby)</option>
                         <option value="rejected" <?= $cur === 'rejected' ? 'selected' : '' ?>>Recusado</option>
                     </select>
                 </div>

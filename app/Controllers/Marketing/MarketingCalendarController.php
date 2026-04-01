@@ -73,6 +73,7 @@ final class MarketingCalendarController extends Controller
                 'color' => trim((string)$request->input('color', '')),
                 'title' => trim((string)$request->input('title', '')),
                 'notes' => trim((string)$request->input('notes', '')),
+                'link_url' => trim((string)$request->input('link_url', '')),
                 'assigned_user_id' => (int)$request->input('assigned_user_id', 0),
             ], $request->ip(), $request->header('user-agent'));
 
@@ -132,6 +133,7 @@ final class MarketingCalendarController extends Controller
                 'color' => trim((string)$request->input('color', '')),
                 'title' => trim((string)$request->input('title', '')),
                 'notes' => trim((string)$request->input('notes', '')),
+                'link_url' => trim((string)$request->input('link_url', '')),
                 'assigned_user_id' => (int)$request->input('assigned_user_id', 0),
             ], $request->ip(), $request->header('user-agent'));
 

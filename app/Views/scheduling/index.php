@@ -156,6 +156,7 @@ ob_start();
             <tr>
                 <th>Início</th>
                 <th>Fim</th>
+                <th>Paciente</th>
                 <th>Profissional</th>
                 <th>Serviço</th>
                 <th>Status</th>
@@ -169,6 +170,7 @@ ob_start();
                     $sid = (int)$it['service_id'];
                     $pname = isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : ('#' . $pid);
                     $sname = isset($svcMap[$sid]) ? (string)$svcMap[$sid]['name'] : ('#' . $sid);
+                    $patientName = trim((string)($it['patient_name'] ?? ''));
                     $status = (string)$it['status'];
                     $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
 
@@ -195,6 +197,7 @@ ob_start();
                 <tr>
                     <td><?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars(substr((string)$it['end_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= $patientName !== '' ? htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') : '<span class="lc-muted">-</span>' ?></td>
                     <td><?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?></td>
                     <td>

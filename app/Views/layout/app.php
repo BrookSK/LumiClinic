@@ -434,6 +434,8 @@ $ico = [
                                 <?php if ($can('medical_images.read') && $hasClinicContext): ?>
                                     <?= $navItem('/medical-images/moderation', 'Fotos (moderação)', $ico['patients'], $isActive('/medical-images/moderation')) ?>
                                 <?php endif; ?>
+                                <?= $navItem('/patients/birthdays', 'Aniversariantes', $ico['patients'], $isActive('/patients/birthdays')) ?>
+                                <?= $navItem('/patients/follow-up', 'Follow-up', $ico['patients'], $isActive('/patients/follow-up')) ?>
                             </div>
                         </div>
                     </details>
@@ -595,6 +597,25 @@ $ico = [
                 </div>
                 <div class="lc-topbar__right">
                     <div class="lc-topbar__pill"><?= $isSuperAdmin ? 'ADMINISTRADOR' : 'CLÍNICA' ?></div>
+
+                    <?php
+                    // Botão de suporte (item 12.1)
+                    $supportWa = '';
+                    $supportEmail = '';
+                    if (isset($support_settings) && is_array($support_settings)) {
+                        $supportWa = trim((string)($support_settings['support_whatsapp_number'] ?? ''));
+                        $supportEmail = trim((string)($support_settings['support_email'] ?? ''));
+                    }
+                    if ($supportWa !== '' || $supportEmail !== ''):
+                        $supportHref = $supportWa !== ''
+                            ? ('https://wa.me/' . preg_replace('/\D/', '', $supportWa))
+                            : ('mailto:' . $supportEmail);
+                    ?>
+                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="<?= htmlspecialchars($supportHref, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" title="Suporte" style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.82 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></svg>
+                        Suporte
+                    </a>
+                    <?php endif; ?>
 
                     <details class="lc-actions__more">
                         <summary class="lc-topbar__icon" aria-label="Menu do usuário">

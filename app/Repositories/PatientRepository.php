@@ -272,4 +272,61 @@ final class PatientRepository
             'clinic_id' => $clinicId,
         ]);
     }
+
+    /**
+     * Lista pacientes com aniversário no mês informado (1-12).
+     * @return list<array<string, mixed>>
+     */
+    public function listBirthdaysByMonth(int $clinicId, int $month, int $limit = 500): array
+    {
+        $month = max(1, min(12, $month));
+        $sql = "
+            SELECT id, name, email, phone, whatsapp_opt_in, birth_date, status
+            FROM patients
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+              AND birth_date IS NOT NULL
+              AND MONTH(birth_date) = :month
+            ORDER BY DAY(birth_date) ASC, name ASC
+            LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'month' => $month]);
+
+        /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Lista pacientes sem consulta concluída nos últimos X dias (follow-up).
+     * @return list<array<string, mixed>>
+     */
+    public function listInactivePatients(int $clinicId, int $daysSinceLastAppointment = 180, int $limit = 500): array
+    {
+        $sql = "
+            SELECT p.id, p.name, p.email, p.phone, p.whatsapp_opt_in,
+                   MAX(a.start_at) AS last_appointment_at
+            FROM patients p
+            LEFT JOIN appointments a
+                   ON a.patient_id = p.id
+                  AND a.clinic_id = p.clinic_id
+                  AND a.deleted_at IS NULL
+                  AND a.status = 'completed'
+            WHERE p.clinic_id = :clinic_id
+              AND p.deleted_at IS NULL
+              AND p.status = 'active'
+            GROUP BY p.id, p.name, p.email, p.phone, p.whatsapp_opt_in
+            HAVING last_appointment_at IS NULL
+                OR last_appointment_at < DATE_SUB(NOW(), INTERVAL :days DAY)
+            ORDER BY last_appointment_at ASC
+            LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'days' => $daysSinceLastAppointment]);
+
+        /** @var list<array<string, mixed>> */
+        return $stmt->fetchAll();
+    }
 }

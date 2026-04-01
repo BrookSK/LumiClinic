@@ -68,6 +68,7 @@ final class MarketingCalendarService
         $color = trim((string)($data['color'] ?? ''));
         $title = trim((string)($data['title'] ?? ''));
         $notes = trim((string)($data['notes'] ?? ''));
+        $linkUrl = trim((string)($data['link_url'] ?? ''));
         $assignedUserId = (int)($data['assigned_user_id'] ?? 0);
 
         if ($entryDate === '' || \DateTimeImmutable::createFromFormat('Y-m-d', $entryDate) === false) {
@@ -90,6 +91,7 @@ final class MarketingCalendarService
             $color,
             $title,
             ($notes === '' ? null : $notes),
+            ($linkUrl === '' ? null : $linkUrl),
             ($assignedUserId > 0 ? $assignedUserId : null),
             $actorId
         );
@@ -116,6 +118,7 @@ final class MarketingCalendarService
         $color = trim((string)($data['color'] ?? ''));
         $title = trim((string)($data['title'] ?? ''));
         $notes = trim((string)($data['notes'] ?? ''));
+        $linkUrl = trim((string)($data['link_url'] ?? ''));
         $assignedUserId = (int)($data['assigned_user_id'] ?? 0);
 
         if ($id <= 0) {
@@ -142,6 +145,7 @@ final class MarketingCalendarService
             $color,
             $title,
             ($notes === '' ? null : $notes),
+            ($linkUrl === '' ? null : $linkUrl),
             ($assignedUserId > 0 ? $assignedUserId : null)
         );
 

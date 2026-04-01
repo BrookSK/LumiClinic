@@ -16,11 +16,44 @@ ob_start();
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__title">Resumo do paciente</div>
     <div class="lc-card__body">
-        <div class="lc-grid lc-grid--3 lc-gap-grid">
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px;"><div class="lc-muted" style="font-size:12px;">Alertas</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)count($alerts) ?></div></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px;"><div class="lc-muted" style="font-size:12px;">Alergias/Contraindicações</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)count($allergies) ?></div></div></div>
-            <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px;"><div class="lc-muted" style="font-size:12px;">Condições</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)count($conditions) ?></div></div></div>
-        </div>
+        <?php if (!empty($alerts) || !empty($allergies) || !empty($conditions)): ?>
+            <?php if (!empty($allergies)): ?>
+                <div style="margin-bottom:10px;">
+                    <div class="lc-label" style="color:#dc2626;">⚠ Alergias / Contraindicações</div>
+                    <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:4px;">
+                        <?php foreach ($allergies as $al): ?>
+                            <span class="lc-badge lc-badge--danger"><?= htmlspecialchars((string)($al['name'] ?? $al['allergy'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+            <?php if (!empty($conditions)): ?>
+                <div style="margin-bottom:10px;">
+                    <div class="lc-label">Condições médicas</div>
+                    <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:4px;">
+                        <?php foreach ($conditions as $c): ?>
+                            <span class="lc-badge lc-badge--secondary"><?= htmlspecialchars((string)($c['name'] ?? $c['condition'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+            <?php if (!empty($alerts)): ?>
+                <div style="margin-bottom:10px;">
+                    <div class="lc-label" style="color:#d97706;">⚠ Alertas clínicos</div>
+                    <div style="margin-top:4px;">
+                        <?php foreach ($alerts as $al): ?>
+                            <div class="lc-alert lc-alert--warning" style="margin-bottom:4px; padding:6px 10px;"><?= htmlspecialchars((string)($al['message'] ?? $al['alert'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+        <?php else: ?>
+            <div class="lc-grid lc-grid--3 lc-gap-grid">
+                <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px;"><div class="lc-muted" style="font-size:12px;">Alertas</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)count($alerts) ?></div></div></div>
+                <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px;"><div class="lc-muted" style="font-size:12px;">Alergias/Contraindicações</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)count($allergies) ?></div></div></div>
+                <div class="lc-card" style="margin:0;"><div class="lc-card__body" style="padding:10px;"><div class="lc-muted" style="font-size:12px;">Condições</div><div style="font-weight:800; font-size:18px; line-height:1;"><?= (int)count($conditions) ?></div></div></div>
+            </div>
+        <?php endif; ?>
         <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:10px;">
             <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Ficha clínica</a>
             <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Imagens clínicas (<?= (int)count($images) ?>)</a>
@@ -130,6 +163,11 @@ ob_start();
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setStatus(fieldKey, 'Sem suporte a microfone.');
+        return;
+      }
+
+      if (typeof MediaRecorder === 'undefined') {
+        setStatus(fieldKey, 'Gravação de áudio não suportada neste navegador.');
         return;
       }
 

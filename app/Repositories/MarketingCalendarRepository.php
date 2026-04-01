@@ -23,7 +23,7 @@ final class MarketingCalendarRepository
 
         $sql = "
             SELECT
-                id, clinic_id, entry_date, content_type, status, color, title, notes,
+                id, clinic_id, entry_date, content_type, status, color, title, notes, link_url,
                 assigned_user_id, created_by_user_id,
                 created_at, updated_at
             FROM marketing_calendar_entries
@@ -79,7 +79,7 @@ final class MarketingCalendarRepository
     {
         $sql = "
             SELECT
-                id, clinic_id, entry_date, content_type, status, color, title, notes,
+                id, clinic_id, entry_date, content_type, status, color, title, notes, link_url,
                 assigned_user_id, created_by_user_id,
                 created_at, updated_at
             FROM marketing_calendar_entries
@@ -104,19 +104,20 @@ final class MarketingCalendarRepository
         ?string $color,
         string $title,
         ?string $notes,
+        ?string $linkUrl,
         ?int $assignedUserId,
         ?int $createdByUserId
     ): int {
         $sql = "
             INSERT INTO marketing_calendar_entries (
                 clinic_id,
-                entry_date, content_type, status, color, title, notes,
+                entry_date, content_type, status, color, title, notes, link_url,
                 assigned_user_id,
                 created_by_user_id,
                 created_at
             ) VALUES (
                 :clinic_id,
-                :entry_date, :content_type, :status, :color, :title, :notes,
+                :entry_date, :content_type, :status, :color, :title, :notes, :link_url,
                 :assigned_user_id,
                 :created_by_user_id,
                 NOW()
@@ -132,6 +133,7 @@ final class MarketingCalendarRepository
             'color' => $color,
             'title' => $title,
             'notes' => ($notes === '' ? null : $notes),
+            'link_url' => ($linkUrl === '' ? null : $linkUrl),
             'assigned_user_id' => $assignedUserId,
             'created_by_user_id' => $createdByUserId,
         ]);
@@ -148,6 +150,7 @@ final class MarketingCalendarRepository
         ?string $color,
         string $title,
         ?string $notes,
+        ?string $linkUrl,
         ?int $assignedUserId
     ): void {
         $sql = "
@@ -158,6 +161,7 @@ final class MarketingCalendarRepository
                 color = :color,
                 title = :title,
                 notes = :notes,
+                link_url = :link_url,
                 assigned_user_id = :assigned_user_id,
                 updated_at = NOW()
             WHERE id = :id
@@ -176,6 +180,7 @@ final class MarketingCalendarRepository
             'color' => $color,
             'title' => $title,
             'notes' => ($notes === '' ? null : $notes),
+            'link_url' => ($linkUrl === '' ? null : $linkUrl),
             'assigned_user_id' => $assignedUserId,
         ]);
     }

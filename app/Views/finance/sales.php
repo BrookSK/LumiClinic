@@ -76,8 +76,14 @@ ob_start();
                 </div>
 
                 <div class="lc-field">
-                    <label class="lc-label">Desconto (R$)</label>
-                    <input class="lc-input" type="text" name="desconto" value="0" />
+                    <label class="lc-label">Desconto</label>
+                    <div class="lc-flex lc-gap-sm" style="align-items:center;">
+                        <input class="lc-input" type="text" name="desconto" id="sale_desconto_val" value="0" style="max-width:120px;" />
+                        <select class="lc-select" name="desconto_type" id="sale_desconto_type" style="max-width:100px;">
+                            <option value="fixed">R$</option>
+                            <option value="percent">%</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="lc-field">

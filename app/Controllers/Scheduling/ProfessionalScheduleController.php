@@ -107,4 +107,39 @@ final class ProfessionalScheduleController extends Controller
 
         return $this->redirect('/schedule-rules?professional_id=' . $professionalId);
     }
+
+    public function delete(Request $request)
+    {
+        $this->authorize('schedule_rules.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        $professionalId = (int)$request->input('professional_id', 0);
+
+        if ($id <= 0) {
+            return $this->redirect('/schedule-rules?professional_id=' . $professionalId);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $repo = new ProfessionalScheduleRepository($this->container->get(\PDO::class));
+        $repo->softDelete($clinicId, $id);
+
+        $audit = new AuditLogRepository($this->container->get(\PDO::class));
+        $audit->log($userId, $clinicId, 'scheduling.schedule_rule_delete', [
+            'schedule_id' => $id,
+            'professional_id' => $professionalId,
+        ], $request->ip());
+
+        return $this->redirect('/schedule-rules?professional_id=' . $professionalId);
+    }
 }

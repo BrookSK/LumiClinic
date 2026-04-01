@@ -568,12 +568,20 @@ final class AppointmentRepository
     public function listByClinicRange(int $clinicId, string $startAt, string $endAt, ?int $professionalId = null, ?int $limit = null, int $offset = 0): array
     {
         $sql = "
-            SELECT id, clinic_id, professional_id, service_id, patient_id, start_at, end_at, buffer_before_minutes, buffer_after_minutes, checked_in_at, started_at, status, origin, notes
-            FROM appointments
-            WHERE clinic_id = :clinic_id
-              AND deleted_at IS NULL
-              AND start_at >= :start_at
-              AND start_at < :end_at
+            SELECT
+                a.id, a.clinic_id, a.professional_id, a.service_id, a.patient_id,
+                a.start_at, a.end_at, a.buffer_before_minutes, a.buffer_after_minutes,
+                a.checked_in_at, a.started_at, a.status, a.origin, a.notes,
+                COALESCE(pat.name, '') AS patient_name
+            FROM appointments a
+            LEFT JOIN patients pat
+                   ON pat.id = a.patient_id
+                  AND pat.clinic_id = a.clinic_id
+                  AND pat.deleted_at IS NULL
+            WHERE a.clinic_id = :clinic_id
+              AND a.deleted_at IS NULL
+              AND a.start_at >= :start_at
+              AND a.start_at < :end_at
         ";
 
         $params = [
@@ -583,11 +591,11 @@ final class AppointmentRepository
         ];
 
         if ($professionalId !== null) {
-            $sql .= " AND professional_id = :professional_id ";
+            $sql .= " AND a.professional_id = :professional_id ";
             $params['professional_id'] = $professionalId;
         }
 
-        $sql .= " ORDER BY start_at ASC ";
+        $sql .= " ORDER BY a.start_at ASC ";
 
         if ($limit !== null) {
             $limit = max(1, min($limit, 5000));

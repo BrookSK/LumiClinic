@@ -145,7 +145,20 @@ final class SalesController extends Controller
         $patientId = (int)$request->input('patient_id', 0);
         $origin = trim((string)$request->input('origin', 'reception'));
         $desconto = trim((string)$request->input('desconto', '0'));
+        $descontoType = trim((string)$request->input('desconto_type', 'fixed'));
         $notes = trim((string)$request->input('notes', ''));
+
+        // Se desconto for percentual, armazenar como nota especial para recalcular depois
+        // Por ora, desconto percentual é aplicado como 0 na criação e recalculado ao adicionar itens
+        if ($descontoType === 'percent') {
+            $pct = (float)str_replace(',', '.', $desconto);
+            if ($pct < 0) $pct = 0.0;
+            if ($pct > 100) $pct = 100.0;
+            // Armazenar percentual nas notas para referência futura
+            $pctNote = 'desconto_pct:' . number_format($pct, 2, '.', '');
+            $notes = $notes !== '' ? ($notes . ' [' . $pctNote . ']') : ('[' . $pctNote . ']');
+            $desconto = '0'; // será recalculado ao adicionar itens
+        }
 
         if ($patientId <= 0) {
             return $this->redirect('/finance/sales?error=' . urlencode('Paciente é obrigatório.'));

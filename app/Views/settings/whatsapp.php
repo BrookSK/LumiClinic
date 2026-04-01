@@ -365,20 +365,28 @@ ob_start();
                     function tick() {
                         getStatus().then(function (resp) {
                             if (!resp.data || !resp.data.ok) {
+                                setStatus('Erro ao verificar status', false);
                                 return;
                             }
                             var connected = !!resp.data.connected;
                             var state = resp.data.state ? resp.data.state.toString() : '';
 
                             if (connected) {
-                                setStatus('Conectado', true);
+                                setStatus('Conectado ✓', true);
                                 setButtonsConnected(true);
                                 return;
                             }
 
                             setButtonsConnected(false);
+                            var stateLabels = {
+                                'open': 'Conectado',
+                                'connecting': 'Conectando...',
+                                'close': 'Desconectado',
+                                'refused': 'Recusado',
+                                'timeout': 'Timeout',
+                            };
                             if (state) {
-                                setStatus('Status: ' + state, false);
+                                setStatus('Status: ' + (stateLabels[state] || state), false);
                             } else {
                                 setStatus('Aguardando conexão', false);
                             }
@@ -388,6 +396,7 @@ ob_start();
                                 refreshQr();
                             }
                         }).catch(function () {
+                            setStatus('Sem resposta do servidor', false);
                         });
                     }
 

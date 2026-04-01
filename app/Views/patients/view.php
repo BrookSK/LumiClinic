@@ -46,12 +46,12 @@ ob_start();
     <div class="lc-badge lc-badge--primary">Perfil</div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients">Voltar</a>
-        <?php if ($can('patients.read')): ?>
-            <a class="lc-btn lc-btn--secondary" href="/patients/timeline?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Linha do tempo</a>
-            <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Ficha clínica</a>
-        <?php endif; ?>
         <?php if ($can('medical_records.read')): ?>
-            <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Prontuário</a>
+            <a class="lc-btn lc-btn--primary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Prontuário</a>
+        <?php endif; ?>
+        <?php if ($can('patients.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Ficha clínica</a>
+            <a class="lc-btn lc-btn--secondary" href="/patients/timeline?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Linha do tempo</a>
         <?php endif; ?>
         <?php if ($can('finance.sales.read')): ?>
             <a class="lc-btn lc-btn--secondary" href="/finance/sales?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Orçamentos</a>
@@ -70,7 +70,7 @@ ob_start();
         <?php endif; ?>
         <?php if ($can('patients.update')): ?>
             <a class="lc-btn lc-btn--secondary" href="/patients/portal-access?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Acesso ao Portal</a>
-            <a class="lc-btn lc-btn--primary" href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>">Editar</a>
+            <a class="lc-btn lc-btn--secondary" href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>">Editar</a>
         <?php endif; ?>
     </div>
 </div>

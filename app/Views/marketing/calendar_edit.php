@@ -18,6 +18,7 @@ $status = (string)($row['status'] ?? 'planned');
 $color = (string)($row['color'] ?? '#64748b');
 $titleValue = (string)($row['title'] ?? '');
 $notes = (string)($row['notes'] ?? '');
+$linkUrl = (string)($row['link_url'] ?? '');
 $assignedUserId = (int)($row['assigned_user_id'] ?? 0);
 
 $month = '';
@@ -129,6 +130,11 @@ ob_start();
                                 <option value="<?= $uid ?>" <?= $assignedUserId === $uid ? 'selected' : '' ?>><?= htmlspecialchars($lbl !== '' ? $lbl : ('Usuário #' . $uid), ENT_QUOTES, 'UTF-8') ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+
+                    <div class="lc-field" style="grid-column: 1 / -1;">
+                        <label class="lc-label">Link de referência (opcional)</label>
+                        <input class="lc-input" type="url" name="link_url" value="<?= htmlspecialchars($linkUrl, ENT_QUOTES, 'UTF-8') ?>" placeholder="https://..." />
                     </div>
 
                     <div class="lc-field" style="grid-column: 1 / -1;">
