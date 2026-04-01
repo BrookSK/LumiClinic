@@ -157,8 +157,8 @@ ob_start();
                         $border = $ymd === $today ? '4px solid #2563eb' : '1px solid rgba(17,24,39,0.08)';
                         $opacity = $inMonth ? '1' : '0.45';
                     ?>
-                    <button type="button"
-                        style="display:block; width:100%; height:100%; padding:0; border:0; background:transparent; text-align:left; cursor: <?= (!$isProfessional ? 'pointer' : 'default') ?>;"
+                    <div
+                        style="min-width:0; cursor: <?= (!$isProfessional && $can('scheduling.create') ? 'pointer' : 'default') ?>;"
                         <?= (!$isProfessional && $can('scheduling.create')) ? ('data-open-create="1" data-create-date="' . htmlspecialchars($ymd, ENT_QUOTES, 'UTF-8') . '"') : '' ?>
                     >
                         <div class="lc-card" style="margin:0; height:100%; border-left: <?= htmlspecialchars($border, ENT_QUOTES, 'UTF-8') ?>; opacity: <?= htmlspecialchars($opacity, ENT_QUOTES, 'UTF-8') ?>;">
@@ -225,7 +225,7 @@ ob_start();
                                 <?php endif; ?>
                             </div>
                         </div>
-                    </button>
+                    </div>
                 <?php endfor; ?>
             </div>
         </div>
