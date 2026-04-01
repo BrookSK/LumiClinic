@@ -141,6 +141,7 @@ ob_start();
                 <th>Agendamento</th>
                 <th>Profissional</th>
                 <th>Observação</th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
@@ -162,6 +163,24 @@ ob_start();
                     </td>
                     <td><?= htmlspecialchars((string)($r['professional_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="lc-muted" style="font-size:12px;"><?= htmlspecialchars((string)($r['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td class="lc-td-actions">
+                        <div class="lc-flex lc-gap-sm">
+                            <form method="post" action="/schedule/ops/request/resolve">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
+                                <input type="hidden" name="action" value="approve" />
+                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">✓ Aprovar</button>
+                            </form>
+                            <form method="post" action="/schedule/ops/request/resolve" onsubmit="return confirm('Rejeitar esta solicitação?');">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="id" value="<?= (int)($r['id'] ?? 0) ?>" />
+                                <input type="hidden" name="action" value="reject" />
+                                <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">✕ Rejeitar</button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

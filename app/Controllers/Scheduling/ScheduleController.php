@@ -1236,6 +1236,54 @@ final class ScheduleController extends Controller
         }
     }
 
+    public function resolvePortalRequest(Request $request)
+    {
+        $this->authorize('scheduling.ops');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/schedule/ops');
+        }
+
+        $id = (int)$request->input('id', 0);
+        $action = trim((string)$request->input('action', '')); // 'approve' | 'reject'
+        $date = trim((string)$request->input('date', date('Y-m-d')));
+
+        if ($id <= 0 || !in_array($action, ['approve', 'reject'], true)) {
+            return $this->redirect('/schedule/ops?date=' . urlencode($date));
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new \App\Repositories\PatientAppointmentRequestRepository($pdo);
+        $req = $repo->findById($clinicId, $id);
+
+        if ($req === null) {
+            return $this->redirect('/schedule/ops?date=' . urlencode($date));
+        }
+
+        $status = $action === 'approve' ? 'approved' : 'rejected';
+        $repo->resolve($clinicId, $id, $status);
+
+        // Se aprovado e for cancelamento, cancela o agendamento
+        if ($action === 'approve' && (string)($req['type'] ?? '') === 'cancel') {
+            $apptId = (int)($req['appointment_id'] ?? 0);
+            if ($apptId > 0) {
+                try {
+                    (new \App\Services\Scheduling\AppointmentService($this->container))
+                        ->updateStatus($apptId, 'cancelled', $request->ip());
+                } catch (\Throwable $ignore) {}
+            }
+        }
+
+        return $this->redirect('/schedule/ops?date=' . urlencode($date));
+    }
+
     public function ops(Request $request)
     {
         $this->authorize('scheduling.ops');

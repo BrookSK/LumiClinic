@@ -66,6 +66,32 @@ final class PatientAppointmentRequestRepository
         return $stmt->fetchAll();
     }
 
+    public function resolve(int $clinicId, int $id, string $status): void
+    {
+        // status: 'approved' | 'rejected'
+        $stmt = $this->pdo->prepare("
+            UPDATE patient_appointment_requests
+            SET status = :status, updated_at = NOW()
+            WHERE id = :id AND clinic_id = :clinic_id AND deleted_at IS NULL AND status = 'pending'
+            LIMIT 1
+        ");
+        $stmt->execute(['id' => $id, 'clinic_id' => $clinicId, 'status' => $status]);
+    }
+
+    /** @return array<string,mixed>|null */
+    public function findById(int $clinicId, int $id): ?array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT id, clinic_id, patient_id, appointment_id, type, status, requested_start_at, note
+            FROM patient_appointment_requests
+            WHERE id = :id AND clinic_id = :clinic_id AND deleted_at IS NULL
+            LIMIT 1
+        ");
+        $stmt->execute(['id' => $id, 'clinic_id' => $clinicId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     /** @return list<array<string,mixed>> */
     public function listPendingByClinicDetailed(int $clinicId, int $limit = 50, int $offset = 0, ?int $professionalId = null): array
     {

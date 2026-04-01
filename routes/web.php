@@ -364,6 +364,7 @@ $router->post('/schedule/complete-materials', [ScheduleController::class, 'compl
 $router->get('/schedule/reschedule', [ScheduleController::class, 'reschedule']);
 $router->post('/schedule/reschedule', [ScheduleController::class, 'rescheduleSubmit']);
 $router->get('/schedule/ops', [ScheduleController::class, 'ops']);
+$router->post('/schedule/ops/request/resolve', [ScheduleController::class, 'resolvePortalRequest']);
 $router->get('/schedule/logs', [ScheduleController::class, 'logs']);
 $router->get('/schedule/queue', [\App\Controllers\Scheduling\ProfessionalQueueController::class, 'index']);
 $router->post('/schedule/gcal/force-sync', [ScheduleController::class, 'forceGoogleCalendarSync']);
