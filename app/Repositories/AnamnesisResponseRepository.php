@@ -39,7 +39,7 @@ final class AnamnesisResponseRepository
     {
         $sql = "
             SELECT id, clinic_id, patient_id, template_id, template_name_snapshot, template_updated_at_snapshot,
-                   professional_id, signature_data_url, signed_at, created_by_user_id, created_at
+                   professional_id, answers_json, signature_data_url, signed_at, created_by_user_id, created_at
             FROM anamnesis_responses
             WHERE clinic_id = :clinic_id
               AND patient_id = :patient_id
@@ -104,12 +104,13 @@ final class AnamnesisResponseRepository
 
     public function updateAnswers(int $clinicId, int $responseId, array $answers, ?string $signatureDataUrl): void
     {
+        $hasSig = $signatureDataUrl !== null && trim($signatureDataUrl) !== '';
+
         $sql = "
             UPDATE anamnesis_responses
                SET answers_json = :answers_json,
-                   signature_data_url = :signature_data_url,
-                   signed_at = IF(:has_sig = 1, NOW(), signed_at),
-                   updated_at = NOW()
+                   signature_data_url = :signature_data_url
+                   " . ($hasSig ? ", signed_at = NOW()" : "") . "
              WHERE clinic_id = :clinic_id
                AND id = :id
                AND deleted_at IS NULL
@@ -122,7 +123,6 @@ final class AnamnesisResponseRepository
             'id' => $responseId,
             'answers_json' => json_encode($answers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'signature_data_url' => $signatureDataUrl,
-            'has_sig' => $signatureDataUrl !== null ? 1 : 0,
         ]);
     }
 }
