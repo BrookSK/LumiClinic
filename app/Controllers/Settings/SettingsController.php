@@ -45,6 +45,7 @@ final class SettingsController extends Controller
         return $this->view('settings/index', [
             'settings' => $service->getSettings(),
             'anamnesis_templates' => $anamnesisTemplates,
+            'terminology' => $service->getTerminology(),
         ]);
     }
 
@@ -113,6 +114,14 @@ final class SettingsController extends Controller
             ($anamnesisDefaultTemplateId > 0 ? $anamnesisDefaultTemplateId : null),
             $request->ip()
         );
+
+        // Salvar terminologia junto
+        $patientLabel = trim((string)$request->input('patient_label', ''));
+        $appointmentLabel = trim((string)$request->input('appointment_label', ''));
+        $professionalLabel = trim((string)$request->input('professional_label', ''));
+        if ($patientLabel !== '' && $appointmentLabel !== '' && $professionalLabel !== '') {
+            $service->updateTerminology($patientLabel, $appointmentLabel, $professionalLabel, $request->ip());
+        }
 
         return $this->redirect('/settings');
     }
