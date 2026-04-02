@@ -141,7 +141,13 @@ final class PortalAnamnesisController extends Controller
         }
 
         $dompdfClass = 'Dompdf\\Dompdf';
-        if (!class_exists($dompdfClass)) {
+        $dompdfAvailable = false;
+        try {
+            $dompdfAvailable = class_exists($dompdfClass);
+        } catch (\Throwable $e) {
+            $dompdfAvailable = false;
+        }
+        if (!$dompdfAvailable) {
             return Response::html('Exportação em PDF indisponível. Instale a dependência dompdf/dompdf via Composer.', 501);
         }
 
@@ -269,16 +275,20 @@ final class PortalAnamnesisController extends Controller
             'patient_id' => $patientId,
         ], $request->ip(), null, 'patient', $patientId, $request->header('user-agent'));
 
-        (new DataExportService($this->container))->record(
-            'portal.anamnesis.export_pdf',
-            'patient',
-            $patientId,
-            'pdf',
-            null,
-            ['anamnesis_response_id' => $responseId],
-            $request->ip(),
-            $request->header('user-agent')
-        );
+        try {
+            (new DataExportService($this->container))->record(
+                'portal.anamnesis.export_pdf',
+                'patient',
+                $patientId,
+                'pdf',
+                null,
+                ['anamnesis_response_id' => $responseId],
+                $request->ip(),
+                $request->header('user-agent')
+            );
+        } catch (\Throwable $e) {
+            // DataExportService requer usuário do sistema — ignora no contexto do portal
+        }
 
         $filename = 'anamnesis_' . $responseId . '.pdf';
         return Response::raw($pdf, 200, [
