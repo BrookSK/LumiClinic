@@ -438,15 +438,15 @@ $ico = [
                         </summary>
                         <div class="lc-navgroup__children">
                             <div class="lc-nav__sub">
-                                <?= $navItem('/finance/sales', 'Vendas', $ico['finance'], $isActive('/finance/sales')) ?>
+                                <?= $navItem('/finance/sales', 'Orçamentos', $ico['finance'], $isActive('/finance/sales')) ?>
                                 <?php if ($can('finance.entries.read')): ?>
-                                    <?= $navItem('/finance/cashflow', 'Caixa', $ico['finance'], $isActive('/finance/cashflow')) ?>
+                                    <?= $navItem('/finance/cashflow', 'Fluxo de Caixa', $ico['finance'], $isActive('/finance/cashflow')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('finance.ap.read')): ?>
                                     <?= $navItem('/finance/accounts-payable', 'Contas a Pagar', $ico['finance'], $isActive('/finance/accounts-payable')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('finance.cost_centers.manage')): ?>
-                                    <?= $navItem('/finance/cost-centers', 'Centros de custo', $ico['finance'], $isActive('/finance/cost-centers')) ?>
+                                    <?= $navItem('/finance/cost-centers', 'Centros de Custo', $ico['finance'], $isActive('/finance/cost-centers')) ?>
                                 <?php endif; ?>
                             </div>
                         </div>

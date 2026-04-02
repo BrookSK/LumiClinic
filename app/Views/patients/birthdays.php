@@ -63,7 +63,7 @@ ob_start();
                 <option value="<?= htmlspecialchars((string)$t['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$t['name'], ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" id="btnSendAll">Enviar para todos com WA</button>
+        <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" id="btnSendAll">Enviar para todos com WhatsApp</button>
         <span id="batchResult" class="lc-muted" style="font-size:12px;"></span>
     </div>
 </div>
@@ -95,19 +95,7 @@ ob_start();
                     </div>
                     <div class="lc-flex lc-gap-sm" style="flex-shrink:0; align-items:center;">
                         <?php if (!empty($activeTemplates) && $waOptIn && $phone !== ''): ?>
-                            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="sendWa(<?= (int)$p['id'] ?>, this)">WA</button>
-                            <span class="lc-muted" id="wa-status-<?= (int)$p['id'] ?>" style="font-size:11px;"></span>
-                        <?php endif; ?>
-                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/patients/view?id=<?= (int)$p['id'] ?>">Ver</a>
-                    </div>
-                </div>
-            </div>
-        <?php endforeach; ?>
-    </div>
-<?php endif; ?>
-
-<?php else: ?>
-<!-- ═══ ABA FOLLOW-UP ═══ -->
+                            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="sendWa(<?= (int)$p['id'] ?>, this)">WhatsApp</button>
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__body">
         <form method="get" action="/patients/birthdays" class="lc-flex lc-gap-sm lc-flex--wrap" style="align-items:flex-end;">
@@ -134,7 +122,7 @@ ob_start();
                 <option value="<?= htmlspecialchars((string)$t['code'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$t['name'], ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
         </select>
-        <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" id="btnSendAllFu">Enviar para todos com WA</button>
+        <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" id="btnSendAllFu">Enviar para todos com WhatsApp</button>
         <span id="batchResultFu" class="lc-muted" style="font-size:12px;"></span>
     </div>
 </div>
@@ -166,7 +154,7 @@ ob_start();
                     </div>
                     <div class="lc-flex lc-gap-sm" style="flex-shrink:0; align-items:center;">
                         <?php if (!empty($activeTemplates) && $waOptIn && $phone !== ''): ?>
-                            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="sendWa(<?= (int)$p['id'] ?>, this)">WA</button>
+                            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="sendWa(<?= (int)$p['id'] ?>, this)">WhatsApp</button>
                             <span class="lc-muted" id="wa-status-<?= (int)$p['id'] ?>" style="font-size:11px;"></span>
                         <?php endif; ?>
                         <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/patients/view?id=<?= (int)$p['id'] ?>">Ver</a>
@@ -209,7 +197,7 @@ ob_start();
             var code = tplEl ? tplEl.value : '';
             if (!code) return;
             var waBtns = document.querySelectorAll('[onclick^="sendWa"]');
-            if (!waBtns.length) { if(res) res.textContent='Nenhum paciente com WA.'; return; }
+            if (!waBtns.length) { if(res) res.textContent='Nenhum paciente com WhatsApp.'; return; }
             if (!confirm('Enviar para ' + waBtns.length + ' paciente(s)?')) return;
             if(res) res.textContent='Enviando...';
             var sent=0, fail=0, total=waBtns.length, pending=total;
