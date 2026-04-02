@@ -34,7 +34,7 @@ ob_start();
         <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Nome</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div></div>
         <div><span style="font-size:12px;color:rgba(31,41,55,.45);">E-mail</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div></div>
         <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Telefone</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['phone'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
-        <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Nascimento</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['birth_date'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
+        <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Nascimento</span><div style="font-weight:700;margin-top:2px;"><?php $bd = trim((string)($patient['birth_date'] ?? '')); echo $bd !== '' ? htmlspecialchars(date('d/m/Y', strtotime($bd)), ENT_QUOTES, 'UTF-8') : '—'; ?></div></div>
     </div>
 
     <?php if (!empty($pending)): ?>
@@ -58,7 +58,7 @@ ob_start();
                 <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($pendingPayload['name'] ?? ($patient['name'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" required /></div>
                 <div class="lc-field"><label class="lc-label">E-mail</label><input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($pendingPayload['email'] ?? ($patient['email'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" /></div>
                 <div class="lc-field"><label class="lc-label">Telefone</label><input class="lc-input" type="text" name="phone" value="<?= htmlspecialchars((string)($pendingPayload['phone'] ?? ($patient['phone'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" /></div>
-                <div class="lc-field"><label class="lc-label">Nascimento</label><input class="lc-input" type="text" name="birth_date" value="<?= htmlspecialchars((string)($pendingPayload['birth_date'] ?? ($patient['birth_date'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" /></div>
+                <div class="lc-field"><label class="lc-label">Nascimento</label><input class="lc-input" type="date" name="birth_date" value="<?= htmlspecialchars((string)($pendingPayload['birth_date'] ?? ($patient['birth_date'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" /></div>
             </div>
             <div style="margin-top:12px;"><button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Enviar solicitação</button></div>
         </form>
