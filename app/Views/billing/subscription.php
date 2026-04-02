@@ -83,7 +83,11 @@ ob_start();
         <?php if ($tLimit === null): ?>
             <div style="font-weight:800;font-size:18px;margin-top:4px;">Ilimitado</div>
         <?php else: ?>
-            <div style="font-weight:800;font-size:18px;margin-top:4px;color:<?= $tBlocked ? '#b91c1c' : 'rgba(31,41,55,.96)' ?>;"><?= $fmtSec($tUsed) ?> / <?= $fmtSec($tLimit) ?></div>
+            <?php $tLimitMin = (int)($transcription['limit'] ?? 0); ?>
+            <div style="font-weight:800;font-size:16px;margin-top:4px;color:<?= $tBlocked ? '#b91c1c' : 'rgba(31,41,55,.96)' ?>;">
+                <?= $fmtSec($tUsed) ?> / <?= $fmtSec($tLimit) ?>
+                <span style="font-size:11px;font-weight:600;color:rgba(31,41,55,.35);">(<?= $tLimitMin ?>min)</span>
+            </div>
             <div style="margin-top:6px;height:6px;border-radius:999px;background:rgba(17,24,39,.08);overflow:hidden;">
                 <?php $pct = $tLimit > 0 ? min(100, round(($tUsed / $tLimit) * 100)) : 0; ?>
                 <div style="height:100%;width:<?= $pct ?>%;border-radius:999px;background:<?= $tBlocked ? '#b91c1c' : ($pct > 80 ? '#b5841e' : '#16a34a') ?>;"></div>
