@@ -129,6 +129,8 @@ ob_start();
             </div>
         </a>
         <?php endif; ?>
+        <?php $aiGlobalKey = $ai_global_key ?? false; ?>
+        <?php if (!$aiGlobalKey): ?>
         <a href="/settings/ai" style="padding:14px;border-radius:12px;border:1px solid rgba(17,24,39,.08);background:rgba(0,0,0,.01);text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;transition:all 160ms ease;">
             <span style="font-size:20px;">🤖</span>
             <div>
@@ -136,6 +138,7 @@ ob_start();
                 <div style="font-size:11px;color:rgba(31,41,55,.45);">Chave OpenAI</div>
             </div>
         </a>
+        <?php endif; ?>
         <a href="/settings/operational" style="padding:14px;border-radius:12px;border:1px solid rgba(17,24,39,.08);background:rgba(0,0,0,.01);text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;transition:all 160ms ease;">
             <span style="font-size:20px;">⚙️</span>
             <div>

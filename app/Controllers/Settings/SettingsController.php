@@ -46,6 +46,7 @@ final class SettingsController extends Controller
             'settings' => $service->getSettings(),
             'anamnesis_templates' => $anamnesisTemplates,
             'terminology' => $service->getTerminology(),
+            'ai_global_key' => (new \App\Services\Ai\AiConfigService($this->container))->getAiSettings()['global_key'] ?? false,
         ]);
     }
 

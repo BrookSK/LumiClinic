@@ -114,4 +114,31 @@ final class MedicalRecordAudioController extends Controller
             return Response::json(['ok' => false, 'error' => 'Falha ao transcrever áudio.'], 500);
         }
     }
+
+    public function transcriptionStatus(Request $request): Response
+    {
+        $this->authorize('medical_records.create');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return Response::json(['ok' => false], 400);
+        }
+
+        $auth = new \App\Services\Auth\AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::json(['ok' => false], 400);
+        }
+
+        $ent = new \App\Services\Billing\PlanEntitlementsService($this->container);
+        $status = $ent->transcriptionStatus($clinicId);
+
+        return Response::json([
+            'ok' => true,
+            'limit' => $status['limit'],
+            'used' => $status['used'],
+            'remaining' => $status['remaining'],
+            'blocked' => $status['blocked'],
+        ]);
+    }
 }

@@ -140,8 +140,18 @@ ob_start();
     var active = null;
 
     async function startRecording(fieldKey, btn){
-      if (active) { setStatus(active.fieldKey,''); try{active.stop();}catch(e){} }
+      if (active) { setStatus(active.fieldKey,''); if(active.timer)clearInterval(active.timer); try{active.stop();}catch(e){} }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') { setStatus(fieldKey,'Sem suporte a microfone.'); return; }
+
+      // Verificar limite de transcrição
+      try {
+        var statusResp = await fetch('/medical-records/audio/transcription-status', {credentials:'same-origin'});
+        var statusJson = await statusResp.json();
+        if (statusJson && statusJson.blocked) {
+          setStatus(fieldKey, 'Limite de transcrição atingido. Faça upgrade do plano.');
+          return;
+        }
+      } catch(e) {}
 
       var stream = await navigator.mediaDevices.getUserMedia({audio:true});
       var chunks = [], rec = new MediaRecorder(stream);

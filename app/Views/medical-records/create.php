@@ -216,9 +216,23 @@ foreach ($records as $r) {
     var active = null;
 
     async function startRecording(fieldKey, btn){
-      if (active) { setStatus(active.fieldKey,''); try{active.stop();}catch(e){} }
+      if (active) { setStatus(active.fieldKey,''); if(active.timer)clearInterval(active.timer); try{active.stop();}catch(e){} }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { setStatus(fieldKey,'Sem suporte a microfone.'); return; }
       if (typeof MediaRecorder === 'undefined') { setStatus(fieldKey,'Não suportado neste navegador.'); return; }
+
+      // Verificar limite de transcrição antes de gravar
+      try {
+        var statusResp = await fetch('/medical-records/audio/transcription-status', {credentials:'same-origin'});
+        var statusJson = await statusResp.json();
+        if (statusJson && statusJson.blocked) {
+          setStatus(fieldKey, 'Limite de transcrição atingido. Faça upgrade do plano.');
+          return;
+        }
+        if (statusJson && statusJson.remaining !== null) {
+          setStatus(fieldKey, 'Restam ' + statusJson.remaining + ' min de transcrição este mês.');
+          await new Promise(function(r){ setTimeout(r, 1500); });
+        }
+      } catch(e) {}
 
       var stream = await navigator.mediaDevices.getUserMedia({audio:true});
       var chunks = [], rec = new MediaRecorder(stream);

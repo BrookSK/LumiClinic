@@ -35,11 +35,20 @@ final class ClinicSubscriptionController extends Controller
         $svc = new ClinicSubscriptionSelfService($this->container);
         $data = $svc->getDashboard();
 
+        // Dados de transcrição
+        $auth = new \App\Services\Auth\AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $transcription = ['limit' => null, 'used' => 0, 'remaining' => null, 'blocked' => false];
+        if ($clinicId !== null) {
+            $transcription = (new \App\Services\Billing\PlanEntitlementsService($this->container))->transcriptionStatus($clinicId);
+        }
+
         return $this->view('billing/subscription', [
             'subscription' => $data['subscription'],
             'plan' => $data['plan'],
             'plans' => $data['plans'],
             'payments' => $data['payments'],
+            'transcription' => $transcription,
             'ok' => (string)$request->input('ok', ''),
             'error' => (string)$request->input('error', ''),
         ]);

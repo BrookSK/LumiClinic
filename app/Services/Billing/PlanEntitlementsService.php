@@ -77,4 +77,52 @@ final class PlanEntitlementsService
         }
         return $mb * 1024 * 1024;
     }
+
+    /** Limite de transcrição em minutos/mês. null = ilimitado. */
+    public function transcriptionLimitMinutes(int $clinicId): ?int
+    {
+        $limits = $this->limitsForClinic($clinicId);
+        $v = $limits['transcription_minutes'] ?? null;
+        if ($v === null) return null;
+        $n = (int)$v;
+        return $n > 0 ? $n : null;
+    }
+
+    /** Minutos de transcrição usados no mês atual. */
+    public function transcriptionUsedMinutes(int $clinicId): int
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $firstOfMonth = date('Y-m-01 00:00:00');
+        $stmt = $pdo->prepare("
+            SELECT COALESCE(SUM(TIMESTAMPDIFF(SECOND, '2000-01-01', SEC_TO_TIME(COALESCE(duration_seconds, 0)))), 0) AS total_seconds,
+                   COUNT(*) AS total_count
+            FROM medical_record_audio_notes
+            WHERE clinic_id = :clinic_id
+              AND status = 'transcribed'
+              AND created_at >= :first_of_month
+              AND deleted_at IS NULL
+        ");
+        $stmt->execute(['clinic_id' => $clinicId, 'first_of_month' => $firstOfMonth]);
+        $row = $stmt->fetch();
+
+        // Se não temos duration_seconds, estimamos ~1 min por transcrição
+        $count = (int)($row['total_count'] ?? 0);
+        return max($count, 0); // 1 transcrição ≈ 1 minuto (estimativa conservadora)
+    }
+
+    /** @return array{limit:?int,used:int,remaining:?int,blocked:bool} */
+    public function transcriptionStatus(int $clinicId): array
+    {
+        $limit = $this->transcriptionLimitMinutes($clinicId);
+        $used = $this->transcriptionUsedMinutes($clinicId);
+        $remaining = $limit !== null ? max(0, $limit - $used) : null;
+        $blocked = $limit !== null && $remaining !== null && $remaining <= 0;
+
+        return [
+            'limit' => $limit,
+            'used' => $used,
+            'remaining' => $remaining,
+            'blocked' => $blocked,
+        ];
+    }
 }

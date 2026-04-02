@@ -555,6 +555,7 @@ $router->get('/medical-records/edit', [MedicalRecordController::class, 'edit']);
 $router->post('/medical-records/edit', [MedicalRecordController::class, 'update']);
 $router->post('/medical-records/audio/transcribe', [\App\Controllers\MedicalRecords\MedicalRecordAudioController::class, 'transcribe']);
 $router->post('/medical-records/audio/transcribe-json', [\App\Controllers\MedicalRecords\MedicalRecordAudioController::class, 'transcribeJson']);
+$router->get('/medical-records/audio/transcription-status', [\App\Controllers\MedicalRecords\MedicalRecordAudioController::class, 'transcriptionStatus']);
 
 $router->get('/medical-record-templates', [MedicalRecordTemplateController::class, 'index']);
 $router->get('/medical-record-templates/create', [MedicalRecordTemplateController::class, 'create']);

@@ -59,6 +59,12 @@ final class MedicalRecordAudioService
             }
         }
 
+        // Verificar limite de transcrição
+        $transcriptionStatus = $ent->transcriptionStatus($clinicId);
+        if ($transcriptionStatus['blocked']) {
+            throw new \RuntimeException('Limite de transcrição do plano atingido. Entre em contato com o suporte para fazer upgrade.');
+        }
+
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mimeDetected = (string)$finfo->file($tmp);
         $mimeClient = isset($file['type']) ? trim((string)$file['type']) : '';
