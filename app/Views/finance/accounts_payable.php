@@ -44,7 +44,7 @@ ob_start();
             Total no período: <strong style="color:#b91c1c;">R$ <?= number_format($total, 2, ',', '.') ?></strong>
         </div>
     </div>
-    <?php if ($can('finance.ap.manage')): ?>
+    <?php if ($can('finance.ap.manage') || $can('finance.sales.create')): ?>
         <button type="button" class="lc-btn lc-btn--primary" onclick="toggleForm('form-ap')">+ Nova conta</button>
     <?php endif; ?>
 </div>
@@ -75,7 +75,7 @@ ob_start();
 </div>
 
 <!-- Formulário nova conta (oculto) -->
-<?php if ($can('finance.ap.manage')): ?>
+<?php if ($can('finance.ap.manage') || $can('finance.sales.create')): ?>
 <div id="form-ap" style="display:none; margin-bottom:14px;">
     <div class="lc-card">
         <div class="lc-card__header" style="font-weight:700;">Nova conta a pagar</div>
@@ -200,7 +200,7 @@ ob_start();
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php if ($isOpen && $can('finance.ap.manage')): ?>
+                            <?php if ($isOpen && ($can('finance.ap.manage') || $can('finance.sales.create'))): ?>
                                 <form method="post" action="/finance/accounts-payable/pay" class="lc-flex lc-gap-sm" style="align-items:center;">
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                     <input type="hidden" name="installment_id" value="<?= (int)($it['installment_id'] ?? 0) ?>" />
