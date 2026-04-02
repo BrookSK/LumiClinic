@@ -88,6 +88,7 @@ final class MedicalRecordAudioController extends Controller
         $medicalRecordId = (int)$request->input('medical_record_id', 0);
         $appointmentId = (int)$request->input('appointment_id', 0);
         $professionalId = (int)$request->input('professional_id', 0);
+        $durationSeconds = (int)$request->input('duration_seconds', 0);
 
         $file = $_FILES['audio'] ?? null;
         if (!is_array($file)) {
@@ -101,6 +102,7 @@ final class MedicalRecordAudioController extends Controller
                 'medical_record_id' => ($medicalRecordId > 0 ? $medicalRecordId : null),
                 'appointment_id' => ($appointmentId > 0 ? $appointmentId : null),
                 'professional_id' => ($professionalId > 0 ? $professionalId : null),
+                'duration_seconds' => ($durationSeconds > 0 ? $durationSeconds : null),
             ], $file, $request->ip(), $request->header('user-agent'));
 
             return Response::json([

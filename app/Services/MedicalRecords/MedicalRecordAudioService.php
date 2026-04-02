@@ -136,6 +136,17 @@ final class MedicalRecordAudioService
             $actorId
         );
 
+        // Salvar duração real se fornecida pelo frontend
+        $durationSeconds = isset($meta['duration_seconds']) && $meta['duration_seconds'] !== null ? (int)$meta['duration_seconds'] : null;
+        if ($durationSeconds !== null && $durationSeconds > 0) {
+            try {
+                $pdo->prepare("UPDATE medical_record_audio_notes SET duration_seconds = :d WHERE id = :id AND clinic_id = :c LIMIT 1")
+                    ->execute(['d' => $durationSeconds, 'id' => $audioId, 'c' => $clinicId]);
+            } catch (\Throwable $e) {
+                // Coluna pode não existir ainda (migration pendente)
+            }
+        }
+
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
         $audit->log(

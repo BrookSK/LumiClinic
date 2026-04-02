@@ -88,15 +88,22 @@ final class PlanEntitlementsService
         return $n > 0 ? $n : null;
     }
 
-    /** Minutos de transcrição usados no mês atual (1 transcrição ≈ 1 minuto). */
+    /** Minutos de transcrição usados no mês atual. */
     public function transcriptionUsedMinutes(int $clinicId): int
     {
         $pdo = $this->container->get(\PDO::class);
         $firstOfMonth = date('Y-m-01 00:00:00');
 
         try {
+            // Tentar com duration_seconds (coluna pode não existir)
             $stmt = $pdo->prepare("
-                SELECT COUNT(*) AS total_count
+                SELECT COALESCE(SUM(
+                    CASE
+                        WHEN duration_seconds IS NOT NULL AND duration_seconds > 0 THEN duration_seconds
+                        WHEN size_bytes IS NOT NULL AND size_bytes > 0 THEN GREATEST(1, ROUND(size_bytes / 6000))
+                        ELSE 60
+                    END
+                ), 0) AS total_seconds
                 FROM medical_record_audio_notes
                 WHERE clinic_id = :clinic_id
                   AND status = 'transcribed'
@@ -105,9 +112,27 @@ final class PlanEntitlementsService
             ");
             $stmt->execute(['clinic_id' => $clinicId, 'first_of_month' => $firstOfMonth]);
             $row = $stmt->fetch();
-            return max(0, (int)($row['total_count'] ?? 0));
+            $totalSeconds = (int)($row['total_seconds'] ?? 0);
+            return max(0, (int)ceil($totalSeconds / 60));
         } catch (\Throwable $e) {
-            return 0;
+            // Fallback: coluna duration_seconds pode não existir
+            try {
+                $stmt = $pdo->prepare("
+                    SELECT COALESCE(SUM(
+                        CASE WHEN size_bytes IS NOT NULL AND size_bytes > 0 THEN GREATEST(1, ROUND(size_bytes / 6000)) ELSE 60 END
+                    ), 0) AS total_seconds
+                    FROM medical_record_audio_notes
+                    WHERE clinic_id = :clinic_id
+                      AND status = 'transcribed'
+                      AND created_at >= :first_of_month
+                      AND deleted_at IS NULL
+                ");
+                $stmt->execute(['clinic_id' => $clinicId, 'first_of_month' => $firstOfMonth]);
+                $row = $stmt->fetch();
+                return max(0, (int)ceil((int)($row['total_seconds'] ?? 0) / 60));
+            } catch (\Throwable $e2) {
+                return 0;
+            }
         }
     }
 

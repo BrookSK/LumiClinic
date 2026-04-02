@@ -161,6 +161,8 @@ ob_start();
       async function doStop(){ try{rec.stop();}catch(e){} stopTracks(); }
       function setBtnRec(r){ if(!btn) return; btn.textContent=r?'■':'🎤'; btn.title=r?'Parar':'Gravar'; }
 
+      var startTime = Date.now();
+
       rec.onstop = async function(){
         try {
           if (!chunks.length) { setStatus(fieldKey,''); setBtnRec(false); active=null; return; }
@@ -173,6 +175,7 @@ ob_start();
           fd.append('appointment_id',String(appointmentId));
           fd.append('professional_id',String(professionalId));
           fd.append('audio',file);
+          fd.append('duration_seconds', String(Math.round((Date.now() - startTime) / 1000)));
           var resp = await fetch('/medical-records/audio/transcribe-json',{method:'POST',body:fd,credentials:'same-origin'});
           var json = null; try{json=await resp.json();}catch(e){}
           if (!resp.ok||!json||json.ok!==true) { setStatus(fieldKey,(json&&json.error)?String(json.error):'Falha ao transcrever.'); active=null; return; }
@@ -182,7 +185,6 @@ ob_start();
       };
 
       rec.start(60000); setBtnRec(true); setStatus(fieldKey,'Gravando...');
-      var startTime = Date.now();
       var timerInterval = setInterval(function(){
         if (!active || active.fieldKey !== fieldKey) { clearInterval(timerInterval); return; }
         var elapsed = Math.floor((Date.now() - startTime) / 1000);
