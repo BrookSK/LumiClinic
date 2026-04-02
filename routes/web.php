@@ -408,6 +408,7 @@ $router->post('/finance/entries/delete', [FinancialController::class, 'deleteEnt
 $router->get('/finance/accounts-payable', [\App\Controllers\Finance\AccountsPayableController::class, 'index']);
 $router->post('/finance/accounts-payable/create', [\App\Controllers\Finance\AccountsPayableController::class, 'create']);
 $router->post('/finance/accounts-payable/pay', [\App\Controllers\Finance\AccountsPayableController::class, 'pay']);
+$router->post('/finance/accounts-payable/delete', [\App\Controllers\Finance\AccountsPayableController::class, 'delete']);
 
 $router->get('/finance/cost-centers', [FinancialController::class, 'costCenters']);
 $router->post('/finance/cost-centers/create', [FinancialController::class, 'createCostCenter']);

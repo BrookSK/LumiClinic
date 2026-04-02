@@ -127,4 +127,32 @@ final class AccountsPayableController extends Controller
             return $this->redirect('/finance/accounts-payable?from=' . urlencode($from) . '&to=' . urlencode($to) . '&status=' . urlencode($status) . '&error=' . urlencode($e->getMessage()));
         }
     }
+
+    public function delete(Request $request)
+    {
+        try { $this->authorize('finance.ap.manage'); } catch (\Throwable $e) { $this->authorize('finance.sales.create'); }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/finance/accounts-payable');
+        }
+
+        $payableId = (int)$request->input('payable_id', 0);
+        $from = trim((string)$request->input('from', date('Y-m-01')));
+        $to = trim((string)$request->input('to', ''));
+        $status = trim((string)$request->input('status', 'open'));
+
+        if ($payableId > 0) {
+            (new \App\Repositories\AccountsPayableRepository($this->container->get(\PDO::class)))
+                ->softDelete($clinicId, $payableId);
+        }
+
+        return $this->redirect('/finance/accounts-payable?from=' . urlencode($from) . '&to=' . urlencode($to) . '&status=' . urlencode($status) . '&success=' . urlencode('Conta excluída.'));
+    }
 }

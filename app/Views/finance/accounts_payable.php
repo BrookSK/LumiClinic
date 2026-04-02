@@ -201,15 +201,25 @@ ob_start();
                         </td>
                         <td>
                             <?php if ($isOpen && ($can('finance.ap.manage') || $can('finance.sales.create'))): ?>
-                                <form method="post" action="/finance/accounts-payable/pay" class="lc-flex lc-gap-sm" style="align-items:center;">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="installment_id" value="<?= (int)($it['installment_id'] ?? 0) ?>" />
-                                    <input type="hidden" name="from" value="<?= htmlspecialchars($from, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="to" value="<?= htmlspecialchars($to, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="status" value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="paid_on" value="<?= date('Y-m-d') ?>" />
-                                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">✓ Pagar</button>
-                                </form>
+                                <div class="lc-flex lc-gap-sm">
+                                    <form method="post" action="/finance/accounts-payable/pay">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="installment_id" value="<?= (int)($it['installment_id'] ?? 0) ?>" />
+                                        <input type="hidden" name="from" value="<?= htmlspecialchars($from, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="to" value="<?= htmlspecialchars($to, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="status" value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="paid_on" value="<?= date('Y-m-d') ?>" />
+                                        <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">✓ Pagar</button>
+                                    </form>
+                                    <form method="post" action="/finance/accounts-payable/delete" onsubmit="return confirm('Excluir esta conta e todas as parcelas em aberto?');">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="payable_id" value="<?= (int)($it['payable_id'] ?? $it['id'] ?? 0) ?>" />
+                                        <input type="hidden" name="from" value="<?= htmlspecialchars($from, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="to" value="<?= htmlspecialchars($to, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="status" value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="color:#b91c1c;">✕</button>
+                                    </form>
+                                </div>
                             <?php endif; ?>
                         </td>
                     </tr>

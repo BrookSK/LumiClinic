@@ -67,6 +67,22 @@ final class AccountsPayableRepository
         return (int)$this->pdo->lastInsertId();
     }
 
+    public function softDelete(int $clinicId, int $id): void
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE accounts_payable SET deleted_at = NOW(), status = 'cancelled', updated_at = NOW()
+            WHERE id = :id AND clinic_id = :clinic_id AND deleted_at IS NULL LIMIT 1
+        ");
+        $stmt->execute(['id' => $id, 'clinic_id' => $clinicId]);
+
+        // Cancelar parcelas em aberto
+        $stmt2 = $this->pdo->prepare("
+            UPDATE accounts_payable_installments SET status = 'cancelled', updated_at = NOW()
+            WHERE payable_id = :id AND clinic_id = :clinic_id AND status = 'open'
+        ");
+        $stmt2->execute(['id' => $id, 'clinic_id' => $clinicId]);
+    }
+
     /** @return array<string,mixed>|null */
     public function findById(int $clinicId, int $id): ?array
     {
