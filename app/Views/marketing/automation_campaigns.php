@@ -92,16 +92,16 @@ ob_start();
                 <input class="lc-input" type="text" name="name" required placeholder="Ex: Lembrete de retorno, Promoção de Natal..." />
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
                 <div class="lc-field">
-                    <label class="lc-label">Canal</label>
+                    <label class="lc-label">Canal de envio</label>
                     <select class="lc-select" name="channel">
                         <option value="whatsapp">WhatsApp</option>
                         <option value="email">E-mail</option>
                     </select>
                 </div>
                 <div class="lc-field">
-                    <label class="lc-label">Segmento</label>
+                    <label class="lc-label">Quem recebe</label>
                     <select class="lc-select" name="segment_id">
                         <option value="">Todos os pacientes</option>
                         <?php foreach ($segments as $s): ?>
@@ -110,12 +110,27 @@ ob_start();
                         <?php endforeach; ?>
                     </select>
                 </div>
+            </div>
+
+            <div class="lc-field" style="margin-top:4px;">
+                <label class="lc-label">Quando enviar?</label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+                    <label style="display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;border:1px solid rgba(17,24,39,.10);cursor:pointer;font-size:13px;font-weight:650;">
+                        <input type="radio" name="status" value="draft" checked onchange="document.getElementById('newSchedWrap').style.display='none'" style="width:16px;height:16px;" />
+                        Salvar como rascunho
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;border:1px solid rgba(17,24,39,.10);cursor:pointer;font-size:13px;font-weight:650;">
+                        <input type="radio" name="status" value="scheduled" onchange="document.getElementById('newSchedWrap').style.display='block'" style="width:16px;height:16px;" />
+                        Agendar para uma data
+                    </label>
+                </div>
+                <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Rascunho: você configura tudo e dispara depois manualmente. Agendar: define a data e o envio acontece automaticamente.</div>
+            </div>
+
+            <div id="newSchedWrap" style="display:none;margin-top:4px;">
                 <div class="lc-field">
-                    <label class="lc-label">Status inicial</label>
-                    <select class="lc-select" name="status">
-                        <option value="draft">Rascunho</option>
-                        <option value="scheduled">Agendada</option>
-                    </select>
+                    <label class="lc-label">Data e horário do envio</label>
+                    <input class="lc-input" type="datetime-local" name="scheduled_for" style="max-width:300px;" />
                 </div>
             </div>
 

@@ -155,11 +155,24 @@ ob_start();
             </div>
             <div class="lc-field">
                 <label class="lc-label">Status</label>
-                <select class="lc-select" name="status">
+                <select class="lc-select" name="status" id="statusSelect" onchange="toggleSched()">
                     <?php foreach ($statusLabel as $k=>$lbl): ?>
                         <option value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>" <?= $status === $k ? 'selected' : '' ?>><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></option>
                     <?php endforeach; ?>
                 </select>
+                <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">
+                    Rascunho = ainda não envia. Agendada = envia na data definida. Rodando = em execução.
+                </div>
+            </div>
+        </div>
+
+        <!-- Agendamento (aparece quando status = scheduled) -->
+        <div id="schedWrap" style="display:<?= $status === 'scheduled' ? 'block' : 'none' ?>;margin-top:4px;padding:14px;border-radius:12px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.10);">
+            <div style="font-weight:700;font-size:13px;color:rgba(129,89,1,1);margin-bottom:8px;">📅 Agendamento</div>
+            <div class="lc-field">
+                <label class="lc-label">Data e horário do envio</label>
+                <input class="lc-input" type="datetime-local" name="scheduled_for" value="<?= htmlspecialchars($scheduledForLocal, ENT_QUOTES, 'UTF-8') ?>" style="max-width:300px;" />
+                <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">A campanha será disparada automaticamente nesta data.</div>
             </div>
         </div>
     </div>
@@ -207,22 +220,15 @@ ob_start();
 
     <!-- Passo 3: Opções avançadas (colapsado) -->
     <div class="mce-card">
-        <details class="mce-adv" <?= ($scheduledForLocal !== '' || $triggerEvent !== '' || $clickUrl !== '') ? 'open' : '' ?>>
+        <details class="mce-adv" <?= ($triggerEvent !== '' || $clickUrl !== '') ? 'open' : '' ?>>
             <summary>
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 Opções avançadas
-                <span style="font-weight:400;color:rgba(31,41,55,.40);margin-left:4px;">(agendamento, disparo automático, link rastreável)</span>
+                <span style="font-weight:400;color:rgba(31,41,55,.40);margin-left:4px;">(disparo automático por evento, link rastreável)</span>
             </summary>
             <div class="mce-adv__body">
-                <!-- Agendamento -->
-                <div class="lc-field">
-                    <label class="lc-label">Agendar envio para</label>
-                    <input class="lc-input" type="datetime-local" name="scheduled_for" value="<?= htmlspecialchars($scheduledForLocal, ENT_QUOTES, 'UTF-8') ?>" style="max-width:300px;" />
-                    <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Deixe vazio para disparar manualmente.</div>
-                </div>
-
                 <!-- Trigger -->
-                <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(17,24,39,.06);">
+                <div>
                     <div style="font-weight:700;font-size:13px;color:rgba(31,41,55,.70);margin-bottom:8px;">Disparo automático por evento</div>
                     <div style="font-size:12px;color:rgba(31,41,55,.45);margin-bottom:10px;line-height:1.5;">
                         Se quiser que a campanha dispare sozinha quando algo acontecer (ex: paciente concluiu consulta), selecione o evento abaixo.
@@ -293,6 +299,12 @@ function toggleCh(){
     var em=document.getElementById('contentEm');
     if(wa)wa.style.display=s.value==='whatsapp'?'block':'none';
     if(em)em.style.display=s.value==='email'?'block':'none';
+}
+function toggleSched(){
+    var s=document.getElementById('statusSelect');
+    var w=document.getElementById('schedWrap');
+    if(!s||!w)return;
+    w.style.display=s.value==='scheduled'?'block':'none';
 }
 </script>
 
