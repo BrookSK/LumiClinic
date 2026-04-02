@@ -88,26 +88,27 @@ final class PlanEntitlementsService
         return $n > 0 ? $n : null;
     }
 
-    /** Minutos de transcrição usados no mês atual. */
+    /** Minutos de transcrição usados no mês atual (1 transcrição ≈ 1 minuto). */
     public function transcriptionUsedMinutes(int $clinicId): int
     {
         $pdo = $this->container->get(\PDO::class);
         $firstOfMonth = date('Y-m-01 00:00:00');
-        $stmt = $pdo->prepare("
-            SELECT COALESCE(SUM(TIMESTAMPDIFF(SECOND, '2000-01-01', SEC_TO_TIME(COALESCE(duration_seconds, 0)))), 0) AS total_seconds,
-                   COUNT(*) AS total_count
-            FROM medical_record_audio_notes
-            WHERE clinic_id = :clinic_id
-              AND status = 'transcribed'
-              AND created_at >= :first_of_month
-              AND deleted_at IS NULL
-        ");
-        $stmt->execute(['clinic_id' => $clinicId, 'first_of_month' => $firstOfMonth]);
-        $row = $stmt->fetch();
 
-        // Se não temos duration_seconds, estimamos ~1 min por transcrição
-        $count = (int)($row['total_count'] ?? 0);
-        return max($count, 0); // 1 transcrição ≈ 1 minuto (estimativa conservadora)
+        try {
+            $stmt = $pdo->prepare("
+                SELECT COUNT(*) AS total_count
+                FROM medical_record_audio_notes
+                WHERE clinic_id = :clinic_id
+                  AND status = 'transcribed'
+                  AND created_at >= :first_of_month
+                  AND deleted_at IS NULL
+            ");
+            $stmt->execute(['clinic_id' => $clinicId, 'first_of_month' => $firstOfMonth]);
+            $row = $stmt->fetch();
+            return max(0, (int)($row['total_count'] ?? 0));
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     /** @return array{limit:?int,used:int,remaining:?int,blocked:bool} */
