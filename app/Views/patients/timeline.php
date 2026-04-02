@@ -182,7 +182,14 @@ ob_start();
                     </div>
                 </div>
                 <?php if ($link !== ''): ?>
-                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="<?= htmlspecialchars($link, ENT_QUOTES, 'UTF-8') ?>" style="flex-shrink:0;">Abrir</a>
+                    <div class="lc-flex lc-gap-sm" style="flex-shrink:0;">
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="<?= htmlspecialchars($link, ENT_QUOTES, 'UTF-8') ?>">Abrir</a>
+                        <?php if (!empty($it['extra_link']) && !empty($it['extra_link_label'])): ?>
+                            <a class="lc-btn lc-btn--secondary lc-btn--sm" href="<?= htmlspecialchars((string)$it['extra_link'], ENT_QUOTES, 'UTF-8') ?>">
+                                <?= htmlspecialchars((string)$it['extra_link_label'], ENT_QUOTES, 'UTF-8') ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

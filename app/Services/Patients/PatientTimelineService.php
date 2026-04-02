@@ -59,7 +59,7 @@ final class PatientTimelineService
                         'consultation_id' => (int)($r['id'] ?? 0),
                         'appointment_id' => (int)($r['appointment_id'] ?? 0),
                     ],
-                    'link' => '/patients/consultation?appointment_id=' . (int)($r['appointment_id'] ?? 0),
+                    'link' => '/medical-records?patient_id=' . $patientId,
                 ];
             }
         }
@@ -154,13 +154,24 @@ final class PatientTimelineService
         if ($this->typeAllowed($types, 'appointment')) {
             $apptRepo = new AppointmentRepository($pdo);
             foreach ($apptRepo->listByClinicPatientDetailed($clinicId, $patientId, min($limit, 500), 0, null, $from, $to) as $a) {
+                $apptId = (int)($a['id'] ?? 0);
+                $apptDate = substr((string)($a['start_at'] ?? ''), 0, 10);
+                $apptStatus = (string)($a['status'] ?? '');
+                $isFuture = $apptDate >= date('Y-m-d') && !in_array($apptStatus, ['cancelled', 'no_show', 'completed'], true);
+
                 $items[] = [
                     'type' => 'appointment',
                     'occurred_at' => (string)($a['start_at'] ?? ''),
                     'title' => 'Agendamento',
                     'description' => trim((string)($a['service_name'] ?? '')),
-                    'ref' => ['appointment_id' => (int)($a['id'] ?? 0), 'status' => (string)($a['status'] ?? '')],
-                    'link' => '/schedule?view=week&date=' . urlencode(substr((string)($a['start_at'] ?? ''), 0, 10)),
+                    'ref' => [
+                        'appointment_id' => $apptId,
+                        'status' => $apptStatus,
+                        'is_future' => $isFuture,
+                    ],
+                    'link' => '/schedule?view=day&date=' . urlencode($apptDate),
+                    'extra_link' => $isFuture ? ('/schedule/reschedule?id=' . $apptId) : null,
+                    'extra_link_label' => $isFuture ? 'Reagendar' : null,
                 ];
             }
         }

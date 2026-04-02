@@ -59,9 +59,6 @@ ob_start();
         <?php if ($can('finance.sales.read')): ?>
             <a class="lc-btn lc-btn--secondary" href="/finance/sales?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Orçamentos</a>
         <?php endif; ?>
-        <?php if ($can('patients.read')): ?>
-            <a class="lc-btn lc-btn--secondary" href="/patients/appointments?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Consultas</a>
-        <?php endif; ?>
         <?php if ($can('medical_images.read')): ?>
             <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Imagens</a>
         <?php endif; ?>
