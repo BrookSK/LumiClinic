@@ -47,18 +47,31 @@ final class PatientReportsController extends Controller
             throw new \RuntimeException('Contexto inválido.');
         }
 
+        $tab = trim((string)$request->input('tab', 'birthdays'));
+        if (!in_array($tab, ['birthdays', 'followup'], true)) {
+            $tab = 'birthdays';
+        }
+
         $month = (int)$request->input('month', (int)date('n'));
         if ($month < 1 || $month > 12) {
             $month = (int)date('n');
         }
 
+        $days = (int)$request->input('days', 180);
+        if ($days < 30) $days = 30;
+        if ($days > 730) $days = 730;
+
         $repo = new PatientRepository($this->container->get(\PDO::class));
         $patients = $repo->listBirthdaysByMonth($clinicId, $month);
+        $followUp = $repo->listInactivePatients($clinicId, $days);
         $waTemplates = $this->getWaTemplates($clinicId);
 
         return $this->view('patients/birthdays', [
-            'patients'    => $patients,
-            'month'       => $month,
+            'patients'     => $patients,
+            'follow_up'    => $followUp,
+            'month'        => $month,
+            'days'         => $days,
+            'tab'          => $tab,
             'wa_templates' => $waTemplates,
         ]);
     }
