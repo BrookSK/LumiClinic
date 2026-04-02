@@ -90,16 +90,88 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     <div class="lc-card" style="margin-top:16px; padding:16px;">
         <div class="lc-card__title">O que é o Dashboard</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            É a visão geral do dia. Ele reúne indicadores e atalhos para as ações mais comuns.
+            O Dashboard é a primeira tela que você vê ao entrar no sistema. Ele funciona como um <strong>painel de controle</strong> que reúne os indicadores mais importantes do dia em um só lugar, permitindo que você tenha uma visão rápida da situação da clínica.
+            <br /><br />
+            O conteúdo do Dashboard muda de acordo com o seu perfil de acesso. Cada perfil vê as informações mais relevantes para o seu trabalho.
         </div>
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">O que observar</div>
+        <div class="lc-card__title">Dashboard do Admin / Dono</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            - Indicadores (quantidades, totais, pendências)
-            <br />- Alertas ou cards importantes
-            <br />- Atalhos para módulos (agenda, pacientes, financeiro)
+            Como administrador, você tem a visão mais completa. Os cards exibidos incluem:
+            <br /><br />
+            <strong>📅 Agendamentos do dia</strong>
+            <br />- Quantidade total de consultas agendadas para hoje.
+            <br />- Quantas já foram confirmadas, quantas estão pendentes.
+            <br />- Clique no card para ir direto à agenda do dia.
+            <br /><br />
+            <strong>👥 Pacientes</strong>
+            <br />- Total de pacientes cadastrados na clínica.
+            <br />- Novos pacientes cadastrados no período (semana/mês).
+            <br /><br />
+            <strong>💰 Faturamento</strong>
+            <br />- Valor total faturado no dia/semana/mês.
+            <br />- Comparativo com períodos anteriores quando disponível.
+            <br />- Clique para acessar o módulo financeiro completo.
+            <br /><br />
+            <strong>⚠️ Alertas e pendências</strong>
+            <br />- Agendamentos não confirmados.
+            <br />- Estoque abaixo do mínimo.
+            <br />- Contas a pagar próximas do vencimento.
+            <br /><br />
+            <strong>📊 Atalhos rápidos</strong>
+            <br />- Botões de acesso rápido para as ações mais comuns: novo agendamento, novo paciente, abrir caixa.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Dashboard da Recepção</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            A recepção vê um dashboard focado no fluxo de atendimento do dia:
+            <br /><br />
+            <strong>📅 Agenda do dia</strong>
+            <br />- Lista resumida dos próximos agendamentos.
+            <br />- Status de cada agendamento (agendado, confirmado, em atendimento).
+            <br /><br />
+            <strong>👥 Pacientes aguardando</strong>
+            <br />- Pacientes que já chegaram e estão na fila de espera.
+            <br /><br />
+            <strong>🔔 Pendências</strong>
+            <br />- Agendamentos que precisam de confirmação.
+            <br />- Pacientes sem cadastro completo.
+            <br /><br />
+            <strong>Dica:</strong> Use os atalhos do dashboard para agilizar o atendimento — você pode confirmar agendamentos e registrar chegadas diretamente dos cards.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Dashboard do Profissional</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            O profissional vê um dashboard focado nos seus próprios atendimentos:
+            <br /><br />
+            <strong>📅 Meus atendimentos de hoje</strong>
+            <br />- Lista dos pacientes agendados para o dia, em ordem cronológica.
+            <br />- Status de cada atendimento.
+            <br /><br />
+            <strong>👤 Próximo paciente</strong>
+            <br />- Destaque para o próximo paciente da fila.
+            <br />- Acesso rápido ao prontuário e ficha clínica.
+            <br /><br />
+            <strong>📋 Prontuários pendentes</strong>
+            <br />- Atendimentos realizados que ainda não tiveram o prontuário finalizado.
+            <br /><br />
+            <strong>Dica:</strong> Clique no nome do paciente em qualquer card para acessar diretamente a ficha clínica dele.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Como interpretar os indicadores</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            - <strong>Números em destaque</strong> — São os valores principais do card (ex: "12 agendamentos hoje").
+            <br />- <strong>Setas e percentuais</strong> — Indicam variação em relação ao período anterior. Seta verde para cima = crescimento. Seta vermelha para baixo = queda.
+            <br />- <strong>Badges coloridos</strong> — Indicam status: verde = ok, amarelo = atenção, vermelho = urgente.
+            <br />- <strong>Links nos cards</strong> — A maioria dos cards é clicável e leva ao módulo correspondente com mais detalhes.
         </div>
     </div>
 

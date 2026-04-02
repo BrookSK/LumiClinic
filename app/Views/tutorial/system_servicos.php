@@ -88,9 +88,94 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Visão geral</div>
+        <div class="lc-card__title">O que são Serviços</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            Serviços são o catálogo de procedimentos/atendimentos da clínica e podem ter materiais vinculados.
+            <strong>Serviços</strong> são o catálogo de procedimentos, consultas e atendimentos oferecidos pela clínica. Eles são a base para agendamentos e faturamento — ao criar um agendamento, você seleciona qual serviço será realizado, e o valor é usado para gerar a venda.
+            <br /><br />
+            <strong>Quem usa:</strong> Admin (cadastro e gestão). Recepção e Profissional usam os serviços ao agendar e atender.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Cadastrar um serviço</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            <strong>Passo a passo:</strong>
+            <br /><br />
+            1. Acesse <strong>Serviços</strong> no menu lateral.
+            <br />2. Clique em <strong>"Novo serviço"</strong>.
+            <br />3. Preencha os campos:
+            <br />- <strong>Nome</strong> — nome do serviço (ex: "Consulta inicial", "Limpeza de pele", "Aplicação de botox").
+            <br />- <strong>Categoria</strong> — grupo ao qual pertence (ex: Consultas, Estética facial, Odontologia).
+            <br />- <strong>Duração</strong> — tempo estimado do atendimento em minutos. Isso define o tamanho do bloco na agenda.
+            <br />- <strong>Valor</strong> — preço do serviço. Usado como base para o faturamento.
+            <br />- <strong>Descrição</strong> (opcional) — detalhes sobre o serviço.
+            <br />- <strong>Status</strong> — ativo ou inativo. Serviços inativos não aparecem nas opções de agendamento.
+            <br />4. Clique em <strong>"Salvar"</strong>.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Categorias de serviço</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            As categorias organizam os serviços em grupos, facilitando a busca e os relatórios:
+            <br /><br />
+            <strong>Exemplos de categorias:</strong>
+            <br />- Consultas (consulta inicial, retorno, avaliação).
+            <br />- Estética facial (limpeza de pele, peeling, botox, preenchimento).
+            <br />- Estética corporal (drenagem, criolipólise, radiofrequência).
+            <br />- Odontologia (profilaxia, restauração, clareamento).
+            <br /><br />
+            <strong>Criar uma categoria:</strong>
+            <br />1. Acesse <strong>Serviços > Categorias</strong>.
+            <br />2. Clique em <strong>"Nova categoria"</strong>.
+            <br />3. Informe o nome e salve.
+            <br /><br />
+            <strong>Dica:</strong> Crie as categorias antes de cadastrar os serviços. Assim, ao criar cada serviço, você já pode associá-lo à categoria correta.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Procedimentos</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Além dos serviços, o sistema permite cadastrar <strong>procedimentos</strong> que detalham as etapas técnicas de um atendimento:
+            <br /><br />
+            - Procedimentos podem ser vinculados a serviços.
+            <br />- Útil para clínicas que precisam detalhar o que foi feito em cada atendimento (ex: para fins de auditoria ou convênio).
+            <br />- Cada procedimento pode ter um código, descrição e valor específico.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Vinculação de materiais</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Serviços podem ter <strong>materiais do estoque vinculados</strong>, permitindo controle automático de consumo:
+            <br /><br />
+            1. Edite o serviço desejado.
+            <br />2. Na seção <strong>"Materiais vinculados"</strong>, clique em "Adicionar material".
+            <br />3. Selecione o material do estoque.
+            <br />4. Informe a <strong>quantidade consumida por atendimento</strong>.
+            <br />5. Salve.
+            <br /><br />
+            <strong>Benefícios:</strong>
+            <br />- O estoque é atualizado automaticamente ao concluir atendimentos.
+            <br />- Você sabe exatamente o custo de materiais de cada serviço.
+            <br />- Relatórios mostram o consumo real versus o previsto.
+            <br /><br />
+            <strong>Exemplo:</strong> O serviço "Preenchimento labial" consome 1 seringa de ácido hialurônico. Ao vincular, cada atendimento desse serviço desconta automaticamente 1 unidade do estoque.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Impacto dos serviços no sistema</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Os serviços são usados em vários módulos do sistema:
+            <br /><br />
+            - <strong>Agenda</strong> — ao criar um agendamento, você seleciona o serviço. A duração define o tamanho do bloco.
+            <br />- <strong>Financeiro</strong> — o valor do serviço é usado como base para vendas e orçamentos.
+            <br />- <strong>Estoque</strong> — materiais vinculados são consumidos automaticamente.
+            <br />- <strong>Relatórios</strong> — faturamento por serviço, serviços mais realizados, etc.
+            <br /><br />
+            <strong>Importante:</strong> Cadastre os serviços antes de começar a agendar. Sem serviços cadastrados, não é possível criar agendamentos.
         </div>
     </div>
 

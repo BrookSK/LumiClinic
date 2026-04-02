@@ -26,19 +26,16 @@ $can = function (string $permissionCode): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
         return true;
     }
-
     $permissions = $_SESSION['permissions'] ?? [];
     if (!is_array($permissions)) {
         return false;
     }
-
     if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
         if (in_array($permissionCode, $permissions['deny'], true)) {
             return false;
         }
         return in_array($permissionCode, $permissions['allow'], true);
     }
-
     return in_array($permissionCode, $permissions, true);
 };
 
@@ -110,12 +107,109 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Visão geral</div>
+        <div class="lc-card__title">Visão geral do módulo Financeiro</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            - Vendas e itens
-            <br />- Pagamentos e reembolsos
-            <br />- Caixa e entradas
-            <br />- Relatórios
+            O módulo Financeiro controla toda a movimentação financeira da clínica: vendas (orçamentos), pagamentos, fluxo de caixa, contas a pagar e relatórios. Ele é integrado com a agenda e os serviços, permitindo que o faturamento aconteça de forma natural no fluxo de atendimento.
+            <br /><br />
+            <strong>Quem usa:</strong> Admin, Recepção e perfil Financeiro.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Vendas e orçamentos</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            As <strong>Vendas</strong> (também chamadas de orçamentos) são o registro financeiro dos serviços prestados ao paciente:
+            <br /><br />
+            <strong>Criar uma venda:</strong>
+            <br />1. Acesse <strong>Financeiro > Vendas</strong>.
+            <br />2. Clique em <strong>"Nova venda"</strong>.
+            <br />3. <strong>Selecione o paciente</strong>.
+            <br />4. <strong>Adicione os itens</strong> — serviços, procedimentos ou produtos. Cada item tem valor unitário e quantidade.
+            <br />5. Aplique <strong>descontos</strong> se necessário (percentual ou valor fixo).
+            <br />6. Salve a venda.
+            <br /><br />
+            <strong>Status de uma venda:</strong>
+            <br />- <strong>Aberta</strong> — orçamento criado, aguardando pagamento.
+            <br />- <strong>Parcialmente paga</strong> — parte do valor já foi recebida.
+            <br />- <strong>Paga</strong> — valor total recebido.
+            <br />- <strong>Cancelada</strong> — venda cancelada.
+            <br /><br />
+            <strong>Dica:</strong> Vendas podem ser criadas automaticamente a partir de agendamentos, dependendo da configuração da clínica.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Pagamentos</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Para registrar um pagamento em uma venda:
+            <br /><br />
+            1. Abra a venda desejada.
+            <br />2. Clique em <strong>"Registrar pagamento"</strong>.
+            <br />3. Informe:
+            <br />- <strong>Valor</strong> — pode ser o total ou um valor parcial.
+            <br />- <strong>Forma de pagamento</strong> — dinheiro, cartão de crédito, cartão de débito, PIX, transferência, etc.
+            <br />- <strong>Data do pagamento</strong>.
+            <br />- <strong>Observações</strong> (opcional).
+            <br />4. Confirme o pagamento.
+            <br /><br />
+            <strong>Estornos:</strong> Se necessário, é possível estornar um pagamento. Acesse o pagamento registrado e clique em "Estornar". O valor é devolvido ao saldo da venda.
+            <br /><br />
+            <strong>Nota:</strong> Pagamentos registrados alimentam automaticamente o fluxo de caixa.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Fluxo de caixa</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            O <strong>Fluxo de Caixa</strong> (Financeiro > Caixa) mostra todas as entradas e saídas de dinheiro da clínica:
+            <br /><br />
+            <strong>O que você encontra:</strong>
+            <br />- <strong>Entradas</strong> — pagamentos recebidos de pacientes.
+            <br />- <strong>Saídas</strong> — pagamentos de contas, despesas operacionais.
+            <br />- <strong>Saldo</strong> — diferença entre entradas e saídas.
+            <br />- <strong>Filtros por período</strong> — veja o caixa de hoje, da semana, do mês ou de um período personalizado.
+            <br /><br />
+            <strong>Lançamentos manuais:</strong>
+            <br />- Você pode registrar entradas e saídas manuais que não estão vinculadas a vendas (ex: pagamento de aluguel, compra de material).
+            <br />- Clique em <strong>"Nova entrada"</strong> ou <strong>"Nova saída"</strong> e preencha os dados.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Contas a pagar</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            O módulo de <strong>Contas a Pagar</strong> (Financeiro > Contas a Pagar) ajuda a controlar as despesas da clínica:
+            <br /><br />
+            <strong>Cadastrar uma conta:</strong>
+            <br />1. Clique em <strong>"Nova conta"</strong>.
+            <br />2. Preencha: descrição, valor, data de vencimento, fornecedor, centro de custo.
+            <br />3. Salve.
+            <br /><br />
+            <strong>Gerenciar contas:</strong>
+            <br />- <strong>Pendentes</strong> — contas que ainda não foram pagas.
+            <br />- <strong>Vencidas</strong> — contas com data de vencimento ultrapassada (destacadas em vermelho).
+            <br />- <strong>Pagas</strong> — contas já quitadas.
+            <br /><br />
+            <strong>Para pagar uma conta:</strong> Clique na conta e depois em "Registrar pagamento". Informe a data e forma de pagamento.
+            <br /><br />
+            <strong>Centros de custo:</strong> Categorize suas despesas por centro de custo (ex: aluguel, materiais, marketing, folha de pagamento) para ter relatórios mais detalhados.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Relatórios financeiros</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            O sistema oferece relatórios para análise financeira:
+            <br /><br />
+            - <strong>Faturamento por período</strong> — total faturado por dia, semana ou mês.
+            <br />- <strong>Faturamento por profissional</strong> — quanto cada profissional gerou de receita.
+            <br />- <strong>Faturamento por serviço</strong> — quais serviços geram mais receita.
+            <br />- <strong>Formas de pagamento</strong> — distribuição entre dinheiro, cartão, PIX, etc.
+            <br />- <strong>Contas a pagar vs. recebido</strong> — visão de despesas versus receitas.
+            <br /><br />
+            <strong>Como acessar:</strong> Financeiro > Relatórios. Use os filtros de período e categoria para refinar os dados.
+            <br /><br />
+            <strong>Exportação:</strong> Os relatórios podem ser exportados para análise externa quando disponível.
         </div>
     </div>
 

@@ -1,5 +1,5 @@
 <?php
-$title = 'Tutorial do Sistema - Profissionais';
+$title = 'Tutorial do Sistema - Profissionais e Usuários';
 $perfilLabel = 'Geral';
 if (isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0) {
     $perfilLabel = 'Paciente';
@@ -77,7 +77,7 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
             </div>
             <div>
                 <div class="lc-page__title" style="margin:0;">Ajuda</div>
-                <div class="lc-page__subtitle" style="margin-top:2px;">Profissionais (perfil: <?= htmlspecialchars($perfilLabel, ENT_QUOTES, 'UTF-8') ?>)</div>
+                <div class="lc-page__subtitle" style="margin-top:2px;">Profissionais e Usuários (perfil: <?= htmlspecialchars($perfilLabel, ENT_QUOTES, 'UTF-8') ?>)</div>
             </div>
         </div>
 
@@ -90,9 +90,97 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     <div class="lc-card" style="margin-top:16px; padding:16px;">
         <div class="lc-card__title">Visão geral</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            - Cadastro e gerenciamento de profissionais
-            <br />- Permissões (conforme o perfil)
-            <br />- Impacto em agenda e atendimentos
+            Este módulo gerencia as pessoas que usam o sistema: <strong>profissionais de saúde</strong> (médicos, dentistas, esteticistas) e <strong>usuários operacionais</strong> (recepcionistas, financeiro, administradores).
+            <br /><br />
+            <strong>Quem usa:</strong> Admin (gestão completa de usuários e profissionais).
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Cadastrar um profissional</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            <strong>Passo a passo:</strong>
+            <br /><br />
+            1. Acesse <strong>Profissionais</strong> no menu lateral.
+            <br />2. Clique em <strong>"Novo profissional"</strong>.
+            <br />3. Preencha os dados:
+            <br />- <strong>Nome completo</strong>.
+            <br />- <strong>E-mail</strong> — será usado para login no sistema.
+            <br />- <strong>Telefone</strong>.
+            <br />- <strong>Especialidade</strong> — área de atuação (ex: Dermatologia, Odontologia, Estética).
+            <br />- <strong>Registro profissional</strong> — CRM, CRO, CREFITO, etc.
+            <br />- <strong>Cor na agenda</strong> — cor que identifica o profissional no calendário.
+            <br />4. <strong>Defina o papel (role)</strong> — geralmente "Profissional", mas pode ter papéis personalizados.
+            <br />5. <strong>Defina a senha inicial</strong> — o profissional poderá alterar depois.
+            <br />6. Clique em <strong>"Salvar"</strong>.
+            <br /><br />
+            <strong>Importante:</strong> Após cadastrar, o profissional já pode fazer login e acessar o sistema com as permissões do papel atribuído.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Cadastrar um usuário (não-profissional)</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Usuários operacionais (recepção, financeiro, admin) são cadastrados da mesma forma:
+            <br /><br />
+            1. Acesse <strong>Profissionais / Usuários</strong>.
+            <br />2. Clique em <strong>"Novo usuário"</strong>.
+            <br />3. Preencha nome, e-mail e telefone.
+            <br />4. <strong>Atribua o papel correto:</strong>
+            <br />- <strong>Admin</strong> — acesso total ao sistema.
+            <br />- <strong>Recepção</strong> — foco em agendamentos e atendimento ao paciente.
+            <br />- <strong>Financeiro</strong> — foco em vendas, caixa e relatórios financeiros.
+            <br />- Ou um <strong>papel personalizado</strong> criado em Segurança > Papéis.
+            <br />5. Defina a senha e salve.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Papéis e permissões (RBAC)</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Cada usuário tem um ou mais <strong>papéis (roles)</strong> que determinam o que ele pode ver e fazer no sistema:
+            <br /><br />
+            <strong>Papéis padrão do sistema:</strong>
+            <br />- <strong>owner</strong> — Dono da clínica. Acesso total, não pode ser removido.
+            <br />- <strong>admin</strong> — Administrador. Acesso total, pode gerenciar outros usuários.
+            <br />- <strong>professional</strong> — Profissional de saúde. Acesso à agenda, prontuários e pacientes.
+            <br />- <strong>reception</strong> — Recepção. Acesso à agenda, pacientes e operações do dia.
+            <br />- <strong>finance</strong> — Financeiro. Acesso ao módulo financeiro e relatórios.
+            <br /><br />
+            <strong>Personalização:</strong> O admin pode criar novos papéis e ajustar permissões individuais em <strong>Segurança > Papéis & Permissões</strong>. Veja mais detalhes na seção de Segurança deste tutorial.
+            <br /><br />
+            <strong>Dica:</strong> Atribua sempre o papel com o menor nível de acesso necessário. Isso segue o princípio de menor privilégio e protege os dados da clínica.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Editar e desativar usuários</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            <strong>Editar:</strong>
+            <br />- Na lista de profissionais/usuários, clique no nome para abrir a edição.
+            <br />- Altere os dados necessários e salve.
+            <br />- Você pode trocar o papel, alterar a senha ou atualizar dados de contato.
+            <br /><br />
+            <strong>Desativar:</strong>
+            <br />- Para remover o acesso de um usuário sem excluí-lo, desative-o.
+            <br />- Usuários desativados não conseguem fazer login.
+            <br />- Os registros históricos (prontuários, agendamentos) são preservados.
+            <br /><br />
+            <strong>Importante:</strong> Nunca exclua um profissional que já tem atendimentos registrados. Desative-o para manter o histórico íntegro.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Impacto na agenda</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Os profissionais cadastrados aparecem como opções na agenda:
+            <br /><br />
+            - Cada profissional tem sua <strong>coluna na visão diária</strong> da agenda.
+            <br />- A <strong>cor do profissional</strong> identifica seus agendamentos no calendário.
+            <br />- Os <strong>horários de atendimento</strong> do profissional podem ser configurados em Configurações > Horários de funcionamento.
+            <br />- <strong>Bloqueios</strong> específicos podem ser criados para cada profissional (férias, folgas, etc.).
+            <br /><br />
+            <strong>Dica:</strong> Após cadastrar um profissional, configure seus horários de atendimento para que a agenda mostre corretamente os horários disponíveis.
         </div>
     </div>
 

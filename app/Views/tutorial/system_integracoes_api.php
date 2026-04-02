@@ -88,11 +88,175 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Visão geral</div>
+        <div class="lc-card__title">Visão geral das Integrações</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            - Integrações via webhooks
-            <br />- Automações
-            <br />- API Tokens e autenticação
+            O LumiClinic se integra com serviços externos para ampliar suas funcionalidades. As integrações disponíveis são:
+            <br /><br />
+            - <strong>💬 WhatsApp (Evolution API)</strong> — envio automático de mensagens, confirmações e lembretes.
+            <br />- <strong>📅 Google Calendar (OAuth)</strong> — sincronização da agenda com o Google Calendar.
+            <br />- <strong>🤖 OpenAI</strong> — transcrição de áudio e assistente de IA para prontuários.
+            <br />- <strong>🔗 API REST</strong> — acesso programático aos dados do sistema via tokens.
+            <br />- <strong>🔔 Webhooks</strong> — notificações automáticas para sistemas externos quando eventos acontecem.
+            <br /><br />
+            <strong>Quem configura:</strong> Admin.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">💬 WhatsApp — Evolution API</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            A integração com WhatsApp usa a <strong>Evolution API</strong>, um serviço que permite enviar e receber mensagens pelo WhatsApp de forma automatizada.
+            <br /><br />
+            <strong>O que você precisa:</strong>
+            <br />- Uma instância da Evolution API rodando (self-hosted ou serviço contratado).
+            <br />- A URL base da API (ex: https://api.suaempresa.com).
+            <br />- A API Key de autenticação.
+            <br />- Um número de WhatsApp dedicado para a clínica.
+            <br /><br />
+            <strong>Configuração passo a passo:</strong>
+            <br />1. Acesse <strong>Configurações > WhatsApp</strong>.
+            <br />2. Informe a <strong>URL da Evolution API</strong>.
+            <br />3. Informe a <strong>API Key</strong>.
+            <br />4. Clique em <strong>"Conectar"</strong>.
+            <br />5. Um <strong>QR Code</strong> será exibido — escaneie com o WhatsApp do celular da clínica.
+            <br />6. Após a conexão, o status muda para "Conectado".
+            <br /><br />
+            <strong>Funcionalidades após conexão:</strong>
+            <br />- Envio automático de confirmação de agendamento.
+            <br />- Envio de lembretes antes da consulta.
+            <br />- Envio de link de anamnese.
+            <br />- Envio de prescrições e documentos.
+            <br />- Mensagens personalizadas usando templates.
+            <br /><br />
+            <strong>Logs:</strong> Em <strong>Configurações > Logs WhatsApp</strong>, você pode ver o histórico de todas as mensagens enviadas, com status de entrega.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">📅 Google Calendar — OAuth 2.0</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            A integração com Google Calendar sincroniza os agendamentos do LumiClinic com o calendário Google do profissional.
+            <br /><br />
+            <strong>Como funciona:</strong>
+            <br />- Usa autenticação <strong>OAuth 2.0</strong> — o profissional autoriza o acesso à sua conta Google de forma segura.
+            <br />- Agendamentos criados no LumiClinic aparecem automaticamente no Google Calendar.
+            <br />- Cancelamentos e reagendamentos são sincronizados.
+            <br /><br />
+            <strong>Configuração:</strong>
+            <br />1. Acesse <strong>Configurações > Google Calendar</strong>.
+            <br />2. Clique em <strong>"Conectar com Google"</strong>.
+            <br />3. Faça login na conta Google do profissional.
+            <br />4. Autorize o acesso ao calendário.
+            <br />5. Selecione qual calendário usar (principal ou um específico).
+            <br />6. Pronto! A sincronização começa automaticamente.
+            <br /><br />
+            <strong>Notas:</strong>
+            <br />- Cada profissional precisa conectar sua própria conta Google.
+            <br />- A sincronização é unidirecional: LumiClinic → Google Calendar.
+            <br />- Para desconectar, acesse a mesma tela e clique em "Desconectar".
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">🔗 API REST e Tokens</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            O sistema oferece uma <strong>API REST</strong> para acesso programático aos dados. Isso permite que sistemas externos (sites, apps, automações) se comuniquem com o LumiClinic.
+            <br /><br />
+            <strong>Autenticação:</strong>
+            <br />- O acesso à API é feito via <strong>API Tokens</strong>.
+            <br />- Cada token tem permissões específicas (leitura, escrita).
+            <br />- Tokens podem ser gerados pelo admin ou pelo paciente (no portal).
+            <br /><br />
+            <strong>Gerar um token (admin):</strong>
+            <br />1. Acesse a área de API Tokens nas configurações.
+            <br />2. Clique em "Gerar novo token".
+            <br />3. Defina o nome, as permissões e a validade.
+            <br />4. Copie o token gerado (ele só é exibido uma vez).
+            <br />5. Use o token no header das requisições: <code>Authorization: Bearer SEU_TOKEN</code>.
+            <br /><br />
+            <strong>Endpoints disponíveis:</strong>
+            <br />- <code>/api/v1/patients</code> — listar e buscar pacientes.
+            <br />- <code>/api/v1/appointments</code> — listar e criar agendamentos.
+            <br />- <code>/api/v1/services</code> — listar serviços.
+            <br />- Outros endpoints conforme documentação da API.
+            <br /><br />
+            <strong>Segurança:</strong>
+            <br />- Nunca compartilhe tokens publicamente.
+            <br />- Use tokens com permissões mínimas necessárias.
+            <br />- Revogue tokens que não são mais utilizados.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">🔔 Webhooks</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            <strong>Webhooks</strong> permitem que o LumiClinic notifique sistemas externos quando eventos acontecem:
+            <br /><br />
+            <strong>Eventos disponíveis:</strong>
+            <br />- <strong>appointment.created</strong> — novo agendamento criado.
+            <br />- <strong>appointment.confirmed</strong> — agendamento confirmado.
+            <br />- <strong>appointment.cancelled</strong> — agendamento cancelado.
+            <br />- <strong>appointment.completed</strong> — atendimento concluído.
+            <br />- <strong>patient.created</strong> — novo paciente cadastrado.
+            <br />- <strong>payment.received</strong> — pagamento registrado.
+            <br /><br />
+            <strong>Como funciona:</strong>
+            <br />- Quando o evento acontece, o sistema envia uma requisição HTTP POST para a URL configurada.
+            <br />- O payload contém os dados do evento em formato JSON.
+            <br />- O sistema externo processa os dados conforme sua lógica.
+            <br /><br />
+            <strong>Configuração:</strong>
+            <br />1. Acesse a área de Webhooks nas configurações.
+            <br />2. Clique em "Novo webhook".
+            <br />3. Informe a URL de destino (endpoint do seu sistema).
+            <br />4. Selecione quais eventos devem disparar o webhook.
+            <br />5. Salve.
+            <br /><br />
+            <strong>Dica:</strong> Use webhooks para integrar com CRMs, sistemas de marketing, ERPs ou qualquer ferramenta que precise ser notificada sobre eventos da clínica.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">🤖 OpenAI (Inteligência Artificial)</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            A integração com a OpenAI habilita funcionalidades de inteligência artificial no sistema:
+            <br /><br />
+            <strong>Transcrição de áudio:</strong>
+            <br />- O profissional grava um áudio durante ou após o atendimento.
+            <br />- O áudio é enviado para a API da OpenAI (Whisper).
+            <br />- O texto transcrito é inserido no prontuário.
+            <br /><br />
+            <strong>Configuração:</strong>
+            <br />1. Acesse <strong>Configurações > Inteligência Artificial</strong>.
+            <br />2. Informe sua <strong>chave de API da OpenAI</strong>.
+            <br />3. Salve.
+            <br /><br />
+            <strong>Custos:</strong> O uso da API da OpenAI é cobrado por uso (por minuto de áudio transcrito ou por tokens de texto). Consulte os preços em platform.openai.com.
+            <br /><br />
+            <strong>Privacidade:</strong> Os áudios são enviados para processamento e não são armazenados pela OpenAI após a transcrição. Consulte a política de privacidade da OpenAI para mais detalhes.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Solução de problemas</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            <strong>"WhatsApp desconectou"</strong>
+            <br />- Acesse Configurações > WhatsApp e reconecte escaneando o QR Code novamente.
+            <br />- Verifique se o celular com o WhatsApp está conectado à internet.
+            <br /><br />
+            <strong>"Google Calendar não sincroniza"</strong>
+            <br />- Verifique se a autorização OAuth ainda está ativa.
+            <br />- Reconecte a conta Google se necessário.
+            <br />- Verifique se o calendário selecionado ainda existe.
+            <br /><br />
+            <strong>"API retorna erro 401"</strong>
+            <br />- O token pode ter expirado ou sido revogado.
+            <br />- Gere um novo token e atualize no sistema externo.
+            <br /><br />
+            <strong>"Webhook não está sendo recebido"</strong>
+            <br />- Verifique se a URL de destino está acessível publicamente.
+            <br />- Verifique os logs de webhook para ver se houve erros de entrega.
+            <br />- Certifique-se de que o endpoint retorna status 200.
         </div>
     </div>
 

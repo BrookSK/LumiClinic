@@ -88,57 +88,154 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Objetivo</div>
+        <div class="lc-card__title">Bem-vindo ao LumiClinic</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            Entender a navegação do sistema (menu lateral, cabeçalho e ações principais).
+            O LumiClinic é um sistema completo para gestão de clínicas. Nesta página você vai aprender a navegar pelo sistema, entender a estrutura dos menus e conhecer os atalhos que vão agilizar o seu dia a dia.
+            <br /><br />
+            <strong>Este guia é para todos os perfis</strong> — Admin, Recepção, Profissional e Financeiro. Cada perfil verá menus e opções diferentes de acordo com suas permissões.
         </div>
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Menu lateral</div>
+        <div class="lc-card__title">Estrutura do menu lateral (sidebar)</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            - O menu lateral concentra os módulos.
-            <br />- Alguns itens aparecem apenas quando você tem permissão e/ou contexto de clínica.
-            <br />- Use os grupos com seta para abrir submenus.
+            O menu lateral à esquerda é o ponto central de navegação. Ele organiza todos os módulos do sistema em grupos:
+            <br /><br />
+            <strong>📊 Dashboard</strong> — Visão geral com indicadores do dia (agendamentos, faturamento, pendências).
+            <br /><strong>📅 Agenda</strong> — Calendário de agendamentos, visão de operações (Recepção) e fila do profissional.
+            <br /><strong>👥 Pacientes</strong> — Cadastro, busca, ficha clínica, prontuários, documentos e timeline.
+            <br /><strong>📋 Prontuários</strong> — Registros clínicos dos atendimentos.
+            <br /><strong>🖼️ Imagens</strong> — Galeria de imagens médicas com comparador antes/depois.
+            <br /><strong>💰 Financeiro</strong> — Orçamentos, vendas, caixa, contas a pagar e relatórios.
+            <br /><strong>📦 Estoque</strong> — Materiais, movimentações, categorias e alertas de estoque mínimo.
+            <br /><strong>🔧 Serviços</strong> — Catálogo de procedimentos e serviços da clínica.
+            <br /><strong>👨‍⚕️ Profissionais</strong> — Gestão de profissionais e usuários do sistema.
+            <br /><strong>⚙️ Configurações</strong> — Ajustes gerais, integrações, horários e regras.
+            <br /><strong>🔒 Segurança</strong> — Papéis e permissões (RBAC).
+            <br /><br />
+            <strong>Dica:</strong> Alguns itens possuem submenus — clique na seta para expandir e ver as opções internas.
+            <br /><br />
+            <strong>Importante:</strong> Os itens do menu aparecem de acordo com as permissões do seu perfil. Se um módulo não aparece para você, é porque seu papel não tem acesso a ele. Fale com o administrador da clínica se precisar de acesso.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Recolher e expandir o menu lateral</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            O menu lateral pode ser recolhido para ganhar mais espaço na tela:
+            <br /><br />
+            1. Clique no ícone de <strong>menu (☰)</strong> no topo da sidebar para recolher.
+            <br />2. Quando recolhido, apenas os ícones ficam visíveis.
+            <br />3. Clique novamente para expandir e ver os nomes dos módulos.
+            <br /><br />
+            <strong>Em dispositivos móveis:</strong> O menu lateral funciona como um painel deslizante. Toque no ícone de menu no cabeçalho para abrir e fechar.
         </div>
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
         <div class="lc-card__title">Busca rápida</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            - Fica no topo.
-            <br />- Pressione Enter para executar.
-            <br />- O destino muda conforme seu perfil (ex: pacientes, clínicas, dashboard).
+            No topo da página existe um campo de <strong>busca rápida</strong> que permite encontrar informações rapidamente:
+            <br /><br />
+            <strong>Como usar:</strong>
+            <br />1. Clique no campo de busca no cabeçalho (ou use o atalho de teclado).
+            <br />2. Digite o nome do paciente, telefone, CPF ou termo que deseja buscar.
+            <br />3. Pressione <strong>Enter</strong> para executar a busca.
+            <br />4. Os resultados aparecem filtrados de acordo com o seu perfil e contexto.
+            <br /><br />
+            <strong>O que você pode buscar:</strong>
+            <br />- <strong>Pacientes</strong> — por nome, CPF, telefone ou e-mail.
+            <br />- <strong>Agendamentos</strong> — por nome do paciente ou profissional.
+            <br />- <strong>Módulos</strong> — digite o nome do módulo para navegar rapidamente (ex: "financeiro", "estoque").
         </div>
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Checklist para sua clínica funcionar (Admin/Dono)</div>
+        <div class="lc-card__title">Cabeçalho e menu do usuário</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            1) Configurações da agenda
-            <br />- Vá em <strong>Configurações</strong> e defina os <strong>horários de funcionamento</strong>.
-            <br />- Cadastre <strong>feriados e recessos</strong> (dias fechados / dias abertos especiais).
-            <br />- Configure <strong>regras</strong> e <strong>bloqueios</strong> (ex: horários indisponíveis).
+            No canto superior direito você encontra o <strong>menu do usuário</strong>:
             <br /><br />
-            2) Pessoas e acesso
-            <br />- Crie os <strong>usuários</strong> (recepção, financeiro, admin).
-            <br />- Cadastre os <strong>profissionais</strong> (médicos/esteticistas) e confira permissões.
+            - <strong>Nome e perfil</strong> — mostra quem está logado e qual o papel atual.
+            <br />- <strong>Minha conta</strong> — acesse para alterar senha, foto e dados pessoais.
+            <br />- <strong>Trocar clínica</strong> — se você tem acesso a mais de uma clínica, pode alternar entre elas.
+            <br />- <strong>Ajuda</strong> — abre este tutorial do sistema.
+            <br />- <strong>Sair</strong> — encerra a sessão de forma segura.
             <br /><br />
-            3) Cadastros essenciais
-            <br />- Cadastre <strong>serviços</strong> para conseguir agendar e registrar atendimentos.
-            <br />- Cadastre <strong>pacientes</strong> (ou faça isso na hora do agendamento).
-            <br /><br />
-            4) Fluxo completo (do agendamento ao atendimento)
-            <br />- Vá em <strong>Agenda</strong> e crie um <strong>agendamento</strong>.
-            <br />- Em <strong>Operações da agenda</strong>, verifique as informações do agendamento e use filtros quando necessário.
-            <br />- Acesse como <strong>Profissional</strong> e acompanhe o atendimento na sua visão (agenda e registros).
+            <strong>Dica de segurança:</strong> Sempre clique em "Sair" ao terminar de usar o sistema, especialmente em computadores compartilhados.
         </div>
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Sair</div>
+        <div class="lc-card__title">Atalhos de teclado</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            - No topo à direita, abra o menu do usuário e clique em <strong>Sair</strong>.
+            O sistema oferece atalhos de teclado para agilizar a navegação:
+            <br /><br />
+            - <strong>/</strong> ou <strong>Ctrl + K</strong> — Foca no campo de busca rápida.
+            <br />- <strong>Esc</strong> — Fecha modais, painéis e menus abertos.
+            <br />- <strong>Enter</strong> — Confirma ações em formulários e diálogos.
+            <br /><br />
+            <strong>Dica:</strong> Dentro de formulários, use <strong>Tab</strong> para navegar entre os campos e <strong>Shift + Tab</strong> para voltar ao campo anterior.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Checklist para configurar sua clínica (Admin / Dono)</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Se você é o administrador ou dono da clínica, siga este passo a passo para deixar tudo funcionando:
+            <br /><br />
+            <strong>1. Configurações da agenda</strong>
+            <br />- Acesse <strong>Configurações</strong> e defina os <strong>horários de funcionamento</strong> da clínica.
+            <br />- Cadastre <strong>feriados e dias fechados</strong> para que a agenda não mostre horários nesses dias.
+            <br />- Configure <strong>regras de agendamento</strong> (antecedência mínima, intervalo entre consultas).
+            <br />- Defina <strong>bloqueios</strong> para horários específicos que não devem receber agendamentos.
+            <br /><br />
+            <strong>2. Cadastro de pessoas e acessos</strong>
+            <br />- Crie os <strong>usuários</strong> do sistema (recepcionistas, financeiro, outros admins).
+            <br />- Cadastre os <strong>profissionais</strong> (médicos, dentistas, esteticistas, etc.).
+            <br />- Revise as <strong>permissões</strong> de cada papel em Segurança > Papéis & Permissões.
+            <br /><br />
+            <strong>3. Cadastros essenciais</strong>
+            <br />- Cadastre os <strong>serviços</strong> oferecidos pela clínica (consultas, procedimentos, exames).
+            <br />- Cadastre os <strong>materiais</strong> do estoque, se aplicável.
+            <br />- Vincule materiais aos serviços para controle automático de consumo.
+            <br /><br />
+            <strong>4. Integrações (opcional)</strong>
+            <br />- Configure o <strong>WhatsApp</strong> para envio de confirmações e lembretes automáticos.
+            <br />- Conecte o <strong>Google Calendar</strong> para sincronizar a agenda dos profissionais.
+            <br />- Configure a <strong>Inteligência Artificial</strong> (chave OpenAI) para transcrição de áudio em prontuários.
+            <br /><br />
+            <strong>5. Primeiro agendamento</strong>
+            <br />- Cadastre um <strong>paciente</strong> (ou faça isso na hora do agendamento).
+            <br />- Vá em <strong>Agenda</strong> e crie o primeiro <strong>agendamento</strong>.
+            <br />- Teste o fluxo completo: agendar → confirmar → atender → finalizar.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Entendendo os perfis do sistema</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            O sistema possui perfis pré-definidos que determinam o que cada usuário pode ver e fazer:
+            <br /><br />
+            <strong>👑 Admin / Dono</strong> — Acesso total. Pode configurar a clínica, gerenciar usuários, ver relatórios financeiros e acessar todos os módulos.
+            <br /><br />
+            <strong>🏥 Recepção</strong> — Foco no atendimento ao paciente. Pode agendar consultas, cadastrar pacientes, operar a agenda do dia e registrar pagamentos.
+            <br /><br />
+            <strong>👨‍⚕️ Profissional</strong> — Foco no atendimento clínico. Vê sua própria agenda, acessa prontuários dos seus pacientes, registra evoluções e gerencia imagens médicas.
+            <br /><br />
+            <strong>💰 Financeiro</strong> — Foco na gestão financeira. Acessa vendas, caixa, contas a pagar e relatórios financeiros.
+            <br /><br />
+            <strong>Nota:</strong> Esses perfis podem ser personalizados pelo administrador em <strong>Segurança > Papéis & Permissões</strong>. É possível criar novos papéis ou ajustar as permissões dos existentes.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Dicas gerais de uso</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            - <strong>Notificações:</strong> Fique atento aos alertas e badges no menu — eles indicam pendências como agendamentos não confirmados ou estoque baixo.
+            <br />- <strong>Formulários:</strong> Campos com asterisco (*) são obrigatórios. O sistema valida os dados antes de salvar.
+            <br />- <strong>Tabelas:</strong> A maioria das listagens permite ordenar por colunas clicando no cabeçalho. Use os filtros disponíveis para refinar os resultados.
+            <br />- <strong>Ações em lote:</strong> Em algumas telas (como pacientes e agendamentos), você pode selecionar vários itens e aplicar ações em lote.
+            <br />- <strong>Responsividade:</strong> O sistema funciona em tablets e celulares. A experiência é otimizada para telas maiores, mas todas as funcionalidades estão disponíveis em dispositivos móveis.
         </div>
     </div>
 

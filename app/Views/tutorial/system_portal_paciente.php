@@ -88,9 +88,113 @@ if ($seoSiteName !== '' && !str_contains($computedTitle, $seoSiteName)) {
     </div>
 
     <div class="lc-card" style="margin-top:16px; padding:16px;">
-        <div class="lc-card__title">Visão geral</div>
+        <div class="lc-card__title">O que é o Portal do Paciente</div>
         <div class="lc-card__body" style="line-height:1.6;">
-            O Portal do Paciente é uma área separada para o paciente ver informações e realizar ações.
+            O <strong>Portal do Paciente</strong> é uma área exclusiva onde o paciente pode acessar suas informações de forma autônoma, sem precisar ligar para a clínica. É uma interface separada do sistema principal, com login próprio.
+            <br /><br />
+            <strong>Quem gerencia:</strong> Admin, Recepção e Profissional (cada um com ações diferentes).
+            <br /><br />
+            <strong>Benefícios:</strong>
+            <br />- Reduz ligações e mensagens para a recepção.
+            <br />- O paciente tem acesso 24h às suas informações.
+            <br />- Melhora a experiência e satisfação do paciente.
+            <br />- Facilita o preenchimento de anamneses e assinatura de documentos.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Como ativar o acesso do paciente</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            <strong>Pré-requisito:</strong> O paciente precisa ter um <strong>e-mail cadastrado</strong> no sistema.
+            <br /><br />
+            <strong>Passo a passo:</strong>
+            <br />1. Acesse a <strong>ficha do paciente</strong>.
+            <br />2. Procure a seção <strong>"Acesso ao Portal"</strong>.
+            <br />3. Clique em <strong>"Ativar acesso"</strong>.
+            <br />4. O sistema gera credenciais de acesso.
+            <br />5. Um e-mail é enviado ao paciente com o link do portal e instruções de primeiro acesso.
+            <br />6. O paciente define sua senha no primeiro login.
+            <br /><br />
+            <strong>Dica:</strong> Você também pode informar o link do portal verbalmente ou por WhatsApp. O paciente pode se cadastrar diretamente pelo portal se essa opção estiver habilitada.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">O que o paciente vê no portal</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Ao fazer login, o paciente tem acesso às seguintes áreas:
+            <br /><br />
+            <strong>📊 Dashboard</strong>
+            <br />- Resumo dos próximos agendamentos.
+            <br />- Notificações pendentes.
+            <br />- Atalhos para as principais ações.
+            <br /><br />
+            <strong>📅 Agenda</strong>
+            <br />- Visualização dos agendamentos futuros e passados.
+            <br />- Detalhes de cada consulta (data, hora, profissional, serviço).
+            <br />- Possibilidade de confirmar presença (se habilitado).
+            <br /><br />
+            <strong>📄 Documentos</strong>
+            <br />- Termos de consentimento para assinatura digital.
+            <br />- Documentos compartilhados pela clínica.
+            <br />- Prescrições e orientações.
+            <br /><br />
+            <strong>📋 Anamnese</strong>
+            <br />- Questionários de saúde para preenchimento.
+            <br />- Anamneses já preenchidas (histórico).
+            <br /><br />
+            <strong>🔔 Notificações</strong>
+            <br />- Lembretes de consulta.
+            <br />- Avisos da clínica.
+            <br />- Solicitações de preenchimento de anamnese ou assinatura de documentos.
+            <br /><br />
+            <strong>👤 Perfil</strong>
+            <br />- Dados pessoais (nome, telefone, e-mail, endereço).
+            <br />- O paciente pode solicitar alterações nos seus dados.
+            <br />- Alteração de senha.
+            <br /><br />
+            <strong>🖼️ Uploads</strong>
+            <br />- Envio de fotos e documentos para a clínica.
+            <br />- As imagens enviadas passam por moderação antes de serem adicionadas ao prontuário.
+            <br /><br />
+            <strong>🔒 Segurança e LGPD</strong>
+            <br />- Visualização dos termos de privacidade.
+            <br />- Gerenciamento de consentimentos.
+            <br />- Solicitação de exclusão de dados (direito LGPD).
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Notificações para o paciente</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            O sistema pode enviar notificações ao paciente por diferentes canais:
+            <br /><br />
+            - <strong>E-mail</strong> — confirmações, lembretes e documentos.
+            <br />- <strong>WhatsApp</strong> — lembretes de consulta, links de anamnese (se integração ativa).
+            <br />- <strong>Portal</strong> — notificações internas visíveis ao fazer login.
+            <br />- <strong>Push</strong> — notificações no navegador (se o paciente autorizar).
+            <br /><br />
+            <strong>Tipos de notificação:</strong>
+            <br />- Lembrete de consulta (1 dia antes, 1 hora antes).
+            <br />- Solicitação de preenchimento de anamnese.
+            <br />- Documento disponível para assinatura.
+            <br />- Confirmação de agendamento.
+            <br />- Alteração ou cancelamento de consulta.
+        </div>
+    </div>
+
+    <div class="lc-card" style="margin-top:16px; padding:16px;">
+        <div class="lc-card__title">Gerenciamento pelo admin/recepção</div>
+        <div class="lc-card__body" style="line-height:1.6;">
+            Do lado do sistema (admin/recepção), você pode:
+            <br /><br />
+            - <strong>Ativar/desativar</strong> o acesso ao portal de cada paciente.
+            <br />- <strong>Reenviar credenciais</strong> caso o paciente perca o acesso.
+            <br />- <strong>Ver o status</strong> do portal (ativo, pendente, nunca acessou).
+            <br />- <strong>Moderar uploads</strong> — aprovar ou rejeitar imagens enviadas pelo paciente.
+            <br />- <strong>Enviar documentos</strong> — compartilhar termos e prescrições pelo portal.
+            <br /><br />
+            <strong>Dica:</strong> Incentive os pacientes a usar o portal. Isso reduz a carga de trabalho da recepção e melhora a comunicação com o paciente.
         </div>
     </div>
 
