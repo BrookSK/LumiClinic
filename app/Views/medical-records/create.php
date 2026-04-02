@@ -41,7 +41,17 @@ ob_start();
         <div style="font-weight:700; font-size:16px;">
             Novo registro — <?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
         </div>
-        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/medical-records?patient_id=<?= $patientId ?>">Voltar</a>
+        <div class="lc-flex lc-gap-sm">
+            <?php
+            $appointmentIdForFinalize = (int)($_GET['appointment_id'] ?? 0);
+            if ($appointmentIdForFinalize > 0):
+            ?>
+                <a class="lc-btn lc-btn--primary lc-btn--sm" href="/schedule/complete-materials?id=<?= $appointmentIdForFinalize ?>&date=<?= urlencode(date('Y-m-d')) ?>">
+                    ✓ Finalizar atendimento
+                </a>
+            <?php endif; ?>
+            <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/medical-records?patient_id=<?= $patientId ?>">Voltar</a>
+        </div>
     </div>
 
     <?php if ($error): ?>

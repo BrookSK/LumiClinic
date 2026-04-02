@@ -106,7 +106,10 @@ ob_start();
                 </div>
 
                 <div class="lc-field">
-                    <label class="lc-label">Estoque mín.</label>
+                    <label class="lc-label" style="display:flex; align-items:center; gap:4px;">
+                        Estoque mín.
+                        <span title="Quando o estoque chegar nessa quantidade, o sistema gera um alerta avisando que está acabando." style="cursor:help; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; background:rgba(0,0,0,.08); font-size:11px; color:#6b7280;">?</span>
+                    </label>
                     <input class="lc-input" type="text" name="stock_minimum" value="0" />
                 </div>
 
@@ -157,21 +160,28 @@ ob_start();
                     <?php foreach ($items as $it): ?>
                         <?php
                             $status = (string)($it['status'] ?? '');
-                            $statusLabelMap = [
-                                'active' => 'Ativo',
-                                'disabled' => 'Inativo',
-                            ];
-                            $statusLabel = (string)($statusLabelMap[$status] ?? $status);
+                            $statusLabel = $status === 'active' ? 'Ativo' : 'Inativo';
+                            $current = (float)$it['stock_current'];
+                            $minimum = (float)$it['stock_minimum'];
+                            $isLow = $minimum > 0 && $current <= $minimum;
+                            $isOut = $current <= 0;
                         ?>
-                        <tr>
-                            <td><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string)($it['category'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string)$it['unit'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= number_format((float)$it['stock_current'], 3, ',', '.') ?></td>
-                            <td><?= number_format((float)$it['stock_minimum'], 3, ',', '.') ?></td>
-                            <td><?= number_format((float)$it['unit_cost'], 2, ',', '.') ?></td>
-                            <td><?= $it['validity_date'] === null ? '-' : htmlspecialchars((string)$it['validity_date'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string)$statusLabel, ENT_QUOTES, 'UTF-8') ?></td>
+                        <tr style="<?= $isOut ? 'background:rgba(185,28,28,.06);' : ($isLow ? 'background:rgba(217,119,6,.06);' : '') ?>">
+                            <td style="font-weight:600;"><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="lc-muted" style="font-size:12px;"><?= htmlspecialchars((string)($it['category'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="lc-muted" style="font-size:12px;"><?= htmlspecialchars((string)$it['unit'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td style="font-weight:700; color:<?= $isOut ? '#b91c1c' : ($isLow ? '#d97706' : '#16a34a') ?>;">
+                                <?= number_format($current, 2, ',', '.') ?>
+                                <?php if ($isOut): ?><span style="font-size:11px;"> (zerado)</span><?php elseif ($isLow): ?><span style="font-size:11px;"> (baixo)</span><?php endif; ?>
+                            </td>
+                            <td class="lc-muted" style="font-size:12px;"><?= number_format($minimum, 2, ',', '.') ?></td>
+                            <td class="lc-muted" style="font-size:12px;">R$ <?= number_format((float)$it['unit_cost'], 2, ',', '.') ?></td>
+                            <td class="lc-muted" style="font-size:12px;"><?= $it['validity_date'] === null ? '—' : htmlspecialchars((string)$it['validity_date'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td>
+                                <span class="lc-badge <?= $status === 'active' ? 'lc-badge--success' : 'lc-badge--secondary' ?>" style="font-size:11px;">
+                                    <?= $statusLabel ?>
+                                </span>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>

@@ -467,14 +467,7 @@ $ico = [
                         </summary>
                         <div class="lc-navgroup__children">
                             <div class="lc-nav__sub">
-                                <?= $navItem('/stock/materials', 'Materiais', $ico['stock'], $isActive('/stock/materials')) ?>
-                                <?php if ($can('stock.materials.manage')): ?>
-                                    <?= $navItem('/stock/categories', 'Categorias', $ico['stock'], $isActive('/stock/categories')) ?>
-                                    <?= $navItem('/stock/units', 'Unidades', $ico['stock'], $isActive('/stock/units')) ?>
-                                <?php endif; ?>
-                                <?php if ($can('stock.movements.read')): ?>
-                                    <?= $navItem('/stock/movements', 'Movimentações', $ico['stock'], $isActive('/stock/movements')) ?>
-                                <?php endif; ?>
+                                <?= $navItem('/stock/materials', 'Materiais', $ico['stock'], $isActive('/stock/materials') || $isActive('/stock/categories') || $isActive('/stock/units') || $isActive('/stock/movements')) ?>
                                 <?php if ($can('stock.alerts.read')): ?>
                                     <?= $navItem('/stock/alerts', 'Alertas', $ico['stock'], $isActive('/stock/alerts')) ?>
                                 <?php endif; ?>
