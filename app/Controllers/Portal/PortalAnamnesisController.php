@@ -17,6 +17,120 @@ use App\Repositories\AuditLogRepository;
 
 final class PortalAnamnesisController extends Controller
 {
+    public function index(Request $request)
+    {
+        $auth = new PatientAuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $patientId = $auth->patientId();
+        if ($clinicId === null || $patientId === null) {
+            return Response::redirect('/portal/login');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new AnamnesisResponseRepository($pdo);
+
+        // Buscar todas as respostas do paciente
+        $all = $repo->listByPatient($clinicId, $patientId, 200);
+
+        $pending = [];
+        $completed = [];
+        foreach ($all as $r) {
+            $answersJson = trim((string)($r['answers_json'] ?? ''));
+            $answers = $answersJson !== '' ? json_decode($answersJson, true) : null;
+            $isEmpty = !is_array($answers) || $answers === [];
+
+            if ($isEmpty) {
+                $pending[] = $r;
+            } else {
+                $completed[] = $r;
+            }
+        }
+
+        return $this->view('portal/anamnesis', [
+            'pending' => $pending,
+            'completed' => $completed,
+        ]);
+    }
+
+    public function fill(Request $request)
+    {
+        $auth = new PatientAuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $patientId = $auth->patientId();
+        if ($clinicId === null || $patientId === null) {
+            return Response::redirect('/portal/login');
+        }
+
+        $responseId = (int)$request->input('id', 0);
+        if ($responseId <= 0) {
+            return Response::redirect('/portal/anamnese');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new AnamnesisResponseRepository($pdo);
+        $response = $repo->findById($clinicId, $responseId);
+        if ($response === null || (int)($response['patient_id'] ?? 0) !== (int)$patientId) {
+            return Response::redirect('/portal/anamnese');
+        }
+
+        $templateId = (int)($response['template_id'] ?? 0);
+        $tplRepo = new AnamnesisTemplateRepository($pdo);
+        $tpl = $tplRepo->findById($clinicId, $templateId);
+
+        $fields = [];
+        $fieldRepo = new AnamnesisFieldRepository($pdo);
+        $fields = $fieldRepo->listByTemplate($clinicId, $templateId);
+
+        $patient = (new PatientRepository($pdo))->findClinicalById($clinicId, $patientId);
+
+        return $this->view('portal/anamnesis_fill', [
+            'response' => $response,
+            'template' => $tpl,
+            'fields' => $fields,
+            'patient' => $patient,
+        ]);
+    }
+
+    public function submitFill(Request $request)
+    {
+        $auth = new PatientAuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $patientId = $auth->patientId();
+        if ($clinicId === null || $patientId === null) {
+            return Response::redirect('/portal/login');
+        }
+
+        $responseId = (int)$request->input('id', 0);
+        if ($responseId <= 0) {
+            return Response::redirect('/portal/anamnese');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new AnamnesisResponseRepository($pdo);
+        $response = $repo->findById($clinicId, $responseId);
+        if ($response === null || (int)($response['patient_id'] ?? 0) !== (int)$patientId) {
+            return Response::redirect('/portal/anamnese');
+        }
+
+        $templateId = (int)($response['template_id'] ?? 0);
+        $fieldRepo = new AnamnesisFieldRepository($pdo);
+        $fields = $fieldRepo->listByTemplate($clinicId, $templateId);
+
+        $answers = [];
+        foreach ($fields as $f) {
+            $key = (string)($f['field_key'] ?? '');
+            if ($key === '') continue;
+            $val = $request->input($key, '');
+            $answers[$key] = $val;
+        }
+
+        $signatureDataUrl = trim((string)$request->input('signature_data_url', ''));
+
+        $repo->updateAnswers($clinicId, $responseId, $answers, $signatureDataUrl !== '' ? $signatureDataUrl : null);
+
+        return Response::redirect('/portal/anamnese?success=1');
+    }
+
     public function exportPdf(Request $request): Response
     {
         $auth = new PatientAuthService($this->container);

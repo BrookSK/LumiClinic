@@ -72,10 +72,13 @@ ob_start();
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="color:rgba(31,41,55,.35);"><path d="m6 9 6 6 6-6"/></svg>
     </summary>
     <div style="margin-top:8px;padding:18px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);">
-        <form method="post" action="/portal/seguranca/reset">
+        <form method="post" action="/portal/perfil/change-password">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <div style="font-size:13px;color:rgba(31,41,55,.50);margin-bottom:12px;">Clique no botão abaixo para receber um link de redefinição de senha no seu e-mail.</div>
-            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Enviar link de redefinição</button>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:500px;">
+                <div class="lc-field"><label class="lc-label">Senha atual</label><input class="lc-input" type="password" name="current_password" required /></div>
+                <div class="lc-field"><label class="lc-label">Nova senha</label><input class="lc-input" type="password" name="new_password" required /></div>
+            </div>
+            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit" style="margin-top:12px;">Alterar senha</button>
         </form>
     </div>
 </details>

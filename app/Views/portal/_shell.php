@@ -72,6 +72,7 @@ $portalTitle = $patientName !== '' ? ('Olá, ' . $patientName) : 'Portal do Paci
         <nav class="lc-nav">
             <?= $navItem('/portal', 'Início', $ico['home'], $isActive('/portal') && !$isActive('/portal/agenda') && !$isActive('/portal/documentos') && !$isActive('/portal/uploads') && !$isActive('/portal/perfil') && !$isActive('/portal/notificacoes')) ?>
             <?= $navItem('/portal/agenda', 'Agenda', $ico['calendar'], $isActive('/portal/agenda')) ?>
+            <?= $navItem('/portal/anamnese', 'Anamnese', $ico['docs'], $isActive('/portal/anamnese')) ?>
             <?= $navItem('/portal/documentos', 'Documentos', $ico['docs'], $isActive('/portal/documentos')) ?>
             <?= $navItem('/portal/uploads', 'Enviar fotos', $ico['upload'], $isActive('/portal/uploads')) ?>
             <?= $navItem('/portal/perfil', 'Meu perfil', $ico['user'], $isActive('/portal/perfil')) ?>

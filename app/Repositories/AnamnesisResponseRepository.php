@@ -101,4 +101,28 @@ final class AnamnesisResponseRepository
 
         return (int)$this->pdo->lastInsertId();
     }
+
+    public function updateAnswers(int $clinicId, int $responseId, array $answers, ?string $signatureDataUrl): void
+    {
+        $sql = "
+            UPDATE anamnesis_responses
+               SET answers_json = :answers_json,
+                   signature_data_url = :signature_data_url,
+                   signed_at = IF(:has_sig = 1, NOW(), signed_at),
+                   updated_at = NOW()
+             WHERE clinic_id = :clinic_id
+               AND id = :id
+               AND deleted_at IS NULL
+             LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'id' => $responseId,
+            'answers_json' => json_encode($answers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'signature_data_url' => $signatureDataUrl,
+            'has_sig' => $signatureDataUrl !== null ? 1 : 0,
+        ]);
+    }
 }

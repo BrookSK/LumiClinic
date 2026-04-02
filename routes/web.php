@@ -139,6 +139,9 @@ $router->get('/portal/signatures/file', [PortalDocumentsController::class, 'sign
 $router->get('/portal/medical-images/file', [PortalDocumentsController::class, 'medicalImageFile']);
 
 $router->get('/portal/anamnesis/export-pdf', [\App\Controllers\Portal\PortalAnamnesisController::class, 'exportPdf']);
+$router->get('/portal/anamnese', [\App\Controllers\Portal\PortalAnamnesisController::class, 'index']);
+$router->get('/portal/anamnese/preencher', [\App\Controllers\Portal\PortalAnamnesisController::class, 'fill']);
+$router->post('/portal/anamnese/preencher', [\App\Controllers\Portal\PortalAnamnesisController::class, 'submitFill']);
 
 $router->get('/portal/busca', [PortalSearchController::class, 'index']);
 
@@ -155,6 +158,7 @@ $router->post('/portal/push/test', [PortalPushController::class, 'test']);
 
 $router->get('/portal/perfil', [PortalProfileController::class, 'index']);
 $router->post('/portal/perfil/request-change', [PortalProfileController::class, 'requestChange']);
+$router->post('/portal/perfil/change-password', [PortalProfileController::class, 'changePassword']);
 $router->get('/portal/required-consents', [PortalLegalDocumentsController::class, 'required']);
 $router->get('/portal/legal/read', [PortalLegalDocumentsController::class, 'read']);
 $router->post('/portal/legal/accept', [PortalLegalDocumentsController::class, 'accept']);

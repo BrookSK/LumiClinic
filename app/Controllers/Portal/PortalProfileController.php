@@ -63,4 +63,39 @@ final class PortalProfileController extends Controller
             return $this->redirect('/portal/perfil?error=' . urlencode($e->getMessage()));
         }
     }
+
+    public function changePassword(Request $request)
+    {
+        $auth = new PatientAuthService($this->container);
+        $patientUserId = $auth->patientUserId();
+        if ($patientUserId === null) {
+            return $this->redirect('/portal/login');
+        }
+
+        $currentPassword = (string)$request->input('current_password', '');
+        $newPassword = (string)$request->input('new_password', '');
+
+        if ($currentPassword === '' || $newPassword === '') {
+            return $this->redirect('/portal/perfil?error=' . urlencode('Preencha a senha atual e a nova senha.'));
+        }
+
+        if (strlen($newPassword) < 6) {
+            return $this->redirect('/portal/perfil?error=' . urlencode('A nova senha deve ter pelo menos 6 caracteres.'));
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $stmt = $pdo->prepare("SELECT password_hash FROM patient_users WHERE id = :id AND deleted_at IS NULL LIMIT 1");
+        $stmt->execute(['id' => $patientUserId]);
+        $row = $stmt->fetch();
+
+        if (!$row || !password_verify($currentPassword, (string)$row['password_hash'])) {
+            return $this->redirect('/portal/perfil?error=' . urlencode('Senha atual incorreta.'));
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $pdo->prepare("UPDATE patient_users SET password_hash = :hash, updated_at = NOW() WHERE id = :id LIMIT 1")
+            ->execute(['hash' => $newHash, 'id' => $patientUserId]);
+
+        return $this->redirect('/portal/perfil?success=' . urlencode('Senha alterada com sucesso.'));
+    }
 }
