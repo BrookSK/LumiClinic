@@ -1161,9 +1161,9 @@ final class ScheduleController extends Controller
         }
 
         $repo = new AppointmentRepository($this->container->get(\PDO::class));
-        $appointment = $repo->findById($clinicId, $id);
+        $appointment = $repo->findDetailedById($clinicId, $id);
         if ($appointment === null) {
-            return $this->redirect('/schedule?error=' . urlencode('Agendamento inv?lido.'));
+            return $this->redirect('/schedule?error=' . urlencode('Agendamento inválido.'));
         }
 
         if ($this->isProfessionalRole()) {
