@@ -31,8 +31,8 @@ ob_start();
 ?>
 
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:16px; gap:10px;">
-    <div style="font-weight:800; font-size:18px;">Detalhe da Assinatura</div>
-    <a class="lc-btn lc-btn--secondary" href="/clinic/legal-signatures">Voltar</a>
+    <div style="font-weight:850; font-size:20px; color:rgba(31,41,55,.96);">Detalhe da Assinatura</div>
+    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/clinic/legal-signatures">Voltar</a>
 </div>
 
 <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr;">
