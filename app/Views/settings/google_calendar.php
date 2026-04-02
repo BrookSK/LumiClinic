@@ -48,53 +48,43 @@ ob_start();
     </div>
 
     <?php if (!$clientReady || !$libReady): ?>
+    <?php $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1; ?>
+
+    <?php if ($isSuperAdmin): ?>
+    <!-- Super admin: mostra detalhes técnicos -->
     <div style="padding:18px;border-radius:14px;border:1px solid rgba(185,28,28,.18);background:rgba(185,28,28,.03);margin-bottom:16px;">
         <div style="font-weight:750;font-size:14px;color:rgba(185,28,28,.80);margin-bottom:10px;">⚠️ Configuração pendente</div>
 
         <?php if (!$clientReady): ?>
         <div style="padding:14px;border-radius:12px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.12);margin-bottom:12px;">
             <div style="font-weight:700;font-size:13px;color:rgba(31,41,55,.80);margin-bottom:8px;">Google OAuth não configurado</div>
-            <div style="font-size:13px;color:rgba(31,41,55,.60);line-height:1.6;">
-                Para usar o Google Calendar, o administrador do sistema precisa configurar as credenciais OAuth do Google. Siga os passos:
+            <div style="font-size:13px;color:rgba(31,41,55,.60);line-height:1.6;margin-bottom:10px;">
+                Configure as credenciais OAuth no painel de administrador para habilitar o Google Calendar para as clínicas.
             </div>
-            <div style="margin-top:10px;padding:12px;border-radius:10px;background:rgba(255,255,255,.60);font-size:13px;color:rgba(31,41,55,.70);line-height:1.8;">
-                <div style="font-weight:700;margin-bottom:6px;">Passo a passo:</div>
-                1. Acesse o <a href="https://console.cloud.google.com/" target="_blank" rel="noopener" style="color:rgba(129,89,1,1);font-weight:600;">Google Cloud Console</a><br>
-                2. Crie um projeto (ou use um existente)<br>
-                3. Vá em "APIs e Serviços" → "Credenciais"<br>
-                4. Clique em "Criar credenciais" → "ID do cliente OAuth"<br>
-                5. Tipo: "Aplicativo da Web"<br>
-                6. Em "URIs de redirecionamento autorizados", adicione:<br>
-                <code style="display:inline-block;margin-top:4px;padding:4px 8px;border-radius:6px;background:rgba(0,0,0,.04);font-size:12px;"><?= htmlspecialchars(rtrim((string)(getenv('APP_BASE_URL') ?: ($_SERVER['REQUEST_SCHEME'] ?? 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'seudominio.com')), '/'), ENT_QUOTES, 'UTF-8') ?>/settings/google-calendar/callback</code><br>
-                7. Copie o Client ID e Client Secret gerados<br>
-                8. Acesse o painel de super admin: <a href="/sys/settings/google-oauth" style="color:rgba(129,89,1,1);font-weight:600;">Configurações → Google OAuth</a><br>
-                9. Cole o Client ID e Client Secret e salve
+            <div style="margin-top:8px;">
+                <a class="lc-btn lc-btn--primary lc-btn--sm" href="/sys/settings/google-oauth">Configurar Google OAuth</a>
             </div>
-            <?php
-            $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
-            ?>
-            <?php if ($isSuperAdmin): ?>
-            <div style="margin-top:12px;">
-                <a class="lc-btn lc-btn--primary lc-btn--sm" href="/sys/settings/google-oauth">Configurar Google OAuth agora</a>
-            </div>
-            <?php else: ?>
-            <div style="margin-top:10px;font-size:12px;color:rgba(31,41,55,.50);">
-                Peça ao administrador do sistema para configurar isso em: Painel Admin → Configurações → Google OAuth
-            </div>
-            <?php endif; ?>
         </div>
         <?php endif; ?>
 
         <?php if (!$libReady): ?>
         <div style="padding:14px;border-radius:12px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.12);">
             <div style="font-weight:700;font-size:13px;color:rgba(31,41,55,.80);margin-bottom:6px;">Dependência ausente</div>
-            <div style="font-size:13px;color:rgba(31,41,55,.60);line-height:1.6;">
-                A biblioteca <code>google/apiclient</code> não está instalada. O administrador do servidor precisa executar:
-            </div>
-            <code style="display:block;margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.04);font-size:12px;">composer require google/apiclient</code>
+            <div style="font-size:13px;color:rgba(31,41,55,.60);">Execute no servidor: <code>composer require google/apiclient</code></div>
         </div>
         <?php endif; ?>
     </div>
+    <?php else: ?>
+    <!-- Dono da clínica / usuário normal: mensagem simples -->
+    <div style="padding:18px;border-radius:14px;border:1px solid rgba(107,114,128,.18);background:rgba(107,114,128,.04);margin-bottom:16px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">🔒</div>
+        <div style="font-weight:750;font-size:14px;color:rgba(31,41,55,.80);margin-bottom:6px;">Google Calendar ainda não está disponível</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.50);line-height:1.5;max-width:400px;margin:0 auto;">
+            A integração com o Google Calendar precisa ser habilitada pelo administrador do sistema. Entre em contato com o suporte para ativar essa funcionalidade.
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php endif; ?>
 
     <div style="font-size:13px;color:rgba(31,41,55,.55);line-height:1.6;margin-bottom:16px;">
