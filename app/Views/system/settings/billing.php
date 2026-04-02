@@ -24,12 +24,35 @@ ob_start();
 ?>
 
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap lc-gap-md" style="margin-bottom:14px;">
-    <div class="lc-badge lc-badge--primary">Configurações de Assinatura</div>
-    <div class="lc-flex lc-gap-sm">
-        <a class="lc-btn lc-btn--secondary" href="/sys/billing">Assinaturas</a>
-        <a class="lc-btn lc-btn--secondary" href="/sys/billing-events">Eventos</a>
-        <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Clínicas</a>
+    <div>
+        <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">Configurações de Assinatura</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Configure os gateways de pagamento e webhooks.</div>
     </div>
+    <div class="lc-flex lc-gap-sm">
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/billing">Assinaturas</a>
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/billing-events">Eventos</a>
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/clinics">Clínicas</a>
+    </div>
+</div>
+
+<!-- Webhooks resumo -->
+<div style="padding:16px;border-radius:14px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.10);margin-bottom:16px;">
+    <div style="font-weight:750;font-size:14px;color:rgba(129,89,1,1);margin-bottom:10px;">URLs de Webhook (copie e configure nos gateways)</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-weight:700;font-size:12px;color:rgba(31,41,55,.60);min-width:120px;">Asaas:</span>
+            <code style="padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.70);border:1px solid rgba(17,24,39,.08);font-size:12px;user-select:all;word-break:break-all;"><?= htmlspecialchars($webhookAsaasUrl, ENT_QUOTES, 'UTF-8') ?></code>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-weight:700;font-size:12px;color:rgba(31,41,55,.60);min-width:120px;">Mercado Pago:</span>
+            <code style="padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.70);border:1px solid rgba(17,24,39,.08);font-size:12px;user-select:all;word-break:break-all;"><?= htmlspecialchars($webhookMpUrl, ENT_QUOTES, 'UTF-8') ?></code>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-weight:700;font-size:12px;color:rgba(31,41,55,.60);min-width:120px;">Marketing WA:</span>
+            <code style="padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.70);border:1px solid rgba(17,24,39,.08);font-size:12px;user-select:all;word-break:break-all;"><?= htmlspecialchars($baseUrl . '/webhooks/marketing/whatsapp', ENT_QUOTES, 'UTF-8') ?></code>
+        </div>
+    </div>
+    <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:8px;">Configure essas URLs nos respectivos painéis dos gateways. Os eventos de pagamento serão processados automaticamente.</div>
 </div>
 
 <div class="lc-card lc-card--soft" style="margin-bottom:16px;">
