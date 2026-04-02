@@ -507,6 +507,11 @@ $router->post('/patients/prescriptions/update', [\App\Controllers\Patients\Presc
 $router->post('/patients/prescriptions/delete', [\App\Controllers\Patients\PrescriptionController::class, 'delete']);
 $router->get('/patients/prescription/print', [\App\Controllers\Patients\PrescriptionController::class, 'print']);
 
+$router->get('/patients/documents', [\App\Controllers\Patients\PatientDocumentsController::class, 'index']);
+$router->post('/patients/documents/upload', [\App\Controllers\Patients\PatientDocumentsController::class, 'upload']);
+$router->get('/patients/documents/file', [\App\Controllers\Patients\PatientDocumentsController::class, 'file']);
+$router->post('/patients/documents/delete', [\App\Controllers\Patients\PatientDocumentsController::class, 'delete']);
+
 $router->get('/patients/timeline', [\App\Controllers\Patients\PatientTimelineController::class, 'index']);
 $router->get('/patients/timeline/export.csv', [\App\Controllers\Patients\PatientTimelineController::class, 'exportCsv']);
 

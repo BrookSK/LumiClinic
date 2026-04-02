@@ -85,22 +85,6 @@ ob_start();
         <label class="lc-label">CPF</label>
         <input class="lc-input" type="text" name="cpf" />
 
-        <label class="lc-label">Profissional de referência</label>
-        <select class="lc-select" name="reference_professional_id">
-            <option value="">Nenhum</option>
-            <?php foreach ($professionals as $pr): ?>
-                <option value="<?= (int)$pr['id'] ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
-            <?php endforeach; ?>
-        </select>
-
-        <label class="lc-label">Origem do paciente</label>
-        <select class="lc-select" name="patient_origin_id">
-            <option value="">(opcional)</option>
-            <?php foreach (($patientOrigins ?? []) as $o): ?>
-                <option value="<?= (int)($o['id'] ?? 0) ?>"><?= htmlspecialchars((string)($o['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
-            <?php endforeach; ?>
-        </select>
-
         <label class="lc-label">Endereço</label>
         <div class="lc-grid lc-gap-grid">
             <div>

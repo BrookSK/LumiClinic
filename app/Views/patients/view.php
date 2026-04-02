@@ -62,6 +62,9 @@ ob_start();
         <?php if ($can('medical_images.read')): ?>
             <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Imagens</a>
         <?php endif; ?>
+        <?php if ($can('patients.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/patients/documents?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Documentos</a>
+        <?php endif; ?>
         <?php if ($can('anamnesis.fill')): ?>
             <a class="lc-btn lc-btn--secondary" href="/anamnesis?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Anamnese</a>
         <?php endif; ?>

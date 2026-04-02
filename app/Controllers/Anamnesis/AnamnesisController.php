@@ -509,6 +509,26 @@ final class AnamnesisController extends Controller
             $html .= '<div class="a">' . nl2br(htmlspecialchars((string)$display, ENT_QUOTES, 'UTF-8')) . '</div>';
         }
 
+        // Assinatura
+        $sigDataUrl = trim((string)($response['signature_data_url'] ?? ''));
+        $signedAt = trim((string)($response['signed_at'] ?? ''));
+        if ($sigDataUrl !== '') {
+            $signedFmt = '';
+            if ($signedAt !== '') {
+                try { $signedFmt = (new \DateTimeImmutable($signedAt))->format('d/m/Y H:i'); } catch (\Throwable $e) { $signedFmt = $signedAt; }
+            }
+
+            $html .= '<div style="margin-top:30px; padding-top:16px; border-top:1px solid #ddd;">';
+            $html .= '<div style="font-weight:700; margin-bottom:8px;">Assinatura do paciente</div>';
+            $html .= '<div style="border:1px solid #ddd; border-radius:8px; padding:12px; display:inline-block; background:#fafafa;">';
+            $html .= '<img src="' . htmlspecialchars($sigDataUrl, ENT_QUOTES, 'UTF-8') . '" style="max-width:300px; height:auto;" />';
+            $html .= '</div>';
+            if ($signedFmt !== '') {
+                $html .= '<div style="margin-top:6px; font-size:11px; color:#6b7280;">Assinado em: ' . htmlspecialchars($signedFmt, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
+            $html .= '</div>';
+        }
+
         $html .= '</body></html>';
 
         /** @var object $dompdf */
