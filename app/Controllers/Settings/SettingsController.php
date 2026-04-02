@@ -169,6 +169,7 @@ final class SettingsController extends Controller
         $saved = trim((string)$request->input('saved', ''));
         return $this->view('settings/ai', [
             'openai_key_set' => (bool)($data['openai_key_set'] ?? false),
+            'global_key' => (bool)($data['global_key'] ?? false),
             'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
         ]);
     }

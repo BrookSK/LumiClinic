@@ -44,6 +44,7 @@ ob_start();
                     <div class="lc-field"><label class="lc-label">Limite usuários</label><input class="lc-input" type="number" name="limit_users" value="0" min="0" /><div style="font-size:10px;color:rgba(31,41,55,.35);">0 = ilimitado</div></div>
                     <div class="lc-field"><label class="lc-label">Limite pacientes</label><input class="lc-input" type="number" name="limit_patients" value="0" min="0" /></div>
                     <div class="lc-field"><label class="lc-label">Armazenamento (MB)</label><input class="lc-input" type="number" name="limit_storage_mb" value="0" min="0" /></div>
+                    <div class="lc-field"><label class="lc-label">Transcrição (min/mês)</label><input class="lc-input" type="number" name="limit_transcription_minutes" value="0" min="0" /><div style="font-size:10px;color:rgba(31,41,55,.35);">0 = ilimitado</div></div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
                     <div class="lc-field"><label class="lc-label">Portal do paciente</label><select class="lc-select" name="portal_enabled"><option value="1">Ativo</option><option value="0">Desativado</option></select></div>
@@ -101,6 +102,7 @@ ob_start();
                             <div class="lc-field"><label class="lc-label">Limite usuários</label><input class="lc-input" type="number" name="limit_users" value="<?= (int)($limits['users'] ?? 0) ?>" min="0" /></div>
                             <div class="lc-field"><label class="lc-label">Limite pacientes</label><input class="lc-input" type="number" name="limit_patients" value="<?= (int)($limits['patients'] ?? 0) ?>" min="0" /></div>
                             <div class="lc-field"><label class="lc-label">Armazenamento (MB)</label><input class="lc-input" type="number" name="limit_storage_mb" value="<?= (int)($limits['storage_mb'] ?? 0) ?>" min="0" /></div>
+                            <div class="lc-field"><label class="lc-label">Transcrição (min/mês)</label><input class="lc-input" type="number" name="limit_transcription_minutes" value="<?= (int)($limits['transcription_minutes'] ?? 0) ?>" min="0" /></div>
                             <div class="lc-field"><label class="lc-label">Portal</label><select class="lc-select" name="portal_enabled"><option value="1" <?= (bool)($limits['portal'] ?? true) ? 'selected' : '' ?>>Ativo</option><option value="0" <?= !(bool)($limits['portal'] ?? true) ? 'selected' : '' ?>>Desativado</option></select></div>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:10px;">

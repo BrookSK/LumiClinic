@@ -180,6 +180,7 @@ $ico = [
                             <?= $navItem('/sys/settings/billing', 'Assinatura', $ico['settings'], $isActive('/sys/settings/billing')) ?>
                             <?= $navItem('/sys/settings/whatsapp', 'WhatsApp', $ico['settings'], $isActive('/sys/settings/whatsapp')) ?>
                             <?= $navItem('/sys/settings/google-oauth', 'Google Calendar', $ico['settings'], $isActive('/sys/settings/google-oauth')) ?>
+                            <?= $navItem('/sys/settings/ai', 'IA (OpenAI)', $ico['settings'], $isActive('/sys/settings/ai')) ?>
                             <?= $navItem('/sys/settings/seo', 'SEO', $ico['settings'], $isActive('/sys/settings/seo')) ?>
                             <?= $navItem('/sys/settings/support', 'Suporte', $ico['settings'], $isActive('/sys/settings/support')) ?>
                             <?= $navItem('/sys/settings/mail', 'E-mail', $ico['settings'], $isActive('/sys/settings/mail')) ?>
@@ -190,6 +191,7 @@ $ico = [
 
                 <?= $navItem('/sys/error-logs', 'Logs de erro', $ico['settings'], $isActive('/sys/error-logs')) ?>
                 <?= $navItem('/sys/queue-jobs', 'Fila', $ico['stock'], $isActive('/sys/queue-jobs')) ?>
+                <?= $navItem('/sys/settings/server', 'Servidor', $ico['settings'], $isActive('/sys/settings/server')) ?>
                 <?= $navItem('/tutorial/sistema', 'Ajuda', $ico['help'], $isActive('/tutorial/sistema')) ?>
             <?php else: ?>
                 <?= $navItem('/', 'Dashboard', $ico['dashboard'], $isActive('/')) ?>

@@ -146,8 +146,7 @@ final class MedicalRecordAudioService
 
         try {
             $fullPath = PrivateStorage::fullPath($clinicId, $relative);
-            $result = (new OpenAiClient($this->container))->audioTranscription($fullPath, $originalName ?? ('audio.' . $ext));
-            $text = trim((string)($result['text'] ?? ''));
+            $text = $this->transcribeWithChunking($fullPath, $originalName ?? ('audio.' . $ext), $ext);
             $repo->setTranscript($clinicId, $audioId, 'transcribed', $text);
         } catch (\Throwable $e) {
             $repo->setTranscript($clinicId, $audioId, 'transcription_failed', null);
@@ -161,6 +160,101 @@ final class MedicalRecordAudioService
             'audio_note_id' => $audioId,
             'transcript_text' => $text,
         ];
+    }
+
+    /**
+     * Transcreve áudio, dividindo em chunks de ~10 min se o arquivo for > 24MB.
+     * Usa ffmpeg para dividir e concatena os textos transcritos.
+     */
+    private function transcribeWithChunking(string $fullPath, string $filename, string $ext): string
+    {
+        $maxBytes = 24 * 1024 * 1024; // 24MB (Whisper limit is 25MB)
+        $fileSize = file_exists($fullPath) ? filesize($fullPath) : 0;
+
+        $client = new OpenAiClient($this->container);
+
+        // Arquivo pequeno: transcreve direto
+        if ($fileSize <= $maxBytes) {
+            $result = $client->audioTranscription($fullPath, $filename);
+            return trim((string)($result['text'] ?? ''));
+        }
+
+        // Arquivo grande: dividir com ffmpeg
+        $ffmpeg = $this->findFfmpeg();
+        if ($ffmpeg === null) {
+            // Sem ffmpeg: tenta enviar direto (pode falhar se > 25MB)
+            $result = $client->audioTranscription($fullPath, $filename);
+            return trim((string)($result['text'] ?? ''));
+        }
+
+        $tmpDir = sys_get_temp_dir() . '/lc_audio_chunks_' . bin2hex(random_bytes(8));
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
+        }
+
+        try {
+            // Dividir em chunks de 10 minutos
+            $chunkPattern = $tmpDir . '/chunk_%03d.' . $ext;
+            $cmd = sprintf(
+                '%s -i %s -f segment -segment_time 600 -c copy -reset_timestamps 1 %s 2>&1',
+                escapeshellarg($ffmpeg),
+                escapeshellarg($fullPath),
+                escapeshellarg($chunkPattern)
+            );
+            exec($cmd, $output, $exitCode);
+
+            if ($exitCode !== 0) {
+                // ffmpeg falhou: tenta enviar direto
+                $result = $client->audioTranscription($fullPath, $filename);
+                return trim((string)($result['text'] ?? ''));
+            }
+
+            // Listar chunks gerados
+            $chunks = glob($tmpDir . '/chunk_*.' . $ext);
+            if ($chunks === false || $chunks === []) {
+                $result = $client->audioTranscription($fullPath, $filename);
+                return trim((string)($result['text'] ?? ''));
+            }
+
+            sort($chunks);
+
+            // Transcrever cada chunk
+            $texts = [];
+            foreach ($chunks as $i => $chunkPath) {
+                $chunkFilename = 'chunk_' . $i . '.' . $ext;
+                $result = $client->audioTranscription($chunkPath, $chunkFilename);
+                $chunkText = trim((string)($result['text'] ?? ''));
+                if ($chunkText !== '') {
+                    $texts[] = $chunkText;
+                }
+            }
+
+            return implode("\n\n", $texts);
+        } finally {
+            // Limpar chunks temporários
+            $files = glob($tmpDir . '/*');
+            if (is_array($files)) {
+                foreach ($files as $f) {
+                    if (is_file($f)) @unlink($f);
+                }
+            }
+            @rmdir($tmpDir);
+        }
+    }
+
+    private function findFfmpeg(): ?string
+    {
+        // Tentar caminhos comuns
+        $paths = ['ffmpeg', '/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg'];
+        foreach ($paths as $p) {
+            $out = [];
+            $code = 0;
+            @exec(escapeshellarg($p) . ' -version 2>&1', $out, $code);
+            if ($code === 0) {
+                return $p;
+            }
+        }
+        return null;
     }
 
     private function sumStorageUsedBytes(int $clinicId): int

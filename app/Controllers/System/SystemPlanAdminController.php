@@ -62,6 +62,11 @@ final class SystemPlanAdminController extends Controller
             $limits['storage_mb'] = $storageMb;
         }
 
+        $transcriptionMinutes = (int)$request->input('limit_transcription_minutes', 0);
+        if ($transcriptionMinutes > 0) {
+            $limits['transcription_minutes'] = $transcriptionMinutes;
+        }
+
         $limitsJson = (string)json_encode($limits, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         try {
@@ -113,6 +118,11 @@ final class SystemPlanAdminController extends Controller
         }
         if ($storageMb > 0) {
             $limits['storage_mb'] = $storageMb;
+        }
+
+        $transcriptionMinutes = (int)$request->input('limit_transcription_minutes', 0);
+        if ($transcriptionMinutes > 0) {
+            $limits['transcription_minutes'] = $transcriptionMinutes;
         }
 
         $limitsJson = (string)json_encode($limits, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

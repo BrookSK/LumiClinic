@@ -651,6 +651,11 @@ $router->post('/sys/settings/dev-alerts', [\App\Controllers\System\SystemSetting
 $router->get('/sys/settings/whatsapp', [\App\Controllers\System\SystemSettingsController::class, 'whatsapp']);
 $router->post('/sys/settings/whatsapp', [\App\Controllers\System\SystemSettingsController::class, 'whatsappSubmit']);
 
+$router->get('/sys/settings/ai', [\App\Controllers\System\SystemSettingsController::class, 'ai']);
+$router->post('/sys/settings/ai', [\App\Controllers\System\SystemSettingsController::class, 'aiSubmit']);
+
+$router->get('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverRequirements']);
+
 $router->get('/sys/error-logs', [SystemErrorLogController::class, 'index']);
 $router->get('/sys/error-logs/view', [SystemErrorLogController::class, 'details']);
 

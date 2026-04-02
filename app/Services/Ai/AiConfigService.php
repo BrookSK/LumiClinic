@@ -14,9 +14,15 @@ final class AiConfigService
 {
     public function __construct(private readonly Container $container) {}
 
-    /** @return array{openai_key_set:bool} */
+    /** @return array{openai_key_set:bool,global_key:bool} */
     public function getAiSettings(): array
     {
+        // Verificar key global primeiro
+        $globalKey = $this->getGlobalOpenAiKey();
+        if ($globalKey !== null) {
+            return ['openai_key_set' => true, 'global_key' => true];
+        }
+
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
@@ -26,7 +32,7 @@ final class AiConfigService
         $row = (new ClinicSettingsRepository($this->container->get(\PDO::class)))->findByClinicId($clinicId);
         $enc = is_array($row) ? (string)($row['openai_api_key_encrypted'] ?? '') : '';
 
-        return ['openai_key_set' => trim($enc) !== ''];
+        return ['openai_key_set' => trim($enc) !== '', 'global_key' => false];
     }
 
     public function setOpenAiApiKey(?string $apiKeyPlain, string $ip): void
@@ -58,6 +64,13 @@ final class AiConfigService
 
     public function getOpenAiApiKeyPlain(): ?string
     {
+        // 1. Tentar key global do super admin
+        $globalKey = $this->getGlobalOpenAiKey();
+        if ($globalKey !== null) {
+            return $globalKey;
+        }
+
+        // 2. Fallback: key da clínica
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
@@ -72,5 +85,12 @@ final class AiConfigService
         }
 
         return (new CryptoService($this->container))->decrypt($clinicId, $enc);
+    }
+
+    private function getGlobalOpenAiKey(): ?string
+    {
+        $settings = new \App\Services\System\SystemSettingsService($this->container);
+        $key = trim((string)($settings->getText('ai.openai.global_api_key') ?? ''));
+        return $key !== '' ? $key : null;
     }
 }

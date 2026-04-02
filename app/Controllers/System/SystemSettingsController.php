@@ -224,4 +224,43 @@ final class SystemSettingsController extends Controller
 
         return $this->redirect('/sys/settings/dev-alerts');
     }
+
+    public function ai(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $service = new SystemSettingsService($this->container);
+        $keySet = trim((string)($service->getText('ai.openai.global_api_key') ?? '')) !== '';
+        $saved = trim((string)$request->input('saved', ''));
+
+        return $this->view('system/settings/ai', [
+            'key_set' => $keySet,
+            'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
+        ]);
+    }
+
+    public function aiSubmit(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $key = trim((string)$request->input('openai_api_key', ''));
+        $clear = (string)$request->input('clear_key', '') === '1';
+
+        $service = new SystemSettingsService($this->container);
+
+        if ($clear) {
+            $service->setText('ai.openai.global_api_key', null);
+        } elseif ($key !== '') {
+            $service->setText('ai.openai.global_api_key', $key);
+        }
+
+        return $this->redirect('/sys/settings/ai?saved=1');
+    }
+
+    public function serverRequirements(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        return $this->view('system/settings/server_requirements');
+    }
 }

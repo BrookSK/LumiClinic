@@ -246,15 +246,25 @@ foreach ($records as $r) {
         } catch(e) { setStatus(fieldKey,'Falha ao transcrever.'); } finally { active=null; }
       };
 
-      rec.start(); setBtnRec(true); setStatus(fieldKey,'Gravando...');
-      active = {fieldKey:fieldKey, stop:doStop, setBtnRecording:setBtnRec};
+      rec.start(60000); // Grava em chunks de 60s para suportar gravações longas
+      setBtnRec(true); setStatus(fieldKey,'Gravando...');
+      // Timer visual
+      var startTime = Date.now();
+      var timerInterval = setInterval(function(){
+        if (!active || active.fieldKey !== fieldKey) { clearInterval(timerInterval); return; }
+        var elapsed = Math.floor((Date.now() - startTime) / 1000);
+        var min = Math.floor(elapsed / 60);
+        var sec = elapsed % 60;
+        setStatus(fieldKey, 'Gravando... ' + min + ':' + (sec < 10 ? '0' : '') + sec);
+      }, 1000);
+      active = {fieldKey:fieldKey, stop:doStop, setBtnRecording:setBtnRec, timer:timerInterval};
     }
 
     document.querySelectorAll('[data-lc-mic]').forEach(function(btn){
       btn.addEventListener('click', function(){
         var k = String(btn.getAttribute('data-lc-mic')||'').trim();
         if (!k) return;
-        if (active&&active.fieldKey===k) { var a=active; active=null; try{a.stop();}catch(e){} if(a.setBtnRecording) a.setBtnRecording(false); return; }
+        if (active&&active.fieldKey===k) { var a=active; active=null; if(a.timer)clearInterval(a.timer); try{a.stop();}catch(e){} if(a.setBtnRecording) a.setBtnRecording(false); return; }
         startRecording(k,btn).catch(function(){ setStatus(k,'Erro ao iniciar microfone.'); });
       });
     });

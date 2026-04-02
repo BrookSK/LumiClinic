@@ -34,8 +34,12 @@ final class SessionMiddleware implements MiddlewareInterface
         }
 
         if (!$active) {
+            $lifetime = 86400; // 24 horas
+            ini_set('session.gc_maxlifetime', (string)$lifetime);
+
             session_name($sessionName);
             session_set_cookie_params([
+                'lifetime' => $lifetime,
                 'path' => $cookiePath,
                 'secure' => $this->config['secure'],
                 'httponly' => $this->config['httponly'],
