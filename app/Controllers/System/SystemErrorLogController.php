@@ -25,17 +25,24 @@ final class SystemErrorLogController extends Controller
         $statusCode = null;
         if ($status !== '' && ctype_digit($status)) {
             $statusCode = (int)$status;
-            if ($statusCode <= 0) {
-                $statusCode = null;
-            }
+            if ($statusCode <= 0) $statusCode = null;
         }
 
+        $page = max(1, (int)$request->input('page', 1));
+        $perPage = 50;
+        $offset = ($page - 1) * $perPage;
+
         $repo = new SystemErrorLogRepository($this->container->get(\PDO::class));
-        $items = $repo->listLatest(300, 0, $statusCode);
+        $items = $repo->listLatest($perPage + 1, $offset, $statusCode);
+        $hasNext = count($items) > $perPage;
+        if ($hasNext) $items = array_slice($items, 0, $perPage);
 
         return $this->view('system/error_logs/index', [
             'items' => $items,
             'status' => $statusCode,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_next' => $hasNext,
         ]);
     }
 
