@@ -648,6 +648,9 @@ $router->post('/sys/settings/mail/test', [\App\Controllers\System\SystemSettings
 $router->get('/sys/settings/dev-alerts', [\App\Controllers\System\SystemSettingsController::class, 'devAlerts']);
 $router->post('/sys/settings/dev-alerts', [\App\Controllers\System\SystemSettingsController::class, 'devAlertsSubmit']);
 
+$router->get('/sys/settings/whatsapp', [\App\Controllers\System\SystemSettingsController::class, 'whatsapp']);
+$router->post('/sys/settings/whatsapp', [\App\Controllers\System\SystemSettingsController::class, 'whatsappSubmit']);
+
 $router->get('/sys/error-logs', [SystemErrorLogController::class, 'index']);
 $router->get('/sys/error-logs/view', [SystemErrorLogController::class, 'details']);
 
