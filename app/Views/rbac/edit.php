@@ -183,6 +183,22 @@ ob_start();
     </div>
 </details>
 
+<details style="margin-top:10px;">
+    <summary style="font-size:12px;color:rgba(31,41,55,.50);cursor:pointer;list-style:none;">Clonar este papel</summary>
+    <div style="margin-top:8px;padding:12px;border-radius:12px;border:1px solid rgba(17,24,39,.08);background:rgba(0,0,0,.01);">
+        <div style="font-size:12px;color:rgba(31,41,55,.55);margin-bottom:8px;">Cria um novo papel com as mesmas permissões deste.</div>
+        <form method="post" action="/rbac/clone" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:0;">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <input type="hidden" name="from_role_id" value="<?= (int)$role['id'] ?>" />
+            <div class="lc-field" style="min-width:200px;">
+                <label class="lc-label">Nome do novo papel</label>
+                <input class="lc-input" type="text" name="name" required placeholder="Ex: Enfermeiro" />
+            </div>
+            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Clonar</button>
+        </form>
+    </div>
+</details>
+
 <script>
 (function(){
     var btnAll=document.getElementById('lcSelectAllAllow');
