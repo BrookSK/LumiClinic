@@ -1,7 +1,6 @@
 <?php
-$title = 'Admin do Sistema';
+$title = 'Admin - WhatsApp (Global)';
 $csrf = $_SESSION['_csrf'] ?? '';
-
 $evolution_base_url = isset($evolution_base_url) ? (string)$evolution_base_url : '';
 $evolution_token_set = isset($evolution_token_set) ? (bool)$evolution_token_set : false;
 $success = isset($success) ? (string)$success : '';
@@ -10,63 +9,57 @@ $error = isset($error) ? (string)$error : '';
 ob_start();
 ?>
 
-<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap lc-gap-md" style="margin-bottom:14px;">
-    <div class="lc-badge lc-badge--primary">Configurações (WhatsApp)</div>
-    <div class="lc-flex lc-gap-sm">
-        <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Clínicas</a>
-        <a class="lc-btn lc-btn--secondary" href="/sys/billing">Assinaturas</a>
-        <a class="lc-btn lc-btn--secondary" href="/sys/settings/billing">Cobrança</a>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+    <div>
+        <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">WhatsApp (Global)</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Configuração da Evolution API usada por todas as clínicas.</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/settings/billing">Cobrança</a>
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/clinics">Clínicas</a>
     </div>
 </div>
 
-<?php if ($success !== ''): ?>
-    <div class="lc-alert lc-alert--success">
-        <?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?>
-    </div>
-<?php endif; ?>
+<?php if ($success !== ''): ?><div class="lc-alert lc-alert--success" style="margin-bottom:14px;"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+<?php if ($error !== ''): ?><div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
-<?php if ($error !== ''): ?>
-    <div class="lc-alert lc-alert--danger">
-        <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
-    </div>
-<?php endif; ?>
+<!-- Status -->
+<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid <?= ($evolution_base_url !== '' && $evolution_token_set) ? 'rgba(22,163,74,.22)' : 'rgba(107,114,128,.18)' ?>;background:<?= ($evolution_base_url !== '' && $evolution_token_set) ? 'rgba(22,163,74,.06)' : 'rgba(107,114,128,.04)' ?>;margin-bottom:16px;">
+    <span style="font-size:16px;"><?= ($evolution_base_url !== '' && $evolution_token_set) ? '✅' : '⚠️' ?></span>
+    <span style="font-weight:700;font-size:13px;color:<?= ($evolution_base_url !== '' && $evolution_token_set) ? '#16a34a' : '#6b7280' ?>;"><?= ($evolution_base_url !== '' && $evolution_token_set) ? 'Configurado' : 'Não configurado' ?></span>
+</div>
 
-<div class="lc-card lc-card--soft">
-    <div class="lc-card__header">
-        <div class="lc-card__title">Evolution API</div>
-    </div>
-    <div class="lc-card__body">
-        <form method="post" action="/sys/settings/whatsapp" class="lc-form lc-grid lc-grid--2 lc-gap-grid">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+<div style="padding:20px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);max-width:600px;">
+    <form method="post" action="/sys/settings/whatsapp">
+        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
-            <div class="lc-field" style="grid-column: 1 / -1;">
-                <label class="lc-label">Base URL</label>
-                <input class="lc-input" type="text" name="evolution_base_url" value="<?= htmlspecialchars($evolution_base_url, ENT_QUOTES, 'UTF-8') ?>" placeholder="https://seu-host:porta" />
-                <div class="lc-muted" style="margin-top:6px;">Ex.: <code>http://127.0.0.1:8080</code> ou <code>https://evolution.seudominio.com</code></div>
-            </div>
-
-            <div class="lc-field" style="grid-column: 1 / -1;">
-                <label class="lc-label">Token (API Key)</label>
-                <input class="lc-input" type="password" name="evolution_token" value="" placeholder="cole o token aqui" autocomplete="off" />
-                <div class="lc-muted" style="margin-top:6px;">
-                    Status: <strong><?= $evolution_token_set ? 'configurado' : 'não configurado' ?></strong>. O valor não é exibido após salvar.
-                </div>
-                <label class="lc-label" style="margin-top:8px; font-weight:600;">Remover token</label>
-                <label class="lc-flex lc-gap-sm" style="align-items:center; margin-top:6px;">
-                    <input type="checkbox" name="clear_evolution_token" value="1" />
-                    <span class="lc-muted">Marque para remover o token salvo.</span>
-                </label>
-            </div>
-
-            <div class="lc-flex lc-flex--end lc-gap-sm" style="grid-column: 1 / -1;">
-                <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
-            </div>
-        </form>
-
-        <div class="lc-alert lc-alert--info" style="margin-top:12px;">
-            <div style="font-weight:700; margin-bottom:4px;">Observação</div>
-            <div>A configuração aqui é global (Super Admin). As clínicas não precisam informar a Base URL.</div>
+        <div class="lc-field">
+            <label class="lc-label">Base URL da Evolution API</label>
+            <input class="lc-input" type="text" name="evolution_base_url" value="<?= htmlspecialchars($evolution_base_url, ENT_QUOTES, 'UTF-8') ?>" placeholder="https://evolution.seudominio.com" />
+            <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Ex: http://127.0.0.1:8080 ou https://evolution.seudominio.com</div>
         </div>
+
+        <div class="lc-field">
+            <label class="lc-label">Token (API Key)</label>
+            <input class="lc-input" type="password" name="evolution_token" placeholder="<?= $evolution_token_set ? 'Já configurado (deixe vazio para manter)' : 'Cole o token aqui' ?>" autocomplete="off" />
+        </div>
+
+        <?php if ($evolution_token_set): ?>
+        <div class="lc-field">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(31,41,55,.55);cursor:pointer;">
+                <input type="checkbox" name="clear_evolution_token" value="1" style="width:16px;height:16px;" />
+                Remover token salvo
+            </label>
+        </div>
+        <?php endif; ?>
+
+        <div style="margin-top:14px;">
+            <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+        </div>
+    </form>
+
+    <div style="margin-top:14px;padding:12px;border-radius:10px;border:1px solid rgba(238,184,16,.18);background:rgba(253,229,159,.08);font-size:12px;color:rgba(31,41,55,.55);line-height:1.5;">
+        Esta configuração é global. As clínicas só precisam informar o nome da instância e a API Key delas em Configurações → WhatsApp.
     </div>
 </div>
 

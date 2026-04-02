@@ -23,7 +23,7 @@ $webhookMpUrl = $baseUrl . '/webhooks/mercadopago';
 ob_start();
 ?>
 
-<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap lc-gap-md" style="margin-bottom:14px;">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
     <div>
         <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">Configurações de Assinatura</div>
         <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Configure os gateways de pagamento e webhooks.</div>
