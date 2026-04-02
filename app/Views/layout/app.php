@@ -179,6 +179,7 @@ $ico = [
                         <div class="lc-nav__sub">
                             <?= $navItem('/sys/settings/billing', 'Assinatura', $ico['settings'], $isActive('/sys/settings/billing')) ?>
                             <?= $navItem('/sys/settings/whatsapp', 'WhatsApp', $ico['settings'], $isActive('/sys/settings/whatsapp')) ?>
+                            <?= $navItem('/sys/settings/google-oauth', 'Google Calendar', $ico['settings'], $isActive('/sys/settings/google-oauth')) ?>
                             <?= $navItem('/sys/settings/seo', 'SEO', $ico['settings'], $isActive('/sys/settings/seo')) ?>
                             <?= $navItem('/sys/settings/support', 'Suporte', $ico['settings'], $isActive('/sys/settings/support')) ?>
                             <?= $navItem('/sys/settings/mail', 'E-mail', $ico['settings'], $isActive('/sys/settings/mail')) ?>
