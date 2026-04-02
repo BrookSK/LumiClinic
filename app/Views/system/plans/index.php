@@ -33,7 +33,7 @@ ob_start();
             <input type="hidden" name="currency" value="BRL" />
             <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end;">
                 <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" required placeholder="Ex: Básico, Profissional..." /></div>
-                <div class="lc-field"><label class="lc-label">Preço (R$)</label><input class="lc-input" type="number" name="price_cents" value="0" min="0" step="1" /><div style="font-size:10px;color:rgba(31,41,55,.35);margin-top:2px;">Em centavos (ex: 9990 = R$ 99,90)</div></div>
+                <div class="lc-field"><label class="lc-label">Preço (R$)</label><input class="lc-input" type="text" name="price_display" value="0,00" placeholder="99,90" inputmode="decimal" /><input type="hidden" name="price_cents" value="0" /></div>
                 <div class="lc-field"><label class="lc-label">Cobrança</label>
                     <select class="lc-select" name="billing_period"><option value="monthly">Mensal</option><option value="semiannual">Semestral</option><option value="annual">Anual</option></select></div>
             </div>
@@ -95,7 +95,7 @@ ob_start();
                         <input type="hidden" name="currency" value="BRL" />
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                             <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($it['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required /></div>
-                            <div class="lc-field"><label class="lc-label">Preço (centavos)</label><input class="lc-input" type="number" name="price_cents" value="<?= $price ?>" min="0" /></div>
+                            <div class="lc-field"><label class="lc-label">Preço (R$)</label><input class="lc-input" type="text" name="price_display" value="<?= number_format($price / 100, 2, ',', '') ?>" placeholder="99,90" inputmode="decimal" /><input type="hidden" name="price_cents" value="<?= $price ?>" /></div>
                             <div class="lc-field"><label class="lc-label">Cobrança</label><select class="lc-select" name="billing_period"><option value="monthly" <?= $bp === 'monthly' ? 'selected' : '' ?>>Mensal</option><option value="semiannual" <?= $bp === 'semiannual' ? 'selected' : '' ?>>Semestral</option><option value="annual" <?= $bp === 'annual' ? 'selected' : '' ?>>Anual</option></select></div>
                             <div class="lc-field"><label class="lc-label">Teste (dias)</label><input class="lc-input" type="number" name="trial_days" value="<?= $trial ?>" min="0" /></div>
                             <div class="lc-field"><label class="lc-label">Limite usuários</label><input class="lc-input" type="number" name="limit_users" value="<?= (int)($limits['users'] ?? 0) ?>" min="0" /></div>
@@ -119,6 +119,23 @@ ob_start();
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
+
+<script>
+(function(){
+    // Converte campos price_display (R$) para price_cents antes do submit
+    document.addEventListener('submit', function(e){
+        var form = e.target;
+        if (!form) return;
+        var display = form.querySelector('[name="price_display"]');
+        var hidden = form.querySelector('[name="price_cents"]');
+        if (!display || !hidden) return;
+        var raw = (display.value || '0').replace(/\./g, '').replace(',', '.');
+        var val = parseFloat(raw);
+        if (isNaN(val) || val < 0) val = 0;
+        hidden.value = Math.round(val * 100);
+    });
+})();
+</script>
 
 <?php
 $content = (string)ob_get_clean();
