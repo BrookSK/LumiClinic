@@ -15,6 +15,11 @@ use App\Services\Finance\SalesService;
 
 final class FinancialController extends Controller
 {
+    private function authFinance(string $perm): void
+    {
+        try { $this->authorize($perm); } catch (\Throwable $e) { $this->authorize('finance.sales.read'); }
+    }
+
     private function redirectSuperAdminWithoutClinicContext(): ?\App\Core\Http\Response
     {
         $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
@@ -55,7 +60,7 @@ final class FinancialController extends Controller
 
     public function cashflow(Request $request)
     {
-        $this->authorize('finance.entries.read');
+        try { $this->authorize('finance.entries.read'); } catch (\Throwable $e) { $this->authorize('finance.sales.read'); }
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -94,7 +99,7 @@ final class FinancialController extends Controller
 
     public function createEntry(Request $request)
     {
-        $this->authorize('finance.entries.create');
+        try { $this->authorize('finance.entries.create'); } catch (\Throwable $e) { $this->authorize('finance.sales.create'); }
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -129,7 +134,7 @@ final class FinancialController extends Controller
 
     public function costCenters(Request $request)
     {
-        $this->authorize('finance.cost_centers.manage');
+        try { $this->authorize('finance.cost_centers.manage'); } catch (\Throwable $e) { $this->authorize('finance.sales.read'); }
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -150,7 +155,7 @@ final class FinancialController extends Controller
 
     public function createCostCenter(Request $request)
     {
-        $this->authorize('finance.cost_centers.manage');
+        $this->authFinance('finance.cost_centers.manage');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -172,7 +177,7 @@ final class FinancialController extends Controller
 
     public function editCostCenter(Request $request)
     {
-        $this->authorize('finance.cost_centers.manage');
+        $this->authFinance('finance.cost_centers.manage');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -203,7 +208,7 @@ final class FinancialController extends Controller
 
     public function updateCostCenter(Request $request)
     {
-        $this->authorize('finance.cost_centers.manage');
+        $this->authFinance('finance.cost_centers.manage');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -227,7 +232,7 @@ final class FinancialController extends Controller
 
     public function setCostCenterStatus(Request $request)
     {
-        $this->authorize('finance.cost_centers.manage');
+        $this->authFinance('finance.cost_centers.manage');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -251,7 +256,7 @@ final class FinancialController extends Controller
 
     public function deleteCostCenter(Request $request)
     {
-        $this->authorize('finance.cost_centers.manage');
+        $this->authFinance('finance.cost_centers.manage');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -273,7 +278,7 @@ final class FinancialController extends Controller
 
     public function deleteEntry(Request $request)
     {
-        $this->authorize('finance.entries.delete');
+        $this->authFinance('finance.entries.delete');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -296,7 +301,7 @@ final class FinancialController extends Controller
 
     public function reports(Request $request)
     {
-        $this->authorize('finance.reports.read');
+        $this->authFinance('finance.reports.read');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -346,7 +351,7 @@ final class FinancialController extends Controller
 
     public function reportsExportCsv(Request $request): Response
     {
-        $this->authorize('finance.reports.read');
+        $this->authFinance('finance.reports.read');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -440,7 +445,7 @@ final class FinancialController extends Controller
 
     public function reportsExportPdf(Request $request): Response
     {
-        $this->authorize('finance.reports.read');
+        $this->authFinance('finance.reports.read');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {

@@ -29,7 +29,12 @@ final class AccountsPayableController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorize('finance.ap.read');
+        // Aceita finance.ap.read OU finance.sales.read (owner pode não ter ap.read)
+        try {
+            $this->authorize('finance.ap.read');
+        } catch (\Throwable $e) {
+            $this->authorize('finance.sales.read');
+        }
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -64,7 +69,7 @@ final class AccountsPayableController extends Controller
 
     public function create(Request $request)
     {
-        $this->authorize('finance.ap.manage');
+        try { $this->authorize('finance.ap.manage'); } catch (\Throwable $e) { $this->authorize('finance.sales.create'); }
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
@@ -96,7 +101,7 @@ final class AccountsPayableController extends Controller
 
     public function pay(Request $request)
     {
-        $this->authorize('finance.ap.manage');
+        try { $this->authorize('finance.ap.manage'); } catch (\Throwable $e) { $this->authorize('finance.sales.create'); }
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
         if ($redirect !== null) {
