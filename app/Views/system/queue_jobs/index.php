@@ -22,7 +22,17 @@ ob_start();
 
 <!-- Explicação -->
 <div style="padding:14px 16px;border-radius:12px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.10);font-size:13px;color:rgba(31,41,55,.70);line-height:1.5;margin-bottom:16px;">
-    A fila processa tarefas automaticamente em segundo plano. Tarefas com status "Falhou" podem ser reprocessadas manualmente. Use os botões de teste para verificar se o worker está funcionando.
+    A fila processa tarefas em segundo plano (e-mails, WhatsApp, cobranças, etc). Se todas as tarefas estão "Pendente" com 0 tentativas, o worker não está rodando.
+    <details style="margin-top:8px;">
+        <summary style="font-weight:700;color:rgba(129,89,1,1);cursor:pointer;list-style:none;">Como iniciar o worker</summary>
+        <div style="margin-top:8px;padding:10px;border-radius:8px;background:rgba(255,255,255,.60);font-size:12px;line-height:1.6;">
+            Execute no servidor (via SSH ou supervisor):<br>
+            <code style="display:block;margin-top:4px;padding:6px 10px;border-radius:6px;background:rgba(0,0,0,.04);">php bin/queue_work.php --queue=default &</code>
+            <code style="display:block;margin-top:4px;padding:6px 10px;border-radius:6px;background:rgba(0,0,0,.04);">php bin/queue_work.php --queue=notifications &</code>
+            <code style="display:block;margin-top:4px;padding:6px 10px;border-radius:6px;background:rgba(0,0,0,.04);">php bin/queue_work.php --queue=integrations &</code>
+            <div style="margin-top:6px;">Recomendado: use Supervisor ou systemd para manter os workers rodando permanentemente.</div>
+        </div>
+    </details>
 </div>
 
 <!-- Filtro + Testes -->
