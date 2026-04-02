@@ -421,9 +421,6 @@ $ico = [
                                 <?php if ($can('patients.update') && $hasClinicContext): ?>
                                     <?= $navItem('/patients/profile-requests', 'Solicitações de perfil', $ico['patients'], $isActive('/patients/profile-requests')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('medical_images.read') && $hasClinicContext): ?>
-                                    <?= $navItem('/medical-images/moderation', 'Fotos (moderação)', $ico['patients'], $isActive('/medical-images/moderation')) ?>
-                                <?php endif; ?>
                                 <?= $navItem('/patients/birthdays', 'Aniversariantes', $ico['patients'], $isActive('/patients/birthdays')) ?>
                                 <?= $navItem('/patients/follow-up', 'Follow-up', $ico['patients'], $isActive('/patients/follow-up')) ?>
                             </div>
