@@ -15,7 +15,7 @@ final class AnamnesisResponseRepository
             SELECT
                 id, clinic_id, patient_id, template_id, professional_id,
                 template_name_snapshot, template_updated_at_snapshot, fields_snapshot_json,
-                answers_json,
+                answers_json, signature_data_url, signed_at,
                 created_by_user_id, created_at
             FROM anamnesis_responses
             WHERE clinic_id = :clinic_id
@@ -39,7 +39,7 @@ final class AnamnesisResponseRepository
     {
         $sql = "
             SELECT id, clinic_id, patient_id, template_id, template_name_snapshot, template_updated_at_snapshot,
-                   professional_id, created_by_user_id, created_at
+                   professional_id, signature_data_url, signed_at, created_by_user_id, created_at
             FROM anamnesis_responses
             WHERE clinic_id = :clinic_id
               AND patient_id = :patient_id

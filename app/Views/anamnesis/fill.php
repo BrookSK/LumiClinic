@@ -99,7 +99,7 @@ ob_start();
             </div>
 
             <div class="lc-flex lc-gap-sm" style="margin-top:16px;">
-                <button class="lc-btn lc-btn--primary" type="submit" onclick="captureSignature()">Salvar anamnese</button>
+                <button class="lc-btn lc-btn--primary" type="submit">Salvar anamnese</button>
                 <a class="lc-btn lc-btn--secondary" href="/anamnesis?patient_id=<?= $patientId ?>">Cancelar</a>
             </div>
         </form>
@@ -160,11 +160,15 @@ ob_start();
         if (sigInput) sigInput.value = '';
     };
 
-    window.captureSignature = function() {
-        if (hasDrawn && sigInput) {
-            sigInput.value = canvas.toDataURL('image/png');
-        }
-    };
+    // Capturar assinatura antes do submit
+    var form = document.getElementById('anamnesis-fill-form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            if (hasDrawn && sigInput) {
+                sigInput.value = canvas.toDataURL('image/png');
+            }
+        });
+    }
 })();
 </script>
 

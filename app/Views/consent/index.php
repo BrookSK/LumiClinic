@@ -1,106 +1,97 @@
 <?php
-$title = 'Consentimento (Assinaturas) - Legado';
-$patient = $patient ?? null;
-$terms = $terms ?? [];
+$title = 'Termos e Consentimentos';
+$patient     = $patient ?? null;
+$terms       = $terms ?? [];
 $acceptances = $acceptances ?? [];
-$signatures = $signatures ?? [];
+$signatures  = $signatures ?? [];
+
+$patientId = (int)($patient['id'] ?? 0);
 
 $termTitleMap = [];
-if (is_array($terms)) {
-    foreach ($terms as $t) {
-        $tid = isset($t['id']) ? (int)$t['id'] : 0;
-        if ($tid > 0) {
-            $termTitleMap[$tid] = (string)($t['title'] ?? '');
-        }
-    }
+foreach ($terms as $t) {
+    $tid = (int)($t['id'] ?? 0);
+    if ($tid > 0) $termTitleMap[$tid] = (string)($t['title'] ?? '');
 }
+
 ob_start();
 ?>
-<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
-    <div class="lc-badge lc-badge--primary">Consentimento (Legado)</div>
+
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:16px; gap:10px;">
     <div>
-        <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar ao paciente</a>
+        <div style="font-weight:800; font-size:18px;"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+        <div class="lc-muted" style="font-size:13px; margin-top:2px;">Termos e Consentimentos</div>
+    </div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
+        <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= $patientId ?>">Paciente</a>
+        <a class="lc-btn lc-btn--primary" href="/consent/accept?patient_id=<?= $patientId ?>">+ Novo aceite</a>
     </div>
 </div>
 
+<!-- Aceites -->
 <div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-    <div class="lc-card__body">
-        <?php
-            $cpfLast4 = '';
-            if (isset($patient['cpf_last4']) && (string)$patient['cpf_last4'] !== '') {
-                $cpfLast4 = (string)$patient['cpf_last4'];
-            } elseif (isset($patient['cpf']) && (string)$patient['cpf'] !== '') {
-                $digits = preg_replace('/\D+/', '', (string)$patient['cpf']);
-                $digits = $digits === null ? '' : $digits;
-                if (strlen($digits) >= 4) {
-                    $cpfLast4 = substr($digits, -4);
-                }
-            }
-        ?>
-        CPF: <?= $cpfLast4 !== '' ? ('***.' . htmlspecialchars($cpfLast4, ENT_QUOTES, 'UTF-8')) : '' ?>
+    <div class="lc-card__header" style="font-weight:700;">
+        Aceites registrados
+        <span class="lc-badge lc-badge--secondary" style="margin-left:6px;"><?= count($acceptances) ?></span>
     </div>
-</div>
-
-<div class="lc-card" style="margin-bottom:14px;">
-    <div class="lc-card__title">Aceites</div>
-
-    <div class="lc-table-wrap">
-        <table class="lc-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Termo</th>
-                <th>Procedimento</th>
-                <th>Aceito em</th>
-                <th>Ações</th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($acceptances as $a): ?>
+    <div class="lc-card__body" style="padding:0;">
+        <?php if (empty($acceptances)): ?>
+            <div class="lc-muted" style="padding:20px; text-align:center;">Nenhum aceite registrado.</div>
+        <?php else: ?>
+            <table class="lc-table">
+                <thead>
                 <tr>
-                    <td><?= (int)$a['id'] ?></td>
-                    <?php $tid = (int)($a['term_id'] ?? 0); ?>
-                    <?php $snapTitle = trim((string)($a['term_title_snapshot'] ?? '')); ?>
-                    <td><?= htmlspecialchars($snapTitle !== '' ? $snapTitle : (($termTitleMap[$tid] ?? '') !== '' ? (string)$termTitleMap[$tid] : ('Termo #' . $tid)), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)$a['procedure_type'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)$a['accepted_at'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td>
-                        <a class="lc-btn lc-btn--secondary" href="/consent/export?id=<?= (int)$a['id'] ?>" target="_blank">Exportar</a>
-                    </td>
+                    <th>Data</th>
+                    <th>Termo</th>
+                    <th>Procedimento</th>
+                    <th>Assinatura</th>
+                    <th></th>
                 </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
+                </thead>
+                <tbody>
+                <?php foreach ($acceptances as $a): ?>
+                    <?php
+                    $tid = (int)($a['term_id'] ?? 0);
+                    $snapTitle = trim((string)($a['term_title_snapshot'] ?? ''));
+                    $tName = $snapTitle !== '' ? $snapTitle : ($termTitleMap[$tid] ?? ('Termo #' . $tid));
+                    $acceptedAt = (string)($a['accepted_at'] ?? '');
+                    $dateFmt = '';
+                    try { $dateFmt = (new \DateTimeImmutable($acceptedAt))->format('d/m/Y H:i'); } catch (\Throwable $e) { $dateFmt = $acceptedAt; }
 
-<div class="lc-card">
-    <div class="lc-card__title">Assinaturas</div>
-
-    <div class="lc-table-wrap">
-        <table class="lc-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Aceite</th>
-                <th>Criado em</th>
-                <th>Ações</th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($signatures as $s): ?>
-                <tr>
-                    <td><?= (int)$s['id'] ?></td>
-                    <td><?= htmlspecialchars((string)($s['term_acceptance_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)$s['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
-                    <td>
-                        <a class="lc-btn lc-btn--secondary" href="/signatures/file?id=<?= (int)$s['id'] ?>" target="_blank">Abrir</a>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+                    // Verificar se tem assinatura vinculada
+                    $hasSig = false;
+                    $sigId = null;
+                    foreach ($signatures as $s) {
+                        if ((int)($s['term_acceptance_id'] ?? 0) === (int)($a['id'] ?? 0)) {
+                            $hasSig = true;
+                            $sigId = (int)$s['id'];
+                            break;
+                        }
+                    }
+                    ?>
+                    <tr>
+                        <td style="white-space:nowrap; font-size:13px;"><?= htmlspecialchars($dateFmt, ENT_QUOTES, 'UTF-8') ?></td>
+                        <td style="font-weight:600;"><?= htmlspecialchars($tName, ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars((string)($a['procedure_type'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td>
+                            <?php if ($hasSig): ?>
+                                <span class="lc-badge lc-badge--success" style="font-size:11px;">✓ Assinado</span>
+                            <?php else: ?>
+                                <span class="lc-badge lc-badge--secondary" style="font-size:11px;">Sem assinatura</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <div class="lc-flex lc-gap-sm">
+                                <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/consent/export?id=<?= (int)$a['id'] ?>" target="_blank">Ver</a>
+                                <?php if ($hasSig && $sigId !== null): ?>
+                                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/signatures/file?id=<?= $sigId ?>" target="_blank">Assinatura</a>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
     </div>
 </div>
 

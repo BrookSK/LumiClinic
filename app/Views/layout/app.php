@@ -213,7 +213,7 @@ $ico = [
                         || $isActive('/settings/terminology')
                         || $isActive('/procedures')
                         || $isActive('/services')
-                        || $isActive('/anamnesis')
+                        || $isActive('/anamnesis/templates')
                         || $isActive('/blocks')
                         || $isActive('/schedule-rules')
                         || $isActive('/whatsapp-templates')
@@ -349,7 +349,7 @@ $ico = [
                             <?php endif; ?>
 
                             <?php if ($can('anamnesis.manage') && $hasClinicContext): ?>
-                                <?= $navItem('/anamnesis/templates', 'Anamnese', $ico['shield'], $isActive('/anamnesis')) ?>
+                                <?= $navItem('/anamnesis/templates', 'Anamnese', $ico['shield'], $isActive('/anamnesis/templates')) ?>
                             <?php endif; ?>
 
                             <?php $servicesActive = $isActiveSegment('/services'); ?>
