@@ -1,284 +1,124 @@
 <?php
-/** @var list<array<string,mixed>> $items */
-
-$title = 'Admin do Sistema';
+$title = 'Admin - Planos';
 $items = $items ?? [];
 $error = isset($error) ? (string)$error : '';
 $ok = isset($ok) ? (string)$ok : '';
 $csrf = $_SESSION['_csrf'] ?? '';
 
+$periodLabel = ['monthly'=>'Mensal','semiannual'=>'Semestral','annual'=>'Anual'];
+
 ob_start();
 ?>
 
-<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
-    <div class="lc-badge lc-badge--primary">Planos</div>
-    <div class="lc-flex lc-gap-sm lc-flex--wrap">
-        <a class="lc-btn lc-btn--secondary" href="/sys/billing">Assinaturas</a>
-        <a class="lc-btn lc-btn--secondary" href="/sys/clinics">Clínicas</a>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+    <div>
+        <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">Planos</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Gerencie os planos de assinatura disponíveis para as clínicas.</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/billing">Assinaturas</a>
+        <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" onclick="var f=document.getElementById('newPlanForm');f.style.display=f.style.display==='none'?'block':'none';">+ Novo plano</button>
     </div>
 </div>
 
-<?php if ($ok !== ''): ?>
-    <div class="lc-alert lc-alert--success" style="margin-bottom:12px;">
-        <?= htmlspecialchars($ok, ENT_QUOTES, 'UTF-8') ?>
-    </div>
-<?php endif; ?>
+<?php if ($ok !== ''): ?><div class="lc-alert lc-alert--success" style="margin-bottom:14px;"><?= htmlspecialchars($ok, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+<?php if ($error !== ''): ?><div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
-<?php if ($error !== ''): ?>
-    <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;">
-        <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
-    </div>
-<?php endif; ?>
-
-<details class="lc-card" style="margin-bottom:14px;">
-    <summary class="lc-card__title" style="cursor:pointer; user-select:none;">Criar novo plano</summary>
-    <div class="lc-card__body">
-        <form method="post" action="/sys/plans/create" class="lc-form lc-grid lc-grid--2 lc-gap-grid">
+<!-- Criar plano -->
+<div id="newPlanForm" style="display:none;margin-bottom:16px;">
+    <div style="padding:18px;border-radius:14px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.08);">
+        <div style="font-weight:750;font-size:14px;margin-bottom:12px;">Novo plano</div>
+        <form method="post" action="/sys/plans/create">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-
-            <div class="lc-field">
-                <label class="lc-label">Nome</label>
-                <input class="lc-input" type="text" name="name" placeholder="Basic" required />
+            <input type="hidden" name="currency" value="BRL" />
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end;">
+                <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" required placeholder="Ex: Básico, Profissional..." /></div>
+                <div class="lc-field"><label class="lc-label">Preço (R$)</label><input class="lc-input" type="number" name="price_cents" value="0" min="0" step="1" /><div style="font-size:10px;color:rgba(31,41,55,.35);margin-top:2px;">Em centavos (ex: 9990 = R$ 99,90)</div></div>
+                <div class="lc-field"><label class="lc-label">Cobrança</label>
+                    <select class="lc-select" name="billing_period"><option value="monthly">Mensal</option><option value="semiannual">Semestral</option><option value="annual">Anual</option></select></div>
             </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Código</label>
-                <input class="lc-input" type="text" value="Gerado automaticamente" disabled />
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Preço (centavos)</label>
-                <input class="lc-input" type="number" name="price_cents" value="0" min="0" step="1" />
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Moeda</label>
-                <input type="hidden" name="currency" value="BRL" />
-                <input class="lc-input" type="text" value="BRL (Real)" disabled />
-            </div>
-
-            <div class="lc-field" style="grid-column: 1 / -1;">
-                <label class="lc-label">Período de cobrança</label>
-                <select class="lc-select" name="billing_period">
-                    <option value="monthly" selected>Mensal</option>
-                    <option value="semiannual">Semestral</option>
-                    <option value="annual">Anual</option>
-                </select>
-                <div class="lc-muted" style="margin-top:6px;">Define com que frequência a clínica será cobrada.</div>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Dias de teste</label>
-                <input class="lc-input" type="number" name="trial_days" value="0" min="0" step="1" />
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Status</label>
-                <select class="lc-select" name="status">
-                    <option value="active">Ativo</option>
-                    <option value="inactive">Inativo</option>
-                </select>
-            </div>
-
-            <div class="lc-field" style="grid-column: 1 / -1;">
-                <label class="lc-label">Acesso ao Portal do Paciente</label>
-                <select class="lc-select" name="portal_enabled">
-                    <option value="1" selected>Ativo</option>
-                    <option value="0">Desativado</option>
-                </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Limite de usuários (equipe)</label>
-                <input class="lc-input" type="number" name="limit_users" value="0" min="0" step="1" />
-                <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Limite de pacientes</label>
-                <input class="lc-input" type="number" name="limit_patients" value="0" min="0" step="1" />
-                <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Limite de armazenamento (MB)</label>
-                <input class="lc-input" type="number" name="limit_storage_mb" value="0" min="0" step="1" />
-                <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
-            </div>
-
-            <div class="lc-flex lc-flex--end lc-gap-sm" style="grid-column: 1 / -1;">
-                <button class="lc-btn lc-btn--primary" type="submit">Criar plano</button>
-            </div>
+            <details style="margin-top:10px;">
+                <summary style="font-size:12px;color:rgba(31,41,55,.45);cursor:pointer;list-style:none;">Mais opções</summary>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:10px;">
+                    <div class="lc-field"><label class="lc-label">Dias de teste</label><input class="lc-input" type="number" name="trial_days" value="0" min="0" /></div>
+                    <div class="lc-field"><label class="lc-label">Limite usuários</label><input class="lc-input" type="number" name="limit_users" value="0" min="0" /><div style="font-size:10px;color:rgba(31,41,55,.35);">0 = ilimitado</div></div>
+                    <div class="lc-field"><label class="lc-label">Limite pacientes</label><input class="lc-input" type="number" name="limit_patients" value="0" min="0" /></div>
+                    <div class="lc-field"><label class="lc-label">Armazenamento (MB)</label><input class="lc-input" type="number" name="limit_storage_mb" value="0" min="0" /></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+                    <div class="lc-field"><label class="lc-label">Portal do paciente</label><select class="lc-select" name="portal_enabled"><option value="1">Ativo</option><option value="0">Desativado</option></select></div>
+                    <div class="lc-field"><label class="lc-label">Status</label><select class="lc-select" name="status"><option value="active">Ativo</option><option value="inactive">Inativo</option></select></div>
+                </div>
+            </details>
+            <div style="margin-top:12px;"><button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Criar plano</button></div>
         </form>
     </div>
-</details>
-
-<div class="lc-card">
-    <div class="lc-card__title">Planos cadastrados</div>
-    <div class="lc-card__body" style="padding-bottom:0;">
-        <div class="lc-muted" style="line-height:1.55; margin-bottom:12px;"></div>
-    </div>
-
-    <div class="lc-table-wrap">
-        <table class="lc-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Código</th>
-                <th>Nome</th>
-                <th>Preço</th>
-                <th>Intervalo</th>
-                <th>Teste</th>
-                <th>Status</th>
-                <th>Ações</th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($items as $it): ?>
-                <?php
-                    $id = (int)($it['id'] ?? 0);
-                    $status = (string)($it['status'] ?? '');
-                    $price = (int)($it['price_cents'] ?? 0);
-                    $intervalUnit = (string)($it['interval_unit'] ?? 'month');
-                    $intervalCount = (int)($it['interval_count'] ?? 1);
-                    $trialDays = (int)($it['trial_days'] ?? 0);
-
-                    $statusLabel = $status;
-                    if ($status === 'active') {
-                        $statusLabel = 'Ativo';
-                    } elseif ($status === 'inactive') {
-                        $statusLabel = 'Inativo';
-                    }
-
-                    $intervalUnitLabel = $intervalUnit;
-                    if ($intervalUnit === 'day') {
-                        $intervalUnitLabel = 'dia';
-                    } elseif ($intervalUnit === 'week') {
-                        $intervalUnitLabel = 'semana';
-                    } elseif ($intervalUnit === 'month') {
-                        $intervalUnitLabel = 'mês';
-                    } elseif ($intervalUnit === 'year') {
-                        $intervalUnitLabel = 'ano';
-                    }
-                    $limits = (string)($it['limits_json'] ?? '{}');
-                    $limitsDecoded = [];
-                    $tmp = json_decode($limits, true);
-                    if (is_array($tmp)) {
-                        $limitsDecoded = $tmp;
-                    }
-                    $portalEnabled = array_key_exists('portal', $limitsDecoded) ? (bool)$limitsDecoded['portal'] : true;
-                    $limitUsers = (int)($limitsDecoded['users'] ?? 0);
-                    $limitPatients = (int)($limitsDecoded['patients'] ?? 0);
-                    $limitStorageMb = (int)($limitsDecoded['storage_mb'] ?? 0);
-                ?>
-                <tr>
-                    <td><?= $id ?></td>
-                    <td><?= htmlspecialchars((string)($it['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars((string)($it['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td>R$ <?= number_format(max(0, $price) / 100, 2, ',', '.') ?></td>
-                    <td><?= htmlspecialchars((string)$intervalCount . ' ' . $intervalUnitLabel, ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= (int)$trialDays ?> dias</td>
-                    <td><?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?></td>
-                    <td>
-                        <details class="lc-card" style="margin:0; padding:10px; box-shadow:none;">
-                            <summary class="lc-link" style="cursor:pointer;">Editar</summary>
-                            <div style="margin-top:10px;">
-                                <form method="post" action="/sys/plans/update" class="lc-form lc-grid lc-grid--2 lc-gap-grid">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= $id ?>" />
-
-                                    <div class="lc-field" style="grid-column: 1 / -1;">
-                                        <label class="lc-label">Nome</label>
-                                        <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($it['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
-                                    </div>
-
-                                    <div class="lc-field">
-                                        <label class="lc-label">Preço (centavos)</label>
-                                        <input class="lc-input" type="number" name="price_cents" value="<?= (int)$price ?>" min="0" step="1" />
-                                    </div>
-
-                                    <div class="lc-field">
-                                        <label class="lc-label">Moeda</label>
-                                        <input type="hidden" name="currency" value="BRL" />
-                                        <input class="lc-input" type="text" value="BRL (Real)" disabled />
-                                    </div>
-
-                                    <?php
-                                        $billingPeriod = 'monthly';
-                                        if ($intervalUnit === 'year' && $intervalCount === 1) {
-                                            $billingPeriod = 'annual';
-                                        } elseif ($intervalUnit === 'month' && $intervalCount === 6) {
-                                            $billingPeriod = 'semiannual';
-                                        }
-                                    ?>
-
-                                    <div class="lc-field" style="grid-column: 1 / -1;">
-                                        <label class="lc-label">Período de cobrança</label>
-                                        <select class="lc-select" name="billing_period">
-                                            <option value="monthly" <?= ($billingPeriod === 'monthly') ? 'selected' : '' ?>>Mensal</option>
-                                            <option value="semiannual" <?= ($billingPeriod === 'semiannual') ? 'selected' : '' ?>>Semestral</option>
-                                            <option value="annual" <?= ($billingPeriod === 'annual') ? 'selected' : '' ?>>Anual</option>
-                                        </select>
-                                        <div class="lc-muted" style="margin-top:6px;">Define com que frequência a clínica será cobrada.</div>
-                                    </div>
-
-                                    <div class="lc-field">
-                                        <label class="lc-label">Dias de teste</label>
-                                        <input class="lc-input" type="number" name="trial_days" value="<?= (int)$trialDays ?>" min="0" step="1" />
-                                    </div>
-
-                                    <div class="lc-field" style="grid-column: 1 / -1;">
-                                        <label class="lc-label">Acesso ao Portal do Paciente</label>
-                                        <select class="lc-select" name="portal_enabled">
-                                            <option value="1" <?= $portalEnabled ? 'selected' : '' ?>>Ativo</option>
-                                            <option value="0" <?= !$portalEnabled ? 'selected' : '' ?>>Desativado</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="lc-field">
-                                        <label class="lc-label">Limite de usuários (equipe)</label>
-                                        <input class="lc-input" type="number" name="limit_users" value="<?= (int)$limitUsers ?>" min="0" step="1" />
-                                        <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
-                                    </div>
-
-                                    <div class="lc-field">
-                                        <label class="lc-label">Limite de pacientes</label>
-                                        <input class="lc-input" type="number" name="limit_patients" value="<?= (int)$limitPatients ?>" min="0" step="1" />
-                                        <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
-                                    </div>
-
-                                    <div class="lc-field">
-                                        <label class="lc-label">Limite de armazenamento (MB)</label>
-                                        <input class="lc-input" type="number" name="limit_storage_mb" value="<?= (int)$limitStorageMb ?>" min="0" step="1" />
-                                        <div class="lc-muted" style="margin-top:6px;">0 = ilimitado</div>
-                                    </div>
-
-                                    <div class="lc-flex lc-flex--end lc-gap-sm" style="grid-column: 1 / -1;">
-                                        <button class="lc-btn lc-btn--secondary" type="submit">Salvar</button>
-                                    </div>
-                                </form>
-
-                                <form method="post" action="/sys/plans/set-status" class="lc-form lc-flex lc-gap-sm" style="align-items:end; margin-top:10px;">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= $id ?>" />
-                                    <div class="lc-field">
-                                        <label class="lc-label">Status</label>
-                                        <select class="lc-select" name="status">
-                                            <option value="active" <?= ($status === 'active') ? 'selected' : '' ?>>Ativo</option>
-                                            <option value="inactive" <?= ($status === 'inactive') ? 'selected' : '' ?>>Inativo</option>
-                                        </select>
-                                    </div>
-                                    <button class="lc-btn lc-btn--secondary" type="submit">Atualizar status</button>
-                                </form>
-                            </div>
-                        </details>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
 </div>
+
+<!-- Lista -->
+<?php if ($items === []): ?>
+    <div style="text-align:center;padding:40px 20px;color:rgba(31,41,55,.45);"><div style="font-size:32px;margin-bottom:8px;">📋</div><div>Nenhum plano cadastrado.</div></div>
+<?php else: ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+    <?php foreach ($items as $it): ?>
+        <?php
+        $id = (int)($it['id'] ?? 0);
+        $st = (string)($it['status'] ?? '');
+        $stOk = $st === 'active';
+        $price = (int)($it['price_cents'] ?? 0);
+        $iu = (string)($it['interval_unit'] ?? 'month');
+        $ic = (int)($it['interval_count'] ?? 1);
+        $bp = 'monthly';
+        if ($iu === 'year' && $ic === 1) $bp = 'annual';
+        elseif ($iu === 'month' && $ic === 6) $bp = 'semiannual';
+        $bpLbl = $periodLabel[$bp] ?? $bp;
+        $trial = (int)($it['trial_days'] ?? 0);
+        $limits = json_decode((string)($it['limits_json'] ?? '{}'), true) ?: [];
+        ?>
+        <div style="padding:18px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span style="font-weight:800;font-size:16px;color:rgba(31,41,55,.96);"><?= htmlspecialchars((string)($it['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                <span style="display:inline-flex;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;background:<?= $stOk ? 'rgba(22,163,74,.12)' : 'rgba(107,114,128,.10)' ?>;color:<?= $stOk ? '#16a34a' : '#6b7280' ?>;border:1px solid <?= $stOk ? 'rgba(22,163,74,.22)' : 'rgba(107,114,128,.18)' ?>;"><?= $stOk ? 'Ativo' : 'Inativo' ?></span>
+            </div>
+            <div style="font-size:22px;font-weight:900;color:rgba(129,89,1,1);">R$ <?= number_format($price / 100, 2, ',', '.') ?><span style="font-size:13px;font-weight:600;color:rgba(31,41,55,.45);">/<?= htmlspecialchars($bpLbl, ENT_QUOTES, 'UTF-8') ?></span></div>
+            <div style="font-size:12px;color:rgba(31,41,55,.45);">
+                <?= $trial > 0 ? $trial . ' dias de teste' : 'Sem teste' ?>
+                · Código: <code style="font-size:11px;"><?= htmlspecialchars((string)($it['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></code>
+            </div>
+
+            <details style="margin-top:4px;">
+                <summary style="font-size:12px;color:rgba(129,89,1,1);font-weight:600;cursor:pointer;list-style:none;">Editar</summary>
+                <div style="margin-top:10px;">
+                    <form method="post" action="/sys/plans/update">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="id" value="<?= $id ?>" />
+                        <input type="hidden" name="currency" value="BRL" />
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($it['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required /></div>
+                            <div class="lc-field"><label class="lc-label">Preço (centavos)</label><input class="lc-input" type="number" name="price_cents" value="<?= $price ?>" min="0" /></div>
+                            <div class="lc-field"><label class="lc-label">Cobrança</label><select class="lc-select" name="billing_period"><option value="monthly" <?= $bp === 'monthly' ? 'selected' : '' ?>>Mensal</option><option value="semiannual" <?= $bp === 'semiannual' ? 'selected' : '' ?>>Semestral</option><option value="annual" <?= $bp === 'annual' ? 'selected' : '' ?>>Anual</option></select></div>
+                            <div class="lc-field"><label class="lc-label">Teste (dias)</label><input class="lc-input" type="number" name="trial_days" value="<?= $trial ?>" min="0" /></div>
+                            <div class="lc-field"><label class="lc-label">Limite usuários</label><input class="lc-input" type="number" name="limit_users" value="<?= (int)($limits['users'] ?? 0) ?>" min="0" /></div>
+                            <div class="lc-field"><label class="lc-label">Limite pacientes</label><input class="lc-input" type="number" name="limit_patients" value="<?= (int)($limits['patients'] ?? 0) ?>" min="0" /></div>
+                            <div class="lc-field"><label class="lc-label">Armazenamento (MB)</label><input class="lc-input" type="number" name="limit_storage_mb" value="<?= (int)($limits['storage_mb'] ?? 0) ?>" min="0" /></div>
+                            <div class="lc-field"><label class="lc-label">Portal</label><select class="lc-select" name="portal_enabled"><option value="1" <?= (bool)($limits['portal'] ?? true) ? 'selected' : '' ?>>Ativo</option><option value="0" <?= !(bool)($limits['portal'] ?? true) ? 'selected' : '' ?>>Desativado</option></select></div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:10px;">
+                            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button>
+                        </div>
+                    </form>
+                    <form method="post" action="/sys/plans/set-status" style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="id" value="<?= $id ?>" />
+                        <input type="hidden" name="status" value="<?= $stOk ? 'inactive' : 'active' ?>" />
+                        <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit"><?= $stOk ? 'Desativar' : 'Ativar' ?></button>
+                    </form>
+                </div>
+            </details>
+        </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 <?php
 $content = (string)ob_get_clean();
