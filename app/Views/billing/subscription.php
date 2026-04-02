@@ -34,10 +34,23 @@ $stLbl = $statusLabel[$subStatus] ?? $subStatus;
 $stClr = $statusColor[$subStatus] ?? '#6b7280';
 
 $transcription = $transcription ?? ['limit'=>null,'used'=>0,'remaining'=>null,'blocked'=>false];
-$tLimit = $transcription['limit'];
-$tUsed = (int)$transcription['used'];
-$tRemaining = $transcription['remaining'];
+$tLimit = $transcription['limit_seconds'] ?? ($transcription['limit'] !== null ? $transcription['limit'] * 60 : null);
+$tUsed = (int)($transcription['used_seconds'] ?? ($transcription['used'] * 60));
+$tRemaining = $transcription['remaining_seconds'] ?? ($transcription['remaining'] !== null ? $transcription['remaining'] * 60 : null);
 $tBlocked = (bool)$transcription['blocked'];
+
+// Formatar segundos como "Xh Ymin Zs" ou "Ymin Zs"
+$fmtSec = function (int $s): string {
+    if ($s <= 0) return '0s';
+    $h = (int)floor($s / 3600);
+    $m = (int)floor(($s % 3600) / 60);
+    $sec = $s % 60;
+    $parts = [];
+    if ($h > 0) $parts[] = $h . 'h';
+    if ($m > 0) $parts[] = $m . 'min';
+    if ($sec > 0 && $h === 0) $parts[] = $sec . 's';
+    return implode(' ', $parts) ?: '0s';
+};
 
 $isOwner = (function (): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) return true;
@@ -70,16 +83,16 @@ ob_start();
         <?php if ($tLimit === null): ?>
             <div style="font-weight:800;font-size:18px;margin-top:4px;">Ilimitado</div>
         <?php else: ?>
-            <div style="font-weight:800;font-size:18px;margin-top:4px;color:<?= $tBlocked ? '#b91c1c' : 'rgba(31,41,55,.96)' ?>;"><?= $tUsed ?> / <?= $tLimit ?> min</div>
+            <div style="font-weight:800;font-size:18px;margin-top:4px;color:<?= $tBlocked ? '#b91c1c' : 'rgba(31,41,55,.96)' ?>;"><?= $fmtSec($tUsed) ?> / <?= $fmtSec($tLimit) ?></div>
             <div style="margin-top:6px;height:6px;border-radius:999px;background:rgba(17,24,39,.08);overflow:hidden;">
                 <?php $pct = $tLimit > 0 ? min(100, round(($tUsed / $tLimit) * 100)) : 0; ?>
                 <div style="height:100%;width:<?= $pct ?>%;border-radius:999px;background:<?= $tBlocked ? '#b91c1c' : ($pct > 80 ? '#b5841e' : '#16a34a') ?>;"></div>
             </div>
             <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">
                 <?php if ($tBlocked): ?>
-                    Limite atingido. Faça upgrade para continuar transcrevendo.
+                    Limite atingido. Faça upgrade para continuar.
                 <?php elseif ($tRemaining !== null): ?>
-                    <?= $tRemaining ?> min restantes este mês
+                    <?= $fmtSec($tRemaining) ?> restantes este mês
                 <?php endif; ?>
             </div>
         <?php endif; ?>

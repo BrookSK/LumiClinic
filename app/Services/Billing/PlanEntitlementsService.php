@@ -88,14 +88,13 @@ final class PlanEntitlementsService
         return $n > 0 ? $n : null;
     }
 
-    /** Minutos de transcrição usados no mês atual. */
-    public function transcriptionUsedMinutes(int $clinicId): int
+    /** Segundos de transcrição usados no mês atual. */
+    public function transcriptionUsedSeconds(int $clinicId): int
     {
         $pdo = $this->container->get(\PDO::class);
         $firstOfMonth = date('Y-m-01 00:00:00');
 
         try {
-            // Tentar com duration_seconds (coluna pode não existir)
             $stmt = $pdo->prepare("
                 SELECT COALESCE(SUM(
                     CASE
@@ -112,10 +111,8 @@ final class PlanEntitlementsService
             ");
             $stmt->execute(['clinic_id' => $clinicId, 'first_of_month' => $firstOfMonth]);
             $row = $stmt->fetch();
-            $totalSeconds = (int)($row['total_seconds'] ?? 0);
-            return max(0, (int)ceil($totalSeconds / 60));
+            return max(0, (int)($row['total_seconds'] ?? 0));
         } catch (\Throwable $e) {
-            // Fallback: coluna duration_seconds pode não existir
             try {
                 $stmt = $pdo->prepare("
                     SELECT COALESCE(SUM(
@@ -129,26 +126,31 @@ final class PlanEntitlementsService
                 ");
                 $stmt->execute(['clinic_id' => $clinicId, 'first_of_month' => $firstOfMonth]);
                 $row = $stmt->fetch();
-                return max(0, (int)ceil((int)($row['total_seconds'] ?? 0) / 60));
+                return max(0, (int)($row['total_seconds'] ?? 0));
             } catch (\Throwable $e2) {
                 return 0;
             }
         }
     }
 
-    /** @return array{limit:?int,used:int,remaining:?int,blocked:bool} */
+    /** @return array{limit_seconds:?int,used_seconds:int,remaining_seconds:?int,blocked:bool} */
     public function transcriptionStatus(int $clinicId): array
     {
-        $limit = $this->transcriptionLimitMinutes($clinicId);
-        $used = $this->transcriptionUsedMinutes($clinicId);
-        $remaining = $limit !== null ? max(0, $limit - $used) : null;
-        $blocked = $limit !== null && $remaining !== null && $remaining <= 0;
+        $limitMinutes = $this->transcriptionLimitMinutes($clinicId);
+        $limitSeconds = $limitMinutes !== null ? $limitMinutes * 60 : null;
+        $usedSeconds = $this->transcriptionUsedSeconds($clinicId);
+        $remainingSeconds = $limitSeconds !== null ? max(0, $limitSeconds - $usedSeconds) : null;
+        $blocked = $limitSeconds !== null && $remainingSeconds !== null && $remainingSeconds <= 0;
 
         return [
-            'limit' => $limit,
-            'used' => $used,
-            'remaining' => $remaining,
+            'limit_seconds' => $limitSeconds,
+            'used_seconds' => $usedSeconds,
+            'remaining_seconds' => $remainingSeconds,
             'blocked' => $blocked,
+            // Compat: manter campos em minutos para views que usam
+            'limit' => $limitMinutes,
+            'used' => (int)floor($usedSeconds / 60),
+            'remaining' => $remainingSeconds !== null ? (int)floor($remainingSeconds / 60) : null,
         ];
     }
 }
