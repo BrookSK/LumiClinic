@@ -26,11 +26,14 @@ final class AdminUserRepository
     {
         $offset = max(0, $offset);
         $sql = "
-            SELECT id, name, email, status, created_at
-            FROM users
-            WHERE clinic_id = :clinic_id
-              AND deleted_at IS NULL
-            ORDER BY id DESC
+            SELECT u.id, u.name, u.email, u.status, u.created_at,
+                   u.role_id,
+                   r.name AS role_name
+            FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id AND r.deleted_at IS NULL
+            WHERE u.clinic_id = :clinic_id
+              AND u.deleted_at IS NULL
+            ORDER BY u.id DESC
             LIMIT " . (int)$limit . "
             OFFSET " . (int)$offset . "
         ";

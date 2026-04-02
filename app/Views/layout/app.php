@@ -294,9 +294,6 @@ $ico = [
                                     <div class="lc-navgroup__children">
                                         <div class="lc-nav__sub">
                                             <?= $navItem('/users', 'Usuários', $ico['users'], $isActive('/users')) ?>
-                                            <?php if ($can('professionals.manage')): ?>
-                                                <?= $navItem('/professionals', $professionalsLabel, $ico['users'], $isActive('/professionals')) ?>
-                                            <?php endif; ?>
                                             <?php if ($can('rbac.manage')): ?>
                                                 <?= $navItem('/rbac', 'Papéis & Permissões', $ico['shield'], $isActive('/rbac')) ?>
                                             <?php endif; ?>

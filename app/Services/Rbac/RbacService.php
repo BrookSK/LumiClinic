@@ -119,6 +119,33 @@ final class RbacService
         }
     }
 
+    public function createEmptyRole(string $name, string $ip): int
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $name = trim($name);
+        if ($name === '') {
+            throw new \RuntimeException('Nome é obrigatório.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new RbacRepository($pdo);
+
+        $code = 'custom_' . bin2hex(random_bytes(6));
+        $newRoleId = $repo->createRole($clinicId, $code, $name, 0, 1);
+
+        $audit = new AuditLogRepository($pdo);
+        $audit->log($actorId, $clinicId, 'rbac.roles.create', ['new_role_id' => $newRoleId, 'name' => $name], $ip);
+
+        return $newRoleId;
+    }
+
     public function updateRole(int $roleId, string $name, array $allowCodes, array $denyCodes, string $ip): void
     {
         $auth = new AuthService($this->container);

@@ -130,6 +130,26 @@ final class RbacController extends Controller
         return $this->redirect('/rbac');
     }
 
+    public function create(Request $request)
+    {
+        $this->authorize('rbac.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $name = trim((string)$request->input('name', ''));
+        if ($name === '') {
+            return $this->redirect('/rbac');
+        }
+
+        $service = new RbacService($this->container);
+        $newId = $service->createEmptyRole($name, $request->ip());
+
+        return $this->redirect('/rbac/edit?id=' . $newId);
+    }
+
     public function reset(Request $request)
     {
         $this->authorize('rbac.manage');

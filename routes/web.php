@@ -486,6 +486,7 @@ $router->get('/rbac', [RbacController::class, 'index']);
 $router->get('/rbac/edit', [RbacController::class, 'edit']);
 $router->post('/rbac/edit', [RbacController::class, 'update']);
 $router->post('/rbac/clone', [RbacController::class, 'clone']);
+$router->post('/rbac/create', [RbacController::class, 'create']);
 $router->post('/rbac/reset', [RbacController::class, 'reset']);
 
 $router->get('/patients', [PatientController::class, 'index']);
