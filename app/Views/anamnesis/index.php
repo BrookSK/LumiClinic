@@ -69,20 +69,19 @@ ob_start();
                 <!-- Via WhatsApp -->
                 <div class="lc-card lc-card--soft" style="margin:0; padding:14px;">
                     <div style="font-weight:700; margin-bottom:8px;">📱 WhatsApp</div>
-                    <?php if (!empty($waTemplates)): ?>
-                        <div class="lc-field">
-                            <label class="lc-label">Template WA</label>
-                            <select class="lc-select" id="wa_template_code">
-                                <?php foreach ($waTemplates as $wt): ?>
-                                    <option value="<?= htmlspecialchars((string)$wt['code'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <?= htmlspecialchars((string)$wt['name'], ENT_QUOTES, 'UTF-8') ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                    <?php
+                    $phone = trim((string)($patient['phone'] ?? ''));
+                    $waOptIn = (int)($patient['whatsapp_opt_in'] ?? 0);
+                    ?>
+                    <?php if ($phone !== '' && $waOptIn): ?>
+                        <div class="lc-muted" style="font-size:12px; margin-bottom:8px;">
+                            Envia para: <strong><?= htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ?></strong>
                         </div>
-                        <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" style="width:100%; margin-top:8px;" onclick="sendAnamnesis('whatsapp')">Enviar via WA</button>
+                        <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" style="width:100%;" onclick="sendAnamnesis('whatsapp')">Enviar via WhatsApp</button>
+                    <?php elseif ($phone === ''): ?>
+                        <div class="lc-muted" style="font-size:12px;">Paciente sem telefone cadastrado.</div>
                     <?php else: ?>
-                        <div class="lc-muted" style="font-size:12px;">Configure templates de WhatsApp em Configurações → WhatsApp.</div>
+                        <div class="lc-muted" style="font-size:12px;">Paciente sem opt-in de WhatsApp.</div>
                     <?php endif; ?>
                 </div>
 
@@ -185,10 +184,6 @@ ob_start();
         var tid = document.getElementById('template_select').value;
         if (!tid) { alert('Selecione um template primeiro.'); return; }
 
-        var waCode = '';
-        var waEl = document.getElementById('wa_template_code');
-        if (waEl) waCode = waEl.value;
-
         var resultEl = document.getElementById('send-result');
         if (resultEl) resultEl.textContent = 'Enviando...';
 
@@ -200,7 +195,7 @@ ob_start();
                 patient_id: patientId,
                 template_id: parseInt(tid, 10),
                 channel: channel,
-                wa_template_code: waCode,
+                wa_template_code: 'anamnesis_request',
             }),
             credentials: 'same-origin',
         })
