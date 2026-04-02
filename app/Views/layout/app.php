@@ -439,13 +439,13 @@ $ico = [
                         <div class="lc-navgroup__children">
                             <div class="lc-nav__sub">
                                 <?= $navItem('/finance/sales', 'Orçamentos', $ico['finance'], $isActive('/finance/sales')) ?>
-                                <?php if ($can('finance.entries.read')): ?>
+                                <?php if ($can('finance.entries.read') || $can('finance.sales.read')): ?>
                                     <?= $navItem('/finance/cashflow', 'Fluxo de Caixa', $ico['finance'], $isActive('/finance/cashflow')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('finance.ap.read')): ?>
+                                <?php if ($can('finance.ap.read') || $can('finance.sales.read')): ?>
                                     <?= $navItem('/finance/accounts-payable', 'Contas a Pagar', $ico['finance'], $isActive('/finance/accounts-payable')) ?>
                                 <?php endif; ?>
-                                <?php if ($can('finance.cost_centers.manage')): ?>
+                                <?php if ($can('finance.cost_centers.manage') || $can('finance.sales.read')): ?>
                                     <?= $navItem('/finance/cost-centers', 'Centros de Custo', $ico['finance'], $isActive('/finance/cost-centers')) ?>
                                 <?php endif; ?>
                             </div>
