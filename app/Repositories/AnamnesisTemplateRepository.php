@@ -12,11 +12,16 @@ final class AnamnesisTemplateRepository
     public function listActiveByClinic(int $clinicId): array
     {
         $sql = "
-            SELECT id, clinic_id, name, status, created_at, updated_at
-            FROM anamnesis_templates
-            WHERE clinic_id = :clinic_id
-              AND deleted_at IS NULL
-            ORDER BY name ASC
+            SELECT
+                t.id, t.clinic_id, t.name, t.status, t.created_at, t.updated_at,
+                COUNT(f.id) AS field_count
+            FROM anamnesis_templates t
+            LEFT JOIN anamnesis_template_fields f
+                   ON f.template_id = t.id AND f.deleted_at IS NULL
+            WHERE t.clinic_id = :clinic_id
+              AND t.deleted_at IS NULL
+            GROUP BY t.id
+            ORDER BY t.name ASC
         ";
 
         $stmt = $this->pdo->prepare($sql);

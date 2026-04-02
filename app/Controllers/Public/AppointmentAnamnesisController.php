@@ -112,6 +112,18 @@ final class AppointmentAnamnesisController extends Controller
                 null
             );
 
+            // Salvar assinatura digital se enviada
+            $signatureDataUrl = trim((string)($request->input('signature_data_url', '')));
+            if ($signatureDataUrl !== '' && $responseId > 0) {
+                $stmt = $pdo->prepare("
+                    UPDATE anamnesis_responses
+                    SET signature_data_url = :sig, signed_at = NOW()
+                    WHERE id = :id AND clinic_id = :clinic_id AND deleted_at IS NULL
+                    LIMIT 1
+                ");
+                $stmt->execute(['sig' => $signatureDataUrl, 'id' => $responseId, 'clinic_id' => $clinicId]);
+            }
+
             $reqRepo->markUsed($clinicId, (int)$reqRow['id'], 'submit', $responseId);
 
             (new AuditLogRepository($pdo))->log(null, $clinicId, 'appointments.anamnesis_public_submit', [

@@ -189,11 +189,46 @@ final class AnamnesisController extends Controller
         $service = new AnamnesisService($this->container);
         $data = $service->listForPatient($patientId, $request->ip(), $request->header('user-agent'));
 
+        // Carregar templates de WhatsApp ativos
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $waTemplates = [];
+        if ($clinicId !== null) {
+            $waTemplates = (new \App\Repositories\WhatsappTemplateRepository($this->container->get(\PDO::class)))
+                ->listByClinic($clinicId);
+            $waTemplates = array_filter($waTemplates, fn($t) => (string)($t['status'] ?? 'active') === 'active');
+        }
+
         return $this->view('anamnesis/index', [
-            'patient' => $data['patient'],
-            'templates' => $data['templates'],
-            'responses' => $data['responses'],
+            'patient'      => $data['patient'],
+            'templates'    => $data['templates'],
+            'responses'    => $data['responses'],
+            'wa_templates' => array_values($waTemplates),
         ]);
+    }
+
+    public function sendLink(Request $request): \App\Core\Http\Response
+    {
+        $this->authorize('anamnesis.fill');
+
+        $patientId    = (int)$request->input('patient_id', 0);
+        $templateId   = (int)$request->input('template_id', 0);
+        $channel      = trim((string)$request->input('channel', 'email'));
+        $waCode       = trim((string)$request->input('wa_template_code', ''));
+
+        if ($patientId <= 0 || $templateId <= 0) {
+            return \App\Core\Http\Response::json(['ok' => false, 'error' => 'Parâmetros inválidos.'], 400);
+        }
+
+        try {
+            $result = (new \App\Services\Anamnesis\AnamnesisLinkSendService($this->container))
+                ->send($patientId, $templateId, $channel, $waCode, $request->ip());
+            return \App\Core\Http\Response::json($result);
+        } catch (\RuntimeException $e) {
+            return \App\Core\Http\Response::json(['ok' => false, 'error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            return \App\Core\Http\Response::json(['ok' => false, 'error' => 'Falha ao enviar.'], 500);
+        }
     }
 
     public function fill(Request $request)
@@ -278,7 +313,7 @@ final class AnamnesisController extends Controller
         }
 
         $service = new AnamnesisService($this->container);
-        $service->submit(
+        $responseId = $service->submit(
             $patientId,
             $templateId,
             ($professionalId > 0 ? $professionalId : null),
@@ -286,6 +321,21 @@ final class AnamnesisController extends Controller
             $request->ip(),
             $request->header('user-agent')
         );
+
+        // Salvar assinatura se enviada
+        $signatureDataUrl = trim((string)$request->input('signature_data_url', ''));
+        if ($signatureDataUrl !== '' && $responseId > 0 && $clinicId !== null) {
+            try {
+                $pdo = $this->container->get(\PDO::class);
+                $stmt = $pdo->prepare("
+                    UPDATE anamnesis_responses
+                    SET signature_data_url = :sig, signed_at = NOW()
+                    WHERE id = :id AND clinic_id = :clinic_id AND deleted_at IS NULL
+                    LIMIT 1
+                ");
+                $stmt->execute(['sig' => $signatureDataUrl, 'id' => $responseId, 'clinic_id' => $clinicId]);
+            } catch (\Throwable $ignore) {}
+        }
 
         return $this->redirect('/anamnesis?patient_id=' . $patientId);
     }

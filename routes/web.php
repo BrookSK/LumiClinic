@@ -576,6 +576,7 @@ $router->post('/anamnesis/fill', [AnamnesisController::class, 'submit']);
 $router->get('/anamnesis/response', [AnamnesisController::class, 'response']);
 $router->get('/anamnesis/export', [AnamnesisController::class, 'export']);
 $router->get('/anamnesis/export-pdf', [AnamnesisController::class, 'exportPdf']);
+$router->post('/anamnesis/send-link', [AnamnesisController::class, 'sendLink']);
 
 $router->get('/consent-terms', [ConsentController::class, 'terms']);
 $router->get('/consent-terms/create', [ConsentController::class, 'createTerm']);
