@@ -340,6 +340,15 @@ final class SalesController extends Controller
         try {
             $service = new SalesService($this->container);
             $service->setBudgetStatus($saleId, $budgetStatus, $request->ip(), $request->header('user-agent'));
+
+            // Aplicar desconto se enviado junto
+            $descontoRaw = trim((string)$request->input('desconto', ''));
+            if ($descontoRaw !== '') {
+                try {
+                    $service->applyDiscount($saleId, $descontoRaw, $request->ip(), $request->header('user-agent'));
+                } catch (\Throwable $ignore) {}
+            }
+
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));

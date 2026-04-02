@@ -101,22 +101,12 @@ ob_start();
                             <div class="lc-muted" style="font-size:12px; margin-top:2px;"><?= htmlspecialchars((string)$a['details'], ENT_QUOTES, 'UTF-8') ?></div>
                         <?php endif; ?>
                         <?php if ($can('patients.update')): ?>
-                        <div class="lc-flex lc-gap-sm" style="margin-top:6px;">
-                            <?php if ($active): ?>
-                            <form method="post" action="/patients/clinical-sheet/alerts/resolve">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
-                                <input type="hidden" name="id" value="<?= $aid ?>" />
-                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="font-size:11px; padding:2px 8px;">Resolver</button>
-                            </form>
-                            <?php endif; ?>
-                            <form method="post" action="/patients/clinical-sheet/alerts/delete" onsubmit="return confirm('Remover?');">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
-                                <input type="hidden" name="id" value="<?= $aid ?>" />
-                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="font-size:11px; padding:2px 8px;">✕</button>
-                            </form>
-                        </div>
+                        <form method="post" action="/patients/clinical-sheet/alerts/delete" onsubmit="return confirm('Remover?');" style="margin-top:4px;">
+                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                            <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
+                            <input type="hidden" name="id" value="<?= $aid ?>" />
+                            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="font-size:11px; padding:2px 8px;">✕</button>
+                        </form>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>

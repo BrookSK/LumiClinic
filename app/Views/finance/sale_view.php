@@ -1,476 +1,428 @@
 <?php
-/** @var array<string,mixed> $sale */
-/** @var list<array<string,mixed>> $items */
-/** @var list<array<string,mixed>> $payments */
-/** @var list<array<string,mixed>> $logs */
-/** @var list<array<string,mixed>> $professionals */
-/** @var list<array<string,mixed>> $services */
-/** @var list<array<string,mixed>> $packages */
-/** @var list<array<string,mixed>> $plans */
-/** @var list<array<string,mixed>> $procedures */
-/** @var string $error */
-/** @var bool $is_professional */
-
 $csrf = $_SESSION['_csrf'] ?? '';
-$title = 'Venda #' . (int)$sale['id'];
+$title = 'Orçamento #' . (int)$sale['id'];
 
-$svcMap = [];
-foreach ($services as $s) {
-    $svcMap[(int)$s['id']] = $s;
-}
-$pkgMap = [];
-foreach ($packages as $p) {
-    $pkgMap[(int)$p['id']] = $p;
-}
-$planMap = [];
-foreach ($plans as $p) {
-    $planMap[(int)$p['id']] = $p;
-}
-$profMap = [];
-foreach ($professionals as $p) {
-    $profMap[(int)$p['id']] = $p;
-}
+$svcMap  = []; foreach ($services  as $s) { $svcMap[(int)$s['id']]  = $s; }
+$pkgMap  = []; foreach ($packages  as $p) { $pkgMap[(int)$p['id']]  = $p; }
+$planMap = []; foreach ($plans     as $p) { $planMap[(int)$p['id']] = $p; }
+$profMap = []; foreach ($professionals as $p) { $profMap[(int)$p['id']] = $p; }
 
-$can = function (string $permissionCode): bool {
-    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
-        return true;
+$can = function (string $p): bool {
+    if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) return true;
+    $perms = $_SESSION['permissions'] ?? [];
+    if (!is_array($perms)) return false;
+    if (isset($perms['allow'], $perms['deny'])) {
+        if (in_array($p, $perms['deny'], true)) return false;
+        return in_array($p, $perms['allow'], true);
     }
-
-    $permissions = $_SESSION['permissions'] ?? [];
-    if (!is_array($permissions)) {
-        return false;
-    }
-
-    if (isset($permissions['allow'], $permissions['deny']) && is_array($permissions['allow']) && is_array($permissions['deny'])) {
-        if (in_array($permissionCode, $permissions['deny'], true)) {
-            return false;
-        }
-        return in_array($permissionCode, $permissions['allow'], true);
-    }
-
-    return in_array($permissionCode, $permissions, true);
+    return in_array($p, $perms, true);
 };
+
+$budgetStatusLabel = [
+    'draft'    => 'Rascunho',
+    'sent'     => 'Enviado ao paciente',
+    'approved' => 'Aprovado',
+    'standby'  => 'Em espera',
+    'rejected' => 'Recusado',
+];
+$budgetStatusBadge = [
+    'draft'    => 'lc-badge--secondary',
+    'sent'     => 'lc-badge--primary',
+    'approved' => 'lc-badge--success',
+    'standby'  => 'lc-badge--secondary',
+    'rejected' => 'lc-badge--danger',
+];
+$paymentMethodLabel = [
+    'pix'    => 'PIX',
+    'card'   => 'Cartão',
+    'cash'   => 'Dinheiro',
+    'boleto' => 'Boleto',
+];
+$paymentStatusLabel = [
+    'pending'  => 'Pendente',
+    'paid'     => 'Pago',
+    'refunded' => 'Estornado',
+];
+
+$bs = (string)($sale['budget_status'] ?? 'draft');
+$patientName = (string)($sale['patient_name'] ?? ('#' . (int)($sale['patient_id'] ?? 0)));
+$createdAt = (string)($sale['created_at'] ?? '');
+$dateFmt = '';
+try { $dateFmt = (new \DateTimeImmutable($createdAt))->format('d/m/Y'); } catch (\Throwable $e) { $dateFmt = $createdAt; }
+
+$isCancelled = (string)$sale['status'] === 'cancelled';
+$isProfessional = isset($is_professional) && (bool)$is_professional;
 
 ob_start();
 ?>
 
 <?php if (isset($error) && $error !== ''): ?>
-    <div class="lc-card lc-statusbar lc-statusbar--no_show" style="margin-bottom: 16px;">
-        <div class="lc-card__body"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
-    </div>
+    <div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
 
-<?php if (isset($procedures) && is_array($procedures) && $procedures !== []): ?>
-    <div class="lc-card" style="margin-bottom: 16px;">
-        <div class="lc-card__header">Planejamento (procedimentos)</div>
-        <div class="lc-card__body">
-            <table class="lc-table">
-                <thead>
-                <tr>
-                    <th>Serviço</th>
-                    <th>Profissional</th>
-                    <th>Sessões</th>
-                    <th>Status</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($procedures as $pp): ?>
-                    <tr>
-                        <td><?= htmlspecialchars((string)($pp['service_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string)($pp['professional_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= (int)($pp['used_sessions'] ?? 0) ?> / <?= (int)($pp['total_sessions'] ?? 0) ?></td>
-                        <td><?= htmlspecialchars((string)($pp['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td>
-                            <?php if (($sale['patient_id'] ?? null) !== null): ?>
-                                <?php if ($can('scheduling.read')): ?>
-                                    <a class="lc-btn lc-btn--secondary" href="/schedule?view=week&date=<?= urlencode(date('Y-m-d')) ?>">Agendar</a>
+<!-- Cabeçalho -->
+<div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:16px; gap:10px;">
+    <div>
+        <div class="lc-flex lc-gap-sm" style="align-items:center; flex-wrap:wrap;">
+            <div style="font-weight:800; font-size:18px;">Orçamento #<?= (int)$sale['id'] ?></div>
+            <span class="lc-badge <?= $budgetStatusBadge[$bs] ?? 'lc-badge--secondary' ?>">
+                <?= htmlspecialchars($budgetStatusLabel[$bs] ?? $bs, ENT_QUOTES, 'UTF-8') ?>
+            </span>
+            <?php if ($isCancelled): ?>
+                <span class="lc-badge lc-badge--danger">Cancelado</span>
+            <?php endif; ?>
+        </div>
+        <div class="lc-muted" style="font-size:13px; margin-top:4px;">
+            <?= htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') ?>
+            <?php if ($dateFmt !== ''): ?>
+                <span style="margin:0 6px;">·</span><?= htmlspecialchars($dateFmt, ENT_QUOTES, 'UTF-8') ?>
+            <?php endif; ?>
+            <?php if (($sale['notes'] ?? '') !== ''): ?>
+                <span style="margin:0 6px;">·</span><?= htmlspecialchars((string)$sale['notes'], ENT_QUOTES, 'UTF-8') ?>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
+        <?php if ($sale['patient_id'] !== null): ?>
+            <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)$sale['patient_id'] ?>">Ver paciente</a>
+        <?php endif; ?>
+        <a class="lc-btn lc-btn--secondary" href="/finance/sales<?= $sale['patient_id'] !== null ? ('?patient_id='.(int)$sale['patient_id']) : '' ?>">Voltar</a>
+    </div>
+</div>
+
+<div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr;">
+
+    <!-- Itens do orçamento -->
+    <div class="lc-card" style="margin:0;">
+        <div class="lc-flex lc-flex--between lc-flex--center" style="padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06);">
+            <div style="font-weight:700;">Serviços / Itens</div>
+            <?php if (!$isProfessional && $can('finance.sales.update') && !$isCancelled): ?>
+                <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleForm('form-add-item')">+ Adicionar</button>
+            <?php endif; ?>
+        </div>
+
+        <!-- Formulário adicionar item (oculto) -->
+        <?php if (!$isProfessional && $can('finance.sales.update') && !$isCancelled): ?>
+        <div id="form-add-item" style="display:none; padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06); background:rgba(0,0,0,.02);">
+            <form method="post" action="/finance/sales/items/add" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                <div class="lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 80px; align-items:end;">
+                    <div class="lc-field">
+                        <label class="lc-label">Serviço</label>
+                        <select class="lc-select" name="reference_id" id="add_item_svc" required>
+                            <option value="">Selecione</option>
+                            <?php foreach ($services as $s): ?>
+                                <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <input type="hidden" name="type" value="procedure" />
+                    </div>
+                    <div class="lc-field">
+                        <label class="lc-label">Valor unit (0=auto)</label>
+                        <input class="lc-input" type="text" name="unit_price" value="0" />
+                    </div>
+                    <div class="lc-field">
+                        <label class="lc-label">Qtd</label>
+                        <input class="lc-input" type="number" name="quantity" min="1" value="1" />
+                    </div>
+                </div>
+                <div class="lc-field" style="margin-top:8px;">
+                    <label class="lc-label">Profissional (opcional)</label>
+                    <select class="lc-select" name="professional_id">
+                        <option value="0">-</option>
+                        <?php foreach ($professionals as $p): ?>
+                            <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="lc-flex lc-gap-sm" style="margin-top:8px;">
+                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Adicionar</button>
+                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleForm('form-add-item')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        <?php endif; ?>
+
+        <div style="padding:12px 16px;">
+            <?php if (empty($items)): ?>
+                <div class="lc-muted" style="font-size:13px;">Nenhum item adicionado ainda.</div>
+            <?php else: ?>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                <?php foreach ($items as $it): ?>
+                    <?php
+                    $refName = '';
+                    $t = (string)$it['type'];
+                    $rid = (int)$it['reference_id'];
+                    if ($t === 'procedure' && isset($svcMap[$rid])) $refName = (string)$svcMap[$rid]['name'];
+                    elseif ($t === 'package' && isset($pkgMap[$rid])) $refName = (string)$pkgMap[$rid]['name'];
+                    elseif ($t === 'subscription' && isset($planMap[$rid])) $refName = (string)$planMap[$rid]['name'];
+                    $pid = (int)($it['professional_id'] ?? 0);
+                    $pname = $pid > 0 && isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : '';
+                    ?>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(0,0,0,.05);">
+                        <div>
+                            <div style="font-weight:600; font-size:13px;"><?= htmlspecialchars($refName !== '' ? $refName : ('#'.$rid), ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="lc-muted" style="font-size:12px;">
+                                Qtd: <?= (int)$it['quantity'] ?>
+                                <?php if ($pname !== ''): ?> · <?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?><?php endif; ?>
+                            </div>
+                        </div>
+                        <div style="text-align:right; font-weight:700; font-size:14px;">
+                            R$ <?= number_format((float)$it['subtotal'], 2, ',', '.') ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                </div>
+
+                <!-- Totais -->
+                <div style="margin-top:12px; padding-top:10px; border-top:2px solid rgba(0,0,0,.08);">
+                    <?php if ((float)$sale['desconto'] > 0): ?>
+                        <div class="lc-flex lc-flex--between" style="font-size:13px; color:#6b7280; margin-bottom:4px;">
+                            <span>Subtotal</span>
+                            <span>R$ <?= number_format((float)$sale['total_bruto'], 2, ',', '.') ?></span>
+                        </div>
+                        <div class="lc-flex lc-flex--between" style="font-size:13px; color:#16a34a; margin-bottom:4px;">
+                            <span>Desconto</span>
+                            <span>-R$ <?= number_format((float)$sale['desconto'], 2, ',', '.') ?></span>
+                        </div>
+                    <?php endif; ?>
+                    <div class="lc-flex lc-flex--between" style="font-weight:800; font-size:16px;">
+                        <span>Total</span>
+                        <span>R$ <?= number_format((float)$sale['total_liquido'], 2, ',', '.') ?></span>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Coluna direita: status + pagamentos + ações -->
+    <div style="display:flex; flex-direction:column; gap:14px;">
+
+        <!-- Status do orçamento -->
+        <?php if (!$isProfessional && $can('finance.sales.update') && !$isCancelled): ?>
+        <div class="lc-card" style="margin:0;">
+            <div class="lc-card__header" style="font-weight:700;">Status do orçamento</div>
+            <div class="lc-card__body">
+                <form method="post" action="/finance/sales/budget-status" class="lc-flex lc-gap-sm" style="align-items:center;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                    <select class="lc-select" name="budget_status" style="flex:1;">
+                        <?php foreach ($budgetStatusLabel as $k => $lbl): ?>
+                            <option value="<?= $k ?>" <?= $bs === $k ? 'selected' : '' ?>><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button>
+                </form>
+
+                <!-- Desconto -->
+                <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(0,0,0,.06);">
+                    <div class="lc-label" style="margin-bottom:6px;">Desconto</div>
+                    <form method="post" action="/finance/sales/create" class="lc-flex lc-gap-sm" style="align-items:center;">
+                        <?php /* Reutiliza o endpoint de criação não — usa um campo inline via JS */ ?>
+                    </form>
+                    <div class="lc-flex lc-gap-sm" style="align-items:center;">
+                        <input class="lc-input" type="text" id="discount_val" value="<?= number_format((float)$sale['desconto'], 2, ',', '.') ?>" style="max-width:100px;" />
+                        <select class="lc-select" id="discount_type" style="max-width:80px;">
+                            <option value="fixed">R$</option>
+                            <option value="percent">%</option>
+                        </select>
+                        <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="applyDiscount()">Aplicar</button>
+                    </div>
+                    <form id="discountForm" method="post" action="/finance/sales/create" style="display:none;">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="patient_id" value="<?= (int)($sale['patient_id'] ?? 0) ?>" />
+                        <input type="hidden" name="origin" value="reception" />
+                        <input type="hidden" name="notes" value="<?= htmlspecialchars((string)($sale['notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="desconto" id="discount_hidden" value="0" />
+                    </form>
+                    <script>
+                    function applyDiscount() {
+                        var val = parseFloat((document.getElementById('discount_val').value||'0').replace(',','.')) || 0;
+                        var type = document.getElementById('discount_type').value;
+                        var total = <?= (float)$sale['total_bruto'] ?>;
+                        var final = type === 'percent' ? (total * val / 100) : val;
+                        if (final < 0) final = 0;
+                        // Envia via form dedicado de atualização de desconto
+                        var f = document.createElement('form');
+                        f.method = 'post';
+                        f.action = '/finance/sales/budget-status'; // reutiliza endpoint
+                        f.innerHTML = '<input name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>"/>'
+                            + '<input name="sale_id" value="<?= (int)$sale['id'] ?>"/>'
+                            + '<input name="budget_status" value="<?= htmlspecialchars($bs, ENT_QUOTES, 'UTF-8') ?>"/>'
+                            + '<input name="desconto" value="'+final.toFixed(2)+'"/>';
+                        document.body.appendChild(f);
+                        f.submit();
+                    }
+                    </script>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Pagamentos -->
+        <div class="lc-card" style="margin:0;">
+            <div class="lc-flex lc-flex--between lc-flex--center" style="padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06);">
+                <div style="font-weight:700;">Pagamentos</div>
+                <?php if (!$isProfessional && $can('finance.payments.create') && !$isCancelled): ?>
+                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleForm('form-payment')">+ Registrar</button>
+                <?php endif; ?>
+            </div>
+
+            <?php if (!$isProfessional && $can('finance.payments.create') && !$isCancelled): ?>
+            <div id="form-payment" style="display:none; padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06); background:rgba(0,0,0,.02);">
+                <form method="post" action="/finance/payments/create" class="lc-form">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                    <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 1fr; align-items:end;">
+                        <div class="lc-field">
+                            <label class="lc-label">Método</label>
+                            <select class="lc-select" name="method">
+                                <option value="pix">PIX</option>
+                                <option value="card">Cartão</option>
+                                <option value="cash">Dinheiro</option>
+                                <option value="boleto">Boleto</option>
+                            </select>
+                        </div>
+                        <div class="lc-field">
+                            <label class="lc-label">Valor (R$)</label>
+                            <input class="lc-input" type="text" name="amount" required placeholder="0,00" />
+                        </div>
+                        <div class="lc-field">
+                            <label class="lc-label">Status</label>
+                            <select class="lc-select" name="status">
+                                <option value="paid">Pago</option>
+                                <option value="pending">Pendente</option>
+                            </select>
+                        </div>
+                    </div>
+                    <input type="hidden" name="fees" value="0" />
+                    <div class="lc-flex lc-gap-sm" style="margin-top:8px;">
+                        <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button>
+                        <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleForm('form-payment')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+            <?php endif; ?>
+
+            <div style="padding:12px 16px;">
+                <?php if (empty($payments)): ?>
+                    <div class="lc-muted" style="font-size:13px;">Nenhum pagamento registrado.</div>
+                <?php else: ?>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                    <?php foreach ($payments as $p): ?>
+                        <?php
+                        $pm = (string)($p['method'] ?? '');
+                        $ps = (string)($p['status'] ?? '');
+                        $paidAt = (string)($p['paid_at'] ?? '');
+                        $paidFmt = '';
+                        try { $paidFmt = $paidAt !== '' ? (new \DateTimeImmutable($paidAt))->format('d/m/Y') : ''; } catch (\Throwable $e) {}
+                        ?>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(0,0,0,.05);">
+                            <div>
+                                <div style="font-size:13px; font-weight:600;">
+                                    <?= htmlspecialchars($paymentMethodLabel[$pm] ?? $pm, ENT_QUOTES, 'UTF-8') ?>
+                                    <span class="lc-badge <?= $ps === 'paid' ? 'lc-badge--success' : ($ps === 'refunded' ? 'lc-badge--danger' : 'lc-badge--secondary') ?>" style="font-size:11px; margin-left:4px;">
+                                        <?= htmlspecialchars($paymentStatusLabel[$ps] ?? $ps, ENT_QUOTES, 'UTF-8') ?>
+                                    </span>
+                                </div>
+                                <?php if ($paidFmt !== ''): ?>
+                                    <div class="lc-muted" style="font-size:12px;"><?= htmlspecialchars($paidFmt, ENT_QUOTES, 'UTF-8') ?></div>
                                 <?php endif; ?>
-                            <?php endif; ?>
-                        </td>
+                            </div>
+                            <div style="font-weight:700;">R$ <?= number_format((float)$p['amount'], 2, ',', '.') ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="lc-card" style="margin:0;">
+            <div class="lc-card__body" style="display:flex; flex-direction:column; gap:8px;">
+                <?php if (!$isProfessional && $can('finance.sales.cancel') && !$isCancelled): ?>
+                    <details style="margin:0;">
+                        <summary class="lc-muted" style="font-size:12px; cursor:pointer;">Mais opções</summary>
+                        <div style="margin-top:8px;">
+                            <form method="post" action="/finance/sales/cancel" onsubmit="return confirm('Cancelar este orçamento?');">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="color:#b91c1c;">Cancelar orçamento</button>
+                            </form>
+                        </div>
+                    </details>
+                <?php endif; ?>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Planejamento de sessões (se houver) -->
+<?php if (!empty($procedures)): ?>
+<div class="lc-card" style="margin-top:14px;">
+    <div class="lc-card__header" style="font-weight:700;">Planejamento de sessões</div>
+    <div class="lc-card__body" style="padding:0;">
+        <table class="lc-table">
+            <thead><tr><th>Serviço</th><th>Profissional</th><th>Sessões</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            <?php foreach ($procedures as $pp): ?>
+                <tr>
+                    <td><?= htmlspecialchars((string)($pp['service_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($pp['professional_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= (int)($pp['used_sessions'] ?? 0) ?> / <?= (int)($pp['total_sessions'] ?? 0) ?></td>
+                    <td><?= htmlspecialchars((string)($pp['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?php if ($can('scheduling.read') && $sale['patient_id'] !== null): ?>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule">Agendar</a>
+                    <?php endif; ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Logs técnicos (ocultos) -->
+<?php if (!empty($logs)): ?>
+<details style="margin-top:10px;">
+    <summary class="lc-muted" style="font-size:12px; cursor:pointer; padding:6px 0;">Histórico de alterações</summary>
+    <div class="lc-card" style="margin-top:8px;">
+        <div class="lc-card__body" style="padding:0;">
+            <table class="lc-table" style="font-size:12px;">
+                <thead><tr><th>Data</th><th>Ação</th></tr></thead>
+                <tbody>
+                <?php foreach ($logs as $l): ?>
+                    <?php
+                    $logAt = (string)($l['created_at'] ?? '');
+                    $logFmt = '';
+                    try { $logFmt = (new \DateTimeImmutable($logAt))->format('d/m/Y H:i'); } catch (\Throwable $e) { $logFmt = $logAt; }
+                    ?>
+                    <tr>
+                        <td style="white-space:nowrap;"><?= htmlspecialchars($logFmt, ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars((string)$l['action'], ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
     </div>
-<?php endif; ?>
-
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Resumo</div>
-    <div class="lc-card__body lc-grid lc-grid--4 lc-gap-grid">
-        <div><strong>Status:</strong> <?= htmlspecialchars((string)$sale['status'], ENT_QUOTES, 'UTF-8') ?></div>
-        <div><strong>Orçamento:</strong> <?= htmlspecialchars((string)($sale['budget_status'] ?? 'draft'), ENT_QUOTES, 'UTF-8') ?></div>
-        <div><strong>Paciente:</strong> <?= $sale['patient_id'] === null ? '-' : (int)$sale['patient_id'] ?></div>
-        <div><strong>Total líquido:</strong> R$ <?= number_format((float)$sale['total_liquido'], 2, ',', '.') ?></div>
-        <div><strong>Criada em:</strong> <?= htmlspecialchars((string)$sale['created_at'], ENT_QUOTES, 'UTF-8') ?></div>
-    </div>
-</div>
-
-<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.update')): ?>
-    <div class="lc-card" style="margin-bottom: 16px;">
-        <div class="lc-card__header">Status do orçamento</div>
-        <div class="lc-card__body">
-            <form method="post" action="/finance/sales/budget-status" class="lc-form lc-flex lc-gap-sm lc-flex--wrap" style="align-items:end; margin:0;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
-
-                <div class="lc-field">
-                    <label class="lc-label">Novo status</label>
-                    <select class="lc-select" name="budget_status">
-                        <?php $cur = (string)($sale['budget_status'] ?? 'draft'); ?>
-                        <option value="draft" <?= $cur === 'draft' ? 'selected' : '' ?>>Rascunho</option>
-                        <option value="sent" <?= $cur === 'sent' ? 'selected' : '' ?>>Enviado</option>
-                        <option value="approved" <?= $cur === 'approved' ? 'selected' : '' ?>>Aprovado</option>
-                        <option value="standby" <?= $cur === 'standby' ? 'selected' : '' ?>>Em espera (Standby)</option>
-                        <option value="rejected" <?= $cur === 'rejected' ? 'selected' : '' ?>>Recusado</option>
-                    </select>
-                </div>
-
-                <button class="lc-btn lc-btn--secondary" type="submit" <?= ((string)$sale['status'] === 'cancelled') ? 'disabled' : '' ?>>Atualizar</button>
-            </form>
-        </div>
-    </div>
-<?php endif; ?>
-
-<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.update') && $can('scheduling.create')): ?>
-    <?php if (isset($procedures) && is_array($procedures) && $procedures !== [] && (string)($sale['budget_status'] ?? 'draft') === 'approved'): ?>
-        <div class="lc-card" style="margin-bottom: 16px;">
-            <div class="lc-card__header">Agendamentos automáticos</div>
-            <div class="lc-card__body">
-                <form method="post" action="/finance/sales/generate-appointments" class="lc-form lc-flex lc-gap-sm lc-flex--wrap" style="align-items:end; margin:0;" onsubmit="return confirm('Gerar agendamentos automaticamente a partir do planejamento?');">
-                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
-
-                    <div class="lc-field">
-                        <label class="lc-label">Data inicial</label>
-                        <input class="lc-input" type="date" name="start_date" value="<?= htmlspecialchars(date('Y-m-d'), ENT_QUOTES, 'UTF-8') ?>" required />
-                    </div>
-
-                    <button class="lc-btn lc-btn--secondary" type="submit">Gerar agendamentos</button>
-                </form>
-                <div class="lc-muted" style="margin-top:8px;">
-                    O sistema tentará agendar cada sessão no primeiro horário disponível (até 90 dias por sessão).
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
-<?php endif; ?>
-
-<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.update')): ?>
-    <div class="lc-card" style="margin-bottom: 16px;">
-        <div class="lc-card__header">Adicionar item</div>
-        <div class="lc-card__body">
-            <form method="post" action="/finance/sales/items/add" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 1fr 2fr 1fr 1fr 1fr;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
-
-            <div class="lc-field">
-                <label class="lc-label">Tipo</label>
-                <select class="lc-select" name="type" id="sale_item_type">
-                    <option value="procedure">Procedimento (Serviço)</option>
-                    <option value="package">Pacote</option>
-                    <option value="subscription">Assinatura</option>
-                </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Item</label>
-                <input type="hidden" name="reference_id" id="sale_item_reference_id" value="" />
-
-                <select class="lc-select" id="sale_item_service" data-ref-select>
-                    <option value="">Selecione um serviço</option>
-                    <?php foreach ($services as $s): ?>
-                        <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select class="lc-select" id="sale_item_package" data-ref-select style="display:none;">
-                    <option value="">Selecione um pacote</option>
-                    <?php foreach ($packages as $p): ?>
-                        <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select class="lc-select" id="sale_item_plan" data-ref-select style="display:none;">
-                    <option value="">Selecione um plano</option>
-                    <?php foreach ($plans as $p): ?>
-                        <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Profissional (opcional)</label>
-                <select class="lc-select" name="professional_id">
-                    <option value="0">-</option>
-                    <?php foreach ($professionals as $p): ?>
-                        <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Qtd</label>
-                <input class="lc-input" type="number" name="quantity" min="1" step="1" value="1" />
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Valor unit (R$) (0=auto)</label>
-                <input class="lc-input" type="text" name="unit_price" value="0" />
-            </div>
-
-                <div style="grid-column: 1 / -1;">
-                    <button class="lc-btn" type="submit">Adicionar item</button>
-                </div>
-            </form>
-        </div>
-    </div>
+</details>
 <?php endif; ?>
 
 <script>
-(function(){
-  const typeEl = document.getElementById('sale_item_type');
-  const refIdEl = document.getElementById('sale_item_reference_id');
-  const svcEl = document.getElementById('sale_item_service');
-  const pkgEl = document.getElementById('sale_item_package');
-  const planEl = document.getElementById('sale_item_plan');
-
-  if (!typeEl || !refIdEl || !svcEl || !pkgEl || !planEl) return;
-
-  function showFor(type){
-    svcEl.style.display = type === 'procedure' ? 'block' : 'none';
-    pkgEl.style.display = type === 'package' ? 'block' : 'none';
-    planEl.style.display = type === 'subscription' ? 'block' : 'none';
-    refIdEl.value = '';
-    svcEl.value = '';
-    pkgEl.value = '';
-    planEl.value = '';
-  }
-
-  function sync(){
-    const type = typeEl.value;
-    if (type === 'procedure') refIdEl.value = svcEl.value;
-    if (type === 'package') refIdEl.value = pkgEl.value;
-    if (type === 'subscription') refIdEl.value = planEl.value;
-  }
-
-  typeEl.addEventListener('change', function(){ showFor(typeEl.value); });
-  svcEl.addEventListener('change', sync);
-  pkgEl.addEventListener('change', sync);
-  planEl.addEventListener('change', sync);
-
-  const form = typeEl.closest('form');
-  if (form) {
-    form.addEventListener('submit', function(e){
-      sync();
-      if (!String(refIdEl.value || '').trim()) {
-        e.preventDefault();
-      }
-    });
-  }
-
-  showFor(typeEl.value);
-})();
+function toggleForm(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el.style.display === 'block') {
+        var first = el.querySelector('input:not([type=hidden]),select');
+        if (first) first.focus();
+    }
+}
 </script>
-
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Itens</div>
-    <div class="lc-card__body">
-        <?php if ($items === []): ?>
-            <div class="lc-muted">Sem itens.</div>
-        <?php else: ?>
-            <table class="lc-table">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Tipo</th>
-                    <th>Ref</th>
-                    <th>Profissional</th>
-                    <th>Qtd</th>
-                    <th>Unit</th>
-                    <th>Subtotal</th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($items as $it): ?>
-                    <?php
-                        $refName = '';
-                        if ((string)$it['type'] === 'procedure') {
-                            $rid = (int)$it['reference_id'];
-                            $refName = isset($svcMap[$rid]) ? (string)$svcMap[$rid]['name'] : '';
-                        }
-                        if ((string)$it['type'] === 'package') {
-                            $rid = (int)$it['reference_id'];
-                            $refName = isset($pkgMap[$rid]) ? (string)$pkgMap[$rid]['name'] : '';
-                        }
-                        if ((string)$it['type'] === 'subscription') {
-                            $rid = (int)$it['reference_id'];
-                            $refName = isset($planMap[$rid]) ? (string)$planMap[$rid]['name'] : '';
-                        }
-                        $pid = $it['professional_id'] === null ? 0 : (int)$it['professional_id'];
-                        $pname = $pid > 0 && isset($profMap[$pid]) ? (string)$profMap[$pid]['name'] : '-';
-                    ?>
-                    <tr>
-                        <td><?= (int)$it['id'] ?></td>
-                        <td><?= htmlspecialchars((string)$it['type'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td>#<?= (int)$it['reference_id'] ?> <?= $refName !== '' ? ('- ' . htmlspecialchars($refName, ENT_QUOTES, 'UTF-8')) : '' ?></td>
-                        <td><?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= (int)$it['quantity'] ?></td>
-                        <td><?= number_format((float)$it['unit_price'], 2, ',', '.') ?></td>
-                        <td><?= number_format((float)$it['subtotal'], 2, ',', '.') ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
-    </div>
-</div>
-
-<?php if ((!isset($is_professional) || !$is_professional) && $can('finance.payments.create')): ?>
-    <div class="lc-card" style="margin-bottom: 16px;">
-        <div class="lc-card__header">Registrar pagamento</div>
-        <div class="lc-card__body">
-            <form method="post" action="/finance/payments/create" class="lc-form lc-grid lc-gap-grid lc-grid--end" style="grid-template-columns: 1fr 1fr 1fr 1fr 2fr;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
-
-            <div class="lc-field">
-                <label class="lc-label">Método</label>
-                <select class="lc-select" name="method">
-                    <option value="pix">PIX</option>
-                    <option value="card">Cartão</option>
-                    <option value="cash">Dinheiro</option>
-                    <option value="boleto">Boleto</option>
-                </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Valor (R$)</label>
-                <input class="lc-input" type="text" name="amount" required />
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Status</label>
-                <select class="lc-select" name="status">
-                    <option value="pending">Pendente</option>
-                    <option value="paid">Pago</option>
-                </select>
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Taxas (R$)</label>
-                <input class="lc-input" type="text" name="fees" value="0" />
-            </div>
-
-            <div class="lc-field">
-                <label class="lc-label">Gateway Ref (opcional)</label>
-                <input class="lc-input" type="text" name="gateway_ref" />
-            </div>
-
-                <div style="grid-column: 1 / -1;">
-                    <button class="lc-btn" type="submit">Adicionar pagamento</button>
-                </div>
-            </form>
-        </div>
-    </div>
-<?php endif; ?>
-
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Pagamentos</div>
-    <div class="lc-card__body">
-        <?php if ($payments === []): ?>
-            <div class="lc-muted">Sem pagamentos.</div>
-        <?php else: ?>
-            <table class="lc-table">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Método</th>
-                    <th>Valor</th>
-                    <th>Status</th>
-                    <th>Taxas</th>
-                    <th>Pago em</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($payments as $p): ?>
-                    <tr>
-                        <td><?= (int)$p['id'] ?></td>
-                        <td><?= htmlspecialchars((string)$p['method'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= number_format((float)$p['amount'], 2, ',', '.') ?></td>
-                        <td><?= htmlspecialchars((string)$p['status'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= number_format((float)$p['fees'], 2, ',', '.') ?></td>
-                        <td><?= $p['paid_at'] === null ? '-' : htmlspecialchars((string)$p['paid_at'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td>
-                            <?php if ((!isset($is_professional) || !$is_professional) && $can('finance.payments.refund') && (string)$p['status'] !== 'refunded'): ?>
-                                <form method="post" action="/finance/payments/refund">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
-                                    <input type="hidden" name="payment_id" value="<?= (int)$p['id'] ?>" />
-                                    <button class="lc-btn lc-btn--secondary" type="submit">Estornar</button>
-                                </form>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
-    </div>
-</div>
-
-<div class="lc-card" style="margin-bottom: 16px;">
-    <div class="lc-card__header">Ações</div>
-    <div class="lc-card__body lc-flex lc-gap-md lc-flex--wrap">
-        <a class="lc-btn lc-btn--secondary" href="/finance/sales">Voltar</a>
-
-        <?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.cancel')): ?>
-            <form method="post" action="/finance/sales/cancel">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Cancelar venda</button>
-            </form>
-        <?php endif; ?>
-    </div>
-</div>
-
-<div class="lc-card">
-    <div class="lc-card__header">Logs (imutáveis)</div>
-    <div class="lc-card__body">
-        <?php if ($logs === []): ?>
-            <div class="lc-muted">Sem logs.</div>
-        <?php else: ?>
-            <table class="lc-table">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Ação</th>
-                    <th>Meta</th>
-                    <th>Actor</th>
-                    <th>IP</th>
-                    <th>Em</th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($logs as $l): ?>
-                    <tr>
-                        <td><?= (int)$l['id'] ?></td>
-                        <td><?= htmlspecialchars((string)$l['action'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><pre style="white-space: pre-wrap; margin:0;"><?= htmlspecialchars((string)$l['meta_json'], ENT_QUOTES, 'UTF-8') ?></pre></td>
-                        <td><?= $l['actor_user_id'] === null ? '-' : (int)$l['actor_user_id'] ?></td>
-                        <td><?= $l['ip_address'] === null ? '-' : htmlspecialchars((string)$l['ip_address'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string)$l['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
-    </div>
-</div>
 
 <?php
 $content = (string)ob_get_clean();
 require dirname(__DIR__) . '/layout/app.php';
-?>

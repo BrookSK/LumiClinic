@@ -453,6 +453,37 @@ final class SalesService
         $audit->log($actorId, $clinicId, 'finance.sales.cancel', ['sale_id' => $saleId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
     }
 
+    public function applyDiscount(int $saleId, string $descontoStr, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $desconto = $this->parseMoney($descontoStr);
+        if ($desconto < 0) $desconto = 0.0;
+
+        $pdo = $this->container->get(\PDO::class);
+        $saleRepo = new SaleRepository($pdo);
+        $sale = $saleRepo->findById($clinicId, $saleId);
+        if ($sale === null) {
+            throw new \RuntimeException('Venda inválida.');
+        }
+
+        // Atualiza desconto e recalcula totais
+        $stmt = $pdo->prepare("
+            UPDATE sales SET desconto = :desconto, updated_at = NOW()
+            WHERE id = :id AND clinic_id = :clinic_id AND deleted_at IS NULL LIMIT 1
+        ");
+        $stmt->execute(['desconto' => $desconto, 'id' => $saleId, 'clinic_id' => $clinicId]);
+
+        $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
+
+        (new SaleLogRepository($pdo))->log($clinicId, $saleId, 'sales.discount', ['desconto' => $desconto], $actorId, $ip);
+    }
+
     public function setBudgetStatus(int $saleId, string $budgetStatus, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
@@ -463,7 +494,7 @@ final class SalesService
         }
 
         $budgetStatus = trim($budgetStatus);
-        $allowed = ['draft', 'sent', 'approved', 'rejected'];
+        $allowed = ['draft', 'sent', 'approved', 'rejected', 'standby'];
         if (!in_array($budgetStatus, $allowed, true)) {
             throw new \RuntimeException('Status inv?lido.');
         }
