@@ -142,4 +142,44 @@ final class ProfessionalScheduleController extends Controller
 
         return $this->redirect('/schedule-rules?professional_id=' . $professionalId);
     }
+
+    public function deleteByDay(Request $request)
+    {
+        $this->authorize('schedule_rules.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $professionalId = (int)$request->input('professional_id', 0);
+        $weekday = (int)$request->input('weekday', -1);
+
+        if ($professionalId <= 0 || $weekday < 0 || $weekday > 6) {
+            return $this->redirect('/schedule-rules?professional_id=' . $professionalId);
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $repo = new ProfessionalScheduleRepository($this->container->get(\PDO::class));
+        $all = $repo->listByProfessional($clinicId, $professionalId);
+        foreach ($all as $rule) {
+            if ((int)$rule['weekday'] === $weekday) {
+                $repo->softDelete($clinicId, (int)$rule['id']);
+            }
+        }
+
+        $audit = new AuditLogRepository($this->container->get(\PDO::class));
+        $audit->log($userId, $clinicId, 'scheduling.schedule_rules_delete_day', [
+            'professional_id' => $professionalId,
+            'weekday' => $weekday,
+        ], $request->ip());
+
+        return $this->redirect('/schedule-rules?professional_id=' . $professionalId);
+    }
 }

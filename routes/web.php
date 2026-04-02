@@ -254,6 +254,7 @@ $router->get('/clinic/legal-signatures/view', [ClinicLegalSignaturesController::
 $router->get('/clinic/working-hours', [ClinicController::class, 'workingHours']);
 $router->post('/clinic/working-hours', [ClinicController::class, 'storeWorkingHour']);
 $router->post('/clinic/working-hours/delete', [ClinicController::class, 'deleteWorkingHour']);
+$router->post('/clinic/working-hours/delete-day', [ClinicController::class, 'deleteWorkingHoursByDay']);
 
 $router->get('/clinic/closed-days', [ClinicController::class, 'closedDays']);
 $router->post('/clinic/closed-days', [ClinicController::class, 'storeClosedDay']);
@@ -466,6 +467,7 @@ $router->post('/blocks/create', [BlockController::class, 'create']);
 $router->get('/schedule-rules', [ProfessionalScheduleController::class, 'index']);
 $router->post('/schedule-rules/create', [ProfessionalScheduleController::class, 'create']);
 $router->post('/schedule-rules/delete', [ProfessionalScheduleController::class, 'delete']);
+$router->post('/schedule-rules/delete-day', [ProfessionalScheduleController::class, 'deleteByDay']);
 
 $router->get('/procedures', [ProcedureController::class, 'index']);
 $router->post('/procedures/create', [ProcedureController::class, 'create']);

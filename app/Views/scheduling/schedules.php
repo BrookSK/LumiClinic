@@ -131,17 +131,18 @@ ob_start();
 
 <!-- Lista por dia -->
 <?php foreach ($weekdayNames as $wd => $wdName): ?>
-    <?php $dayItems = $byDay[$wd] ?? []; ?>
-    <div class="sr-day">
+    <?php
+    $dayItems = $byDay[$wd] ?? [];
+    $isActive = $dayItems !== [];
+    ?>
+    <div class="sr-day" style="<?= $isActive ? '' : 'opacity:.65;' ?>">
         <div class="sr-day__head">
             <div style="display:flex;align-items:center;gap:10px;">
                 <span class="sr-day__name"><?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?></span>
-                <?php if ($dayItems === []): ?>
-                    <span class="sr-empty">Não atende</span>
-                <?php endif; ?>
+                <span style="display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:<?= $isActive ? 'rgba(22,163,74,.12)' : 'rgba(185,28,28,.08)' ?>;color:<?= $isActive ? '#16a34a' : '#b91c1c' ?>;border:1px solid <?= $isActive ? 'rgba(22,163,74,.22)' : 'rgba(185,28,28,.16)' ?>;"><?= $isActive ? 'Atende' : 'Não atende' ?></span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <?php if ($dayItems !== []): ?>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <?php if ($isActive): ?>
                     <div class="sr-day__slots">
                         <?php foreach ($dayItems as $it): ?>
                             <span class="sr-slot">
@@ -162,14 +163,29 @@ ob_start();
                     </div>
                 <?php endif; ?>
                 <?php if ($can('schedule_rules.manage')): ?>
-                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="openRuleFor(<?= $wd ?>)" title="Editar horários de <?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?>" style="padding:6px 10px;font-size:12px;">
+                <div style="display:flex;gap:4px;">
+                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="openRuleFor(<?= $wd ?>)" title="Adicionar horário" style="padding:6px 10px;font-size:12px;">
                         ✏️
                     </button>
+                    <?php if ($isActive): ?>
+                        <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="markRuleClosed(<?= $wd ?>, '<?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?>')" title="Marcar como não atende" style="padding:6px 10px;font-size:12px;color:rgba(185,28,28,.60);">
+                            🚫
+                        </button>
+                    <?php endif; ?>
+                </div>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 <?php endforeach; ?>
+
+<?php if ($can('schedule_rules.manage')): ?>
+<form id="markRuleClosedForm" method="post" action="/schedule-rules/delete-day" style="display:none;">
+    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+    <input type="hidden" name="weekday" id="markRuleClosedWeekday" value="" />
+</form>
+<?php endif; ?>
 
 <script>
 function openRuleFor(weekday) {
@@ -179,6 +195,14 @@ function openRuleFor(weekday) {
     var sel = document.getElementById('ruleWeekdaySelect');
     if (sel) sel.value = weekday;
     f.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function markRuleClosed(weekday, name) {
+    if (!confirm('Remover todos os horários de ' + name + '? O dia ficará como "Não atende".')) return;
+    var f = document.getElementById('markRuleClosedForm');
+    var w = document.getElementById('markRuleClosedWeekday');
+    if (!f || !w) return;
+    w.value = weekday;
+    f.submit();
 }
 </script>
 

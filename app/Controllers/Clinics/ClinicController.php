@@ -187,6 +187,31 @@ final class ClinicController extends Controller
         return $this->redirect('/clinic/working-hours');
     }
 
+    public function deleteWorkingHoursByDay(Request $request)
+    {
+        $this->authorize('clinics.update');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $weekday = (int)$request->input('weekday', -1);
+        if ($weekday < 0 || $weekday > 6) {
+            return $this->redirect('/clinic/working-hours');
+        }
+
+        $service = new ClinicService($this->container);
+        $all = $service->listWorkingHours();
+        foreach ($all as $wh) {
+            if ((int)$wh['weekday'] === $weekday) {
+                $service->deleteWorkingHour((int)$wh['id'], $request->ip());
+            }
+        }
+
+        return $this->redirect('/clinic/working-hours');
+    }
+
     public function closedDays(Request $request)
     {
         $this->authorize('clinics.read');
