@@ -190,7 +190,20 @@ ob_start();
                         </td>
                         <td style="font-weight:600;"><?= htmlspecialchars((string)($it['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td class="lc-muted" style="font-size:12px;"><?= htmlspecialchars((string)($it['vendor_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td class="lc-muted" style="font-size:12px;"><?= (int)($it['installment_no'] ?? 0) > 0 ? ((int)$it['installment_no'] . 'ª') : '—' ?></td>
+                        <td class="lc-muted" style="font-size:12px;">
+                            <?php
+                            $instNo = (int)($it['installment_no'] ?? 0);
+                            $totalInst = (int)($it['total_installments'] ?? 0);
+                            $pType = (string)($it['payable_type'] ?? 'single');
+                            if ($instNo > 0 && $totalInst > 1) {
+                                echo $instNo . '/' . $totalInst;
+                            } elseif ($instNo > 0 && $pType === 'recurring_monthly') {
+                                echo $instNo . 'ª';
+                            } else {
+                                echo '—';
+                            }
+                            ?>
+                        </td>
                         <td style="text-align:right; font-weight:700;">R$ <?= number_format((float)($it['amount'] ?? 0), 2, ',', '.') ?></td>
                         <td>
                             <?php if ($isOpen): ?>

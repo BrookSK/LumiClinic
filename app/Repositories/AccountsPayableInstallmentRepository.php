@@ -78,7 +78,8 @@ final class AccountsPayableInstallmentRepository
                 p.vendor_name,
                 p.title,
                 p.cost_center_id,
-                p.payable_type
+                p.payable_type,
+                p.total_installments
             FROM accounts_payable_installments i
             INNER JOIN accounts_payable p
                     ON p.id = i.payable_id
