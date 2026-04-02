@@ -65,8 +65,8 @@ ob_start();
 
             <div style="font-size:13px;color:rgba(31,41,55,.60);margin-bottom:10px;">Selecione o dia e o horário de início e fim:</div>
 
-            <div style="display:grid;grid-template-columns:180px 140px 140px auto;gap:12px;align-items:end;">
-                <div class="lc-field">
+            <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+                <div class="lc-field" style="min-width:160px;">
                     <label class="lc-label">Dia da semana</label>
                     <select class="lc-select" name="weekday" required>
                         <?php foreach ($weekdayLabels as $k => $v): ?>
@@ -74,15 +74,17 @@ ob_start();
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="lc-field">
+                <div class="lc-field" style="min-width:110px;">
                     <label class="lc-label">Início</label>
                     <input class="lc-input" type="time" name="start_time" value="08:00" required />
                 </div>
-                <div class="lc-field">
+                <div class="lc-field" style="min-width:110px;">
                     <label class="lc-label">Fim</label>
                     <input class="lc-input" type="time" name="end_time" value="18:00" required />
                 </div>
-                <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Adicionar</button>
+                <div style="padding-bottom:1px;">
+                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Adicionar</button>
+                </div>
             </div>
         </form>
     </div>
@@ -98,28 +100,49 @@ ob_start();
     <?php $dayItems = $byDay[$wd] ?? []; ?>
     <div class="wh-day">
         <div class="wh-day__head">
-            <span class="wh-day__name"><?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?></span>
-            <?php if ($dayItems === []): ?>
-                <span class="wh-empty">Fechado</span>
-            <?php else: ?>
-                <div class="wh-day__slots">
-                    <?php foreach ($dayItems as $it): ?>
-                        <span class="wh-slot">
-                            <?= htmlspecialchars(substr((string)$it['start_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(substr((string)$it['end_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?>
-                            <?php if ($can('clinics.update')): ?>
-                                <form method="post" action="/clinic/working-hours/delete">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                    <button type="submit" title="Remover" onclick="return confirm('Remover este horário?');">✕</button>
-                                </form>
-                            <?php endif; ?>
-                        </span>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span class="wh-day__name"><?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php if ($dayItems === []): ?>
+                    <span class="wh-empty">Fechado</span>
+                <?php endif; ?>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <?php if ($dayItems !== []): ?>
+                    <div class="wh-day__slots">
+                        <?php foreach ($dayItems as $it): ?>
+                            <span class="wh-slot">
+                                <?= htmlspecialchars(substr((string)$it['start_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(substr((string)$it['end_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?>
+                                <?php if ($can('clinics.update')): ?>
+                                    <form method="post" action="/clinic/working-hours/delete">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                        <button type="submit" title="Remover" onclick="return confirm('Remover este horário?');">✕</button>
+                                    </form>
+                                <?php endif; ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+                <?php if ($can('clinics.update')): ?>
+                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="openAddFor(<?= $wd ?>)" title="Editar horários de <?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?>" style="padding:6px 10px;font-size:12px;">
+                        ✏️
+                    </button>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 <?php endforeach; ?>
+
+<script>
+function openAddFor(weekday) {
+    var f = document.getElementById('addHourForm');
+    if (!f) return;
+    f.style.display = 'block';
+    var sel = f.querySelector('select[name="weekday"]');
+    if (sel) sel.value = weekday;
+    f.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+</script>
 
 <?php
 $content = (string)ob_get_clean();

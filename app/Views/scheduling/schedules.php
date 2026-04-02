@@ -94,28 +94,30 @@ ob_start();
         <form method="post" action="/schedule-rules/create">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
             <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-            <div style="display:grid;grid-template-columns:180px 120px 120px 120px auto;gap:12px;align-items:end;">
-                <div class="lc-field">
+            <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+                <div class="lc-field" style="min-width:160px;">
                     <label class="lc-label">Dia</label>
-                    <select class="lc-select" name="weekday">
+                    <select class="lc-select" name="weekday" id="ruleWeekdaySelect">
                         <?php foreach ($weekdayNames as $k => $v): ?>
                             <option value="<?= $k ?>"><?= htmlspecialchars($v, ENT_QUOTES, 'UTF-8') ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="lc-field">
+                <div class="lc-field" style="min-width:110px;">
                     <label class="lc-label">Início</label>
                     <input class="lc-input" type="time" name="start_time" value="08:00" required />
                 </div>
-                <div class="lc-field">
+                <div class="lc-field" style="min-width:110px;">
                     <label class="lc-label">Fim</label>
                     <input class="lc-input" type="time" name="end_time" value="18:00" required />
                 </div>
-                <div class="lc-field">
+                <div class="lc-field" style="min-width:100px;">
                     <label class="lc-label">Intervalo (min)</label>
                     <input class="lc-input" type="number" name="interval_minutes" min="0" step="5" value="30" placeholder="30" />
                 </div>
-                <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Adicionar</button>
+                <div style="padding-bottom:1px;">
+                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Adicionar</button>
+                </div>
             </div>
             <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:6px;">Intervalo = duração de cada slot na agenda (ex: 30 min = consultas de 30 em 30 minutos).</div>
         </form>
@@ -132,32 +134,53 @@ ob_start();
     <?php $dayItems = $byDay[$wd] ?? []; ?>
     <div class="sr-day">
         <div class="sr-day__head">
-            <span class="sr-day__name"><?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?></span>
-            <?php if ($dayItems === []): ?>
-                <span class="sr-empty">Não atende</span>
-            <?php else: ?>
-                <div class="sr-day__slots">
-                    <?php foreach ($dayItems as $it): ?>
-                        <span class="sr-slot">
-                            <?= htmlspecialchars(substr((string)$it['start_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(substr((string)$it['end_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?>
-                            <?php if ($it['interval_minutes'] !== null): ?>
-                                <span class="sr-slot__interval">(<?= (int)$it['interval_minutes'] ?>min)</span>
-                            <?php endif; ?>
-                            <?php if ($can('schedule_rules.manage')): ?>
-                                <form method="post" action="/schedule-rules/delete" onsubmit="return confirm('Excluir?');">
-                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                    <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                                    <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
-                                    <button type="submit" class="sr-del" title="Excluir">✕</button>
-                                </form>
-                            <?php endif; ?>
-                        </span>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span class="sr-day__name"><?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php if ($dayItems === []): ?>
+                    <span class="sr-empty">Não atende</span>
+                <?php endif; ?>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <?php if ($dayItems !== []): ?>
+                    <div class="sr-day__slots">
+                        <?php foreach ($dayItems as $it): ?>
+                            <span class="sr-slot">
+                                <?= htmlspecialchars(substr((string)$it['start_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(substr((string)$it['end_time'], 0, 5), ENT_QUOTES, 'UTF-8') ?>
+                                <?php if ($it['interval_minutes'] !== null): ?>
+                                    <span class="sr-slot__interval">(<?= (int)$it['interval_minutes'] ?>min)</span>
+                                <?php endif; ?>
+                                <?php if ($can('schedule_rules.manage')): ?>
+                                    <form method="post" action="/schedule-rules/delete" onsubmit="return confirm('Excluir?');">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                        <input type="hidden" name="professional_id" value="<?= (int)$professional_id ?>" />
+                                        <button type="submit" class="sr-del" title="Excluir">✕</button>
+                                    </form>
+                                <?php endif; ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+                <?php if ($can('schedule_rules.manage')): ?>
+                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="openRuleFor(<?= $wd ?>)" title="Editar horários de <?= htmlspecialchars($wdName, ENT_QUOTES, 'UTF-8') ?>" style="padding:6px 10px;font-size:12px;">
+                        ✏️
+                    </button>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 <?php endforeach; ?>
+
+<script>
+function openRuleFor(weekday) {
+    var f = document.getElementById('addRuleForm');
+    if (!f) return;
+    f.style.display = 'block';
+    var sel = document.getElementById('ruleWeekdaySelect');
+    if (sel) sel.value = weekday;
+    f.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+</script>
 
 <?php else: ?>
     <div style="text-align:center;padding:40px 20px;color:rgba(31,41,55,.45);">
