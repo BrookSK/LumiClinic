@@ -27,10 +27,11 @@ final class AdminUserRepository
         $offset = max(0, $offset);
         $sql = "
             SELECT u.id, u.name, u.email, u.status, u.created_at,
-                   u.role_id,
+                   ur.role_id,
                    r.name AS role_name
             FROM users u
-            LEFT JOIN roles r ON r.id = u.role_id AND r.deleted_at IS NULL
+            LEFT JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+            LEFT JOIN roles r ON r.id = ur.role_id AND r.deleted_at IS NULL
             WHERE u.clinic_id = :clinic_id
               AND u.deleted_at IS NULL
             ORDER BY u.id DESC
