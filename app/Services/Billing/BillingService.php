@@ -43,16 +43,30 @@ final class BillingService
     public function isBlocked(array $subscription): bool
     {
         $status = (string)($subscription['status'] ?? '');
+        $now = new \DateTimeImmutable('now');
+
         if ($status === 'active' || $status === 'trial') {
+            // Trial expirado
             if ($status === 'trial') {
                 $trialEndsAt = $subscription['trial_ends_at'] ?? null;
                 if ($trialEndsAt !== null && (string)$trialEndsAt !== '') {
                     $ends = new \DateTimeImmutable((string)$trialEndsAt);
-                    if ($ends < new \DateTimeImmutable('now')) {
+                    if ($ends < $now) {
                         return true;
                     }
                 }
             }
+
+            // Período expirado (current_period_end já passou) — dá 3 dias de carência
+            $periodEnd = $subscription['current_period_end'] ?? null;
+            if ($periodEnd !== null && (string)$periodEnd !== '') {
+                $ends = new \DateTimeImmutable((string)$periodEnd);
+                $grace = $ends->modify('+3 days');
+                if ($grace < $now) {
+                    return true;
+                }
+            }
+
             return false;
         }
 
@@ -64,7 +78,7 @@ final class BillingService
 
             $sinceDt = new \DateTimeImmutable((string)$since);
             $graceEnds = $sinceDt->modify('+7 days');
-            return $graceEnds < new \DateTimeImmutable('now');
+            return $graceEnds < $now;
         }
 
         return false;
