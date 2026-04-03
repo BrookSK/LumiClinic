@@ -100,6 +100,40 @@ final class ClinicSignupController extends Controller
 
             (new AuthService($this->container))->loginUserByIdForSession((int)$result['owner_user_id'], $request->ip(), $request->header('user-agent'));
 
+            // Apply selected plan if not trial
+            if ($selectedPlan !== '' && $selectedPlan !== 'trial') {
+                $selectedPlanRow = null;
+                foreach ($plans as $p) {
+                    if ((string)($p['code'] ?? '') === $selectedPlan) {
+                        $selectedPlanRow = $p;
+                        break;
+                    }
+                }
+                if ($selectedPlanRow !== null) {
+                    $planId = (int)($selectedPlanRow['id'] ?? 0);
+                    $trialDays = (int)($selectedPlanRow['trial_days'] ?? 0);
+                    if ($planId > 0) {
+                        // Update subscription to the selected plan
+                        $pdo->prepare("
+                            UPDATE clinic_subscriptions
+                            SET plan_id = :plan_id,
+                                status = :status,
+                                trial_ends_at = :trial_ends_at,
+                                updated_at = NOW()
+                            WHERE clinic_id = :clinic_id
+                            LIMIT 1
+                        ")->execute([
+                            'plan_id' => $planId,
+                            'status' => $trialDays > 0 ? 'trial' : 'active',
+                            'trial_ends_at' => $trialDays > 0
+                                ? (new \DateTimeImmutable('now'))->modify('+' . $trialDays . ' days')->format('Y-m-d H:i:s')
+                                : null,
+                            'clinic_id' => (int)$result['clinic_id'],
+                        ]);
+                    }
+                }
+            }
+
             // Send welcome email (best effort)
             try {
                 (new \App\Services\Mail\WelcomeMailService($this->container))->sendClinicWelcome(
