@@ -379,6 +379,9 @@ final class SystemClinicService
         // 2. Delete all clinic data (order matters due to FK constraints)
         $pdo->beginTransaction();
         try {
+            // Disable FK checks to allow deletion in any order
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+
             $tables = [
                 // Billing & subscriptions
                 'billing_events' => 'clinic_id',
@@ -496,8 +499,10 @@ final class SystemClinicService
                 }
             }
 
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
             $pdo->commit();
         } catch (\Throwable $e) {
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
