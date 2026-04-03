@@ -115,15 +115,16 @@ foreach ($plans as $p) {
             <?php if (!empty($plans)): ?>
             <div class="su-section">Escolha seu plano</div>
             <div class="su-grid3">
-                <?php foreach ($plans as $p):
+                <?php foreach ($plans as $idx => $p):
                     $price = (int)($p['price_cents'] ?? 0);
                     $trial = (int)($p['trial_days'] ?? 0);
                     $code = (string)($p['code'] ?? '');
                     $pName = (string)($p['name'] ?? '');
                     $isFree = $price === 0;
+                    $isFirst = $idx === 0;
                 ?>
-                <label class="su-plan" id="planLabel_<?= $e($code) ?>">
-                    <input type="radio" name="plan" value="<?= $e($code) ?>" onchange="selectPlan('<?= $e($code) ?>')" />
+                <label class="su-plan <?= $isFirst ? 'selected' : '' ?>" id="planLabel_<?= $e($code) ?>">
+                    <input type="radio" name="plan" value="<?= $e($code) ?>" onchange="selectPlan('<?= $e($code) ?>')" <?= $isFirst ? 'checked' : '' ?> />
                     <div class="su-plan__name"><?= $e($pName) ?></div>
                     <?php if ($isFree): ?>
                         <div class="su-plan__price">Grátis</div>

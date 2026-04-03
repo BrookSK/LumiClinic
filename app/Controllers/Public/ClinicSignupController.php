@@ -100,39 +100,47 @@ final class ClinicSignupController extends Controller
 
             (new AuthService($this->container))->loginUserByIdForSession((int)$result['owner_user_id'], $request->ip(), $request->header('user-agent'));
 
-            // Apply selected plan if not trial
-            if ($selectedPlan !== '' && $selectedPlan !== 'trial') {
-                $selectedPlanRow = null;
+            // Apply selected plan — create subscription directly with the chosen plan
+            $selectedPlanRow = null;
+            if ($selectedPlan !== '') {
                 foreach ($plans as $p) {
                     if ((string)($p['code'] ?? '') === $selectedPlan) {
                         $selectedPlanRow = $p;
                         break;
                     }
                 }
-                if ($selectedPlanRow !== null) {
-                    $planId = (int)($selectedPlanRow['id'] ?? 0);
-                    $trialDays = (int)($selectedPlanRow['trial_days'] ?? 0);
-                    if ($planId > 0) {
-                        // Update subscription to the selected plan
-                        $pdo->prepare("
-                            UPDATE clinic_subscriptions
-                            SET plan_id = :plan_id,
-                                status = :status,
-                                trial_ends_at = :trial_ends_at,
-                                updated_at = NOW()
-                            WHERE clinic_id = :clinic_id
-                            LIMIT 1
-                        ")->execute([
-                            'plan_id' => $planId,
-                            'status' => $trialDays > 0 ? 'trial' : 'active',
-                            'trial_ends_at' => $trialDays > 0
-                                ? (new \DateTimeImmutable('now'))->modify('+' . $trialDays . ' days')->format('Y-m-d H:i:s')
-                                : null,
-                            'clinic_id' => (int)$result['clinic_id'],
-                        ]);
-                    }
-                }
             }
+
+            $planId = $selectedPlanRow !== null ? (int)($selectedPlanRow['id'] ?? 0) : null;
+            $trialDays = $selectedPlanRow !== null ? (int)($selectedPlanRow['trial_days'] ?? 0) : 14;
+
+            // If no plan selected or plan not found, fall back to trial plan
+            if ($planId === null || $planId === 0) {
+                $trialPlanRow = (new \App\Repositories\SaasPlanRepository($pdo))->findActiveByCode('trial');
+                $planId = $trialPlanRow !== null ? (int)$trialPlanRow['id'] : null;
+                $trialDays = $trialPlanRow !== null ? (int)($trialPlanRow['trial_days'] ?? 14) : 14;
+            }
+
+            $subStatus = $trialDays > 0 ? 'trial' : 'active';
+            $trialEndsAt = $trialDays > 0
+                ? (new \DateTimeImmutable('now'))->modify('+' . $trialDays . ' days')->format('Y-m-d H:i:s')
+                : null;
+
+            // Create subscription with the correct plan from the start
+            $pdo->prepare("
+                INSERT INTO clinic_subscriptions (clinic_id, plan_id, status, trial_ends_at, created_at)
+                VALUES (:clinic_id, :plan_id, :status, :trial_ends_at, NOW())
+                ON DUPLICATE KEY UPDATE
+                    plan_id = VALUES(plan_id),
+                    status = VALUES(status),
+                    trial_ends_at = VALUES(trial_ends_at),
+                    updated_at = NOW()
+            ")->execute([
+                'clinic_id' => (int)$result['clinic_id'],
+                'plan_id' => $planId,
+                'status' => $subStatus,
+                'trial_ends_at' => $trialEndsAt,
+            ]);
 
             // Send welcome email (best effort)
             try {
@@ -156,6 +164,7 @@ final class ClinicSignupController extends Controller
             $mobile = preg_replace('/\D+/', '', (string)$request->input('mobile', ''));
 
             if ($ccHolder !== '' && $ccNumber !== '' && $ccExpMonth !== '' && $ccExpYear !== '' && $ccCvv !== '') {
+                $gatewayError = null;
                 try {
                     $cardData = [
                         'cc_holder' => $ccHolder,
@@ -171,10 +180,11 @@ final class ClinicSignupController extends Controller
                         'remote_ip' => $request->ip(),
                     ];
                     $gwService = new \App\Services\Billing\BillingGatewayService($this->container);
-                    // Create customer + subscription with card in one shot
                     $gwService->ensureGatewaySubscription((int)$result['clinic_id'], $cardData);
-                } catch (\Throwable $ignore) {
-                    // Don't block signup if gateway fails — user can fix later in /billing/subscription
+                } catch (\Throwable $gwEx) {
+                    $gatewayError = $gwEx->getMessage();
+                    // Log to system error log
+                    error_log('[Signup Gateway Error] clinic_id=' . $result['clinic_id'] . ' plan=' . $selectedPlan . ' error=' . $gatewayError);
                 }
             }
 
