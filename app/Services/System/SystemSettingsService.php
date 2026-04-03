@@ -78,14 +78,28 @@ final class SystemSettingsService
     public function getBillingSettings(): array
     {
         $keys = [
-            'asaas_base_url' => 'billing.asaas.base_url',
-            'asaas_api_key' => 'billing.asaas.api_key',
-            'asaas_billing_type' => 'billing.asaas.billing_type',
-            'asaas_webhook_secret' => 'billing.asaas.webhook_secret',
-            'mp_base_url' => 'billing.mercadopago.base_url',
-            'mp_access_token' => 'billing.mercadopago.access_token',
-            'mp_payer_email_default' => 'billing.mercadopago.payer_email_default',
-            'mp_webhook_secret' => 'billing.mercadopago.webhook_secret',
+            'asaas_env'                  => 'billing.asaas.env',
+            'asaas_base_url'             => 'billing.asaas.base_url',
+            'asaas_api_key'              => 'billing.asaas.api_key',
+            'asaas_billing_type'         => 'billing.asaas.billing_type',
+            'asaas_webhook_secret'       => 'billing.asaas.webhook_secret',
+            'asaas_sandbox_base_url'     => 'billing.asaas.sandbox.base_url',
+            'asaas_sandbox_api_key'      => 'billing.asaas.sandbox.api_key',
+            'asaas_sandbox_webhook_secret' => 'billing.asaas.sandbox.webhook_secret',
+            'asaas_prod_base_url'        => 'billing.asaas.prod.base_url',
+            'asaas_prod_api_key'         => 'billing.asaas.prod.api_key',
+            'asaas_prod_webhook_secret'  => 'billing.asaas.prod.webhook_secret',
+            'mp_env'                     => 'billing.mercadopago.env',
+            'mp_base_url'                => 'billing.mercadopago.base_url',
+            'mp_access_token'            => 'billing.mercadopago.access_token',
+            'mp_payer_email_default'     => 'billing.mercadopago.payer_email_default',
+            'mp_webhook_secret'          => 'billing.mercadopago.webhook_secret',
+            'mp_sandbox_base_url'        => 'billing.mercadopago.sandbox.base_url',
+            'mp_sandbox_access_token'    => 'billing.mercadopago.sandbox.access_token',
+            'mp_sandbox_webhook_secret'  => 'billing.mercadopago.sandbox.webhook_secret',
+            'mp_prod_base_url'           => 'billing.mercadopago.prod.base_url',
+            'mp_prod_access_token'       => 'billing.mercadopago.prod.access_token',
+            'mp_prod_webhook_secret'     => 'billing.mercadopago.prod.webhook_secret',
         ];
 
         $out = [];
@@ -101,14 +115,22 @@ final class SystemSettingsService
     public function saveBillingSettings(array $input): void
     {
         $map = [
-            'asaas_base_url' => 'billing.asaas.base_url',
-            'asaas_api_key' => 'billing.asaas.api_key',
-            'asaas_billing_type' => 'billing.asaas.billing_type',
-            'asaas_webhook_secret' => 'billing.asaas.webhook_secret',
-            'mp_base_url' => 'billing.mercadopago.base_url',
-            'mp_access_token' => 'billing.mercadopago.access_token',
-            'mp_payer_email_default' => 'billing.mercadopago.payer_email_default',
-            'mp_webhook_secret' => 'billing.mercadopago.webhook_secret',
+            'asaas_env'                    => 'billing.asaas.env',
+            'asaas_billing_type'           => 'billing.asaas.billing_type',
+            'asaas_sandbox_base_url'       => 'billing.asaas.sandbox.base_url',
+            'asaas_sandbox_api_key'        => 'billing.asaas.sandbox.api_key',
+            'asaas_sandbox_webhook_secret' => 'billing.asaas.sandbox.webhook_secret',
+            'asaas_prod_base_url'          => 'billing.asaas.prod.base_url',
+            'asaas_prod_api_key'           => 'billing.asaas.prod.api_key',
+            'asaas_prod_webhook_secret'    => 'billing.asaas.prod.webhook_secret',
+            'mp_env'                       => 'billing.mercadopago.env',
+            'mp_payer_email_default'       => 'billing.mercadopago.payer_email_default',
+            'mp_sandbox_base_url'          => 'billing.mercadopago.sandbox.base_url',
+            'mp_sandbox_access_token'      => 'billing.mercadopago.sandbox.access_token',
+            'mp_sandbox_webhook_secret'    => 'billing.mercadopago.sandbox.webhook_secret',
+            'mp_prod_base_url'             => 'billing.mercadopago.prod.base_url',
+            'mp_prod_access_token'         => 'billing.mercadopago.prod.access_token',
+            'mp_prod_webhook_secret'       => 'billing.mercadopago.prod.webhook_secret',
         ];
 
         foreach ($map as $field => $key) {
@@ -118,6 +140,29 @@ final class SystemSettingsService
 
             $val = trim((string)$input[$field]);
             $this->setText($key, $val === '' ? null : $val);
+        }
+
+        // Sync active env keys to the legacy fields used by the gateway service
+        $asaasEnv = trim((string)($input['asaas_env'] ?? $this->getText('billing.asaas.env') ?? 'sandbox'));
+        if ($asaasEnv === 'production') {
+            $this->setText('billing.asaas.base_url', $this->getText('billing.asaas.prod.base_url'));
+            $this->setText('billing.asaas.api_key', $this->getText('billing.asaas.prod.api_key'));
+            $this->setText('billing.asaas.webhook_secret', $this->getText('billing.asaas.prod.webhook_secret'));
+        } else {
+            $this->setText('billing.asaas.base_url', $this->getText('billing.asaas.sandbox.base_url'));
+            $this->setText('billing.asaas.api_key', $this->getText('billing.asaas.sandbox.api_key'));
+            $this->setText('billing.asaas.webhook_secret', $this->getText('billing.asaas.sandbox.webhook_secret'));
+        }
+
+        $mpEnv = trim((string)($input['mp_env'] ?? $this->getText('billing.mercadopago.env') ?? 'sandbox'));
+        if ($mpEnv === 'production') {
+            $this->setText('billing.mercadopago.base_url', $this->getText('billing.mercadopago.prod.base_url'));
+            $this->setText('billing.mercadopago.access_token', $this->getText('billing.mercadopago.prod.access_token'));
+            $this->setText('billing.mercadopago.webhook_secret', $this->getText('billing.mercadopago.prod.webhook_secret'));
+        } else {
+            $this->setText('billing.mercadopago.base_url', $this->getText('billing.mercadopago.sandbox.base_url'));
+            $this->setText('billing.mercadopago.access_token', $this->getText('billing.mercadopago.sandbox.access_token'));
+            $this->setText('billing.mercadopago.webhook_secret', $this->getText('billing.mercadopago.sandbox.webhook_secret'));
         }
     }
 
