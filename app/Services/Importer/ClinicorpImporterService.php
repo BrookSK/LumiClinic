@@ -16,8 +16,23 @@ final class ClinicorpImporterService
             'label' => 'Pacientes (Registros Gerais)',
             'group' => 'Pacientes',
             'icon'  => '👤',
-            'desc'  => 'Nome, e-mail, telefone, endereço. Exportar em: Relatórios → Pacientes → Geral ou Localização.',
-            'clinicorp_cols' => 'Cidade, Bairro, Nome (Localização) ou campos do registro geral',
+            'desc'  => 'Importação direta de cadastro de pacientes. Não foi encontrado exportador correspondente na Clinicorp.',
+            'clinicorp_cols' => 'Aguardando modelo de exportação',
+            'status' => 'construction',
+        ],
+        'pacientes_localizacao' => [
+            'label' => 'Localização de Pacientes',
+            'group' => 'Pacientes',
+            'icon'  => '📍',
+            'desc'  => 'Cidade e bairro dos pacientes. Cria o paciente se não existir e atualiza o endereço.',
+            'clinicorp_cols' => 'Cidade, Bairro, Nome',
+        ],
+        'pacientes_cobrancas' => [
+            'label' => 'Cobranças e Pagamentos',
+            'group' => 'Pacientes',
+            'icon'  => '💳',
+            'desc'  => 'Cobranças e pagamentos vinculados a pacientes.',
+            'clinicorp_cols' => 'Status, Lançamento, Vencimento, Pagamento, Paciente, Forma Pagamento, CPF Responsável, CPF Paciente, Nome Responsável, Valor',
         ],
         'agendamentos_geral' => [
             'label' => 'Agendamentos - Geral',
@@ -48,13 +63,6 @@ final class ClinicorpImporterService
             'desc'  => 'Primeiras consultas com status e observações.',
             'clinicorp_cols' => 'Data, Status, Nome, Como conheceu?*, Observações',
             'ignored' => 'Como conheceu? (não suportado)',
-        ],
-        'financeiro_cobrancas' => [
-            'label' => 'Cobranças e Pagamentos',
-            'group' => 'Financeiro',
-            'icon'  => '💳',
-            'desc'  => 'Cobranças e pagamentos de pacientes.',
-            'clinicorp_cols' => 'Status, Lançamento, Vencimento, Pagamento, Paciente, Forma Pagamento, CPF Responsável, CPF Paciente, Nome Responsável, Valor',
         ],
         'financeiro_contas_pagar' => [
             'label' => 'Contas a Pagar',
@@ -164,12 +172,12 @@ final class ClinicorpImporterService
         $dataRows = array_slice($rows, 1);
 
         $result = match ($type) {
-            'pacientes'                     => $this->importPacientes($clinicId, $headers, $dataRows),
+            'pacientes_localizacao'          => $this->importPacientes($clinicId, $headers, $dataRows),
+            'pacientes_cobrancas'            => $this->importCobrancas($clinicId, $headers, $dataRows),
             'agendamentos_geral'            => $this->importAgendamentosGeral($clinicId, $headers, $dataRows),
             'agendamentos_desmarcacoes'      => $this->importAgendamentosDesmarcacoes($clinicId, $headers, $dataRows),
             'agendamentos_categorias'        => $this->importAgendamentosCategorias($clinicId, $headers, $dataRows),
             'agendamentos_primeira_consulta' => $this->importPrimeiraConsulta($clinicId, $headers, $dataRows),
-            'financeiro_cobrancas'           => $this->importCobrancas($clinicId, $headers, $dataRows),
             'financeiro_contas_pagar'        => $this->importContasPagar($clinicId, $headers, $dataRows),
             'orcamentos'                     => $this->importOrcamentos($clinicId, $headers, $dataRows),
             'tratamentos_executados'         => $this->importTratamentosExecutados($clinicId, $headers, $dataRows),
