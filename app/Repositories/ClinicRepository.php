@@ -20,7 +20,6 @@ final class ClinicRepository
                    address_street, address_number, address_complement,
                    address_neighborhood, address_city, address_state, address_zip,
                    contact_website, contact_instagram, contact_facebook,
-                   contact_website, contact_instagram, contact_facebook,
                    status, created_at, updated_at
             FROM clinics
             WHERE id = :id

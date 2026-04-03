@@ -105,6 +105,31 @@ final class ClinicService
         $audit->log($userId, $clinicId, 'clinics.update', ['fields' => array_keys($normalized)], $ip);
     }
 
+    /** @param array<string, string|null> $fields */
+    public function updateAddressFields(array $fields, string $ip): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $cols = ['address_street','address_number','address_complement','address_neighborhood','address_city','address_state','address_zip'];
+        $sets = [];
+        $params = ['cid' => $clinicId];
+        foreach ($cols as $col) {
+            if (array_key_exists($col, $fields)) {
+                $val = trim((string)($fields[$col] ?? ''));
+                $sets[] = "$col = :$col";
+                $params[$col] = $val !== '' ? $val : null;
+            }
+        }
+        if (!empty($sets)) {
+            $pdo->prepare('UPDATE clinics SET ' . implode(', ', $sets) . ' WHERE id = :cid')->execute($params);
+        }
+    }
+
     /** @return list<array<string, mixed>> */
     public function listWorkingHours(): array
     {

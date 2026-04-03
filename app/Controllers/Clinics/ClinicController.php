@@ -119,6 +119,17 @@ final class ClinicController extends Controller
                 'contact_instagram' => trim((string)$request->input('contact_instagram', '')),
                 'contact_facebook' => trim((string)$request->input('contact_facebook', '')),
             ], $request->ip());
+
+            // Also save structured address fields
+            $service->updateAddressFields([
+                'address_street' => $street,
+                'address_number' => $number,
+                'address_complement' => $complement,
+                'address_neighborhood' => $district,
+                'address_city' => $city,
+                'address_state' => $state,
+                'address_zip' => preg_replace('/\D+/', '', $zip),
+            ], $request->ip());
         }
 
         return $this->redirect('/clinic');

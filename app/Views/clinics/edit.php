@@ -4,32 +4,7 @@ $csrf = $_SESSION['_csrf'] ?? '';
 $error = $error ?? null;
 $clinic = $clinic ?? null;
 
-$addressText = (string)($clinic['contact_address'] ?? '');
-$addressLines = preg_split('/\r\n|\r|\n/', $addressText) ?: [];
-$line1 = trim((string)($addressLines[0] ?? ''));
-$line2 = trim((string)($addressLines[1] ?? ''));
-$line3 = trim((string)($addressLines[2] ?? ''));
-
-$address_street = ''; $address_number = ''; $address_complement = '';
-$address_district = ''; $address_city = ''; $address_state = ''; $address_zip = '';
-
-if ($line1 !== '' && preg_match('/^(.*?)(?:,\s*([^\-]+))?(?:\s*-\s*(.*))?$/', $line1, $m)) {
-    $address_street = trim((string)($m[1] ?? ''));
-    $address_number = trim((string)($m[2] ?? ''));
-    $address_complement = trim((string)($m[3] ?? ''));
-}
-if ($line2 !== '') {
-    $parts = explode(' - ', $line2, 2);
-    $address_district = trim((string)($parts[0] ?? ''));
-    $tail = trim((string)($parts[1] ?? ''));
-    if (preg_match('/^(.*?)(?:\/(\w{2}))?$/', $tail, $mm)) {
-        $address_city = trim((string)($mm[1] ?? ''));
-        $address_state = strtoupper(trim((string)($mm[2] ?? '')));
-    }
-}
-if ($line3 !== '' && preg_match('/CEP:\s*([0-9\-\.]+)/i', $line3, $m)) {
-    $address_zip = trim((string)($m[1] ?? ''));
-}
+$g = fn(string $k) => is_array($clinic) ? trim((string)($clinic[$k] ?? '')) : '';
 
 ob_start();
 ?>
@@ -57,7 +32,7 @@ ob_start();
         <div class="cl-section__title">Identificação</div>
         <div class="lc-field">
             <label class="lc-label">Nome da clínica</label>
-            <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($clinic['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required />
+            <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars($g('name'), ENT_QUOTES, 'UTF-8') ?>" required />
         </div>
     </div>
 
@@ -67,15 +42,15 @@ ob_start();
         <div class="cl-row3">
             <div class="lc-field">
                 <label class="lc-label">E-mail</label>
-                <input class="lc-input" type="email" name="contact_email" value="<?= htmlspecialchars((string)($clinic['contact_email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="email" name="contact_email" value="<?= htmlspecialchars($g('contact_email'), ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="lc-field">
                 <label class="lc-label">Telefone</label>
-                <input class="lc-input" type="text" name="contact_phone" value="<?= htmlspecialchars((string)($clinic['contact_phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="contact_phone" value="<?= htmlspecialchars($g('contact_phone'), ENT_QUOTES, 'UTF-8') ?>" />
             </div>
             <div class="lc-field">
                 <label class="lc-label">WhatsApp</label>
-                <input class="lc-input" type="text" name="contact_whatsapp" value="<?= htmlspecialchars((string)($clinic['contact_whatsapp'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="text" name="contact_whatsapp" value="<?= htmlspecialchars($g('contact_whatsapp'), ENT_QUOTES, 'UTF-8') ?>" />
             </div>
         </div>
     </div>
@@ -83,16 +58,20 @@ ob_start();
     <!-- Endereço -->
     <div class="cl-section">
         <div class="cl-section__title">Endereço</div>
-        <div class="cl-row4">
-            <div class="lc-field"><label class="lc-label">Rua</label><input class="lc-input" type="text" name="contact_address_street" value="<?= htmlspecialchars($address_street, ENT_QUOTES, 'UTF-8') ?>" /></div>
-            <div class="lc-field"><label class="lc-label">Número</label><input class="lc-input" type="text" name="contact_address_number" value="<?= htmlspecialchars($address_number, ENT_QUOTES, 'UTF-8') ?>" /></div>
-            <div class="lc-field"><label class="lc-label">Complemento</label><input class="lc-input" type="text" name="contact_address_complement" value="<?= htmlspecialchars($address_complement, ENT_QUOTES, 'UTF-8') ?>" /></div>
-            <div class="lc-field"><label class="lc-label">Bairro</label><input class="lc-input" type="text" name="contact_address_district" value="<?= htmlspecialchars($address_district, ENT_QUOTES, 'UTF-8') ?>" /></div>
+        <div style="display:grid;grid-template-columns:140px 1fr;gap:12px;">
+            <div class="lc-field"><label class="lc-label">CEP</label><input class="lc-input" type="text" name="contact_address_zip" id="clinicZip" placeholder="00000-000" value="<?= htmlspecialchars($g('address_zip'), ENT_QUOTES, 'UTF-8') ?>" /></div>
+            <div class="lc-field"><label class="lc-label">Rua</label><input class="lc-input" type="text" name="contact_address_street" id="clinicSt" value="<?= htmlspecialchars($g('address_street'), ENT_QUOTES, 'UTF-8') ?>" /></div>
         </div>
-        <div class="cl-row3" style="margin-top:4px;">
-            <div class="lc-field"><label class="lc-label">Cidade</label><input class="lc-input" type="text" name="contact_address_city" value="<?= htmlspecialchars($address_city, ENT_QUOTES, 'UTF-8') ?>" /></div>
-            <div class="lc-field"><label class="lc-label">UF</label><input class="lc-input" type="text" name="contact_address_state" maxlength="2" placeholder="SP" value="<?= htmlspecialchars($address_state, ENT_QUOTES, 'UTF-8') ?>" /></div>
-            <div class="lc-field"><label class="lc-label">CEP</label><input class="lc-input" type="text" name="contact_address_zip" placeholder="00000-000" value="<?= htmlspecialchars($address_zip, ENT_QUOTES, 'UTF-8') ?>" /></div>
+        <div class="cl-row4" style="margin-top:8px;">
+            <div class="lc-field"><label class="lc-label">Número</label><input class="lc-input" type="text" name="contact_address_number" value="<?= htmlspecialchars($g('address_number'), ENT_QUOTES, 'UTF-8') ?>" /></div>
+            <div class="lc-field"><label class="lc-label">Complemento</label><input class="lc-input" type="text" name="contact_address_complement" value="<?= htmlspecialchars($g('address_complement'), ENT_QUOTES, 'UTF-8') ?>" /></div>
+            <div class="lc-field"><label class="lc-label">Bairro</label><input class="lc-input" type="text" name="contact_address_district" id="clinicNb" value="<?= htmlspecialchars($g('address_neighborhood'), ENT_QUOTES, 'UTF-8') ?>" /></div>
+            <div></div>
+        </div>
+        <div class="cl-row3" style="margin-top:8px;">
+            <div class="lc-field"><label class="lc-label">Cidade</label><input class="lc-input" type="text" name="contact_address_city" id="clinicCt" value="<?= htmlspecialchars($g('address_city'), ENT_QUOTES, 'UTF-8') ?>" /></div>
+            <div class="lc-field"><label class="lc-label">UF</label><input class="lc-input" type="text" name="contact_address_state" id="clinicSt2" maxlength="2" placeholder="SP" value="<?= htmlspecialchars($g('address_state'), ENT_QUOTES, 'UTF-8') ?>" style="text-transform:uppercase;" /></div>
+            <div></div>
         </div>
     </div>
 
@@ -104,9 +83,9 @@ ob_start();
         </summary>
         <div style="margin-top:14px;">
             <div class="cl-row3">
-                <div class="lc-field"><label class="lc-label">Site</label><input class="lc-input" type="url" name="contact_website" value="<?= htmlspecialchars((string)($clinic['contact_website'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="https://..." /></div>
-                <div class="lc-field"><label class="lc-label">Instagram</label><input class="lc-input" type="url" name="contact_instagram" value="<?= htmlspecialchars((string)($clinic['contact_instagram'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="https://instagram.com/..." /></div>
-                <div class="lc-field"><label class="lc-label">Facebook</label><input class="lc-input" type="url" name="contact_facebook" value="<?= htmlspecialchars((string)($clinic['contact_facebook'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="https://facebook.com/..." /></div>
+                <div class="lc-field"><label class="lc-label">Site</label><input class="lc-input" type="url" name="contact_website" value="<?= htmlspecialchars($g('contact_website'), ENT_QUOTES, 'UTF-8') ?>" placeholder="https://..." /></div>
+                <div class="lc-field"><label class="lc-label">Instagram</label><input class="lc-input" type="url" name="contact_instagram" value="<?= htmlspecialchars($g('contact_instagram'), ENT_QUOTES, 'UTF-8') ?>" placeholder="https://instagram.com/..." /></div>
+                <div class="lc-field"><label class="lc-label">Facebook</label><input class="lc-input" type="url" name="contact_facebook" value="<?= htmlspecialchars($g('contact_facebook'), ENT_QUOTES, 'UTF-8') ?>" placeholder="https://facebook.com/..." /></div>
             </div>
         </div>
     </details>
@@ -116,6 +95,31 @@ ob_start();
         <a class="lc-btn lc-btn--secondary" href="/">Voltar</a>
     </div>
 </form>
+
+<script>
+function clMask(input, mask) {
+    let v = input.value.replace(/\D/g, ''), r = '', vi = 0;
+    for (let i = 0; i < mask.length && vi < v.length; i++) {
+        r += mask[i] === '0' ? v[vi++] : mask[i];
+    }
+    input.value = r;
+}
+var cz = document.getElementById('clinicZip');
+if (cz) {
+    cz.addEventListener('input', function() { clMask(this, '00000-000'); });
+    cz.addEventListener('blur', function() {
+        var c = this.value.replace(/\D/g, '');
+        if (c.length !== 8) return;
+        fetch('https://viacep.com.br/ws/' + c + '/json/').then(function(r){return r.json();}).then(function(d) {
+            if (d.erro) return;
+            if (d.logradouro) document.getElementById('clinicSt').value = d.logradouro;
+            if (d.bairro) document.getElementById('clinicNb').value = d.bairro;
+            if (d.localidade) document.getElementById('clinicCt').value = d.localidade;
+            if (d.uf) document.getElementById('clinicSt2').value = d.uf;
+        }).catch(function(){});
+    });
+}
+</script>
 
 <?php
 $content = (string)ob_get_clean();
