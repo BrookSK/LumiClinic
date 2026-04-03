@@ -63,7 +63,7 @@ final class SystemClinicService
             }
 
             // Save clinic contact fields
-            $contactMap = ['contact_email','contact_phone','contact_whatsapp','contact_address','contact_website','contact_instagram','contact_facebook'];
+            $contactMap = ['contact_email','contact_phone','contact_whatsapp','contact_address','contact_website','contact_instagram','contact_facebook','address_street','address_number','address_complement','address_neighborhood','address_city','address_state','address_zip'];
             $cSets = [];
             $cParams = ['ccid' => $clinicId];
             foreach ($contactMap as $col) {
@@ -228,6 +228,13 @@ final class SystemClinicService
                     'contact_website' => 'contact_website',
                     'contact_instagram' => 'contact_instagram',
                     'contact_facebook' => 'contact_facebook',
+                    'address_street' => 'address_street',
+                    'address_number' => 'address_number',
+                    'address_complement' => 'address_complement',
+                    'address_neighborhood' => 'address_neighborhood',
+                    'address_city' => 'address_city',
+                    'address_state' => 'address_state',
+                    'address_zip' => 'address_zip',
                 ];
                 $cSets = [];
                 $cParams = ['cid' => $clinicId];
@@ -250,6 +257,38 @@ final class SystemClinicService
             }
             if ($primaryDomain !== null) {
                 $repo->updatePrimaryDomain($clinicId, $primaryDomain);
+            }
+
+            // Sync contratante data to the owner user so /me shows correct data
+            if (!empty($ownerFields)) {
+                $ownerStmt = $pdo->prepare("
+                    SELECT u.id FROM users u
+                    JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+                    JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+                    WHERE u.clinic_id = ? AND u.deleted_at IS NULL
+                    ORDER BY u.id LIMIT 1
+                ");
+                $ownerStmt->execute([$clinicId]);
+                $ownerRow = $ownerStmt->fetch(\PDO::FETCH_ASSOC);
+                if ($ownerRow) {
+                    $userBilling = [];
+                    if (!empty($ownerFields['owner_phone'])) $userBilling['phone'] = $ownerFields['owner_phone'];
+                    if (!empty($ownerFields['owner_doc_type'])) $userBilling['doc_type'] = $ownerFields['owner_doc_type'];
+                    if ($cnpj !== null && preg_replace('/\D+/', '', $cnpj) !== '') $userBilling['doc_number'] = preg_replace('/\D+/', '', $cnpj);
+                    if (!empty($ownerFields['owner_postal_code'])) $userBilling['postal_code'] = $ownerFields['owner_postal_code'];
+                    if (!empty($ownerFields['owner_street'])) $userBilling['address_street'] = $ownerFields['owner_street'];
+                    if (!empty($ownerFields['owner_number'])) $userBilling['address_number'] = $ownerFields['owner_number'];
+                    if (!empty($ownerFields['owner_complement'])) $userBilling['address_complement'] = $ownerFields['owner_complement'];
+                    if (!empty($ownerFields['owner_neighborhood'])) $userBilling['address_neighborhood'] = $ownerFields['owner_neighborhood'];
+                    if (!empty($ownerFields['owner_city'])) $userBilling['address_city'] = $ownerFields['owner_city'];
+                    if (!empty($ownerFields['owner_state'])) $userBilling['address_state'] = $ownerFields['owner_state'];
+                    if (!empty($ownerFields['owner_name'])) {
+                        $pdo->prepare('UPDATE users SET name = ? WHERE id = ?')->execute([trim($ownerFields['owner_name']), (int)$ownerRow['id']]);
+                    }
+                    if (!empty($userBilling)) {
+                        (new \App\Repositories\UserRepository($pdo))->updateBillingProfile((int)$ownerRow['id'], $userBilling);
+                    }
+                }
             }
 
             (new AuditLogRepository($pdo))->log((int)($_SESSION['user_id'] ?? null), null, 'system.clinics.update', [
@@ -284,10 +323,141 @@ final class SystemClinicService
     public function deleteClinic(int $clinicId, string $ip): void
     {
         $pdo = $this->container->get(\PDO::class);
-        (new SystemClinicRepository($pdo))->softDelete($clinicId);
 
-        (new AuditLogRepository($pdo))->log((int)($_SESSION['user_id'] ?? null), null, 'system.clinics.delete', [
-            'clinic_id' => $clinicId,
-        ], $ip);
+        // 1. Cancel gateway subscription if exists
+        try {
+            $gwService = new \App\Services\Billing\BillingGatewayService($this->container);
+            $gwService->cancelGatewaySubscription($clinicId);
+        } catch (\Throwable $ignore) {
+            // Best effort - continue even if gateway cancel fails
+        }
+
+        // 2. Delete all clinic data (order matters due to FK constraints)
+        $pdo->beginTransaction();
+        try {
+            $tables = [
+                // Billing & subscriptions
+                'billing_events' => 'clinic_id',
+                'clinic_subscriptions' => 'clinic_id',
+                // Marketing
+                'marketing_automation_logs' => 'clinic_id',
+                'marketing_automation_campaigns' => 'clinic_id',
+                'marketing_automation_segments' => 'clinic_id',
+                'marketing_calendar_entries' => 'clinic_id',
+                // Stock
+                'stock_inventory_items' => 'clinic_id',
+                'stock_inventories' => 'clinic_id',
+                'service_material_defaults' => 'clinic_id',
+                'stock_movements' => 'clinic_id',
+                'materials' => 'clinic_id',
+                // Finance
+                'accounts_payable_installments' => 'clinic_id',
+                'accounts_payable' => 'clinic_id',
+                'financial_entry_logs' => 'clinic_id',
+                'financial_entries' => 'clinic_id',
+                'payments' => 'clinic_id',
+                'sale_items' => 'clinic_id',
+                'sale_logs' => 'clinic_id',
+                'sales' => 'clinic_id',
+                'cost_centers' => 'clinic_id',
+                // Patient procedures & packages
+                'appointment_package_sessions' => 'clinic_id',
+                'patient_procedures' => 'clinic_id',
+                'patient_packages' => 'clinic_id',
+                'patient_subscriptions' => 'clinic_id',
+                // Appointments
+                'appointment_materials_used' => 'clinic_id',
+                'appointment_anamnesis_requests' => 'clinic_id',
+                'appointment_confirmation_tokens' => 'clinic_id',
+                'appointment_logs' => 'clinic_id',
+                'consultations' => 'clinic_id',
+                'appointments' => 'clinic_id',
+                'scheduling_blocks' => 'clinic_id',
+                'professional_schedules' => 'clinic_id',
+                // Medical
+                'medical_record_audio_notes' => 'clinic_id',
+                'consultation_attachments' => 'clinic_id',
+                'medical_images' => 'clinic_id',
+                'medical_records' => 'clinic_id',
+                'prescriptions' => 'clinic_id',
+                // Anamnesis
+                'anamnesis_response_snapshots' => 'clinic_id',
+                'anamnesis_responses' => 'clinic_id',
+                'anamnesis_template_fields' => 'clinic_id',
+                'anamnesis_templates' => 'clinic_id',
+                // Consent & legal
+                'consent_acceptances' => 'clinic_id',
+                'consent_terms' => 'clinic_id',
+                'legal_signatures' => 'clinic_id',
+                'legal_document_versions' => 'clinic_id',
+                'legal_documents' => 'clinic_id',
+                // Patient data
+                'patient_clinical_sheet_alerts' => 'clinic_id',
+                'patient_clinical_sheet_conditions' => 'clinic_id',
+                'patient_clinical_sheet_allergies' => 'clinic_id',
+                'patient_clinical_sheets' => 'clinic_id',
+                'patient_documents' => 'clinic_id',
+                'patient_events' => 'clinic_id',
+                'patient_notifications' => 'clinic_id',
+                'patient_web_push_subscriptions' => 'clinic_id',
+                'patient_api_tokens' => 'clinic_id',
+                'patient_content' => 'clinic_id',
+                'patient_portal_access' => 'clinic_id',
+                'patient_profile_change_requests' => 'clinic_id',
+                'patient_lgpd_requests' => 'clinic_id',
+                'lgpd_data_exports' => 'clinic_id',
+                'patients' => 'clinic_id',
+                // Services & procedures
+                'procedure_protocol_steps' => 'clinic_id',
+                'procedure_protocols' => 'clinic_id',
+                'procedures' => 'clinic_id',
+                'service_categories' => 'clinic_id',
+                'services' => 'clinic_id',
+                // Professionals
+                'professionals' => 'clinic_id',
+                // RBAC
+                'user_permissions_override' => 'clinic_id',
+                'user_roles' => 'clinic_id',
+                'role_permissions' => 'clinic_id',
+                'permissions' => 'clinic_id',
+                'roles' => 'clinic_id',
+                // Users
+                'users' => 'clinic_id',
+                // Compliance
+                'compliance_controls' => 'clinic_id',
+                'compliance_policies' => 'clinic_id',
+                'security_incidents' => 'clinic_id',
+                // Settings & config
+                'whatsapp_message_logs' => 'clinic_id',
+                'whatsapp_templates' => 'clinic_id',
+                'clinic_google_calendar_oauth' => 'clinic_id',
+                'clinic_terminology' => 'clinic_id',
+                'clinic_settings' => 'clinic_id',
+                'clinic_domains' => 'clinic_id',
+                // Audit & logs
+                'audit_logs' => 'clinic_id',
+                // Import logs
+                'clinicorp_import_logs' => 'clinic_id',
+                // BI
+                'bi_snapshots' => 'clinic_id',
+                // The clinic itself
+                'clinics' => 'id',
+            ];
+
+            foreach ($tables as $table => $col) {
+                try {
+                    $pdo->exec("DELETE FROM `$table` WHERE `$col` = $clinicId");
+                } catch (\Throwable $ignore) {
+                    // Table may not exist yet, skip
+                }
+            }
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw new \RuntimeException('Falha ao excluir clínica: ' . $e->getMessage());
+        }
     }
 }

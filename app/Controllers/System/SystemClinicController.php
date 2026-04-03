@@ -67,10 +67,16 @@ final class SystemClinicController extends Controller
             'contact_email' => (string)$request->input('clinic_email', ''),
             'contact_phone' => (string)$request->input('clinic_phone', ''),
             'contact_whatsapp' => (string)$request->input('clinic_whatsapp', ''),
-            'contact_address' => (string)$request->input('clinic_address', ''),
             'contact_website' => (string)$request->input('clinic_website', ''),
             'contact_instagram' => (string)$request->input('clinic_instagram', ''),
             'contact_facebook' => (string)$request->input('clinic_facebook', ''),
+            'address_street' => (string)$request->input('clinic_street', ''),
+            'address_number' => (string)$request->input('clinic_number', ''),
+            'address_complement' => (string)$request->input('clinic_complement', ''),
+            'address_neighborhood' => (string)$request->input('clinic_neighborhood', ''),
+            'address_city' => (string)$request->input('clinic_city', ''),
+            'address_state' => (string)$request->input('clinic_state', ''),
+            'address_zip' => preg_replace('/\D+/', '', (string)$request->input('clinic_zip', '')),
         ];
 
         // Owner/contratante fields
@@ -163,10 +169,16 @@ final class SystemClinicController extends Controller
             'contact_email' => (string)$request->input('clinic_email', ''),
             'contact_phone' => (string)$request->input('clinic_phone', ''),
             'contact_whatsapp' => (string)$request->input('clinic_whatsapp', ''),
-            'contact_address' => (string)$request->input('clinic_address', ''),
             'contact_website' => (string)$request->input('clinic_website', ''),
             'contact_instagram' => (string)$request->input('clinic_instagram', ''),
             'contact_facebook' => (string)$request->input('clinic_facebook', ''),
+            'address_street' => (string)$request->input('clinic_street', ''),
+            'address_number' => (string)$request->input('clinic_number', ''),
+            'address_complement' => (string)$request->input('clinic_complement', ''),
+            'address_neighborhood' => (string)$request->input('clinic_neighborhood', ''),
+            'address_city' => (string)$request->input('clinic_city', ''),
+            'address_state' => (string)$request->input('clinic_state', ''),
+            'address_zip' => preg_replace('/\D+/', '', (string)$request->input('clinic_zip', '')),
         ];
 
         if ($name === '') {

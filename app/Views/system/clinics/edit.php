@@ -126,7 +126,40 @@ ob_start();
         </div>
         <div class="lc-field" style="margin-top:12px;">
             <label class="lc-label">Endereço da clínica</label>
-            <input class="lc-input" type="text" name="clinic_address" value="<?= $e($g('contact_address')) ?>" placeholder="Rua, número - Bairro, Cidade/UF" />
+        </div>
+        <div class="sc-grid-addr" style="margin-top:4px;">
+            <div class="lc-field">
+                <label class="lc-label">CEP</label>
+                <input class="lc-input" type="text" name="clinic_zip" id="clinicCep" value="<?= $e($g('address_zip')) ?>" placeholder="00000-000" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Rua</label>
+                <input class="lc-input" type="text" name="clinic_street" id="clinicStreet" value="<?= $e($g('address_street')) ?>" />
+            </div>
+        </div>
+        <div class="sc-grid-addr2" style="margin-top:8px;">
+            <div class="lc-field">
+                <label class="lc-label">Número</label>
+                <input class="lc-input" type="text" name="clinic_number" value="<?= $e($g('address_number')) ?>" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Complemento</label>
+                <input class="lc-input" type="text" name="clinic_complement" value="<?= $e($g('address_complement')) ?>" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Bairro</label>
+                <input class="lc-input" type="text" name="clinic_neighborhood" id="clinicNeighborhood" value="<?= $e($g('address_neighborhood')) ?>" />
+            </div>
+        </div>
+        <div class="sc-grid-city" style="margin-top:8px;">
+            <div class="lc-field">
+                <label class="lc-label">Cidade</label>
+                <input class="lc-input" type="text" name="clinic_city" id="clinicCity" value="<?= $e($g('address_city')) ?>" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">UF</label>
+                <input class="lc-input" type="text" name="clinic_state" id="clinicState" value="<?= $e($g('address_state')) ?>" maxlength="2" style="text-transform:uppercase;" />
+            </div>
         </div>
     </div>
 
@@ -222,13 +255,13 @@ ob_start();
 <?php endif; ?>
 
 <details>
-    <summary style="font-size:12px;color:rgba(185,28,28,.60);cursor:pointer;">Excluir clínica</summary>
+    <summary style="font-size:12px;color:rgba(185,28,28,.60);cursor:pointer;">Excluir clínica permanentemente</summary>
     <div style="margin-top:8px;padding:12px;border-radius:12px;border:1px solid rgba(185,28,28,.18);background:rgba(185,28,28,.04);">
-        <div style="font-size:12px;color:rgba(185,28,28,.70);margin-bottom:8px;">Essa ação oculta a clínica do sistema. Os dados não são apagados permanentemente.</div>
-        <form method="post" action="/sys/clinics/delete" style="margin:0;" onsubmit="return confirm('Tem certeza que deseja excluir esta clínica?');">
+        <div style="font-size:12px;color:rgba(185,28,28,.70);margin-bottom:8px;">Essa ação é irreversível. Todos os dados da clínica serão apagados permanentemente (pacientes, agendamentos, prontuários, financeiro, estoque, etc.) e a assinatura será cancelada no gateway de pagamento.</div>
+        <form method="post" action="/sys/clinics/delete" style="margin:0;" onsubmit="return confirm('ATENÇÃO: Essa ação é IRREVERSÍVEL.\n\nTodos os dados da clínica serão apagados permanentemente e a assinatura será cancelada.\n\nTem certeza que deseja excluir esta clínica?');">
             <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" />
             <input type="hidden" name="id" value="<?= $clinicId ?>" />
-            <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit">Confirmar exclusão</button>
+            <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit">Confirmar exclusão permanente</button>
         </form>
     </div>
 </details>
@@ -246,6 +279,8 @@ function eToggleDoc() {
     document.getElementById('eDocLabel').textContent = cn ? 'CNPJ' : 'CPF';
     document.getElementById('eDocInput').placeholder = cn ? '00.000.000/0000-00' : '000.000.000-00';
 }
+
+// Masks - contratante
 document.getElementById('eDocInput').addEventListener('input', function() {
     eMask(this, document.getElementById('e_doc_cnpj').checked ? '00.000.000/0000-00' : '000.000.000-00');
 });
@@ -253,6 +288,30 @@ document.getElementById('ePhone').addEventListener('input', function() {
     eMask(this, this.value.replace(/\D/g, '').length <= 10 ? '(00) 0000-0000' : '(00) 00000-0000');
 });
 document.getElementById('eCep').addEventListener('input', function() { eMask(this, '00000-000'); });
+
+// Masks - clínica
+document.querySelectorAll('[name="clinic_phone"],[name="clinic_whatsapp"]').forEach(function(el) {
+    el.addEventListener('input', function() {
+        eMask(this, this.value.replace(/\D/g, '').length <= 10 ? '(00) 0000-0000' : '(00) 00000-0000');
+    });
+});
+var clinicCep = document.getElementById('clinicCep');
+if (clinicCep) {
+    clinicCep.addEventListener('input', function() { eMask(this, '00000-000'); });
+    clinicCep.addEventListener('blur', function() {
+        var c = this.value.replace(/\D/g, '');
+        if (c.length !== 8) return;
+        fetch('https://viacep.com.br/ws/' + c + '/json/').then(function(r){return r.json();}).then(function(d) {
+            if (d.erro) return;
+            if (d.logradouro) document.getElementById('clinicStreet').value = d.logradouro;
+            if (d.bairro) document.getElementById('clinicNeighborhood').value = d.bairro;
+            if (d.localidade) document.getElementById('clinicCity').value = d.localidade;
+            if (d.uf) document.getElementById('clinicState').value = d.uf;
+        }).catch(function(){});
+    });
+}
+
+// ViaCEP
 document.getElementById('eCep').addEventListener('blur', function() {
     const c = this.value.replace(/\D/g, '');
     if (c.length !== 8) return;
@@ -263,6 +322,51 @@ document.getElementById('eCep').addEventListener('blur', function() {
         if (d.localidade) document.getElementById('eCity').value = d.localidade;
         if (d.uf) document.getElementById('eState').value = d.uf;
     }).catch(() => {});
+});
+
+// CPF/CNPJ validation
+function validaCPF(cpf) {
+    cpf = cpf.replace(/\D/g, '');
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let s = 0;
+    for (let i = 0; i < 9; i++) s += parseInt(cpf[i]) * (10 - i);
+    let r = 11 - (s % 11); if (r >= 10) r = 0;
+    if (parseInt(cpf[9]) !== r) return false;
+    s = 0;
+    for (let i = 0; i < 10; i++) s += parseInt(cpf[i]) * (11 - i);
+    r = 11 - (s % 11); if (r >= 10) r = 0;
+    return parseInt(cpf[10]) === r;
+}
+function validaCNPJ(cnpj) {
+    cnpj = cnpj.replace(/\D/g, '');
+    if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+    const w1 = [5,4,3,2,9,8,7,6,5,4,3,2], w2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+    let s = 0;
+    for (let i = 0; i < 12; i++) s += parseInt(cnpj[i]) * w1[i];
+    let r = s % 11 < 2 ? 0 : 11 - (s % 11);
+    if (parseInt(cnpj[12]) !== r) return false;
+    s = 0;
+    for (let i = 0; i < 13; i++) s += parseInt(cnpj[i]) * w2[i];
+    r = s % 11 < 2 ? 0 : 11 - (s % 11);
+    return parseInt(cnpj[13]) === r;
+}
+
+document.querySelector('form[action="/sys/clinics/update"]').addEventListener('submit', function(ev) {
+    const docInput = document.getElementById('eDocInput');
+    const raw = docInput.value.replace(/\D/g, '');
+    if (raw === '') return; // optional
+    const isCnpj = document.getElementById('e_doc_cnpj').checked;
+    if (isCnpj && !validaCNPJ(raw)) {
+        ev.preventDefault();
+        alert('CNPJ inválido. Verifique o número digitado.');
+        docInput.focus();
+        return;
+    }
+    if (!isCnpj && !validaCPF(raw)) {
+        ev.preventDefault();
+        alert('CPF inválido. Verifique o número digitado.');
+        docInput.focus();
+    }
 });
 </script>
 

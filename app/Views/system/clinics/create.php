@@ -89,7 +89,40 @@ ob_start();
         </div>
         <div class="lc-field" style="margin-top:12px;">
             <label class="lc-label">Endereço da clínica</label>
-            <input class="lc-input" type="text" name="clinic_address" placeholder="Rua, número - Bairro, Cidade/UF" />
+        </div>
+        <div class="sc-grid-addr" style="margin-top:4px;">
+            <div class="lc-field">
+                <label class="lc-label">CEP</label>
+                <input class="lc-input" type="text" name="clinic_zip" id="clinicCepC" placeholder="00000-000" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Rua</label>
+                <input class="lc-input" type="text" name="clinic_street" id="clinicStreetC" />
+            </div>
+        </div>
+        <div class="sc-grid-addr2" style="margin-top:8px;">
+            <div class="lc-field">
+                <label class="lc-label">Número</label>
+                <input class="lc-input" type="text" name="clinic_number" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Complemento</label>
+                <input class="lc-input" type="text" name="clinic_complement" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Bairro</label>
+                <input class="lc-input" type="text" name="clinic_neighborhood" id="clinicNeighborhoodC" />
+            </div>
+        </div>
+        <div class="sc-grid-city" style="margin-top:8px;">
+            <div class="lc-field">
+                <label class="lc-label">Cidade</label>
+                <input class="lc-input" type="text" name="clinic_city" id="clinicCityC" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">UF</label>
+                <input class="lc-input" type="text" name="clinic_state" id="clinicStateC" maxlength="2" style="text-transform:uppercase;" />
+            </div>
         </div>
     </div>
 
@@ -197,6 +230,8 @@ function cToggleDoc() {
     document.getElementById('cDocLabel').textContent = cn ? 'CNPJ' : 'CPF';
     document.getElementById('cDocInput').placeholder = cn ? '00.000.000/0000-00' : '000.000.000-00';
 }
+
+// Masks - contratante
 document.getElementById('cDocInput').addEventListener('input', function() {
     cMask(this, document.getElementById('c_doc_cnpj').checked ? '00.000.000/0000-00' : '000.000.000-00');
 });
@@ -204,6 +239,30 @@ document.getElementById('cPhone').addEventListener('input', function() {
     cMask(this, this.value.replace(/\D/g, '').length <= 10 ? '(00) 0000-0000' : '(00) 00000-0000');
 });
 document.getElementById('cCep').addEventListener('input', function() { cMask(this, '00000-000'); });
+
+// Masks - clínica
+document.querySelectorAll('[name="clinic_phone"],[name="clinic_whatsapp"]').forEach(function(el) {
+    el.addEventListener('input', function() {
+        cMask(this, this.value.replace(/\D/g, '').length <= 10 ? '(00) 0000-0000' : '(00) 00000-0000');
+    });
+});
+var clinicCepC = document.getElementById('clinicCepC');
+if (clinicCepC) {
+    clinicCepC.addEventListener('input', function() { cMask(this, '00000-000'); });
+    clinicCepC.addEventListener('blur', function() {
+        var c = this.value.replace(/\D/g, '');
+        if (c.length !== 8) return;
+        fetch('https://viacep.com.br/ws/' + c + '/json/').then(function(r){return r.json();}).then(function(d) {
+            if (d.erro) return;
+            if (d.logradouro) document.getElementById('clinicStreetC').value = d.logradouro;
+            if (d.bairro) document.getElementById('clinicNeighborhoodC').value = d.bairro;
+            if (d.localidade) document.getElementById('clinicCityC').value = d.localidade;
+            if (d.uf) document.getElementById('clinicStateC').value = d.uf;
+        }).catch(function(){});
+    });
+}
+
+// ViaCEP
 document.getElementById('cCep').addEventListener('blur', function() {
     const c = this.value.replace(/\D/g, '');
     if (c.length !== 8) return;
@@ -214,6 +273,51 @@ document.getElementById('cCep').addEventListener('blur', function() {
         if (d.localidade) document.getElementById('cCity').value = d.localidade;
         if (d.uf) document.getElementById('cState').value = d.uf;
     }).catch(() => {});
+});
+
+// CPF/CNPJ validation
+function validaCPF(cpf) {
+    cpf = cpf.replace(/\D/g, '');
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let s = 0;
+    for (let i = 0; i < 9; i++) s += parseInt(cpf[i]) * (10 - i);
+    let r = 11 - (s % 11); if (r >= 10) r = 0;
+    if (parseInt(cpf[9]) !== r) return false;
+    s = 0;
+    for (let i = 0; i < 10; i++) s += parseInt(cpf[i]) * (11 - i);
+    r = 11 - (s % 11); if (r >= 10) r = 0;
+    return parseInt(cpf[10]) === r;
+}
+function validaCNPJ(cnpj) {
+    cnpj = cnpj.replace(/\D/g, '');
+    if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+    const w1 = [5,4,3,2,9,8,7,6,5,4,3,2], w2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+    let s = 0;
+    for (let i = 0; i < 12; i++) s += parseInt(cnpj[i]) * w1[i];
+    let r = s % 11 < 2 ? 0 : 11 - (s % 11);
+    if (parseInt(cnpj[12]) !== r) return false;
+    s = 0;
+    for (let i = 0; i < 13; i++) s += parseInt(cnpj[i]) * w2[i];
+    r = s % 11 < 2 ? 0 : 11 - (s % 11);
+    return parseInt(cnpj[13]) === r;
+}
+
+document.querySelector('form[action="/sys/clinics/create"]').addEventListener('submit', function(ev) {
+    const docInput = document.getElementById('cDocInput');
+    const raw = docInput.value.replace(/\D/g, '');
+    if (raw === '') return; // optional
+    const isCnpj = document.getElementById('c_doc_cnpj').checked;
+    if (isCnpj && !validaCNPJ(raw)) {
+        ev.preventDefault();
+        alert('CNPJ inválido. Verifique o número digitado.');
+        docInput.focus();
+        return;
+    }
+    if (!isCnpj && !validaCPF(raw)) {
+        ev.preventDefault();
+        alert('CPF inválido. Verifique o número digitado.');
+        docInput.focus();
+    }
 });
 </script>
 

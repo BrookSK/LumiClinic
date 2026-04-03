@@ -61,8 +61,10 @@ final class SystemClinicRepository
                 owner_postal_code, owner_street, owner_number, owner_complement,
                 owner_neighborhood, owner_city, owner_state,
                 tenant_key, contact_email, contact_phone,
-                contact_whatsapp, contact_address, contact_website,
-                contact_instagram, contact_facebook,
+                contact_whatsapp, contact_address,
+                address_street, address_number, address_complement,
+                address_neighborhood, address_city, address_state, address_zip,
+                contact_website, contact_instagram, contact_facebook,
                 status, created_at,
                 (
                     SELECT d.domain
