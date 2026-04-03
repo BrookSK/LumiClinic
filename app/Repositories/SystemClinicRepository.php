@@ -57,7 +57,13 @@ final class SystemClinicRepository
     {
         $sql = "
             SELECT
-                id, name, cnpj, tenant_key, contact_email, contact_phone, status, created_at,
+                id, name, cnpj, owner_name, owner_phone, owner_doc_type,
+                owner_postal_code, owner_street, owner_number, owner_complement,
+                owner_neighborhood, owner_city, owner_state,
+                tenant_key, contact_email, contact_phone,
+                contact_whatsapp, contact_address, contact_website,
+                contact_instagram, contact_facebook,
+                status, created_at,
                 (
                     SELECT d.domain
                     FROM clinic_domains d

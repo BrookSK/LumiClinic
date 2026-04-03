@@ -25,7 +25,7 @@ final class MeController extends Controller
         return $this->view('account/me', [
             'user' => $user,
             'error' => null,
-            'success' => null,
+            'success' => trim((string)$request->input('ok', '')) !== '' ? 'Perfil atualizado com sucesso.' : null,
         ]);
     }
 
@@ -44,22 +44,29 @@ final class MeController extends Controller
         $users = new UserRepository($pdo);
 
         if ($name === '' || $email === '') {
-            $user = $users->findById($userId);
             return $this->view('account/me', [
-                'user' => $user,
-                'error' => 'Preencha os campos obrigatórios.',
+                'user' => $users->findById($userId),
+                'error' => 'Nome e e-mail são obrigatórios.',
                 'success' => null,
             ]);
         }
 
         $users->updateSelfProfile($userId, $name, $email);
 
-        $user = $users->findById($userId);
-
-        return $this->view('account/me', [
-            'user' => $user,
-            'error' => null,
-            'success' => 'Perfil atualizado com sucesso.',
+        // Save billing profile fields
+        $users->updateBillingProfile($userId, [
+            'phone' => preg_replace('/\D+/', '', (string)$request->input('phone', '')),
+            'doc_type' => (string)$request->input('doc_type', 'cpf'),
+            'doc_number' => preg_replace('/\D+/', '', (string)$request->input('doc_number', '')),
+            'postal_code' => preg_replace('/\D+/', '', (string)$request->input('postal_code', '')),
+            'address_street' => (string)$request->input('address_street', ''),
+            'address_number' => (string)$request->input('address_number', ''),
+            'address_complement' => (string)$request->input('address_complement', ''),
+            'address_neighborhood' => (string)$request->input('address_neighborhood', ''),
+            'address_city' => (string)$request->input('address_city', ''),
+            'address_state' => (string)$request->input('address_state', ''),
         ]);
+
+        return $this->redirect('/me?ok=1');
     }
 }

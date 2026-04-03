@@ -197,8 +197,10 @@ final class BillingGatewayService
             $provider = 'asaas';
         }
 
+        $planName = $plan !== null ? trim((string)($plan['name'] ?? '')) : null;
+
         if ($provider === 'asaas') {
-            $this->ensureAsaas($clinicId, (string)$clinic['name'], $amount, $sub);
+            $this->ensureAsaas($clinicId, (string)$clinic['name'], $amount, $sub, $planName ?: null);
             return;
         }
 
@@ -211,7 +213,7 @@ final class BillingGatewayService
     }
 
     /** @param array<string,mixed> $sub */
-    private function ensureAsaas(int $clinicId, string $clinicName, float $amount, array $sub): void
+    private function ensureAsaas(int $clinicId, string $clinicName, float $amount, array $sub, ?string $planName = null): void
     {
         $pdo = $this->container->get(\PDO::class);
         $subsRepo = new ClinicSubscriptionRepository($pdo);
@@ -222,17 +224,43 @@ final class BillingGatewayService
         $client = new AsaasClient($this->container);
 
         if ($customerId === '') {
-            // Get clinic email and cnpj for customer creation
+            // Get owner user data (the person who contracted the system)
             $clinicRow = (new ClinicRepository($pdo))->findById($clinicId);
             $email = isset($clinicRow['contact_email']) ? trim((string)$clinicRow['contact_email']) : null;
-            $cnpj = isset($clinicRow['cnpj']) ? trim((string)$clinicRow['cnpj']) : null;
 
-            $customer = $client->createCustomer($clinicName, $email ?: null, $cnpj ?: null);
+            // Find the owner user of this clinic (first user with owner role)
+            $ownerStmt = $pdo->prepare("
+                SELECT u.* FROM users u
+                JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+                JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+                WHERE u.clinic_id = ? AND u.deleted_at IS NULL
+                ORDER BY u.id LIMIT 1
+            ");
+            $ownerStmt->execute([$clinicId]);
+            $ownerUser = $ownerStmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+
+            $customerName = $clinicName;
+            $cpfCnpj = isset($clinicRow['cnpj']) ? trim((string)$clinicRow['cnpj']) : null;
+            $phone = null;
+            $postalCode = null;
+            $addressNumber = null;
+
+            if ($ownerUser) {
+                $customerName = trim((string)($ownerUser['name'] ?? '')) ?: $clinicName;
+                if (!empty($ownerUser['doc_number'])) $cpfCnpj = trim((string)$ownerUser['doc_number']);
+                if (!empty($ownerUser['phone'])) $phone = trim((string)$ownerUser['phone']);
+                if (!empty($ownerUser['email'])) $email = trim((string)$ownerUser['email']);
+                if (!empty($ownerUser['postal_code'])) $postalCode = trim((string)$ownerUser['postal_code']);
+                if (!empty($ownerUser['address_number'])) $addressNumber = trim((string)$ownerUser['address_number']);
+            }
+
+            $customer = $client->createCustomer($customerName, $email ?: null, $cpfCnpj ?: null, $phone ?: null, $postalCode ?: null, $addressNumber ?: null);
             $customerId = isset($customer['id']) ? (string)$customer['id'] : '';
         }
 
         if ($subscriptionId === '') {
-            $created = $client->createSubscription($customerId, $amount, 'CREDIT_CARD');
+            $description = $planName ? 'Plano ' . $planName : null;
+            $created = $client->createSubscription($customerId, $amount, 'CREDIT_CARD', $description);
             $subscriptionId = isset($created['id']) ? (string)$created['id'] : '';
         }
 

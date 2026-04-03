@@ -55,7 +55,10 @@ final class UserRepository
     public function findById(int $userId): ?array
     {
         $sql = "
-            SELECT id, clinic_id, name, email, password_hash, is_super_admin
+            SELECT id, clinic_id, name, email, phone, doc_type, doc_number,
+                   postal_code, address_street, address_number, address_complement,
+                   address_neighborhood, address_city, address_state,
+                   password_hash, is_super_admin
             FROM users
             WHERE id = :id
               AND deleted_at IS NULL
@@ -105,5 +108,39 @@ final class UserRepository
             'name' => $name,
             'email' => $email,
         ]);
+    }
+
+    /** @param array<string,mixed> $fields */
+    public function updateBillingProfile(int $userId, array $fields): void
+    {
+        $map = [
+            'phone' => 'phone',
+            'doc_type' => 'doc_type',
+            'doc_number' => 'doc_number',
+            'postal_code' => 'postal_code',
+            'address_street' => 'address_street',
+            'address_number' => 'address_number',
+            'address_complement' => 'address_complement',
+            'address_neighborhood' => 'address_neighborhood',
+            'address_city' => 'address_city',
+            'address_state' => 'address_state',
+        ];
+
+        $sets = [];
+        $params = ['id' => $userId];
+
+        foreach ($map as $field => $col) {
+            if (array_key_exists($field, $fields)) {
+                $val = trim((string)$fields[$field]);
+                $sets[] = "$col = :$col";
+                $params[$col] = $val !== '' ? $val : null;
+            }
+        }
+
+        if (empty($sets)) return;
+
+        $sets[] = 'updated_at = NOW()';
+        $sql = 'UPDATE users SET ' . implode(', ', $sets) . ' WHERE id = :id AND deleted_at IS NULL LIMIT 1';
+        $this->pdo->prepare($sql)->execute($params);
     }
 }

@@ -116,6 +116,29 @@ final class SystemClinicController extends Controller
         $primaryDomain = trim((string)$request->input('primary_domain', ''));
         $cnpj = trim((string)$request->input('cnpj', ''));
 
+        $ownerFields = [
+            'owner_name' => (string)$request->input('owner_name', ''),
+            'owner_phone' => preg_replace('/\D+/', '', (string)$request->input('owner_phone', '')),
+            'owner_doc_type' => (string)$request->input('owner_doc_type', 'cpf'),
+            'owner_postal_code' => preg_replace('/\D+/', '', (string)$request->input('owner_postal_code', '')),
+            'owner_street' => (string)$request->input('owner_street', ''),
+            'owner_number' => (string)$request->input('owner_number', ''),
+            'owner_complement' => (string)$request->input('owner_complement', ''),
+            'owner_neighborhood' => (string)$request->input('owner_neighborhood', ''),
+            'owner_city' => (string)$request->input('owner_city', ''),
+            'owner_state' => (string)$request->input('owner_state', ''),
+        ];
+
+        $clinicContactFields = [
+            'contact_email' => (string)$request->input('clinic_email', ''),
+            'contact_phone' => (string)$request->input('clinic_phone', ''),
+            'contact_whatsapp' => (string)$request->input('clinic_whatsapp', ''),
+            'contact_address' => (string)$request->input('clinic_address', ''),
+            'contact_website' => (string)$request->input('clinic_website', ''),
+            'contact_instagram' => (string)$request->input('clinic_instagram', ''),
+            'contact_facebook' => (string)$request->input('clinic_facebook', ''),
+        ];
+
         if ($name === '') {
             $service = new SystemClinicService($this->container);
             $clinic = $service->getClinic($id);
@@ -132,7 +155,9 @@ final class SystemClinicController extends Controller
                 ($tenantKey === '' ? null : $tenantKey),
                 ($primaryDomain === '' ? null : $primaryDomain),
                 $request->ip(),
-                ($cnpj === '' ? null : $cnpj)
+                ($cnpj === '' ? null : $cnpj),
+                $ownerFields,
+                $clinicContactFields
             );
             return $this->redirect('/sys/clinics/edit?id=' . $id);
         } catch (\RuntimeException $e) {

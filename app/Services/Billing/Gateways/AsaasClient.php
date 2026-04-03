@@ -13,7 +13,7 @@ final class AsaasClient
     public function __construct(private readonly Container $container) {}
 
     /** @return array<string,mixed> */
-    public function createCustomer(string $name, ?string $email = null, ?string $cpfCnpj = null): array
+    public function createCustomer(string $name, ?string $email = null, ?string $cpfCnpj = null, ?string $phone = null, ?string $postalCode = null, ?string $addressNumber = null): array
     {
         $cfg = $this->container->get('config');
         $settings = new SystemSettingsService($this->container);
@@ -31,6 +31,15 @@ final class AsaasClient
         }
         if ($cpfCnpj !== null && trim($cpfCnpj) !== '') {
             $payload['cpfCnpj'] = preg_replace('/\D+/', '', $cpfCnpj);
+        }
+        if ($phone !== null && trim($phone) !== '') {
+            $payload['mobilePhone'] = preg_replace('/\D+/', '', $phone);
+        }
+        if ($postalCode !== null && trim($postalCode) !== '') {
+            $payload['postalCode'] = preg_replace('/\D+/', '', $postalCode);
+        }
+        if ($addressNumber !== null && trim($addressNumber) !== '') {
+            $payload['addressNumber'] = $addressNumber;
         }
 
         $http = new HttpClient();
@@ -82,7 +91,7 @@ final class AsaasClient
     }
 
     /** @return array<string,mixed> */
-    public function createSubscription(string $customerId, float $value, string $billingType = 'BOLETO'): array
+    public function createSubscription(string $customerId, float $value, string $billingType = 'BOLETO', ?string $description = null): array
     {
         $cfg = $this->container->get('config');
         $settings = new SystemSettingsService($this->container);
@@ -100,6 +109,9 @@ final class AsaasClient
             'value' => $value,
             'cycle' => 'MONTHLY',
         ];
+        if ($description !== null && trim($description) !== '') {
+            $payload['description'] = $description;
+        }
 
         $http = new HttpClient();
         $resp = $http->request('POST', $baseUrl . '/subscriptions', [

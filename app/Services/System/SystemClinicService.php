@@ -122,7 +122,7 @@ final class SystemClinicService
         return (new SystemClinicRepository($this->container->get(\PDO::class)))->findById($clinicId);
     }
 
-    public function updateClinic(int $clinicId, string $name, ?string $tenantKey, ?string $primaryDomain, string $ip, ?string $cnpj = null): void
+    public function updateClinic(int $clinicId, string $name, ?string $tenantKey, ?string $primaryDomain, string $ip, ?string $cnpj = null, array $ownerFields = [], array $clinicContactFields = []): void
     {
         $pdo = $this->container->get(\PDO::class);
         $pdo->beginTransaction();
@@ -131,11 +131,66 @@ final class SystemClinicService
             $repo = new SystemClinicRepository($pdo);
             $repo->updateClinic($clinicId, $name, $tenantKey);
 
-            // Update CNPJ
+            // Update CNPJ and owner fields
+            $sets = [];
+            $params = ['id' => $clinicId];
+
             if ($cnpj !== null) {
                 $cnpjClean = preg_replace('/\D+/', '', $cnpj);
-                $stmt = $pdo->prepare('UPDATE clinics SET cnpj = ? WHERE id = ?');
-                $stmt->execute([$cnpjClean !== '' ? $cnpjClean : null, $clinicId]);
+                $sets[] = 'cnpj = :cnpj';
+                $params['cnpj'] = $cnpjClean !== '' ? $cnpjClean : null;
+            }
+
+            $ownerMap = [
+                'owner_name' => 'owner_name',
+                'owner_phone' => 'owner_phone',
+                'owner_doc_type' => 'owner_doc_type',
+                'owner_postal_code' => 'owner_postal_code',
+                'owner_street' => 'owner_street',
+                'owner_number' => 'owner_number',
+                'owner_complement' => 'owner_complement',
+                'owner_neighborhood' => 'owner_neighborhood',
+                'owner_city' => 'owner_city',
+                'owner_state' => 'owner_state',
+            ];
+
+            foreach ($ownerMap as $field => $col) {
+                if (array_key_exists($field, $ownerFields)) {
+                    $val = trim((string)$ownerFields[$field]);
+                    $sets[] = "$col = :$col";
+                    $params[$col] = $val !== '' ? $val : null;
+                }
+            }
+
+            if (!empty($sets)) {
+                $sql = 'UPDATE clinics SET ' . implode(', ', $sets) . ' WHERE id = :id';
+                $pdo->prepare($sql)->execute($params);
+            }
+
+            // Update clinic contact fields
+            if (!empty($clinicContactFields)) {
+                $contactMap = [
+                    'contact_email' => 'contact_email',
+                    'contact_phone' => 'contact_phone',
+                    'contact_whatsapp' => 'contact_whatsapp',
+                    'contact_address' => 'contact_address',
+                    'contact_website' => 'contact_website',
+                    'contact_instagram' => 'contact_instagram',
+                    'contact_facebook' => 'contact_facebook',
+                ];
+                $cSets = [];
+                $cParams = ['cid' => $clinicId];
+                foreach ($contactMap as $field => $col) {
+                    if (array_key_exists($field, $clinicContactFields)) {
+                        $val = trim((string)$clinicContactFields[$field]);
+                        $cSets[] = "$col = :$col";
+                        $cParams[$col] = $val !== '' ? $val : null;
+                    }
+                }
+                if (!empty($cSets)) {
+                    $sql = 'UPDATE clinics SET ' . implode(', ', $cSets) . ' WHERE id = :cid';
+                    $pdo->prepare($sql)->execute($cParams);
+                }
             }
 
             $primaryDomain = $primaryDomain !== null ? strtolower(trim($primaryDomain)) : null;
