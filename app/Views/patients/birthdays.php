@@ -79,7 +79,6 @@ ob_start();
             $day = $birthDate !== '' && strlen($birthDate) >= 10 ? substr($birthDate, 8, 2) . '/' . substr($birthDate, 5, 2) : '';
             $phone = trim((string)($p['phone'] ?? ''));
             $waOptIn = (int)($p['whatsapp_opt_in'] ?? 0);
-            $waLink = $phone !== '' ? ('https://wa.me/' . preg_replace('/\D/', '', $phone)) : '';
             ?>
             <div class="lc-card" style="margin:0;">
                 <div class="lc-flex lc-flex--between lc-flex--center" style="padding:12px 16px; gap:10px;">
@@ -96,6 +95,18 @@ ob_start();
                     <div class="lc-flex lc-gap-sm" style="flex-shrink:0; align-items:center;">
                         <?php if (!empty($activeTemplates) && $waOptIn && $phone !== ''): ?>
                             <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="sendWa(<?= (int)$p['id'] ?>, this)">WhatsApp</button>
+                            <span class="lc-muted" id="wa-status-<?= (int)$p['id'] ?>" style="font-size:11px;"></span>
+                        <?php endif; ?>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/patients/view?id=<?= (int)$p['id'] ?>">Ver</a>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
+<?php else: ?>
+<!-- ═══ ABA FOLLOW-UP ═══ -->
 <div class="lc-card" style="margin-bottom:14px;">
     <div class="lc-card__body">
         <form method="get" action="/patients/birthdays" class="lc-flex lc-gap-sm lc-flex--wrap" style="align-items:flex-end;">
@@ -184,7 +195,7 @@ ob_start();
             credentials:'same-origin'
         }).then(function(r){return r.json()}).then(function(d){
             if(btn) btn.disabled=false;
-            if(s) s.textContent = d.ok ? '✓' : '✗';
+            if(s) s.textContent = d.ok ? '✓' : '✗ ' + (d.error || '');
         }).catch(function(){ if(btn) btn.disabled=false; if(s) s.textContent='✗'; });
     };
 

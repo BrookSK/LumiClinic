@@ -28,7 +28,21 @@ final class Request
             }
         }
 
-        return new self($_GET, $_POST, $_SERVER, $headers, $_COOKIE);
+        $body = $_POST;
+
+        // Parse JSON body when Content-Type is application/json
+        $ct = strtolower((string)($headers['content-type'] ?? ''));
+        if (str_contains($ct, 'application/json') && empty($body)) {
+            $raw = (string)file_get_contents('php://input');
+            if ($raw !== '') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $body = $decoded;
+                }
+            }
+        }
+
+        return new self($_GET, $body, $_SERVER, $headers, $_COOKIE);
     }
 
     public function method(): string
