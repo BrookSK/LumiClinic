@@ -93,10 +93,17 @@ final class XlsxReader
      */
     public static function excelDateToString(string $val): ?string
     {
+        $val = trim($val);
         // Already formatted as dd/mm/yyyy
         if (preg_match('#^\d{2}/\d{2}/\d{4}$#', $val)) {
             $parts = explode('/', $val);
             return $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+        }
+        // Format dd/mm/yy (2-digit year)
+        if (preg_match('#^(\d{2})/(\d{2})/(\d{2})$#', $val, $m)) {
+            $year = (int)$m[3];
+            $year = $year >= 0 && $year <= 49 ? 2000 + $year : 1900 + $year;
+            return $year . '-' . $m[2] . '-' . $m[1];
         }
         // Excel serial number
         if (is_numeric($val) && (float)$val > 30000 && (float)$val < 100000) {
