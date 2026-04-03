@@ -110,7 +110,21 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
     <div style="padding:18px;border-radius:14px;border:1px solid <?= $stClr ?>22;background:<?= $stClr ?>06;box-shadow:0 4px 16px rgba(17,24,39,.06);">
         <div style="font-size:12px;color:rgba(31,41,55,.45);font-weight:600;">Status</div>
         <div style="font-weight:800;font-size:18px;margin-top:4px;color:<?= $stClr ?>;"><?= htmlspecialchars($stLbl, ENT_QUOTES, 'UTF-8') ?></div>
-        <div style="font-size:12px;color:rgba(31,41,55,.45);margin-top:2px;">Até <?= htmlspecialchars($fmt($subscription['current_period_end'] ?? null), ENT_QUOTES, 'UTF-8') ?></div>
+        <?php
+        $periodEnd = trim((string)($subscription['current_period_end'] ?? ''));
+        $periodExpired = false;
+        if ($periodEnd !== '') {
+            try {
+                $periodExpired = (new \DateTimeImmutable($periodEnd)) < (new \DateTimeImmutable('now'));
+            } catch (\Throwable $e) {}
+        }
+        ?>
+        <?php if ($periodExpired): ?>
+            <div style="font-size:12px;color:#b91c1c;font-weight:700;margin-top:2px;">Período vencido em <?= htmlspecialchars($fmt($periodEnd), ENT_QUOTES, 'UTF-8') ?></div>
+            <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:2px;">Aguardando renovação automática</div>
+        <?php else: ?>
+            <div style="font-size:12px;color:rgba(31,41,55,.45);margin-top:2px;">Até <?= htmlspecialchars($fmt($periodEnd), ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
     </div>
     <div style="padding:18px;border-radius:14px;border:1px solid <?= $tBlocked ? 'rgba(185,28,28,.22)' : 'rgba(17,24,39,.08)' ?>;background:<?= $tBlocked ? 'rgba(185,28,28,.04)' : 'var(--lc-surface)' ?>;box-shadow:0 4px 16px rgba(17,24,39,.06);">
         <div style="font-size:12px;color:rgba(31,41,55,.45);font-weight:600;">Transcrição de áudio</div>
