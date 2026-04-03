@@ -138,10 +138,14 @@ ob_start();
         if (btn) btn.disabled = true;
         if (statusEl) statusEl.textContent = 'Enviando...';
 
+        var fd = new FormData();
+        fd.append('_csrf', csrf);
+        fd.append('patient_id', patientId);
+        fd.append('template_code', code);
+
         fetch('/patients/whatsapp/send-json', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ _csrf: csrf, patient_id: patientId, template_code: code }),
+            body: fd,
             credentials: 'same-origin'
         })
         .then(function(r){ return r.json(); })
@@ -184,10 +188,14 @@ ob_start();
                 if (!match) { pending--; if (pending === 0) done(); return; }
                 var pid = parseInt(match[1], 10);
 
+                var fd2 = new FormData();
+                fd2.append('_csrf', csrf);
+                fd2.append('patient_id', pid);
+                fd2.append('template_code', code);
+
                 fetch('/patients/whatsapp/send-json', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ _csrf: csrf, patient_id: pid, template_code: code }),
+                    body: fd2,
                     credentials: 'same-origin'
                 })
                 .then(function(r){ return r.json(); })

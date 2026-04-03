@@ -189,9 +189,13 @@ ob_start();
         var s = document.getElementById('wa-status-' + pid);
         if (btn) btn.disabled = true;
         if (s) s.textContent = '...';
+        var fd = new FormData();
+        fd.append('_csrf', csrf);
+        fd.append('patient_id', pid);
+        fd.append('template_code', code);
         fetch('/patients/whatsapp/send-json', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({_csrf:csrf, patient_id:pid, template_code:code}),
+            method:'POST',
+            body: fd,
             credentials:'same-origin'
         }).then(function(r){return r.json()}).then(function(d){
             if(btn) btn.disabled=false;
@@ -216,7 +220,7 @@ ob_start();
                 var m = b.getAttribute('onclick').match(/sendWa\((\d+)/);
                 if(!m){pending--;if(!pending&&res) res.textContent=sent+' ok, '+fail+' falha';return;}
                 var pid=parseInt(m[1],10);
-                fetch('/patients/whatsapp/send-json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({_csrf:csrf,patient_id:pid,template_code:code}),credentials:'same-origin'})
+                fetch('/patients/whatsapp/send-json',{method:'POST',body:(function(){var f=new FormData();f.append('_csrf',csrf);f.append('patient_id',pid);f.append('template_code',code);return f;})(),credentials:'same-origin'})
                 .then(function(r){return r.json()}).then(function(d){if(d.ok)sent++;else fail++;})
                 .catch(function(){fail++;})
                 .finally(function(){pending--;if(!pending&&res) res.textContent=sent+' enviados, '+fail+' falhas';});

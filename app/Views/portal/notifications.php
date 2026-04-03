@@ -84,7 +84,7 @@ ob_start();
       var perm=await Notification.requestPermission();
       if(perm!=='granted'){setStatus('Permissão não concedida.');return;}
       var sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64(String(cfg.public_key))});
-      var res=await(await fetch('/portal/push/subscribe',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign(sub.toJSON(),{_csrf:csrf}))})).json();
+      var res=await(await fetch('/portal/push/subscribe',{method:'POST',credentials:'same-origin',headers:{'X-CSRF-Token':csrf,'Content-Type':'application/json'},body:JSON.stringify(sub.toJSON())})).json();
       setStatus(res&&res.ok?'Ativo ✓':'Erro ao salvar.');
     }
     if(btn)btn.addEventListener('click',function(){setStatus('Ativando...');enable().catch(function(){setStatus('Erro.');});});

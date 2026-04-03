@@ -187,16 +187,16 @@ ob_start();
         var resultEl = document.getElementById('send-result');
         if (resultEl) resultEl.textContent = 'Enviando...';
 
+        var fd = new FormData();
+        fd.append('_csrf', csrf);
+        fd.append('patient_id', patientId);
+        fd.append('template_id', parseInt(tid, 10));
+        fd.append('channel', channel);
+        fd.append('wa_template_code', 'anamnesis_request');
+
         fetch('/anamnesis/send-link', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                _csrf: csrf,
-                patient_id: patientId,
-                template_id: parseInt(tid, 10),
-                channel: channel,
-                wa_template_code: 'anamnesis_request',
-            }),
+            body: fd,
             credentials: 'same-origin',
         })
         .then(function(r){ return r.json(); })
