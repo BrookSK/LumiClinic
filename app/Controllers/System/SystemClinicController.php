@@ -62,6 +62,33 @@ final class SystemClinicController extends Controller
             return $this->view('system/clinics/create', ['error' => 'Senha deve ter pelo menos 8 caracteres.']);
         }
 
+        // Clinic contact fields
+        $clinicContactFields = [
+            'contact_email' => (string)$request->input('clinic_email', ''),
+            'contact_phone' => (string)$request->input('clinic_phone', ''),
+            'contact_whatsapp' => (string)$request->input('clinic_whatsapp', ''),
+            'contact_address' => (string)$request->input('clinic_address', ''),
+            'contact_website' => (string)$request->input('clinic_website', ''),
+            'contact_instagram' => (string)$request->input('clinic_instagram', ''),
+            'contact_facebook' => (string)$request->input('clinic_facebook', ''),
+        ];
+
+        // Owner/contratante fields
+        $ownerFields = [
+            'owner_name' => $ownerName,
+            'owner_phone' => preg_replace('/\D+/', '', (string)$request->input('owner_phone', '')),
+            'owner_doc_type' => (string)$request->input('owner_doc_type', 'cpf'),
+            'owner_postal_code' => preg_replace('/\D+/', '', (string)$request->input('owner_postal_code', '')),
+            'owner_street' => (string)$request->input('owner_street', ''),
+            'owner_number' => (string)$request->input('owner_number', ''),
+            'owner_complement' => (string)$request->input('owner_complement', ''),
+            'owner_neighborhood' => (string)$request->input('owner_neighborhood', ''),
+            'owner_city' => (string)$request->input('owner_city', ''),
+            'owner_state' => (string)$request->input('owner_state', ''),
+        ];
+
+        $cnpj = preg_replace('/\D+/', '', (string)$request->input('owner_doc_number', ''));
+
         try {
             $service = new SystemClinicService($this->container);
             $service->createClinicWithOwner(
@@ -71,7 +98,10 @@ final class SystemClinicController extends Controller
                 $ownerName,
                 $ownerEmail,
                 $ownerPassword,
-                $request->ip()
+                $request->ip(),
+                $cnpj !== '' ? $cnpj : null,
+                $ownerFields,
+                $clinicContactFields
             );
 
             return $this->redirect('/sys/clinics');
