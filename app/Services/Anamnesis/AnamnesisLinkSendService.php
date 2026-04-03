@@ -43,14 +43,36 @@ final class AnamnesisLinkSendService
         $token = bin2hex(random_bytes(24));
         $expiresAt = date('Y-m-d H:i:s', strtotime('+7 days'));
 
+        // Get template info for snapshot
+        $tplRepo = new AnamnesisTemplateRepository($pdo);
+        $template = $tplRepo->findById($clinicId, $templateId);
+        $templateName = $template !== null ? (string)($template['name'] ?? '') : '';
+        $templateUpdatedAt = $template !== null ? (string)($template['updated_at'] ?? '') : null;
+        $fieldsJson = null; // fields are stored separately in anamnesis_template_fields
+
+        // Create an empty anamnesis_response so it shows as "pending" in the patient portal
+        $responseRepo = new \App\Repositories\AnamnesisResponseRepository($pdo);
+        $auth2 = new AuthService($this->container);
+        $responseId = $responseRepo->create(
+            $clinicId,
+            $patientId,
+            $templateId,
+            $templateName !== '' ? $templateName : null,
+            $templateUpdatedAt !== '' ? $templateUpdatedAt : null,
+            $fieldsJson !== '' ? $fieldsJson : null,
+            null,
+            '{}', // empty answers — pending
+            $auth2->userId()
+        );
+
         // Salvar request de anamnese
         $stmt = $pdo->prepare("
             INSERT INTO appointment_anamnesis_requests (
                 clinic_id, appointment_id, patient_id, template_id,
-                token_hash, token_encrypted, expires_at, created_at
+                token_hash, token_encrypted, expires_at, response_id, created_at
             ) VALUES (
                 :clinic_id, NULL, :patient_id, :template_id,
-                :token_hash, :token_encrypted, :expires_at, NOW()
+                :token_hash, :token_encrypted, :expires_at, :response_id, NOW()
             )
         ");
         $tokenHash = hash('sha256', $token);
@@ -59,8 +81,9 @@ final class AnamnesisLinkSendService
             'patient_id'      => $patientId,
             'template_id'     => $templateId,
             'token_hash'      => $tokenHash,
-            'token_encrypted' => $token, // simplificado — em produção usar CryptoService
+            'token_encrypted' => $token,
             'expires_at'      => $expiresAt,
+            'response_id'     => $responseId,
         ]);
 
         $cfg = $this->container->has('config') ? $this->container->get('config') : [];
