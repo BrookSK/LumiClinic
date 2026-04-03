@@ -22,6 +22,7 @@ ob_start();
 .doc-toggle input{display:none}
 .doc-toggle input:checked+label{background:rgba(99,102,241,.10);color:rgba(99,102,241,.9)}
 @media(max-width:640px){.sc-grid2,.sc-grid3,.sc-grid-addr,.sc-grid-addr2,.sc-grid-city{grid-template-columns:1fr}}
+@media(max-width:900px){.sc-layout-2col{grid-template-columns:1fr !important}}
 </style>
 
 <a href="/sys/clinics" style="display:inline-flex;align-items:center;gap:6px;color:rgba(31,41,55,.60);font-weight:650;font-size:13px;text-decoration:none;margin-bottom:16px;">
@@ -35,11 +36,13 @@ ob_start();
     <div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= $e((string)$error) ?></div>
 <?php endif; ?>
 
-<form method="post" action="/sys/clinics/create" class="lc-form" style="max-width:720px;">
+<form method="post" action="/sys/clinics/create" class="lc-form">
     <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" />
     <input type="hidden" name="tenant_key" value="" />
     <input type="hidden" name="primary_domain" value="" />
 
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" class="sc-layout-2col">
+<div>
     <!-- Dados da clínica -->
     <div class="sc-card">
         <div class="sc-title">Dados da clínica</div>
@@ -90,6 +93,8 @@ ob_start();
         </div>
     </div>
 
+</div>
+<div>
     <!-- Contratante -->
     <div class="sc-card">
         <div class="sc-title">Quem está contratando</div>
@@ -169,6 +174,9 @@ ob_start();
             </div>
         </div>
     </div>
+
+</div>
+</div><!-- end grid -->
 
     <div style="display:flex;gap:10px;">
         <button class="lc-btn lc-btn--primary" type="submit">Criar clínica</button>

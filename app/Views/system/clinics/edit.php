@@ -47,6 +47,7 @@ ob_start();
 .doc-toggle input{display:none}
 .doc-toggle input:checked+label{background:rgba(99,102,241,.10);color:rgba(99,102,241,.9)}
 @media(max-width:640px){.sc-grid2,.sc-grid3,.sc-grid-addr,.sc-grid-addr2,.sc-grid-city{grid-template-columns:1fr}}
+@media(max-width:900px){.sc-layout-2col{grid-template-columns:1fr !important}}
 </style>
 
 <a href="/sys/clinics" style="display:inline-flex;align-items:center;gap:6px;color:rgba(31,41,55,.60);font-weight:650;font-size:13px;text-decoration:none;margin-bottom:16px;">
@@ -72,12 +73,14 @@ ob_start();
     </form>
 </div>
 
-<form method="post" action="/sys/clinics/update" class="lc-form" style="max-width:720px;">
+<form method="post" action="/sys/clinics/update" class="lc-form">
     <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" />
     <input type="hidden" name="id" value="<?= $clinicId ?>" />
     <input type="hidden" name="tenant_key" value="<?= $e($tenantKey) ?>" />
     <input type="hidden" name="primary_domain" value="<?= $e($primaryDomain) ?>" />
 
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" class="sc-layout-2col">
+<div>
     <!-- Dados da clínica -->
     <div class="sc-card">
         <div class="sc-title">Dados da clínica</div>
@@ -127,6 +130,8 @@ ob_start();
         </div>
     </div>
 
+</div>
+<div>
     <!-- Dados do contratante -->
     <div class="sc-card">
         <div class="sc-title">Quem está contratando</div>
@@ -197,6 +202,9 @@ ob_start();
         </div>
     </div>
 
+</div>
+</div><!-- end grid -->
+
     <div style="display:flex;gap:10px;margin-bottom:16px;">
         <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
     </div>
@@ -204,7 +212,7 @@ ob_start();
 
 <!-- Info técnica -->
 <?php if ($tenantKey !== '' || $primaryDomain !== ''): ?>
-<details style="margin-bottom:16px;max-width:720px;">
+<details style="margin-bottom:16px;">
     <summary style="font-size:12px;color:rgba(31,41,55,.40);cursor:pointer;">Informações técnicas</summary>
     <div style="margin-top:8px;padding:14px;border-radius:12px;border:1px solid rgba(17,24,39,.06);background:rgba(0,0,0,.01);font-size:13px;color:rgba(31,41,55,.55);">
         <?php if ($tenantKey !== ''): ?><div>Tenant: <code><?= $e($tenantKey) ?></code></div><?php endif; ?>
@@ -213,7 +221,7 @@ ob_start();
 </details>
 <?php endif; ?>
 
-<details style="max-width:720px;">
+<details>
     <summary style="font-size:12px;color:rgba(185,28,28,.60);cursor:pointer;">Excluir clínica</summary>
     <div style="margin-top:8px;padding:12px;border-radius:12px;border:1px solid rgba(185,28,28,.18);background:rgba(185,28,28,.04);">
         <div style="font-size:12px;color:rgba(185,28,28,.70);margin-bottom:8px;">Essa ação oculta a clínica do sistema. Os dados não são apagados permanentemente.</div>
