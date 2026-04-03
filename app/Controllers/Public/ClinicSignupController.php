@@ -6,6 +6,7 @@ namespace App\Controllers\Public;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Repositories\SaasPlanRepository;
 use App\Repositories\UserRepository;
 use App\Services\Auth\AuthService;
 use App\Services\System\SystemClinicService;
@@ -18,7 +19,12 @@ final class ClinicSignupController extends Controller
             return $this->redirect('/');
         }
 
-        return $this->view('public/clinic_signup');
+        $plans = (new SaasPlanRepository($this->container->get(\PDO::class)))->listActive();
+
+        return $this->view('public/clinic_signup', [
+            'plans' => $plans,
+            'error' => null,
+        ]);
     }
 
     public function store(Request $request)
@@ -27,49 +33,82 @@ final class ClinicSignupController extends Controller
             return $this->redirect('/');
         }
 
-        $clinicName = trim((string)$request->input('clinic_name', ''));
-        $tenantKey = trim((string)$request->input('tenant_key', ''));
-        $primaryDomain = trim((string)$request->input('primary_domain', ''));
+        $pdo = $this->container->get(\PDO::class);
+        $plans = (new SaasPlanRepository($pdo))->listActive();
 
+        $clinicName = trim((string)$request->input('clinic_name', ''));
         $ownerName = trim((string)$request->input('owner_name', ''));
         $ownerEmail = strtolower(trim((string)$request->input('owner_email', '')));
         $ownerPassword = (string)$request->input('owner_password', '');
+        $ownerPhone = preg_replace('/\D+/', '', (string)$request->input('owner_phone', ''));
+        $docType = (string)$request->input('doc_type', 'cpf');
+        $docNumber = preg_replace('/\D+/', '', (string)$request->input('doc_number', ''));
+        $selectedPlan = (string)$request->input('plan', '');
+
+        $viewData = ['plans' => $plans];
 
         if ($clinicName === '' || $ownerName === '' || $ownerEmail === '' || $ownerPassword === '') {
-            return $this->view('public/clinic_signup', ['error' => 'Preencha todos os campos obrigatórios.']);
+            $viewData['error'] = 'Preencha todos os campos obrigatórios.';
+            return $this->view('public/clinic_signup', $viewData);
         }
 
         if (!filter_var($ownerEmail, FILTER_VALIDATE_EMAIL)) {
-            return $this->view('public/clinic_signup', ['error' => 'E-mail inválido.']);
+            $viewData['error'] = 'E-mail inválido.';
+            return $this->view('public/clinic_signup', $viewData);
         }
 
         if (strlen($ownerPassword) < 8) {
-            return $this->view('public/clinic_signup', ['error' => 'Senha deve ter pelo menos 8 caracteres.']);
+            $viewData['error'] = 'Senha deve ter pelo menos 8 caracteres.';
+            return $this->view('public/clinic_signup', $viewData);
         }
 
-        $pdo = $this->container->get(\PDO::class);
         $existing = (new UserRepository($pdo))->listActiveByEmail($ownerEmail, 1);
         if ($existing !== []) {
-            return $this->view('public/clinic_signup', ['error' => 'Já existe uma conta com este e-mail.']);
+            $viewData['error'] = 'Já existe uma conta com este e-mail.';
+            return $this->view('public/clinic_signup', $viewData);
         }
+
+        $ownerFields = [
+            'owner_name' => $ownerName,
+            'owner_phone' => $ownerPhone,
+            'owner_doc_type' => $docType,
+        ];
 
         try {
             $svc = new SystemClinicService($this->container);
             $result = $svc->createClinicWithOwnerAndReturnIds(
                 $clinicName,
-                ($tenantKey === '' ? null : $tenantKey),
-                ($primaryDomain === '' ? null : $primaryDomain),
+                null,
+                null,
                 $ownerName,
                 $ownerEmail,
                 $ownerPassword,
-                $request->ip()
+                $request->ip(),
+                $docNumber !== '' ? $docNumber : null,
+                $ownerFields,
+                []
             );
+
+            // Save billing profile on the owner user
+            $userBilling = [];
+            if ($ownerPhone !== '') $userBilling['phone'] = $ownerPhone;
+            if ($docType !== '') $userBilling['doc_type'] = $docType;
+            if ($docNumber !== '') $userBilling['doc_number'] = $docNumber;
+            if (!empty($userBilling)) {
+                (new UserRepository($pdo))->updateBillingProfile((int)$result['owner_user_id'], $userBilling);
+            }
 
             (new AuthService($this->container))->loginUserByIdForSession((int)$result['owner_user_id'], $request->ip(), $request->header('user-agent'));
 
-            return $this->redirect('/billing/subscription');
+            // If a specific plan was selected (not trial), redirect to subscription page
+            if ($selectedPlan !== '' && $selectedPlan !== 'trial') {
+                return $this->redirect('/billing/subscription');
+            }
+
+            return $this->redirect('/');
         } catch (\RuntimeException $e) {
-            return $this->view('public/clinic_signup', ['error' => $e->getMessage()]);
+            $viewData['error'] = $e->getMessage();
+            return $this->view('public/clinic_signup', $viewData);
         }
     }
 }

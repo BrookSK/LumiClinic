@@ -57,6 +57,11 @@ $error = $error ?? null;
                         <button class="lc-btn lc-btn--primary" type="submit">Entrar</button>
                     </form>
 
+                    <div style="text-align:center;margin-top:14px;">
+                        <span style="font-size:13px;color:rgba(31,41,55,.45);">Não tem conta?</span>
+                        <a href="/criar-conta" style="font-size:13px;color:rgba(99,102,241,.7);text-decoration:none;font-weight:600;margin-left:4px;">Criar conta grátis</a>
+                    </div>
+
                     <div class="lc-auth__footnote">Agenda • Pacientes • Financeiro • Estoque</div>
                 </div>
             </div>

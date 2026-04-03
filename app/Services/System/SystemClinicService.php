@@ -127,7 +127,10 @@ final class SystemClinicService
         string $ownerName,
         string $ownerEmail,
         string $ownerPassword,
-        string $ip
+        string $ip,
+        ?string $cnpj = null,
+        array $ownerFields = [],
+        array $clinicContactFields = []
     ): array {
         $pdo = $this->container->get(\PDO::class);
         $pdo->beginTransaction();
@@ -137,6 +140,38 @@ final class SystemClinicService
 
             $clinicId = $repo->createClinic($clinicName, $tenantKey);
             $repo->createClinicDefaults($clinicId);
+
+            // Save CNPJ and owner fields on clinic
+            $sets = [];
+            $params = ['cid' => $clinicId];
+            if ($cnpj !== null && $cnpj !== '') {
+                $sets[] = 'cnpj = :cnpj';
+                $params['cnpj'] = $cnpj;
+            }
+            $ownerMap = ['owner_name','owner_phone','owner_doc_type','owner_postal_code','owner_street','owner_number','owner_complement','owner_neighborhood','owner_city','owner_state'];
+            foreach ($ownerMap as $col) {
+                if (array_key_exists($col, $ownerFields) && trim((string)$ownerFields[$col]) !== '') {
+                    $sets[] = "$col = :$col";
+                    $params[$col] = trim((string)$ownerFields[$col]);
+                }
+            }
+            if (!empty($sets)) {
+                $pdo->prepare('UPDATE clinics SET ' . implode(', ', $sets) . ' WHERE id = :cid')->execute($params);
+            }
+
+            // Save clinic contact fields
+            $contactMap = ['contact_email','contact_phone','contact_whatsapp','contact_address','contact_website','contact_instagram','contact_facebook','address_street','address_number','address_complement','address_neighborhood','address_city','address_state','address_zip'];
+            $cSets = [];
+            $cParams = ['ccid' => $clinicId];
+            foreach ($contactMap as $col) {
+                if (array_key_exists($col, $clinicContactFields) && trim((string)$clinicContactFields[$col]) !== '') {
+                    $cSets[] = "$col = :$col";
+                    $cParams[$col] = trim((string)$clinicContactFields[$col]);
+                }
+            }
+            if (!empty($cSets)) {
+                $pdo->prepare('UPDATE clinics SET ' . implode(', ', $cSets) . ' WHERE id = :ccid')->execute($cParams);
+            }
 
             $primaryDomain = $primaryDomain !== null ? strtolower(trim($primaryDomain)) : null;
             if ($primaryDomain === '') {
@@ -154,6 +189,15 @@ final class SystemClinicService
             $ownerUserId = $repo->createOwnerUser($clinicId, $ownerName, $ownerEmail, $ownerPasswordHash);
             $roleOwnerId = $repo->seedRbacAndReturnOwnerRoleId($clinicId);
             $repo->assignRole($clinicId, $ownerUserId, $roleOwnerId);
+
+            // Save billing profile on the owner user
+            $userBillingFields = [];
+            if (!empty($ownerFields['owner_phone'])) $userBillingFields['phone'] = $ownerFields['owner_phone'];
+            if (!empty($ownerFields['owner_doc_type'])) $userBillingFields['doc_type'] = $ownerFields['owner_doc_type'];
+            if ($cnpj !== null && $cnpj !== '') $userBillingFields['doc_number'] = $cnpj;
+            if (!empty($userBillingFields)) {
+                (new \App\Repositories\UserRepository($pdo))->updateBillingProfile($ownerUserId, $userBillingFields);
+            }
 
             $audit = new AuditLogRepository($pdo);
             $audit->log(null, null, 'public.clinic_signup.create', ['clinic_id' => $clinicId, 'tenant_key' => $tenantKey, 'primary_domain' => $primaryDomain], $ip);
