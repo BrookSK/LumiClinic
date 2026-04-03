@@ -57,7 +57,7 @@ final class SystemClinicRepository
     {
         $sql = "
             SELECT
-                id, name, tenant_key, status, created_at,
+                id, name, cnpj, tenant_key, contact_email, contact_phone, status, created_at,
                 (
                     SELECT d.domain
                     FROM clinic_domains d

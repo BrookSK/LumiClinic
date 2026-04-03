@@ -12,7 +12,7 @@ final class ClinicRepository
     public function findById(int $clinicId): ?array
     {
         $sql = "
-            SELECT id, name, tenant_key,
+            SELECT id, name, cnpj, tenant_key,
                    contact_email, contact_phone, contact_whatsapp, contact_address,
                    contact_website, contact_instagram, contact_facebook,
                    status, created_at, updated_at
