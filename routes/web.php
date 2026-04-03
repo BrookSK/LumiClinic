@@ -89,6 +89,7 @@ use App\Controllers\Manager\ManagerPanelController;
 use App\Controllers\Tutorial\ApiTokensTutorialController;
 use App\Controllers\Tutorial\SystemTutorialController;
 use App\Controllers\Tutorial\PatientTutorialController;
+use App\Controllers\Importer\ImporterController;
 use App\Controllers\Account\MeController;
 use App\Controllers\Auth\AccessChoiceController;
 use App\Controllers\Public\AppointmentConfirmController;
@@ -295,6 +296,9 @@ $router->post('/settings/whatsapp/clear', [SettingsController::class, 'whatsappC
 $router->post('/settings/whatsapp/diagnose', [SettingsController::class, 'whatsappDiagnose']);
 
 $router->get('/settings/google-calendar', [\App\Controllers\Settings\GoogleCalendarController::class, 'index']);
+
+$router->get('/settings/importer', [ImporterController::class, 'index']);
+$router->post('/settings/importer/upload', [ImporterController::class, 'upload']);
 $router->post('/settings/google-calendar/connect', [\App\Controllers\Settings\GoogleCalendarController::class, 'connect']);
 $router->get('/settings/google-calendar/callback', [\App\Controllers\Settings\GoogleCalendarController::class, 'callback']);
 $router->post('/settings/google-calendar/disconnect', [\App\Controllers\Settings\GoogleCalendarController::class, 'disconnect']);

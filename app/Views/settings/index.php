@@ -162,6 +162,15 @@ ob_start();
             </div>
         </a>
         <?php endif; ?>
+        <?php if ($can('settings.update')): ?>
+        <a href="/settings/importer" style="padding:14px;border-radius:12px;border:1px solid rgba(99,102,241,.15);background:rgba(99,102,241,.03);text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;transition:all 160ms ease;">
+            <span style="font-size:20px;">📥</span>
+            <div>
+                <div style="font-weight:700;font-size:13px;color:rgba(99,102,241,.85);">Importador Clinicorp</div>
+                <div style="font-size:11px;color:rgba(31,41,55,.45);">Migrar dados de outro sistema</div>
+            </div>
+        </a>
+        <?php endif; ?>
     </div>
 </div>
 

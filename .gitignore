@@ -29,6 +29,9 @@ Transcricao_Reuniao*.txt
 *.swp
 *.swo
 
+# Modelos de importação (dados sensíveis de clínicas)
+/docs/modelos_importadores_clinicorp/
+
 # OS
 .DS_Store
 Thumbs.db
