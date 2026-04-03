@@ -78,6 +78,7 @@ final class SystemSettingsService
     public function getBillingSettings(): array
     {
         $keys = [
+            'billing_gateway'            => 'billing.active_gateway',
             'asaas_env'                  => 'billing.asaas.env',
             'asaas_base_url'             => 'billing.asaas.base_url',
             'asaas_api_key'              => 'billing.asaas.api_key',
@@ -115,6 +116,7 @@ final class SystemSettingsService
     public function saveBillingSettings(array $input): void
     {
         $map = [
+            'billing_gateway'              => 'billing.active_gateway',
             'asaas_env'                    => 'billing.asaas.env',
             'asaas_billing_type'           => 'billing.asaas.billing_type',
             'asaas_sandbox_base_url'       => 'billing.asaas.sandbox.base_url',
@@ -143,6 +145,9 @@ final class SystemSettingsService
         }
 
         // Sync active env keys to the legacy fields used by the gateway service
+        // Billing type is always CREDIT_CARD
+        $this->setText('billing.asaas.billing_type', 'CREDIT_CARD');
+
         $asaasEnv = trim((string)($input['asaas_env'] ?? $this->getText('billing.asaas.env') ?? 'sandbox'));
         if ($asaasEnv === 'production') {
             $this->setText('billing.asaas.base_url', $this->getText('billing.asaas.prod.base_url'));

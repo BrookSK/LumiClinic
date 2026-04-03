@@ -3,7 +3,8 @@ $title = 'Admin do Sistema';
 $csrf = $_SESSION['_csrf'] ?? '';
 
 $asaasEnv = isset($asaas_env) && (string)$asaas_env !== '' ? (string)$asaas_env : 'sandbox';
-$asaasBillingType = isset($asaas_billing_type) ? (string)$asaas_billing_type : '';
+
+$activeGateway = isset($billing_gateway) && (string)$billing_gateway !== '' ? (string)$billing_gateway : 'asaas';
 
 $asaasSandboxBaseUrl = isset($asaas_sandbox_base_url) ? (string)$asaas_sandbox_base_url : 'https://sandbox.asaas.com/api/v3';
 $asaasSandboxApiKey = isset($asaas_sandbox_api_key) ? (string)$asaas_sandbox_api_key : '';
@@ -85,6 +86,38 @@ ob_start();
     </div>
 </div>
 
+<!-- Gateway ativo -->
+<div class="lc-card lc-card--soft" style="margin-bottom:16px;">
+    <div class="lc-card__header">
+        <div class="lc-card__title">Gateway de pagamento ativo</div>
+    </div>
+    <div class="lc-card__body">
+        <div style="font-size:12px;color:rgba(31,41,55,.50);margin-bottom:14px;">Selecione qual gateway será usado para processar as assinaturas. Apenas um pode estar ativo por vez.</div>
+        <form method="post" action="/sys/settings/billing" class="lc-form">
+            <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" />
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <label style="flex:1;min-width:200px;padding:16px;border-radius:12px;border:2px solid <?= $activeGateway === 'asaas' ? 'rgba(99,102,241,.5)' : 'rgba(17,24,39,.08)' ?>;background:<?= $activeGateway === 'asaas' ? 'rgba(99,102,241,.04)' : 'rgba(0,0,0,.01)' ?>;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 150ms;">
+                    <input type="radio" name="billing_gateway" value="asaas" <?= $activeGateway === 'asaas' ? 'checked' : '' ?> style="width:18px;height:18px;accent-color:rgba(99,102,241,.8);" />
+                    <div>
+                        <div style="font-weight:700;font-size:14px;color:rgba(31,41,55,.90);">Asaas</div>
+                        <div style="font-size:11px;color:rgba(31,41,55,.45);">Cobranças via cartão de crédito</div>
+                    </div>
+                </label>
+                <label style="flex:1;min-width:200px;padding:16px;border-radius:12px;border:2px solid <?= $activeGateway === 'mercadopago' ? 'rgba(99,102,241,.5)' : 'rgba(17,24,39,.08)' ?>;background:<?= $activeGateway === 'mercadopago' ? 'rgba(99,102,241,.04)' : 'rgba(0,0,0,.01)' ?>;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 150ms;">
+                    <input type="radio" name="billing_gateway" value="mercadopago" <?= $activeGateway === 'mercadopago' ? 'checked' : '' ?> style="width:18px;height:18px;accent-color:rgba(99,102,241,.8);" />
+                    <div>
+                        <div style="font-weight:700;font-size:14px;color:rgba(31,41,55,.90);">Mercado Pago</div>
+                        <div style="font-size:11px;color:rgba(31,41,55,.45);">Assinaturas via preapproval</div>
+                    </div>
+                </label>
+            </div>
+            <div class="lc-flex lc-flex--end lc-gap-sm" style="margin-top:12px;">
+                <button class="lc-btn lc-btn--primary" type="submit">Salvar gateway ativo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ═══════════════════ ASAAS ═══════════════════ -->
 <div class="lc-card lc-card--soft" style="margin-bottom:16px;">
     <div class="lc-card__header">
@@ -112,12 +145,6 @@ ob_start();
                         <label for="asaas_env_prod">🚀 Produção</label>
                     </span>
                 </div>
-            </div>
-
-            <div class="lc-field" style="margin-bottom:14px;">
-                <label class="lc-label">Tipo de cobrança</label>
-                <input class="lc-input" type="text" name="asaas_billing_type" value="<?= $e($asaasBillingType) ?>" placeholder="BOLETO" />
-                <div class="lc-muted" style="margin-top:4px;">Ex.: BOLETO, CREDIT_CARD, PIX</div>
             </div>
 
             <!-- Sandbox fields -->
