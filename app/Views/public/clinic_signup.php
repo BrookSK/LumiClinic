@@ -41,6 +41,12 @@ foreach ($plans as $p) {
     .doc-toggle input{display:none}
     .doc-toggle input:checked+label{background:rgba(99,102,241,.10);color:rgba(99,102,241,.9)}
     @media(max-width:640px){.su-grid2,.su-grid3{grid-template-columns:1fr}.su-body{padding:20px}}
+    .cc-section{margin-top:0}
+    .cc-title{font-weight:750;font-size:13px;color:rgba(31,41,55,.80);margin-bottom:10px}
+    .cc-note{font-size:12px;color:rgba(31,41,55,.50);margin-bottom:10px;line-height:1.5}
+    .cc-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .cc-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    @media(max-width:640px){.cc-grid2,.cc-grid3{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
@@ -132,6 +138,19 @@ foreach ($plans as $p) {
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
+
+            <!-- Cartão de crédito -->
+            <div class="su-section">Cartão de crédito</div>
+            <div style="padding:16px;border-radius:12px;border:1px solid rgba(17,24,39,.08);background:rgba(0,0,0,.01);">
+                <?php
+                $cardTitle = '';
+                $cardNote = count($plans) > 0 && min(array_column($plans, 'price_cents')) == 0
+                    ? 'Para planos gratuitos, o cartão é usado apenas para validação. Nenhuma cobrança será feita.'
+                    : null;
+                $cardRequired = true;
+                include __DIR__ . '/../billing/_card_fields.php';
+                ?>
+            </div>
 
             <div style="margin-top:22px;display:flex;gap:10px;align-items:center;">
                 <button class="lc-btn lc-btn--primary" type="submit" style="padding:10px 28px;">Criar minha conta</button>

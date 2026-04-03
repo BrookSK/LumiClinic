@@ -174,11 +174,12 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
                     Pacientes: <?= (int)($limits['patients'] ?? 0) > 0 ? (int)$limits['patients'] : 'Ilimitado' ?>
                 </div>
                 <?php if ($isOwner && !$isCurrent): ?>
-                    <form method="post" action="/billing/subscription/change-plan" style="margin-top:10px;" onsubmit="return confirm('Tem certeza que deseja alterar para o plano <?= htmlspecialchars($pName, ENT_QUOTES, 'UTF-8') ?> (<?= $fmtMoney($pCents) ?>/mês)?\n\nSe for um downgrade, a mudança será aplicada no próximo ciclo de cobrança.\nSe for um upgrade, será cobrado imediatamente.');">
-                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                        <input type="hidden" name="plan_id" value="<?= $pid ?>" />
-                        <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit" style="width:100%;justify-content:center;">Selecionar</button>
-                    </form>
+                    <div id="planCard_<?= $pid ?>" style="margin-top:10px;">
+                        <button class="lc-btn lc-btn--primary lc-btn--sm" type="button" style="width:100%;justify-content:center;"
+                            onclick="openPlanCheckout(<?= $pid ?>, '<?= htmlspecialchars(addslashes($pName), ENT_QUOTES, 'UTF-8') ?>', '<?= $fmtMoney($pCents) ?>')">
+                            Selecionar
+                        </button>
+                    </div>
                 <?php elseif ($isCurrent): ?>
                     <div style="margin-top:10px;text-align:center;font-size:12px;font-weight:700;color:rgba(129,89,1,1);">Plano atual</div>
                 <?php endif; ?>
@@ -238,6 +239,64 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
     </div>
 </details>
 <?php endif; ?>
+
+<!-- Plan checkout modal -->
+<div id="planCheckoutOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#fff;border-radius:18px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+        <div style="padding:20px 24px;border-bottom:1px solid rgba(17,24,39,.08);display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <div style="font-weight:800;font-size:16px;color:rgba(31,41,55,.96);">Assinar plano</div>
+                <div id="planCheckoutInfo" style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;"></div>
+            </div>
+            <button onclick="closePlanCheckout()" style="background:none;border:none;cursor:pointer;font-size:20px;color:rgba(31,41,55,.40);padding:4px;">✕</button>
+        </div>
+        <div style="padding:20px 24px;">
+            <style>
+            .cc-section{margin-top:0}
+            .cc-title{font-weight:750;font-size:13px;color:rgba(31,41,55,.80);margin-bottom:10px}
+            .cc-note{font-size:12px;color:rgba(31,41,55,.50);margin-bottom:10px;line-height:1.5}
+            .cc-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+            .cc-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+            @media(max-width:500px){.cc-grid2,.cc-grid3{grid-template-columns:1fr}}
+            </style>
+            <form method="post" action="/billing/subscription/change-plan" id="planCheckoutForm">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="plan_id" id="planCheckoutPlanId" value="" />
+                <?php
+                $cardTitle = 'Dados do cartão de crédito';
+                $cardNote = null;
+                $cardRequired = true;
+                $prefillCpf = '';
+                $prefillPostalCode = '';
+                $prefillAddressNumber = '';
+                $prefillPhone = '';
+                include __DIR__ . '/_card_fields.php';
+                ?>
+                <div style="margin-top:16px;display:flex;gap:10px;">
+                    <button class="lc-btn lc-btn--primary" type="submit" style="flex:1;justify-content:center;">Confirmar assinatura</button>
+                    <button type="button" onclick="closePlanCheckout()" class="lc-btn lc-btn--secondary">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPlanCheckout(planId, planName, price) {
+    document.getElementById('planCheckoutPlanId').value = planId;
+    document.getElementById('planCheckoutInfo').textContent = planName + ' — ' + price + '/mês';
+    var overlay = document.getElementById('planCheckoutOverlay');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closePlanCheckout() {
+    document.getElementById('planCheckoutOverlay').style.display = 'none';
+    document.body.style.overflow = '';
+}
+document.getElementById('planCheckoutOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closePlanCheckout();
+});
+</script>
 
 <?php
 $content = (string)ob_get_clean();

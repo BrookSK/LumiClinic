@@ -100,9 +100,48 @@ final class ClinicSignupController extends Controller
 
             (new AuthService($this->container))->loginUserByIdForSession((int)$result['owner_user_id'], $request->ip(), $request->header('user-agent'));
 
-            // If a specific plan was selected (not trial), redirect to subscription page
-            if ($selectedPlan !== '' && $selectedPlan !== 'trial') {
-                return $this->redirect('/billing/subscription');
+            // Send welcome email (best effort)
+            try {
+                (new \App\Services\Mail\WelcomeMailService($this->container))->sendClinicWelcome(
+                    $ownerEmail,
+                    $ownerName,
+                    $clinicName,
+                    $ownerPassword
+                );
+            } catch (\Throwable $ignore) {}
+
+            // Process card and create gateway subscription
+            $ccHolder = trim((string)$request->input('cc_holder', ''));
+            $ccNumber = preg_replace('/\D+/', '', (string)$request->input('cc_number', ''));
+            $ccExpMonth = trim((string)$request->input('cc_exp_month', ''));
+            $ccExpYear = trim((string)$request->input('cc_exp_year', ''));
+            $ccCvv = trim((string)$request->input('cc_cvv', ''));
+            $cpf = preg_replace('/\D+/', '', (string)$request->input('cpf', ''));
+            $postalCode = preg_replace('/\D+/', '', (string)$request->input('postal_code', ''));
+            $addressNumber = trim((string)$request->input('address_number', ''));
+            $mobile = preg_replace('/\D+/', '', (string)$request->input('mobile', ''));
+
+            if ($ccHolder !== '' && $ccNumber !== '' && $ccExpMonth !== '' && $ccExpYear !== '' && $ccCvv !== '') {
+                try {
+                    $gwService = new \App\Services\Billing\BillingGatewayService($this->container);
+                    // First ensure the gateway subscription exists (creates customer + subscription)
+                    $gwService->ensureGatewaySubscription((int)$result['clinic_id']);
+                    // Then attach the credit card
+                    $gwService->ensureAsaasSubscriptionCreditCard((int)$result['clinic_id'], [
+                        'cc_holder' => $ccHolder,
+                        'cc_number' => $ccNumber,
+                        'cc_exp_month' => $ccExpMonth,
+                        'cc_exp_year' => $ccExpYear,
+                        'cc_cvv' => $ccCvv,
+                        'cpf' => $cpf,
+                        'postal_code' => $postalCode,
+                        'address_number' => $addressNumber,
+                        'phone' => $mobile,
+                        'mobile' => $mobile,
+                    ], $request->ip(), $request->header('user-agent'));
+                } catch (\Throwable $ignore) {
+                    // Don't block signup if gateway fails — user can fix later in /billing/subscription
+                }
             }
 
             return $this->redirect('/');

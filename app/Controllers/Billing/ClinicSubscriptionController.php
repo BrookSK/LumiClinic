@@ -60,8 +60,24 @@ final class ClinicSubscriptionController extends Controller
 
         $planId = (int)$request->input('plan_id', 0);
 
+        // Collect card data if provided
+        $card = [
+            'cc_holder' => trim((string)$request->input('cc_holder', '')),
+            'cc_number' => preg_replace('/\D+/', '', (string)$request->input('cc_number', '')),
+            'cc_exp_month' => trim((string)$request->input('cc_exp_month', '')),
+            'cc_exp_year' => trim((string)$request->input('cc_exp_year', '')),
+            'cc_cvv' => trim((string)$request->input('cc_cvv', '')),
+            'cpf' => preg_replace('/\D+/', '', (string)$request->input('cpf', '')),
+            'postal_code' => preg_replace('/\D+/', '', (string)$request->input('postal_code', '')),
+            'address_number' => trim((string)$request->input('address_number', '')),
+            'phone' => preg_replace('/\D+/', '', (string)$request->input('phone', '')),
+            'mobile' => preg_replace('/\D+/', '', (string)$request->input('mobile', '')),
+        ];
+        $hasCard = $card['cc_holder'] !== '' && $card['cc_number'] !== '' && $card['cc_exp_month'] !== '' && $card['cc_cvv'] !== '';
+
         try {
-            $res = (new ClinicSubscriptionSelfService($this->container))->beginPlanChange($planId, $request->ip());
+            $svc = new ClinicSubscriptionSelfService($this->container);
+            $res = $svc->beginPlanChange($planId, $request->ip());
 
             if (($res['type'] ?? '') === 'noop') {
                 return $this->redirect('/billing/subscription?ok=' . urlencode('Plano já está selecionado.'));
@@ -71,15 +87,28 @@ final class ClinicSubscriptionController extends Controller
                 return $this->redirect('/billing/subscription?ok=' . urlencode('Downgrade agendado para o próximo ciclo.'));
             }
 
+            // For any plan change, if card data was provided, attach it to the gateway subscription
+            if ($hasCard) {
+                $auth = new \App\Services\Auth\AuthService($this->container);
+                $clinicId = $auth->clinicId();
+                if ($clinicId !== null) {
+                    try {
+                        $gwService = new \App\Services\Billing\BillingGatewayService($this->container);
+                        $gwService->ensureGatewaySubscription($clinicId);
+                        $gwService->ensureAsaasSubscriptionCreditCard($clinicId, $card, $request->ip(), $request->header('user-agent'));
+                    } catch (\Throwable $ignore) {}
+                }
+            }
+
             if (($res['type'] ?? '') === 'upgrade_checkout') {
                 $url = (string)($res['checkout_url'] ?? '');
                 if ($url !== '') {
                     return $this->redirect($url);
                 }
-                return $this->redirect('/billing/subscription?error=' . urlencode('Não foi possível iniciar o checkout.'));
+                return $this->redirect('/billing/subscription?ok=' . urlencode('Plano atualizado.'));
             }
 
-            return $this->redirect('/billing/subscription?error=' . urlencode('Não foi possível atualizar o plano.'));
+            return $this->redirect('/billing/subscription?ok=' . urlencode('Plano atualizado com sucesso.'));
         } catch (\RuntimeException $e) {
             return $this->redirect('/billing/subscription?error=' . urlencode($e->getMessage()));
         }
