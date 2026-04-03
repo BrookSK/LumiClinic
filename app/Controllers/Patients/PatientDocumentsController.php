@@ -71,6 +71,16 @@ final class PatientDocumentsController extends Controller
         $size = (int)($file['size'] ?? strlen($bytes));
         $ext = pathinfo($originalName, PATHINFO_EXTENSION) ?: 'bin';
 
+        // Verificar limite de armazenamento
+        $ent = new \App\Services\Billing\PlanEntitlementsService($this->container);
+        $limitBytes = $ent->storageLimitBytes($clinicId);
+        if (is_int($limitBytes)) {
+            $used = $this->sumStorageUsedBytes($clinicId);
+            if (($used + $size) > $limitBytes) {
+                return $this->redirect('/patients/documents?patient_id=' . $patientId . '&error=' . urlencode('Limite de armazenamento do plano atingido.'));
+            }
+        }
+
         $token = bin2hex(random_bytes(12));
         $relative = 'patient_documents/patient_' . $patientId . '/' . date('Ymd') . '_' . $token . '.' . $ext;
         PrivateStorage::put($clinicId, $relative, $bytes);
@@ -114,5 +124,27 @@ final class PatientDocumentsController extends Controller
         (new PatientDocumentRepository($this->container->get(\PDO::class)))->softDelete($clinicId, $id);
 
         return $this->redirect('/patients/documents?patient_id=' . $patientId . '&success=' . urlencode('Documento excluído.'));
+    }
+
+    private function sumStorageUsedBytes(int $clinicId): int
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $sum = 0;
+        $tables = [
+            ['patient_uploads', 'size_bytes'],
+            ['medical_images', 'size_bytes'],
+            ['consultation_attachments', 'size_bytes'],
+            ['medical_record_audio_notes', 'size_bytes'],
+            ['patient_documents', 'size_bytes'],
+        ];
+        foreach ($tables as [$t, $col]) {
+            try {
+                $stmt = $pdo->prepare("SELECT COALESCE(SUM({$col}),0) AS s FROM {$t} WHERE clinic_id = :c AND deleted_at IS NULL");
+                $stmt->execute(['c' => $clinicId]);
+                $r = $stmt->fetch();
+                $sum += (int)($r['s'] ?? 0);
+            } catch (\Throwable $e) {}
+        }
+        return max(0, $sum);
     }
 }
