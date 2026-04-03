@@ -139,6 +139,33 @@ final class ClinicSubscriptionController extends Controller
         }
     }
 
+    public function cancelDowngrade(Request $request)
+    {
+        $this->ensureOwnerOrSuperAdmin();
+
+        $auth = new \App\Services\Auth\AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/billing/subscription?error=' . urlencode('Contexto inválido.'));
+        }
+
+        try {
+            $pdo = $this->container->get(\PDO::class);
+            $pdo->prepare("
+                UPDATE clinic_subscriptions
+                SET pending_plan_id = NULL,
+                    pending_plan_effective_at = NULL,
+                    updated_at = NOW()
+                WHERE clinic_id = :clinic_id
+                LIMIT 1
+            ")->execute(['clinic_id' => $clinicId]);
+
+            return $this->redirect('/billing/subscription?ok=' . urlencode('Downgrade cancelado. Você permanece no plano atual.'));
+        } catch (\Throwable $e) {
+            return $this->redirect('/billing/subscription?error=' . urlencode('Erro ao cancelar downgrade.'));
+        }
+    }
+
     public function ensureGateway(Request $request)
     {
         $this->ensureOwnerOrSuperAdmin();

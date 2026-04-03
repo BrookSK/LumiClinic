@@ -187,6 +187,7 @@ $router->post('/billing/subscription/change-plan', [ClinicSubscriptionController
 $router->get('/billing/subscription/checkout', [ClinicSubscriptionController::class, 'checkout']);
 $router->post('/billing/subscription/checkout', [ClinicSubscriptionController::class, 'checkoutSubmit']);
 $router->post('/billing/subscription/cancel', [ClinicSubscriptionController::class, 'cancel']);
+$router->post('/billing/subscription/cancel-downgrade', [ClinicSubscriptionController::class, 'cancelDowngrade']);
 $router->post('/billing/subscription/ensure-gateway', [ClinicSubscriptionController::class, 'ensureGateway']);
 
 $router->get('/dashboard/clinic', [ClinicDashboardController::class, 'index']);

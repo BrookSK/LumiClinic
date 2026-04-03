@@ -66,6 +66,40 @@ ob_start();
 <?php if (($ok ?? '') !== ''): ?><div class="lc-alert lc-alert--success" style="margin-bottom:14px;"><?= htmlspecialchars((string)$ok, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 <?php if (($error ?? '') !== ''): ?><div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
+<?php
+$pendingPlanId = isset($subscription['pending_plan_id']) && $subscription['pending_plan_id'] !== null ? (int)$subscription['pending_plan_id'] : null;
+$pendingEffectiveAt = trim((string)($subscription['pending_plan_effective_at'] ?? ''));
+$pendingPlanName = '';
+if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
+    foreach ($plans as $_p) {
+        if ((int)($_p['id'] ?? 0) === $pendingPlanId) {
+            $pendingPlanName = trim((string)($_p['name'] ?? $_p['code'] ?? ''));
+            break;
+        }
+    }
+}
+?>
+
+<?php if ($pendingPlanId !== null && $pendingPlanId > 0): ?>
+<div style="padding:14px 16px;border-radius:14px;border:1px solid rgba(238,184,16,.30);background:rgba(253,229,159,.12);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+        <div style="font-weight:700;font-size:13px;color:rgba(129,89,1,1);">📅 Downgrade agendado</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.65);margin-top:4px;">
+            Seu plano será alterado para <span style="font-weight:700;"><?= htmlspecialchars($pendingPlanName !== '' ? $pendingPlanName : 'Plano #' . $pendingPlanId, ENT_QUOTES, 'UTF-8') ?></span>
+            <?php if ($pendingEffectiveAt !== ''): ?>
+                em <span style="font-weight:700;"><?= htmlspecialchars($fmt($pendingEffectiveAt), ENT_QUOTES, 'UTF-8') ?></span> (próximo ciclo de cobrança).
+            <?php else: ?>
+                no próximo ciclo de cobrança.
+            <?php endif; ?>
+        </div>
+    </div>
+    <form method="post" action="/billing/subscription/cancel-downgrade" style="margin:0;" onsubmit="return confirm('Cancelar o downgrade e permanecer no plano atual?');">
+        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+        <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Cancelar downgrade</button>
+    </form>
+</div>
+<?php endif; ?>
+
 <!-- Resumo -->
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;">
     <div style="padding:18px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);">
@@ -126,7 +160,7 @@ ob_start();
                     Pacientes: <?= (int)($limits['patients'] ?? 0) > 0 ? (int)$limits['patients'] : 'Ilimitado' ?>
                 </div>
                 <?php if ($isOwner && !$isCurrent): ?>
-                    <form method="post" action="/billing/subscription/change-plan" style="margin-top:10px;">
+                    <form method="post" action="/billing/subscription/change-plan" style="margin-top:10px;" onsubmit="return confirm('Tem certeza que deseja alterar para o plano <?= htmlspecialchars($pName, ENT_QUOTES, 'UTF-8') ?> (<?= $fmtMoney($pCents) ?>/mês)?\n\nSe for um downgrade, a mudança será aplicada no próximo ciclo de cobrança.\nSe for um upgrade, será cobrado imediatamente.');">
                         <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                         <input type="hidden" name="plan_id" value="<?= $pid ?>" />
                         <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit" style="width:100%;justify-content:center;">Selecionar</button>
