@@ -124,6 +124,7 @@ final class AsaasClient
             ];
             $payload['creditCardHolderInfo'] = [
                 'name' => trim((string)($card['cc_holder'] ?? '')),
+                'email' => trim((string)($card['email'] ?? '')),
                 'cpfCnpj' => preg_replace('/\D+/', '', (string)($card['cpf'] ?? '')),
                 'postalCode' => preg_replace('/\D+/', '', (string)($card['postal_code'] ?? '')),
                 'addressNumber' => trim((string)($card['address_number'] ?? '')),

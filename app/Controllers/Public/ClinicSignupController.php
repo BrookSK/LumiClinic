@@ -127,19 +127,27 @@ final class ClinicSignupController extends Controller
                 : null;
 
             // Create subscription with the correct plan from the start
+            $now = new \DateTimeImmutable('now');
+            $periodStart = $now->format('Y-m-d H:i:s');
+            $periodEnd = $now->modify('+1 month')->format('Y-m-d H:i:s');
+
             $pdo->prepare("
-                INSERT INTO clinic_subscriptions (clinic_id, plan_id, status, trial_ends_at, created_at)
-                VALUES (:clinic_id, :plan_id, :status, :trial_ends_at, NOW())
+                INSERT INTO clinic_subscriptions (clinic_id, plan_id, status, trial_ends_at, current_period_start, current_period_end, created_at)
+                VALUES (:clinic_id, :plan_id, :status, :trial_ends_at, :period_start, :period_end, NOW())
                 ON DUPLICATE KEY UPDATE
                     plan_id = VALUES(plan_id),
                     status = VALUES(status),
                     trial_ends_at = VALUES(trial_ends_at),
+                    current_period_start = VALUES(current_period_start),
+                    current_period_end = VALUES(current_period_end),
                     updated_at = NOW()
             ")->execute([
                 'clinic_id' => (int)$result['clinic_id'],
                 'plan_id' => $planId,
                 'status' => $subStatus,
                 'trial_ends_at' => $trialEndsAt,
+                'period_start' => $periodStart,
+                'period_end' => $subStatus === 'trial' ? $trialEndsAt : $periodEnd,
             ]);
 
             // Send welcome email (best effort)
@@ -173,6 +181,7 @@ final class ClinicSignupController extends Controller
                         'cc_exp_year' => $ccExpYear,
                         'cc_cvv' => $ccCvv,
                         'cpf' => $cpf,
+                        'email' => $ownerEmail,
                         'postal_code' => $postalCode,
                         'address_number' => $addressNumber,
                         'phone' => $mobile,
@@ -183,9 +192,11 @@ final class ClinicSignupController extends Controller
                     $gwService->ensureGatewaySubscription((int)$result['clinic_id'], $cardData);
                 } catch (\Throwable $gwEx) {
                     $gatewayError = $gwEx->getMessage();
-                    // Log to system error log
                     error_log('[Signup Gateway Error] clinic_id=' . $result['clinic_id'] . ' plan=' . $selectedPlan . ' error=' . $gatewayError);
                 }
+            } else {
+                // Card fields not filled — log what arrived
+                error_log('[Signup Card Missing] cc_holder=' . ($ccHolder !== '' ? 'ok' : 'empty') . ' cc_number=' . ($ccNumber !== '' ? 'ok' : 'empty') . ' cc_exp_month=' . ($ccExpMonth !== '' ? 'ok' : 'empty') . ' cc_cvv=' . ($ccCvv !== '' ? 'ok' : 'empty'));
             }
 
             return $this->redirect('/');
