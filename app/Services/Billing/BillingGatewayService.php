@@ -190,6 +190,10 @@ final class BillingGatewayService
 
         $provider = (string)($sub['gateway_provider'] ?? '');
         if ($provider === '') {
+            $settings = new \App\Services\System\SystemSettingsService($this->container);
+            $provider = trim((string)($settings->getText('billing.active_gateway') ?? ''));
+        }
+        if ($provider === '') {
             $provider = 'asaas';
         }
 
@@ -218,7 +222,11 @@ final class BillingGatewayService
         $client = new AsaasClient($this->container);
 
         if ($customerId === '') {
-            $customer = $client->createCustomer($clinicName, null);
+            // Get clinic email for customer creation
+            $clinicRow = (new ClinicRepository($pdo))->findById($clinicId);
+            $email = isset($clinicRow['contact_email']) ? trim((string)$clinicRow['contact_email']) : null;
+
+            $customer = $client->createCustomer($clinicName, $email ?: null);
             $customerId = isset($customer['id']) ? (string)$customer['id'] : '';
         }
 

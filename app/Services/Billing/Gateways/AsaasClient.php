@@ -13,7 +13,7 @@ final class AsaasClient
     public function __construct(private readonly Container $container) {}
 
     /** @return array<string,mixed> */
-    public function createCustomer(string $name, ?string $email = null): array
+    public function createCustomer(string $name, ?string $email = null, ?string $cpfCnpj = null): array
     {
         $cfg = $this->container->get('config');
         $settings = new SystemSettingsService($this->container);
@@ -22,12 +22,15 @@ final class AsaasClient
         $baseUrl = rtrim((string)$baseUrl, '/');
 
         if ($baseUrl === '' || $apiKey === '') {
-            throw new \RuntimeException('Asaas não configurado (ASAAS_BASE_URL/ASAAS_API_KEY).');
+            throw new \RuntimeException('Asaas não configurado. Verifique Base URL e API Key em Configurações → Assinatura.');
         }
 
         $payload = ['name' => $name];
         if ($email !== null && trim($email) !== '') {
             $payload['email'] = $email;
+        }
+        if ($cpfCnpj !== null && trim($cpfCnpj) !== '') {
+            $payload['cpfCnpj'] = preg_replace('/\D+/', '', $cpfCnpj);
         }
 
         $http = new HttpClient();

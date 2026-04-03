@@ -103,9 +103,9 @@ final class SystemBillingAdminController extends Controller
 
         try {
             (new SystemBillingService($this->container))->ensureGateway($clinicId, $request->ip());
-            return $this->redirect('/sys/billing');
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&ok=' . urlencode('Gateway sincronizado com sucesso.'));
         } catch (\RuntimeException $e) {
-            return $this->redirect('/sys/billing?error=' . urlencode($e->getMessage()));
+            return $this->redirect('/sys/billing/view?clinic_id=' . $clinicId . '&error=' . urlencode($e->getMessage()));
         }
     }
 
