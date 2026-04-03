@@ -91,7 +91,7 @@ final class AsaasClient
     }
 
     /** @return array<string,mixed> */
-    public function createSubscription(string $customerId, float $value, string $billingType = 'BOLETO', ?string $description = null): array
+    public function createSubscription(string $customerId, float $value, string $billingType = 'BOLETO', ?string $description = null, ?array $card = null): array
     {
         $cfg = $this->container->get('config');
         $settings = new SystemSettingsService($this->container);
@@ -111,6 +111,28 @@ final class AsaasClient
         ];
         if ($description !== null && trim($description) !== '') {
             $payload['description'] = $description;
+        }
+
+        // Attach credit card data if provided (required for CREDIT_CARD billing type)
+        if ($card !== null && !empty($card['cc_number'])) {
+            $payload['creditCard'] = [
+                'holderName' => trim((string)($card['cc_holder'] ?? '')),
+                'number' => preg_replace('/\D+/', '', (string)($card['cc_number'] ?? '')),
+                'expiryMonth' => preg_replace('/\D+/', '', (string)($card['cc_exp_month'] ?? '')),
+                'expiryYear' => preg_replace('/\D+/', '', (string)($card['cc_exp_year'] ?? '')),
+                'ccv' => preg_replace('/\D+/', '', (string)($card['cc_cvv'] ?? '')),
+            ];
+            $payload['creditCardHolderInfo'] = [
+                'name' => trim((string)($card['cc_holder'] ?? '')),
+                'cpfCnpj' => preg_replace('/\D+/', '', (string)($card['cpf'] ?? '')),
+                'postalCode' => preg_replace('/\D+/', '', (string)($card['postal_code'] ?? '')),
+                'addressNumber' => trim((string)($card['address_number'] ?? '')),
+                'phone' => !empty($card['phone']) ? preg_replace('/\D+/', '', (string)$card['phone']) : null,
+                'mobilePhone' => !empty($card['mobile']) ? preg_replace('/\D+/', '', (string)$card['mobile']) : null,
+            ];
+            if (!empty($card['remote_ip'])) {
+                $payload['remoteIp'] = $card['remote_ip'];
+            }
         }
 
         $http = new HttpClient();

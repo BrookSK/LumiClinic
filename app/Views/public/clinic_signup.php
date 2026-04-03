@@ -122,8 +122,8 @@ foreach ($plans as $p) {
                     $pName = (string)($p['name'] ?? '');
                     $isFree = $price === 0;
                 ?>
-                <label class="su-plan" onclick="selectPlan(this)">
-                    <input type="radio" name="plan" value="<?= $e($code) ?>" />
+                <label class="su-plan" id="planLabel_<?= $e($code) ?>">
+                    <input type="radio" name="plan" value="<?= $e($code) ?>" onchange="selectPlan('<?= $e($code) ?>')" />
                     <div class="su-plan__name"><?= $e($pName) ?></div>
                     <?php if ($isFree): ?>
                         <div class="su-plan__price">Grátis</div>
@@ -174,10 +174,10 @@ function suToggleDoc() {
     document.getElementById('suDocLabel').textContent = cn ? 'CNPJ' : 'CPF';
     document.getElementById('suDocInput').placeholder = cn ? '00.000.000/0000-00' : '000.000.000-00';
 }
-function selectPlan(el) {
+function selectPlan(code) {
     document.querySelectorAll('.su-plan').forEach(function(p) { p.classList.remove('selected'); });
-    el.classList.add('selected');
-    el.querySelector('input').checked = true;
+    var lbl = document.getElementById('planLabel_' + code);
+    if (lbl) lbl.classList.add('selected');
 }
 document.getElementById('suDocInput').addEventListener('input', function() {
     suMask(this, document.getElementById('su_cnpj').checked ? '00.000.000/0000-00' : '000.000.000-00');

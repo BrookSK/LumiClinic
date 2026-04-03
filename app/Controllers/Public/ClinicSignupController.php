@@ -157,11 +157,7 @@ final class ClinicSignupController extends Controller
 
             if ($ccHolder !== '' && $ccNumber !== '' && $ccExpMonth !== '' && $ccExpYear !== '' && $ccCvv !== '') {
                 try {
-                    $gwService = new \App\Services\Billing\BillingGatewayService($this->container);
-                    // First ensure the gateway subscription exists (creates customer + subscription)
-                    $gwService->ensureGatewaySubscription((int)$result['clinic_id']);
-                    // Then attach the credit card
-                    $gwService->ensureAsaasSubscriptionCreditCard((int)$result['clinic_id'], [
+                    $cardData = [
                         'cc_holder' => $ccHolder,
                         'cc_number' => $ccNumber,
                         'cc_exp_month' => $ccExpMonth,
@@ -172,7 +168,11 @@ final class ClinicSignupController extends Controller
                         'address_number' => $addressNumber,
                         'phone' => $mobile,
                         'mobile' => $mobile,
-                    ], $request->ip(), $request->header('user-agent'));
+                        'remote_ip' => $request->ip(),
+                    ];
+                    $gwService = new \App\Services\Billing\BillingGatewayService($this->container);
+                    // Create customer + subscription with card in one shot
+                    $gwService->ensureGatewaySubscription((int)$result['clinic_id'], $cardData);
                 } catch (\Throwable $ignore) {
                     // Don't block signup if gateway fails — user can fix later in /billing/subscription
                 }

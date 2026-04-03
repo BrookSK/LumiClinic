@@ -168,7 +168,7 @@ final class BillingGatewayService
      * Cria (se necessário) customer + subscription no gateway e grava IDs em clinic_subscriptions.
      * Por padrão usa Asaas (cobrança centralizada por clínica).
      */
-    public function ensureGatewaySubscription(int $clinicId): void
+    public function ensureGatewaySubscription(int $clinicId, ?array $card = null): void
     {
         $pdo = $this->container->get(\PDO::class);
 
@@ -200,7 +200,7 @@ final class BillingGatewayService
         $planName = $plan !== null ? trim((string)($plan['name'] ?? '')) : null;
 
         if ($provider === 'asaas') {
-            $this->ensureAsaas($clinicId, (string)$clinic['name'], $amount, $sub, $planName ?: null);
+            $this->ensureAsaas($clinicId, (string)$clinic['name'], $amount, $sub, $planName ?: null, $card);
             return;
         }
 
@@ -213,7 +213,7 @@ final class BillingGatewayService
     }
 
     /** @param array<string,mixed> $sub */
-    private function ensureAsaas(int $clinicId, string $clinicName, float $amount, array $sub, ?string $planName = null): void
+    private function ensureAsaas(int $clinicId, string $clinicName, float $amount, array $sub, ?string $planName = null, ?array $card = null): void
     {
         $pdo = $this->container->get(\PDO::class);
         $subsRepo = new ClinicSubscriptionRepository($pdo);
@@ -260,7 +260,7 @@ final class BillingGatewayService
 
         if ($subscriptionId === '') {
             $description = $planName ? 'Plano ' . $planName : null;
-            $created = $client->createSubscription($customerId, $amount, 'CREDIT_CARD', $description);
+            $created = $client->createSubscription($customerId, $amount, 'CREDIT_CARD', $description, $card);
             $subscriptionId = isset($created['id']) ? (string)$created['id'] : '';
         }
 
