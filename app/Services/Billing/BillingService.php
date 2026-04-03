@@ -57,12 +57,11 @@ final class BillingService
                 }
             }
 
-            // Período expirado (current_period_end já passou) — dá 3 dias de carência
+            // Período expirado (current_period_end já passou)
             $periodEnd = $subscription['current_period_end'] ?? null;
             if ($periodEnd !== null && (string)$periodEnd !== '') {
                 $ends = new \DateTimeImmutable((string)$periodEnd);
-                $grace = $ends->modify('+3 days');
-                if ($grace < $now) {
+                if ($ends < $now) {
                     return true;
                 }
             }
