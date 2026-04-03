@@ -21,8 +21,15 @@ final class HttpClient
         $method = strtoupper(trim($method));
 
         $curlHeaders = [];
+        $hasUserAgent = false;
         foreach ($headers as $k => $v) {
             $curlHeaders[] = $k . ': ' . $v;
+            if (strtolower($k) === 'user-agent') {
+                $hasUserAgent = true;
+            }
+        }
+        if (!$hasUserAgent) {
+            $curlHeaders[] = 'User-Agent: LumiClinic/1.0';
         }
 
         $body = null;
