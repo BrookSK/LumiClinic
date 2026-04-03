@@ -8,6 +8,7 @@ $clinicId = is_array($clinic) ? (int)($clinic['id'] ?? 0) : 0;
 $name = is_array($clinic) ? (string)($clinic['name'] ?? '') : '';
 $tenantKey = is_array($clinic) ? (string)($clinic['tenant_key'] ?? '') : '';
 $primaryDomain = is_array($clinic) ? (string)($clinic['primary_domain'] ?? '') : '';
+$cnpj = is_array($clinic) ? (string)($clinic['cnpj'] ?? '') : '';
 $status = is_array($clinic) ? (string)($clinic['status'] ?? '') : '';
 $createdAt = is_array($clinic) ? (string)($clinic['created_at'] ?? '') : '';
 
@@ -54,6 +55,12 @@ ob_start();
         <div class="lc-field">
             <label class="lc-label">Nome</label>
             <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>" required />
+        </div>
+
+        <div class="lc-field" style="margin-top:12px;">
+            <label class="lc-label">CNPJ / CPF</label>
+            <input class="lc-input" type="text" name="cnpj" value="<?= htmlspecialchars($cnpj, ENT_QUOTES, 'UTF-8') ?>" placeholder="00.000.000/0000-00" />
+            <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Necessário para integração com gateways de pagamento (Asaas).</div>
         </div>
 
         <div style="margin-top:14px;">

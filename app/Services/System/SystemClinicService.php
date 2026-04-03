@@ -122,7 +122,7 @@ final class SystemClinicService
         return (new SystemClinicRepository($this->container->get(\PDO::class)))->findById($clinicId);
     }
 
-    public function updateClinic(int $clinicId, string $name, ?string $tenantKey, ?string $primaryDomain, string $ip): void
+    public function updateClinic(int $clinicId, string $name, ?string $tenantKey, ?string $primaryDomain, string $ip, ?string $cnpj = null): void
     {
         $pdo = $this->container->get(\PDO::class);
         $pdo->beginTransaction();
@@ -130,6 +130,13 @@ final class SystemClinicService
         try {
             $repo = new SystemClinicRepository($pdo);
             $repo->updateClinic($clinicId, $name, $tenantKey);
+
+            // Update CNPJ
+            if ($cnpj !== null) {
+                $cnpjClean = preg_replace('/\D+/', '', $cnpj);
+                $stmt = $pdo->prepare('UPDATE clinics SET cnpj = ? WHERE id = ?');
+                $stmt->execute([$cnpjClean !== '' ? $cnpjClean : null, $clinicId]);
+            }
 
             $primaryDomain = $primaryDomain !== null ? strtolower(trim($primaryDomain)) : null;
             if ($primaryDomain === '') {

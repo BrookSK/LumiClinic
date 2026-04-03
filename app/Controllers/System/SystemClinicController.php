@@ -114,6 +114,7 @@ final class SystemClinicController extends Controller
         $name = trim((string)$request->input('name', ''));
         $tenantKey = trim((string)$request->input('tenant_key', ''));
         $primaryDomain = trim((string)$request->input('primary_domain', ''));
+        $cnpj = trim((string)$request->input('cnpj', ''));
 
         if ($name === '') {
             $service = new SystemClinicService($this->container);
@@ -130,7 +131,8 @@ final class SystemClinicController extends Controller
                 $name,
                 ($tenantKey === '' ? null : $tenantKey),
                 ($primaryDomain === '' ? null : $primaryDomain),
-                $request->ip()
+                $request->ip(),
+                ($cnpj === '' ? null : $cnpj)
             );
             return $this->redirect('/sys/clinics/edit?id=' . $id);
         } catch (\RuntimeException $e) {

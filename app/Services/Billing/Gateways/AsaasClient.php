@@ -40,9 +40,16 @@ final class AsaasClient
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
             $msg = 'Falha ao criar customer no Asaas.';
-            if (is_array($resp['json']) && isset($resp['json']['errors']) && is_array($resp['json']['errors'])) {
+
+            // Try to extract error details from JSON response
+            $jsonResp = $resp['json'];
+            if ($jsonResp === null && !empty($resp['body'])) {
+                $jsonResp = json_decode((string)$resp['body'], true);
+            }
+
+            if (is_array($jsonResp) && isset($jsonResp['errors']) && is_array($jsonResp['errors'])) {
                 $parts = [];
-                foreach ($resp['json']['errors'] as $e) {
+                foreach ($jsonResp['errors'] as $e) {
                     if (is_array($e)) {
                         $desc = trim((string)($e['description'] ?? ''));
                         $code = trim((string)($e['code'] ?? ''));
@@ -56,7 +63,13 @@ final class AsaasClient
                 if ($parts !== []) {
                     $msg .= ' ' . implode(' | ', array_slice($parts, 0, 4));
                 }
+            } elseif (!empty($resp['body'])) {
+                $bodySnippet = mb_substr(trim((string)$resp['body']), 0, 200, 'UTF-8');
+                if ($bodySnippet !== '') {
+                    $msg .= ' (HTTP ' . $resp['status'] . ': ' . $bodySnippet . ')';
+                }
             }
+
             throw new \RuntimeException($msg);
         }
 

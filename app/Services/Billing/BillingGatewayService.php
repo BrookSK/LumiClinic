@@ -222,11 +222,12 @@ final class BillingGatewayService
         $client = new AsaasClient($this->container);
 
         if ($customerId === '') {
-            // Get clinic email for customer creation
+            // Get clinic email and cnpj for customer creation
             $clinicRow = (new ClinicRepository($pdo))->findById($clinicId);
             $email = isset($clinicRow['contact_email']) ? trim((string)$clinicRow['contact_email']) : null;
+            $cnpj = isset($clinicRow['cnpj']) ? trim((string)$clinicRow['cnpj']) : null;
 
-            $customer = $client->createCustomer($clinicName, $email ?: null);
+            $customer = $client->createCustomer($clinicName, $email ?: null, $cnpj ?: null);
             $customerId = isset($customer['id']) ? (string)$customer['id'] : '';
         }
 
