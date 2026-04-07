@@ -197,43 +197,38 @@ final class DashboardController extends Controller
     {
         $pdo = $this->container->get(\PDO::class);
 
-        // Total clinics
-        $totalClinics = (int)$pdo->query("SELECT COUNT(*) FROM clinics WHERE deleted_at IS NULL")->fetchColumn();
-        $activeClinics = (int)$pdo->query("SELECT COUNT(*) FROM clinics WHERE status = 'active' AND deleted_at IS NULL")->fetchColumn();
+        try {
+            $totalClinics = (int)$pdo->query("SELECT COUNT(*) FROM clinics WHERE deleted_at IS NULL")->fetchColumn();
+            $activeClinics = (int)$pdo->query("SELECT COUNT(*) FROM clinics WHERE status = 'active' AND deleted_at IS NULL")->fetchColumn();
+        } catch (\Throwable $e) { $totalClinics = 0; $activeClinics = 0; }
 
-        // Subscriptions by status
-        $subStmt = $pdo->query("SELECT status, COUNT(*) AS cnt FROM clinic_subscriptions GROUP BY status");
         $subsByStatus = [];
-        foreach ($subStmt->fetchAll() as $r) {
-            $subsByStatus[(string)$r['status']] = (int)$r['cnt'];
-        }
+        try {
+            $subStmt = $pdo->query("SELECT status, COUNT(*) AS cnt FROM clinic_subscriptions GROUP BY status");
+            foreach ($subStmt->fetchAll() as $r) {
+                $subsByStatus[(string)$r['status']] = (int)$r['cnt'];
+            }
+        } catch (\Throwable $e) {}
 
-        // Total users
-        $totalUsers = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL")->fetchColumn();
+        try { $totalUsers = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL")->fetchColumn(); } catch (\Throwable $e) { $totalUsers = 0; }
+        try { $totalPatients = (int)$pdo->query("SELECT COUNT(*) FROM patients WHERE deleted_at IS NULL")->fetchColumn(); } catch (\Throwable $e) { $totalPatients = 0; }
+        try { $todayAppts = (int)$pdo->query("SELECT COUNT(*) FROM appointments WHERE deleted_at IS NULL AND DATE(start_at) = CURDATE()")->fetchColumn(); } catch (\Throwable $e) { $todayAppts = 0; }
+        try { $queuePending = (int)$pdo->query("SELECT COUNT(*) FROM queue_jobs WHERE status = 'pending'")->fetchColumn(); } catch (\Throwable $e) { $queuePending = 0; }
+        try { $queueDead = (int)$pdo->query("SELECT COUNT(*) FROM queue_jobs WHERE status = 'dead'")->fetchColumn(); } catch (\Throwable $e) { $queueDead = 0; }
+        try { $recentErrors = (int)$pdo->query("SELECT COUNT(*) FROM system_error_logs WHERE created_at >= NOW() - INTERVAL 24 HOUR")->fetchColumn(); } catch (\Throwable $e) { $recentErrors = 0; }
 
-        // Total patients across all clinics
-        $totalPatients = (int)$pdo->query("SELECT COUNT(*) FROM patients WHERE deleted_at IS NULL")->fetchColumn();
+        $recentClinics = [];
+        try { $recentClinics = $pdo->query("SELECT id, name, status, created_at FROM clinics WHERE deleted_at IS NULL ORDER BY id DESC LIMIT 5")->fetchAll(); } catch (\Throwable $e) {}
 
-        // Appointments today across all clinics
-        $todayAppts = (int)$pdo->query("SELECT COUNT(*) FROM appointments WHERE deleted_at IS NULL AND DATE(start_at) = CURDATE()")->fetchColumn();
-
-        // Queue stats
-        $queuePending = (int)$pdo->query("SELECT COUNT(*) FROM queue_jobs WHERE status = 'pending'")->fetchColumn();
-        $queueDead = (int)$pdo->query("SELECT COUNT(*) FROM queue_jobs WHERE status = 'dead'")->fetchColumn();
-
-        // Recent errors (last 24h)
-        $recentErrors = (int)$pdo->query("SELECT COUNT(*) FROM system_error_logs WHERE created_at >= NOW() - INTERVAL 24 HOUR")->fetchColumn();
-
-        // Recent clinics (last 5 created)
-        $recentClinics = $pdo->query("SELECT id, name, status, created_at FROM clinics WHERE deleted_at IS NULL ORDER BY id DESC LIMIT 5")->fetchAll();
-
-        // MRR (Monthly Recurring Revenue)
-        $mrr = (float)$pdo->query("
-            SELECT COALESCE(SUM(p.price_cents), 0) / 100
-            FROM clinic_subscriptions cs
-            JOIN saas_plans p ON p.id = cs.plan_id
-            WHERE cs.status IN ('active', 'trial')
-        ")->fetchColumn();
+        $mrr = 0.0;
+        try {
+            $mrr = (float)$pdo->query("
+                SELECT COALESCE(SUM(p.price_cents), 0) / 100
+                FROM clinic_subscriptions cs
+                JOIN saas_plans p ON p.id = cs.plan_id
+                WHERE cs.status IN ('active', 'trial')
+            ")->fetchColumn();
+        } catch (\Throwable $e) {}
 
         return $this->view('dashboard/admin', [
             'total_clinics' => $totalClinics,

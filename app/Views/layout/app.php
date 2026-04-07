@@ -162,6 +162,7 @@ $ico = [
 
         <nav class="lc-nav">
             <?php if ($isSuperAdmin): ?>
+                <?= $navItem('/', 'Dashboard', $ico['dashboard'], $isActive('/') && !$isActive('/sys')) ?>
                 <?= $navItem('/sys/clinics', 'Clínicas', $ico['sys'], $isActive('/sys/clinics')) ?>
                 <?= $navItem('/sys/billing', 'Assinaturas', $ico['finance'], $isActive('/sys/billing')) ?>
                 <?= $navItem('/sys/plans', 'Planos', $ico['finance'], $isActive('/sys/plans')) ?>
