@@ -91,7 +91,7 @@ body.lc-shell--collapsed .lc-nav__item{padding:10px 10px;justify-content:center}
 body.lc-shell--collapsed .lc-nav__label{display:none}
 body.lc-shell--collapsed .lc-sidebar__footer{display:none}
 
-.lc-main{flex:1;display:flex;flex-direction:column}
+.lc-main{flex:1;display:flex;flex-direction:column;overflow:auto;min-height:0}
 
 .lc-header{
     padding:18px 28px;
