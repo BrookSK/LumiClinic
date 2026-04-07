@@ -578,7 +578,7 @@ $ico = [
     </main>
 </div>
 
-<?php if ($requiredLegalDocs !== [] && !str_starts_with($path, '/legal/sign')): ?>
+<?php if ($requiredLegalDocs !== [] && !str_starts_with($path, '/legal/sign') && !$isSuperAdmin): ?>
     <style>
         .lc-modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; display:flex; align-items:center; justify-content:center; padding:18px;}
         .lc-req-modal{width:100%; max-width:820px; background:#fff; border-radius:14px; box-shadow:0 16px 50px rgba(0,0,0,.35); overflow:hidden;}
