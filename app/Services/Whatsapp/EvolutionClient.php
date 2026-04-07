@@ -175,6 +175,11 @@ final class EvolutionClient
             throw new \RuntimeException('Telefone inválido.');
         }
 
+        // Ensure country code 55 (Brazil) is present
+        if (strlen($phoneDigits) <= 11 && !str_starts_with($phoneDigits, '55')) {
+            $phoneDigits = '55' . $phoneDigits;
+        }
+
         $url = $this->baseUrl() . '/message/sendText/' . rawurlencode(trim($instance));
 
         $http = new HttpClient();
@@ -184,7 +189,23 @@ final class EvolutionClient
         ], $timeoutSeconds);
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
-            throw new \RuntimeException('Falha ao enviar WhatsApp via Evolution API.');
+            $body = trim((string)($resp['body'] ?? ''));
+            $detail = '';
+            if ($body !== '') {
+                $decoded = json_decode($body, true);
+                if (is_array($decoded) && isset($decoded['message'])) {
+                    $detail = is_array($decoded['message']) ? implode('; ', $decoded['message']) : (string)$decoded['message'];
+                } elseif (is_array($decoded) && isset($decoded['error'])) {
+                    $detail = (string)$decoded['error'];
+                } else {
+                    $detail = mb_substr($body, 0, 200, 'UTF-8');
+                }
+            }
+            $msg = 'Falha ao enviar WhatsApp via Evolution API (HTTP ' . $resp['status'] . ')';
+            if ($detail !== '') {
+                $msg .= ': ' . $detail;
+            }
+            throw new \RuntimeException($msg);
         }
 
         $json = $resp['json'];

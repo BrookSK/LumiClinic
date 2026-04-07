@@ -35,3 +35,6 @@ Transcricao_Reuniao*.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Arquivos de explicações do sistema
+docs/Portal_do_Paciente.md
