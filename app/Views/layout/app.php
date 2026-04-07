@@ -572,7 +572,7 @@ $ico = [
             </div>
         </header>
 
-        <section class="lc-content">
+        <section class="lc-content" style="display:block;visibility:visible;height:auto;overflow:visible;min-height:200px;">
             <?= $content ?>
         </section>
     </main>
