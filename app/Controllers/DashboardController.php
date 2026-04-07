@@ -35,9 +35,9 @@ final class DashboardController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
 
-        // Super admin without clinic context → show admin dashboard
+        // Super admin → always show admin dashboard
         $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
-        if ($isSuperAdmin && $clinicId === null) {
+        if ($isSuperAdmin) {
             return $this->renderAdminDashboard();
         }
 
