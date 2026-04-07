@@ -610,6 +610,8 @@ $router->post('/consent/accept', [ConsentController::class, 'submit']);
 $router->get('/consent/export', [ConsentController::class, 'export']);
 $router->get('/signatures/file', [ConsentController::class, 'signatureFile']);
 
+$router->get('/sys/dashboard', [\App\Controllers\Dashboard\SystemDashboardController::class, 'index']);
+
 $router->get('/sys/clinics', [SystemClinicController::class, 'index']);
 $router->get('/sys/clinics/create', [SystemClinicController::class, 'create']);
 $router->post('/sys/clinics/create', [SystemClinicController::class, 'store']);

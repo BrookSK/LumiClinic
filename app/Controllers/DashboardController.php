@@ -38,7 +38,7 @@ final class DashboardController extends Controller
         // Super admin → always show admin dashboard
         $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
         if ($isSuperAdmin) {
-            return $this->renderAdminDashboard();
+            return $this->redirect('/sys/dashboard');
         }
 
         $data = [
