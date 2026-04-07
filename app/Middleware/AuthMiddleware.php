@@ -52,7 +52,10 @@ final class AuthMiddleware implements MiddlewareInterface
 
         if ($auth->userId() === null) {
             $uri = (string)($_SERVER['REQUEST_URI'] ?? '/');
-            if ($uri !== '' && $uri !== '/login' && $uri !== '/choose-access') {
+            // Don't save JSON/API endpoints as redirect target
+            if ($uri !== '' && $uri !== '/login' && $uri !== '/choose-access'
+                && !str_contains($uri, '-json') && !str_contains($uri, '.json')
+                && !str_starts_with($uri, '/api/')) {
                 $_SESSION['auth_next'] = $uri;
             }
             return Response::redirect('/login');
