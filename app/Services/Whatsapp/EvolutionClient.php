@@ -183,10 +183,34 @@ final class EvolutionClient
         $url = $this->baseUrl() . '/message/sendText/' . rawurlencode(trim($instance));
 
         $http = new HttpClient();
-        $resp = $http->request('POST', $url, ['apikey' => $apiKey], [
+
+        // Try v2 format first, fall back to v1 format
+        $payload = [
             'number' => $phoneDigits,
             'text' => $message,
-        ], $timeoutSeconds);
+        ];
+
+        $resp = $http->request('POST', $url, ['apikey' => $apiKey], $payload, $timeoutSeconds);
+
+        // If v2 format fails with 400, try v1 format with textMessage
+        if ($resp['status'] === 400) {
+            $payloadV1 = [
+                'number' => $phoneDigits,
+                'textMessage' => ['text' => $message],
+            ];
+            $resp = $http->request('POST', $url, ['apikey' => $apiKey], $payloadV1, $timeoutSeconds);
+        }
+
+        // If both fail, try the /message/sendText endpoint without instance in URL (some versions)
+        if ($resp['status'] === 400 || $resp['status'] === 404) {
+            $urlAlt = $this->baseUrl() . '/message/sendText';
+            $payloadAlt = [
+                'number' => $phoneDigits,
+                'text' => $message,
+                'instanceName' => trim($instance),
+            ];
+            $resp = $http->request('POST', $urlAlt, ['apikey' => $apiKey], $payloadAlt, $timeoutSeconds);
+        }
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
             $body = trim((string)($resp['body'] ?? ''));
@@ -205,6 +229,7 @@ final class EvolutionClient
             if ($detail !== '') {
                 $msg .= ': ' . $detail;
             }
+            error_log('[Evolution API Error] URL=' . $url . ' phone=' . $phoneDigits . ' status=' . $resp['status'] . ' body=' . mb_substr($body, 0, 500, 'UTF-8'));
             throw new \RuntimeException($msg);
         }
 
