@@ -23,12 +23,18 @@ ob_start();
 
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
     <div>
-        <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">Procedimentos</div>
-        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Procedimentos são tipos de atendimento que podem ser vinculados a serviços para rastrear custos e duração.</div>
+        <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">Protocolos Clínicos</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Documente protocolos clínicos detalhados com contraindicações, orientações e etapas.</div>
     </div>
     <?php if ($can('procedures.manage')): ?>
         <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" onclick="var f=document.getElementById('newProcForm');f.style.display=f.style.display==='none'?'block':'none';">+ Novo procedimento</button>
     <?php endif; ?>
+</div>
+
+<div style="padding:12px 16px;border-radius:10px;background:rgba(99,102,241,.04);border:1px solid rgba(99,102,241,.12);margin-bottom:16px;font-size:12px;color:rgba(31,41,55,.60);line-height:1.6;">
+    💡 <strong>Protocolo Clínico</strong> documenta o passo a passo do atendimento — contraindicações, orientações pré/pós e etapas. É exibido ao profissional durante a consulta quando vinculado a um serviço.
+    Para cadastrar o que aparece na agenda e nas vendas (com duração e preço), use <a href="/services" style="color:rgba(99,102,241,.7);font-weight:600;">Serviços</a>.
+    Vincule um protocolo a um serviço para o profissional consultar durante o atendimento.
 </div>
 
 <?php if ($error !== ''): ?>

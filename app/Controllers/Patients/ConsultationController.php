@@ -48,12 +48,47 @@ final class ConsultationController extends Controller
             $patientId = (int)($data['appointment']['patient_id'] ?? 0);
             $patient = $patientId > 0 ? (new PatientService($this->container))->get($patientId, $request->ip()) : null;
 
+            // Load clinical protocol if service has a linked procedure
+            $protocol = null;
+            $serviceId = (int)($data['appointment']['service_id'] ?? 0);
+            if ($serviceId > 0) {
+                $pdo = $this->container->get(\PDO::class);
+                $auth = new AuthService($this->container);
+                $clinicId = $auth->clinicId();
+                if ($clinicId !== null) {
+                    // Find procedure linked to this service
+                    $svcRow = $pdo->prepare("SELECT procedure_id FROM services WHERE id = ? AND clinic_id = ? AND deleted_at IS NULL LIMIT 1");
+                    $svcRow->execute([$serviceId, $clinicId]);
+                    $svcData = $svcRow->fetch(\PDO::FETCH_ASSOC);
+                    $procId = $svcData ? (int)($svcData['procedure_id'] ?? 0) : 0;
+                    if ($procId > 0) {
+                        $procRow = $pdo->prepare("SELECT * FROM procedures WHERE id = ? AND clinic_id = ? AND deleted_at IS NULL LIMIT 1");
+                        $procRow->execute([$procId, $clinicId]);
+                        $procData = $procRow->fetch(\PDO::FETCH_ASSOC);
+                        if ($procData) {
+                            // Load protocols and steps
+                            $protsStmt = $pdo->prepare("SELECT * FROM procedure_protocols WHERE procedure_id = ? AND clinic_id = ? AND status = 'active' AND deleted_at IS NULL ORDER BY sort_order, id");
+                            $protsStmt->execute([$procId, $clinicId]);
+                            $prots = $protsStmt->fetchAll(\PDO::FETCH_ASSOC);
+                            $stepsMap = [];
+                            foreach ($prots as $pr) {
+                                $stepsStmt = $pdo->prepare("SELECT * FROM procedure_protocol_steps WHERE protocol_id = ? AND clinic_id = ? AND deleted_at IS NULL ORDER BY sort_order, id");
+                                $stepsStmt->execute([(int)$pr['id'], $clinicId]);
+                                $stepsMap[(int)$pr['id']] = $stepsStmt->fetchAll(\PDO::FETCH_ASSOC);
+                            }
+                            $protocol = ['procedure' => $procData, 'protocols' => $prots, 'steps' => $stepsMap];
+                        }
+                    }
+                }
+            }
+
             return $this->view('patients/consultation', [
                 'appointment' => $data['appointment'],
                 'patient' => $patient,
                 'consultation' => $data['consultation'],
                 'attachments' => $data['attachments'],
                 'clinical_alerts' => $data['clinical_alerts'] ?? [],
+                'protocol' => $protocol,
                 'professionals' => (new PatientService($this->container))->listReferenceProfessionals(),
                 'error' => trim((string)$request->input('error', '')),
                 'success' => trim((string)$request->input('success', '')),

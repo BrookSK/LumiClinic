@@ -22,11 +22,16 @@ ob_start();
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
     <div>
         <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">Serviços</div>
-        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Cadastre os serviços oferecidos pela clínica. Eles aparecem na agenda ao criar um agendamento.</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Cadastre os serviços oferecidos pela clínica. Eles aparecem na agenda ao criar um agendamento e nas vendas.</div>
     </div>
     <?php if ($can('services.manage')): ?>
         <button type="button" class="lc-btn lc-btn--primary lc-btn--sm" onclick="var f=document.getElementById('newServiceForm');f.style.display=f.style.display==='none'?'block':'none';">+ Novo serviço</button>
     <?php endif; ?>
+</div>
+
+<div style="padding:12px 16px;border-radius:10px;background:rgba(99,102,241,.04);border:1px solid rgba(99,102,241,.12);margin-bottom:16px;font-size:12px;color:rgba(31,41,55,.60);line-height:1.6;">
+    💡 <strong>Serviço</strong> é o que o paciente contrata e aparece na agenda (ex: "Botox", "Avaliação", "Preenchimento"). Tem duração, preço e é usado no agendamento e nas vendas.
+    Se precisar documentar protocolos clínicos detalhados (contraindicações, orientações, etapas), use <a href="/procedures" style="color:rgba(99,102,241,.7);font-weight:600;">Procedimentos</a> e vincule ao serviço.
 </div>
 
 <!-- Formulário novo serviço -->

@@ -97,6 +97,59 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<?php
+$protocolData = $protocol ?? null;
+if (is_array($protocolData) && !empty($protocolData['procedure'])):
+    $proc = $protocolData['procedure'];
+    $prots = $protocolData['protocols'] ?? [];
+    $stepsMap = $protocolData['steps'] ?? [];
+?>
+<details style="margin-bottom:14px;border:1px solid rgba(99,102,241,.18);border-radius:14px;overflow:hidden;background:rgba(99,102,241,.02);" open>
+    <summary style="padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:14px;color:rgba(99,102,241,.8);">
+        <span>📋 Protocolo: <?= htmlspecialchars((string)($proc['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+        <span style="font-size:11px;font-weight:500;color:#9ca3af;">Clique para expandir/recolher</span>
+    </summary>
+    <div style="padding:14px 16px;">
+        <?php if (trim((string)($proc['contraindications'] ?? '')) !== ''): ?>
+        <div style="padding:10px 12px;border-radius:8px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);margin-bottom:10px;">
+            <div style="font-weight:700;font-size:12px;color:#b91c1c;margin-bottom:4px;">⚠️ Contraindicações</div>
+            <div style="font-size:12px;color:#6b7280;white-space:pre-wrap;line-height:1.5;"><?= nl2br(htmlspecialchars((string)$proc['contraindications'], ENT_QUOTES, 'UTF-8')) ?></div>
+        </div>
+        <?php endif; ?>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <?php if (trim((string)($proc['pre_guidelines'] ?? '')) !== ''): ?>
+            <div style="padding:10px 12px;border-radius:8px;background:rgba(99,102,241,.04);border:1px solid rgba(99,102,241,.10);">
+                <div style="font-weight:700;font-size:12px;color:rgba(99,102,241,.7);margin-bottom:4px;">📋 Orientações pré</div>
+                <div style="font-size:12px;color:#6b7280;white-space:pre-wrap;line-height:1.5;"><?= nl2br(htmlspecialchars((string)$proc['pre_guidelines'], ENT_QUOTES, 'UTF-8')) ?></div>
+            </div>
+            <?php endif; ?>
+            <?php if (trim((string)($proc['post_guidelines'] ?? '')) !== ''): ?>
+            <div style="padding:10px 12px;border-radius:8px;background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.10);">
+                <div style="font-weight:700;font-size:12px;color:#16a34a;margin-bottom:4px;">✅ Orientações pós</div>
+                <div style="font-size:12px;color:#6b7280;white-space:pre-wrap;line-height:1.5;"><?= nl2br(htmlspecialchars((string)$proc['post_guidelines'], ENT_QUOTES, 'UTF-8')) ?></div>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php foreach ($prots as $pr): $prSteps = $stepsMap[(int)$pr['id']] ?? []; ?>
+        <?php if (!empty($prSteps)): ?>
+        <div style="margin-bottom:8px;">
+            <div style="font-weight:700;font-size:12px;color:#1f2937;margin-bottom:6px;"><?= htmlspecialchars((string)($pr['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <?php foreach ($prSteps as $i => $step): ?>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;background:#fff;border:1px solid #f3f4f6;">
+                    <span style="font-weight:800;font-size:12px;color:rgba(99,102,241,.5);min-width:20px;"><?= $i + 1 ?></span>
+                    <span style="font-size:12px;color:#1f2937;flex:1;"><?= htmlspecialchars((string)($step['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if (($step['duration_minutes'] ?? null) !== null): ?><span style="font-size:10px;color:#9ca3af;"><?= (int)$step['duration_minutes'] ?>min</span><?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php endforeach; ?>
+    </div>
+</details>
+<?php endif; ?>
+
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:14px; gap:10px;">
     <div>
         <div class="lc-badge lc-badge--primary">Execução</div>
