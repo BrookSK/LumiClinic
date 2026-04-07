@@ -48,8 +48,8 @@ ob_start();
 </div>
 
 <!-- KPIs -->
-<div class="ad-grid" style="min-height:100px;">
-    <div class="ad-card">
+<div class="ad-grid" style="min-height:100px;display:grid !important;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:18px;color:#000 !important;opacity:1 !important;visibility:visible !important;">
+    <div class="ad-card" style="padding:20px;border-radius:14px;border:1px solid #ddd;background:#fff !important;color:#000 !important;opacity:1 !important;visibility:visible !important;">
         <div class="ad-card__label">Clínicas</div>
         <div class="ad-card__value"><?= $totalClinics ?></div>
         <div class="ad-card__sub"><?= $activeClinics ?> ativas</div>
