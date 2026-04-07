@@ -117,10 +117,52 @@ ob_start();
                     <td style="font-size:13px;"><?= htmlspecialchars((string)($it['category_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
                     <td style="font-size:13px;"><?= (int)$it['duration_minutes'] ?> min</td>
                     <td style="font-size:13px;font-weight:600;"><?= htmlspecialchars($display, ENT_QUOTES, 'UTF-8') ?></td>
-                    <td style="text-align:right;">
+                    <td style="text-align:right;white-space:nowrap;">
                         <?php if ($can('services.manage')): ?>
-                            <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/services/materials?service_id=<?= (int)$it['id'] ?>">Materiais</a>
+                            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="editService(<?= (int)$it['id'] ?>, this)" style="font-size:11px;">Editar</button>
+                            <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/services/materials?service_id=<?= (int)$it['id'] ?>" style="font-size:11px;">Materiais</a>
+                            <form method="post" action="/services/delete" style="display:inline;" onsubmit="return confirm('Excluir este serviço?');">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                                <button type="submit" class="lc-btn lc-btn--danger lc-btn--sm" style="font-size:11px;">Excluir</button>
+                            </form>
                         <?php endif; ?>
+                    </td>
+                </tr>
+                <!-- Inline edit row (hidden by default) -->
+                <tr id="editRow_<?= (int)$it['id'] ?>" style="display:none;">
+                    <td colspan="5" style="padding:12px;background:rgba(99,102,241,.03);border:1px solid rgba(99,102,241,.12);border-radius:8px;">
+                        <form method="post" action="/services/update" class="lc-form">
+                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                            <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
+                            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:end;">
+                                <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?>" required /></div>
+                                <div class="lc-field"><label class="lc-label">Duração (min)</label><input class="lc-input" type="number" name="duration_minutes" value="<?= (int)$it['duration_minutes'] ?>" min="1" required /></div>
+                                <div class="lc-field"><label class="lc-label">Preço (R$)</label><input class="lc-input" type="text" name="price" value="<?= $pc !== null ? number_format(((float)(int)$pc) / 100.0, 2, ',', '') : '' ?>" placeholder="0,00" /></div>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button>
+                                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="document.getElementById('editRow_<?= (int)$it['id'] ?>').style.display='none';">Cancelar</button>
+                                </div>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                                <div class="lc-field"><label class="lc-label">Categoria</label>
+                                    <select class="lc-select" name="category_id">
+                                        <option value="">Nenhuma</option>
+                                        <?php foreach ($categories as $cat): ?>
+                                            <option value="<?= (int)$cat['id'] ?>" <?= ((int)($it['category_id'] ?? 0)) === (int)$cat['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string)$cat['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="lc-field"><label class="lc-label">Protocolo clínico</label>
+                                    <select class="lc-select" name="procedure_id">
+                                        <option value="">Nenhum</option>
+                                        <?php foreach ($procedures as $proc): ?>
+                                            <option value="<?= (int)$proc['id'] ?>" <?= ((int)($it['procedure_id'] ?? 0)) === (int)$proc['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string)$proc['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -135,6 +177,13 @@ ob_start();
     <a style="font-size:13px;color:rgba(129,89,1,1);font-weight:600;text-decoration:none;" href="/services/categories">Gerenciar categorias de serviço →</a>
 </div>
 <?php endif; ?>
+
+<script>
+function editService(id) {
+    var row = document.getElementById('editRow_' + id);
+    if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
 
 <?php
 $content = (string)ob_get_clean();

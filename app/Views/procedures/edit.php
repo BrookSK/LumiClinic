@@ -174,11 +174,13 @@ ob_start();
                 <?php endif; ?>
 
                 <?php if ($ro): ?>
-                <form method="post" action="/procedures/steps/create" class="lc-form" style="display:flex;gap:8px;align-items:end;">
+                <form method="post" action="/procedures/steps/create" class="lc-form" style="padding:10px 12px;border-radius:8px;background:rgba(0,0,0,.02);border:1px dashed #d1d5db;">
                     <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" /><input type="hidden" name="procedure_id" value="<?= $procedureId ?>" /><input type="hidden" name="protocol_id" value="<?= $pid ?>" /><input type="hidden" name="sort_order" value="<?= count($steps) ?>" />
-                    <div class="lc-field" style="flex:2;"><label class="lc-label">Nova etapa</label><input class="lc-input" type="text" name="title" required placeholder="Título da etapa" /></div>
-                    <div class="lc-field" style="width:90px;"><label class="lc-label">Min</label><input class="lc-input" type="number" name="duration_minutes" min="0" placeholder="0" /></div>
-                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">+</button>
+                    <div style="display:grid;grid-template-columns:1fr 80px auto;gap:8px;align-items:end;">
+                        <div class="lc-field"><label class="lc-label">Nova etapa</label><input class="lc-input" type="text" name="title" required placeholder="Título da etapa" /></div>
+                        <div class="lc-field"><label class="lc-label">Duração</label><input class="lc-input" type="number" name="duration_minutes" min="0" placeholder="min" /></div>
+                        <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit" style="height:38px;">Adicionar</button>
+                    </div>
                 </form>
                 <?php endif; ?>
             </div>

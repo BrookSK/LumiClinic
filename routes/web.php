@@ -456,6 +456,8 @@ $router->get('/stock/reports/export.pdf', [StockReportsController::class, 'expor
 
 $router->get('/services', [ServiceController::class, 'index']);
 $router->post('/services/create', [ServiceController::class, 'create']);
+$router->post('/services/update', [ServiceController::class, 'update']);
+$router->post('/services/delete', [ServiceController::class, 'delete']);
 
 $router->get('/services/categories', [ServiceCategoryController::class, 'index']);
 $router->post('/services/categories/create', [ServiceCategoryController::class, 'create']);

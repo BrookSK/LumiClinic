@@ -138,4 +138,54 @@ final class ServiceCatalogRepository
 
         return (int)$this->pdo->lastInsertId();
     }
+
+    public function update(
+        int $clinicId,
+        int $serviceId,
+        ?int $procedureId,
+        ?int $categoryId,
+        string $name,
+        int $durationMinutes,
+        int $bufferBeforeMinutes,
+        int $bufferAfterMinutes,
+        ?int $priceCents,
+        bool $allowSpecificProfessional
+    ): void {
+        $sql = "
+            UPDATE services
+            SET procedure_id = :procedure_id,
+                category_id = :category_id,
+                name = :name,
+                duration_minutes = :duration_minutes,
+                buffer_before_minutes = :buffer_before_minutes,
+                buffer_after_minutes = :buffer_after_minutes,
+                price_cents = :price_cents,
+                allow_specific_professional = :allow_specific_professional,
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $serviceId,
+            'clinic_id' => $clinicId,
+            'procedure_id' => $procedureId,
+            'category_id' => $categoryId,
+            'name' => $name,
+            'duration_minutes' => $durationMinutes,
+            'buffer_before_minutes' => max(0, $bufferBeforeMinutes),
+            'buffer_after_minutes' => max(0, $bufferAfterMinutes),
+            'price_cents' => $priceCents,
+            'allow_specific_professional' => $allowSpecificProfessional ? 1 : 0,
+        ]);
+    }
+
+    public function softDelete(int $clinicId, int $serviceId): void
+    {
+        $stmt = $this->pdo->prepare("UPDATE services SET deleted_at = NOW(), updated_at = NOW() WHERE id = :id AND clinic_id = :clinic_id AND deleted_at IS NULL LIMIT 1");
+        $stmt->execute(['id' => $serviceId, 'clinic_id' => $clinicId]);
+    }
 }
