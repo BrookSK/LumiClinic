@@ -247,6 +247,7 @@ $router->get('/tutorial/paciente/api-tokens', [PatientTutorialController::class,
 
 $router->get('/me', [MeController::class, 'index']);
 $router->post('/me', [MeController::class, 'update']);
+$router->post('/me/change-password', [MeController::class, 'changePassword']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);

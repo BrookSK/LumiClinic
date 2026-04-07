@@ -126,6 +126,32 @@ ob_start();
     </div>
 </form>
 
+<!-- Alterar senha -->
+<div class="me-section" style="margin-top:16px;">
+    <div class="me-section__title">Alterar senha</div>
+    <div class="me-section__desc">Preencha os campos abaixo para alterar sua senha de acesso.</div>
+    <form method="post" action="/me/change-password" class="lc-form">
+        <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" />
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+            <div class="lc-field">
+                <label class="lc-label">Senha atual</label>
+                <input class="lc-input" type="password" name="current_password" required />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Nova senha</label>
+                <input class="lc-input" type="password" name="new_password" required minlength="8" placeholder="Mínimo 8 caracteres" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Confirmar nova senha</label>
+                <input class="lc-input" type="password" name="confirm_password" required minlength="8" />
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <button class="lc-btn lc-btn--primary" type="submit">Alterar senha</button>
+        </div>
+    </form>
+</div>
+
 <script>
 function meMask(input, mask) {
     let v = input.value.replace(/\D/g, '');

@@ -25,7 +25,9 @@ final class MeController extends Controller
         return $this->view('account/me', [
             'user' => $user,
             'error' => null,
-            'success' => trim((string)$request->input('ok', '')) !== '' ? 'Perfil atualizado com sucesso.' : null,
+            'success' => trim((string)$request->input('ok', '')) !== ''
+                ? (trim((string)$request->input('ok', '')) === 'pwd' ? 'Senha alterada com sucesso.' : 'Perfil atualizado com sucesso.')
+                : null,
         ]);
     }
 
@@ -68,5 +70,71 @@ final class MeController extends Controller
         ]);
 
         return $this->redirect('/me?ok=1');
+    }
+
+    public function changePassword(Request $request)
+    {
+        $auth = new AuthService($this->container);
+        $userId = $auth->userId();
+        if ($userId === null) {
+            return $this->redirect('/login');
+        }
+
+        $current = (string)$request->input('current_password', '');
+        $newPass = (string)$request->input('new_password', '');
+        $confirm = (string)$request->input('confirm_password', '');
+
+        $pdo = $this->container->get(\PDO::class);
+        $users = new UserRepository($pdo);
+        $user = $users->findById($userId);
+
+        if ($user === null) {
+            return $this->redirect('/login');
+        }
+
+        if ($current === '' || $newPass === '' || $confirm === '') {
+            return $this->view('account/me', [
+                'user' => $user,
+                'error' => 'Preencha todos os campos de senha.',
+                'success' => null,
+            ]);
+        }
+
+        if (!password_verify($current, (string)($user['password_hash'] ?? ''))) {
+            return $this->view('account/me', [
+                'user' => $user,
+                'error' => 'Senha atual incorreta.',
+                'success' => null,
+            ]);
+        }
+
+        if (strlen($newPass) < 8) {
+            return $this->view('account/me', [
+                'user' => $user,
+                'error' => 'A nova senha deve ter pelo menos 8 caracteres.',
+                'success' => null,
+            ]);
+        }
+
+        if ($newPass !== $confirm) {
+            return $this->view('account/me', [
+                'user' => $user,
+                'error' => 'A confirmação de senha não confere.',
+                'success' => null,
+            ]);
+        }
+
+        $hash = password_hash($newPass, PASSWORD_BCRYPT);
+        if ($hash === false) {
+            return $this->view('account/me', [
+                'user' => $user,
+                'error' => 'Falha ao gerar hash de senha.',
+                'success' => null,
+            ]);
+        }
+
+        $users->updatePasswordById($userId, $hash);
+
+        return $this->redirect('/me?ok=pwd');
     }
 }

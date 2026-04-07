@@ -35,6 +35,12 @@ final class DashboardController extends Controller
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
 
+        // Super admin without clinic context → show admin dashboard
+        $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+        if ($isSuperAdmin && $clinicId === null) {
+            return $this->renderAdminDashboard();
+        }
+
         $data = [
             'has_clinic_context' => $clinicId !== null,
             'can_schedule' => $can('scheduling.read'),
@@ -185,5 +191,62 @@ final class DashboardController extends Controller
         }
 
         return $this->view('dashboard/index', $data);
+    }
+
+    private function renderAdminDashboard(): \App\Core\Http\Response
+    {
+        $pdo = $this->container->get(\PDO::class);
+
+        // Total clinics
+        $totalClinics = (int)$pdo->query("SELECT COUNT(*) FROM clinics WHERE deleted_at IS NULL")->fetchColumn();
+        $activeClinics = (int)$pdo->query("SELECT COUNT(*) FROM clinics WHERE status = 'active' AND deleted_at IS NULL")->fetchColumn();
+
+        // Subscriptions by status
+        $subStmt = $pdo->query("SELECT status, COUNT(*) AS cnt FROM clinic_subscriptions GROUP BY status");
+        $subsByStatus = [];
+        foreach ($subStmt->fetchAll() as $r) {
+            $subsByStatus[(string)$r['status']] = (int)$r['cnt'];
+        }
+
+        // Total users
+        $totalUsers = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL")->fetchColumn();
+
+        // Total patients across all clinics
+        $totalPatients = (int)$pdo->query("SELECT COUNT(*) FROM patients WHERE deleted_at IS NULL")->fetchColumn();
+
+        // Appointments today across all clinics
+        $todayAppts = (int)$pdo->query("SELECT COUNT(*) FROM appointments WHERE deleted_at IS NULL AND DATE(start_at) = CURDATE()")->fetchColumn();
+
+        // Queue stats
+        $queuePending = (int)$pdo->query("SELECT COUNT(*) FROM queue_jobs WHERE status = 'pending'")->fetchColumn();
+        $queueDead = (int)$pdo->query("SELECT COUNT(*) FROM queue_jobs WHERE status = 'dead'")->fetchColumn();
+
+        // Recent errors (last 24h)
+        $recentErrors = (int)$pdo->query("SELECT COUNT(*) FROM system_error_logs WHERE created_at >= NOW() - INTERVAL 24 HOUR")->fetchColumn();
+
+        // Recent clinics (last 5 created)
+        $recentClinics = $pdo->query("SELECT id, name, status, created_at FROM clinics WHERE deleted_at IS NULL ORDER BY id DESC LIMIT 5")->fetchAll();
+
+        // MRR (Monthly Recurring Revenue)
+        $mrr = (float)$pdo->query("
+            SELECT COALESCE(SUM(p.price_cents), 0) / 100
+            FROM clinic_subscriptions cs
+            JOIN saas_plans p ON p.id = cs.plan_id
+            WHERE cs.status IN ('active', 'trial')
+        ")->fetchColumn();
+
+        return $this->view('dashboard/admin', [
+            'total_clinics' => $totalClinics,
+            'active_clinics' => $activeClinics,
+            'subs_by_status' => $subsByStatus,
+            'total_users' => $totalUsers,
+            'total_patients' => $totalPatients,
+            'today_appts' => $todayAppts,
+            'queue_pending' => $queuePending,
+            'queue_dead' => $queueDead,
+            'recent_errors' => $recentErrors,
+            'recent_clinics' => $recentClinics,
+            'mrr' => $mrr,
+        ]);
     }
 }
