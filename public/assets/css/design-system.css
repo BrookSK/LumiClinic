@@ -101,7 +101,7 @@ body.lc-shell--collapsed .lc-sidebar__footer{display:none}
 
 .lc-header__title{font-size:18px;font-weight:650;letter-spacing:0.3px}
 
-.lc-content{padding:26px 28px}
+.lc-content{padding:26px 28px;flex:1;overflow:auto}
 
 .lc-brand{display:flex;gap:12px;align-items:center;margin-bottom:20px}
 

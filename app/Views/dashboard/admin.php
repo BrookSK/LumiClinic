@@ -46,7 +46,7 @@ ob_start();
 </div>
 
 <!-- KPIs -->
-<div class="ad-grid">
+<div class="ad-grid" style="min-height:100px;">
     <div class="ad-card">
         <div class="ad-card__label">Clínicas</div>
         <div class="ad-card__value"><?= $totalClinics ?></div>
