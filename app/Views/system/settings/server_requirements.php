@@ -83,6 +83,41 @@ ob_start();
     <?php endforeach; ?>
 </div>
 
+<!-- Cron URL (fila de jobs) -->
+<?php
+$cronToken = trim((string)($cron_token ?? ''));
+$cronBaseUrl = getenv('APP_BASE_URL') ?: ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+$cronUrl = rtrim($cronBaseUrl, '/') . '/cron-queue.php?token=' . urlencode($cronToken);
+?>
+<div style="padding:18px;border-radius:14px;border:1px solid rgba(99,102,241,.15);background:rgba(99,102,241,.03);box-shadow:0 4px 16px rgba(17,24,39,.06);margin-bottom:16px;">
+    <div style="font-weight:750;font-size:14px;color:rgba(31,41,55,.90);margin-bottom:4px;">🔄 Cron — Processamento da fila</div>
+    <div style="font-size:12px;color:rgba(31,41,55,.50);margin-bottom:14px;">Configure essa URL no cron do servidor (Plesk, cPanel, etc.) para processar jobs automaticamente a cada minuto.</div>
+
+    <form method="post" action="/sys/settings/server" style="margin-bottom:14px;">
+        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+                <label style="font-weight:700;font-size:12px;color:rgba(31,41,55,.60);display:block;margin-bottom:4px;">Token secreto do cron</label>
+                <input class="lc-input" type="text" name="cron_token" value="<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?>" placeholder="Gere ou digite um token secreto" />
+            </div>
+            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button>
+            <button class="lc-btn lc-btn--secondary lc-btn--sm" type="button" onclick="document.querySelector('[name=cron_token]').value=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');">Gerar token</button>
+        </div>
+    </form>
+
+    <?php if ($cronToken !== ''): ?>
+    <div style="margin-bottom:10px;">
+        <label style="font-weight:700;font-size:12px;color:rgba(31,41,55,.60);display:block;margin-bottom:4px;">URL do cron (copie e configure no Plesk/cPanel)</label>
+        <code style="display:block;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.70);border:1px solid rgba(17,24,39,.08);font-size:12px;user-select:all;word-break:break-all;"><?= htmlspecialchars($cronUrl, ENT_QUOTES, 'UTF-8') ?></code>
+    </div>
+    <div style="font-size:11px;color:rgba(31,41,55,.40);">
+        Frequência recomendada: <strong>a cada 1 minuto</strong> (estilo cron: <code>* * * * *</code>). Processa até 20 jobs por fila a cada execução.
+    </div>
+    <?php else: ?>
+    <div style="font-size:12px;color:rgba(245,158,11,.8);font-weight:600;">⚠ Configure um token secreto para gerar a URL do cron.</div>
+    <?php endif; ?>
+</div>
+
 <!-- Comandos essenciais -->
 <div style="padding:18px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);margin-bottom:16px;">
     <div style="font-weight:750;font-size:14px;color:rgba(31,41,55,.90);margin-bottom:12px;">Comandos para rodar no servidor (SSH)</div>

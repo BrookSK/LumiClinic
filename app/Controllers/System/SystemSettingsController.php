@@ -261,6 +261,21 @@ final class SystemSettingsController extends Controller
     {
         $this->ensureSuperAdmin();
 
-        return $this->view('system/settings/server_requirements');
+        $service = new SystemSettingsService($this->container);
+        $cronToken = trim((string)($service->getText('cron.secret_token') ?? ''));
+
+        return $this->view('system/settings/server_requirements', [
+            'cron_token' => $cronToken,
+        ]);
+    }
+
+    public function serverSubmit(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $cronToken = trim((string)$request->input('cron_token', ''));
+        (new SystemSettingsService($this->container))->setText('cron.secret_token', $cronToken !== '' ? $cronToken : null);
+
+        return $this->redirect('/sys/settings/server');
     }
 }

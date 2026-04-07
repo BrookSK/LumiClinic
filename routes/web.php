@@ -661,6 +661,7 @@ $router->get('/sys/settings/ai', [\App\Controllers\System\SystemSettingsControll
 $router->post('/sys/settings/ai', [\App\Controllers\System\SystemSettingsController::class, 'aiSubmit']);
 
 $router->get('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverRequirements']);
+$router->post('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverSubmit']);
 
 $router->get('/sys/error-logs', [SystemErrorLogController::class, 'index']);
 $router->get('/sys/error-logs/view', [SystemErrorLogController::class, 'details']);
