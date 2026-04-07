@@ -28,6 +28,11 @@ final class RateLimitMiddleware implements MiddlewareInterface
         $ip = $request->ip();
         $ua = (string)($request->header('user-agent') ?? '');
 
+        // Skip rate limit for authenticated super admin
+        if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) {
+            return $next($request);
+        }
+
         // Basic fingerprint: IP + UA (reduz colisão em NAT sem guardar PII em claro)
         $fingerprint = $ip . '|' . substr($ua, 0, 120);
 
