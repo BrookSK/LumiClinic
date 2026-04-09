@@ -13,12 +13,11 @@ final class ClinicorpImporterService
     /** All supported import types with metadata */
     public const TYPES = [
         'pacientes' => [
-            'label' => 'Pacientes (Registros Gerais)',
+            'label' => 'Cadastro de Pacientes',
             'group' => 'Pacientes',
             'icon'  => '👤',
-            'desc'  => 'Importação direta de cadastro de pacientes. Não foi encontrado exportador correspondente na Clinicorp.',
-            'clinicorp_cols' => 'Aguardando modelo de exportação',
-            'status' => 'construction',
+            'desc'  => 'Importação completa de pacientes com nome, e-mail, telefone, endereço, data de nascimento e sexo.',
+            'clinicorp_cols' => 'Name, Email, MobilePhone, BirthDate, Address, AddressNumber, City, Neighborhood, Zip, state, Sex, DocumentId',
         ],
         'pacientes_localizacao' => [
             'label' => 'Localização de Pacientes',
@@ -72,11 +71,11 @@ final class ClinicorpImporterService
             'clinicorp_cols' => 'Competência, Vencimento, CPF/CNPJ Fornecedor, Valor, Forma de Pgto, Tipo, Classificação, Descrição, Categoria, Pagamento, Clínica, Observações, Valor Total',
         ],
         'financeiro_recibos' => [
-            'label' => 'Recibos',
+            'label' => 'Recibos / Pagamentos',
             'group' => 'Financeiro',
             'icon'  => '🧾',
-            'desc'  => 'Recibos de pagamentos recebidos.',
-            'clinicorp_cols' => 'Data, Número, Núm. Editado, Excluir, Beneficiário, CPF, Responsável, CPF Responsável, Clínica, Profissional, CPF, Forma de Pago, Valor',
+            'desc'  => 'Pagamentos recebidos de pacientes (exportação de dados do Clinicorp).',
+            'clinicorp_cols' => 'PatientId, PaymentDate, PaymentForm_CharacteristicId, ReceivedDate, Description, InstallmentsCount',
             'status' => 'construction',
         ],
         'orcamentos' => [
@@ -151,6 +150,13 @@ final class ClinicorpImporterService
             'clinicorp_cols' => 'Data de Aprovação, Paciente, Quantidade, WhatsApp, Última Consulta, Próxima Consulta',
             'status' => 'construction',
         ],
+        'profissionais' => [
+            'label' => 'Profissionais',
+            'group' => 'Configurações',
+            'icon'  => '👨‍⚕️',
+            'desc'  => 'Cadastro de profissionais da clínica.',
+            'clinicorp_cols' => 'Name, Email, MobilePhone, BirthDate, Sex, Active',
+        ],
     ];
 
     public function __construct(private readonly Container $container)
@@ -172,6 +178,7 @@ final class ClinicorpImporterService
         $dataRows = array_slice($rows, 1);
 
         $result = match ($type) {
+            'pacientes'                      => $this->importPacientesCadastro($clinicId, $headers, $dataRows),
             'pacientes_localizacao'          => $this->importPacientes($clinicId, $headers, $dataRows),
             'pacientes_cobrancas'            => $this->importCobrancas($clinicId, $headers, $dataRows),
             'agendamentos_geral'            => $this->importAgendamentosGeral($clinicId, $headers, $dataRows),
@@ -182,6 +189,7 @@ final class ClinicorpImporterService
             'orcamentos'                     => $this->importOrcamentos($clinicId, $headers, $dataRows),
             'tratamentos_executados'         => $this->importTratamentosExecutados($clinicId, $headers, $dataRows),
             'tratamentos_nao_executados'     => $this->importTratamentosNaoExecutados($clinicId, $headers, $dataRows),
+            'profissionais'                  => $this->importProfissionais($clinicId, $headers, $dataRows),
             default => ['imported' => 0, 'skipped' => 0, 'errors' => ['Tipo de importação não suportado: ' . $type]],
         };
 
@@ -737,6 +745,93 @@ final class ClinicorpImporterService
             }
         }
 
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+    }
+
+    // ─── Pacientes Cadastro (exportação de dados) ─────────────
+
+    private function importPacientesCadastro(int $clinicId, array $headers, array $dataRows): array
+    {
+        $colMap = $this->mapCols($headers);
+        $imported = 0; $skipped = 0; $errors = [];
+
+        foreach ($dataRows as $i => $row) {
+            try {
+                $name = $this->col($row, $colMap, 'Name');
+                if ($name === '') { $skipped++; continue; }
+                $name = preg_replace('/\s*\(\d+\)\s*$/', '', trim($name));
+
+                $email = $this->col($row, $colMap, 'Email');
+                $phone = $this->col($row, $colMap, 'MobilePhone');
+                $birthRaw = $this->col($row, $colMap, 'BirthDate');
+                $sex = strtoupper(substr($this->col($row, $colMap, 'Sex'), 0, 1));
+                $address = $this->col($row, $colMap, 'Address');
+                $addressNum = $this->col($row, $colMap, 'AddressNumber');
+                $city = $this->col($row, $colMap, 'City');
+                $neighborhood = $this->col($row, $colMap, 'Neighborhood');
+                $zip = $this->col($row, $colMap, 'Zip');
+                $state = $this->col($row, $colMap, 'state');
+                $cpf = $this->col($row, $colMap, 'DocumentId');
+
+                // Parse birth date (ISO format: 1972-04-03T03:00:00.000Z)
+                $birthDate = null;
+                if ($birthRaw !== '') {
+                    if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $birthRaw, $m)) {
+                        $birthDate = $m[1];
+                    } else {
+                        $birthDate = XlsxReader::excelDateToString($birthRaw);
+                    }
+                }
+
+                $phoneClean = preg_replace('/\D+/', '', $phone);
+                $cpfClean = preg_replace('/\D+/', '', $cpf);
+
+                // Check existing by name
+                $stmt = $this->pdo->prepare('SELECT id FROM patients WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
+                $stmt->execute([$clinicId, $name]);
+                if ($stmt->fetch()) { $skipped++; continue; }
+
+                $fullAddress = trim(($address ? $address : '') . ($addressNum ? ', ' . $addressNum : '') . ($neighborhood ? ' - ' . $neighborhood : '') . ($city ? ', ' . $city : '') . ($state ? '/' . $state : '') . ($zip ? ' CEP: ' . $zip : ''));
+
+                $stmt = $this->pdo->prepare('INSERT INTO patients (clinic_id, name, email, phone, birth_date, sex, cpf, address, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, \'active\', NOW())');
+                $stmt->execute([
+                    $clinicId, $name,
+                    $email ?: null, $phoneClean ?: null,
+                    $birthDate, $sex ?: null,
+                    $cpfClean ?: null, $fullAddress ?: null,
+                ]);
+                $imported++;
+            } catch (\Throwable $e) {
+                $errors[] = 'Linha ' . ($i + 2) . ': ' . $e->getMessage();
+            }
+        }
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+    }
+
+    // ─── Profissionais ───────────────────────────────────────────
+
+    private function importProfissionais(int $clinicId, array $headers, array $dataRows): array
+    {
+        $colMap = $this->mapCols($headers);
+        $imported = 0; $skipped = 0; $errors = [];
+
+        foreach ($dataRows as $i => $row) {
+            try {
+                $name = $this->col($row, $colMap, 'Name');
+                if ($name === '') { $skipped++; continue; }
+
+                // Check existing
+                $stmt = $this->pdo->prepare('SELECT id FROM professionals WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
+                $stmt->execute([$clinicId, $name]);
+                if ($stmt->fetch()) { $skipped++; continue; }
+
+                $stmt = $this->pdo->prepare('INSERT INTO professionals (clinic_id, name, status, created_at) VALUES (?, ?, \'active\', NOW())');
+                $stmt->execute([$clinicId, $name]);
+                $imported++;
+            } catch (\Throwable $e) {
+                $errors[] = 'Linha ' . ($i + 2) . ': ' . $e->getMessage();
+            }
+        }
         return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
     }
 
