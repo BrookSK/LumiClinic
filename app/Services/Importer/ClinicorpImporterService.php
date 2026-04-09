@@ -71,12 +71,11 @@ final class ClinicorpImporterService
             'clinicorp_cols' => 'Competência, Vencimento, CPF/CNPJ Fornecedor, Valor, Forma de Pgto, Tipo, Classificação, Descrição, Categoria, Pagamento, Clínica, Observações, Valor Total',
         ],
         'financeiro_recibos' => [
-            'label' => 'Recibos / Pagamentos',
+            'label' => 'Parcelas e Pagamentos',
             'group' => 'Financeiro',
             'icon'  => '🧾',
-            'desc'  => 'Pagamentos recebidos de pacientes (exportação de dados do Clinicorp).',
-            'clinicorp_cols' => 'PatientId, PaymentDate, PaymentForm_CharacteristicId, ReceivedDate, Description, InstallmentsCount',
-            'status' => 'construction',
+            'desc'  => 'Parcelas de pagamentos de pacientes (exportação de dados Clinicorp: PaymentItem).',
+            'clinicorp_cols' => 'Amount, PatientId, Date, DueDate, PaymentDate, Type, OwnerName, OwnerCPF, InstallmentNumber',
         ],
         'orcamentos' => [
             'label' => 'Orçamentos',
@@ -186,6 +185,7 @@ final class ClinicorpImporterService
             'agendamentos_categorias'        => $this->importAgendamentosCategorias($clinicId, $headers, $dataRows),
             'agendamentos_primeira_consulta' => $this->importPrimeiraConsulta($clinicId, $headers, $dataRows),
             'financeiro_contas_pagar'        => $this->importContasPagar($clinicId, $headers, $dataRows),
+            'financeiro_recibos'             => $this->importParcelas($clinicId, $headers, $dataRows),
             'orcamentos'                     => $this->importOrcamentos($clinicId, $headers, $dataRows),
             'tratamentos_executados'         => $this->importTratamentosExecutados($clinicId, $headers, $dataRows),
             'tratamentos_nao_executados'     => $this->importTratamentosNaoExecutados($clinicId, $headers, $dataRows),
@@ -745,6 +745,81 @@ final class ClinicorpImporterService
             }
         }
 
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+    }
+
+    // ─── Parcelas / Pagamentos (PaymentItem) ───────────────────
+
+    private function importParcelas(int $clinicId, array $headers, array $dataRows): array
+    {
+        $colMap = $this->mapCols($headers);
+        $imported = 0; $skipped = 0; $errors = [];
+
+        foreach ($dataRows as $i => $row) {
+            try {
+                $amountRaw = $this->col($row, $colMap, 'Amount');
+                $ownerName = $this->col($row, $colMap, 'OwnerName');
+                $ownerCpf = $this->col($row, $colMap, 'OwnerCPF');
+                $dateRaw = $this->col($row, $colMap, 'Date');
+                $dueDateRaw = $this->col($row, $colMap, 'DueDate');
+                $paymentDateRaw = $this->col($row, $colMap, 'PaymentDate');
+                $receivedDateRaw = $this->col($row, $colMap, 'ReceivedDate');
+                $type = $this->col($row, $colMap, 'Type');
+                $installmentNo = $this->col($row, $colMap, 'InstallmentNumber');
+                $installmentsCount = $this->col($row, $colMap, 'InstallmentsCount');
+                $canceled = $this->col($row, $colMap, 'Canceled');
+                $paymentConfirmed = $this->col($row, $colMap, 'PaymentConfirmed');
+                $paymentReceived = $this->col($row, $colMap, 'PaymentReceived');
+                $description = $this->col($row, $colMap, 'PaymentDescription');
+                if ($description === '') $description = $this->col($row, $colMap, 'Description');
+
+                $amount = XlsxReader::parseMoney($amountRaw);
+                if ($amount <= 0) { $skipped++; continue; }
+
+                // Parse dates (ISO format: 2025-06-17T21:00:00.000Z or atomic: 20250617)
+                $occurredOn = null;
+                $dateStr = $paymentDateRaw ?: $dateRaw ?: $dueDateRaw;
+                if ($dateStr !== '') {
+                    if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $dateStr, $m)) {
+                        $occurredOn = $m[1];
+                    } elseif (preg_match('/^(\d{8})$/', $dateStr)) {
+                        $occurredOn = substr($dateStr, 0, 4) . '-' . substr($dateStr, 4, 2) . '-' . substr($dateStr, 6, 2);
+                    } else {
+                        $occurredOn = XlsxReader::excelDateToString($dateStr);
+                    }
+                }
+                if (!$occurredOn) { $skipped++; continue; }
+
+                // Skip canceled
+                if (strtoupper($canceled) === 'X') { $skipped++; continue; }
+
+                // Map payment method
+                $method = match (true) {
+                    str_contains(strtolower($type), 'credit_card') => 'credit_card',
+                    str_contains(strtolower($type), 'debit_card') => 'debit_card',
+                    str_contains(strtolower($type), 'pix') => 'pix',
+                    str_contains(strtolower($type), 'boleto') => 'boleto',
+                    str_contains(strtolower($type), 'cash') => 'cash',
+                    str_contains(strtolower($type), 'transfer') => 'transfer',
+                    str_contains(strtolower($type), 'check') => 'check',
+                    default => 'other',
+                };
+
+                $status = (strtoupper($paymentConfirmed) === 'X' || strtoupper($paymentReceived) === 'X') ? 'paid' : 'pending';
+
+                $notes = 'Importado da Clinicorp';
+                if ($ownerName !== '') $notes .= ' | ' . $ownerName;
+                if ($installmentNo !== '') $notes .= ' | Parcela ' . $installmentNo . ($installmentsCount !== '' ? '/' . $installmentsCount : '');
+                if ($description !== '') $notes .= ' | ' . $description;
+
+                // Create as financial_entry (income)
+                $stmt = $this->pdo->prepare('INSERT INTO financial_entries (clinic_id, kind, occurred_on, amount, method, status, description, created_at) VALUES (?, \'income\', ?, ?, ?, ?, ?, NOW())');
+                $stmt->execute([$clinicId, $occurredOn, $amount, $method, $status, $notes]);
+                $imported++;
+            } catch (\Throwable $e) {
+                $errors[] = 'Linha ' . ($i + 2) . ': ' . $e->getMessage();
+            }
+        }
         return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
     }
 
