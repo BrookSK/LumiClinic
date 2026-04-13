@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Marketing;
 
-use App\Services\Http\HttpClient;
-
 final class TuquinhaClient
 {
     private const BASE_URL = 'https://tuquinha.onsolutionsbrasil.com.br';
@@ -70,30 +68,66 @@ final class TuquinhaClient
             $url .= '?' . http_build_query($params);
         }
 
-        $http = new HttpClient();
-        $resp = $http->request('GET', $url, ['Authorization' => 'Bearer ' . $this->apiKey], null, 30);
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => 30,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $this->apiKey,
+                'Accept: application/json',
+                'User-Agent: LumiClinic/1.0',
+            ],
+        ]);
 
-        if ($resp['status'] < 200 || $resp['status'] >= 300) {
-            $body = trim((string)($resp['body'] ?? ''));
-            throw new \RuntimeException('Tuquinha API HTTP ' . $resp['status'] . ($body !== '' ? ': ' . mb_substr($body, 0, 200) : ''));
+        $body = curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($status < 200 || $status >= 300) {
+            $body = trim((string)$body);
+            throw new \RuntimeException('Tuquinha API HTTP ' . $status . ($body !== '' ? ': ' . mb_substr($body, 0, 300) : ''));
         }
 
-        return is_array($resp['json']) ? $resp['json'] : ['raw' => $resp['body']];
+        $decoded = json_decode((string)$body, true);
+        return is_array($decoded) ? $decoded : ['raw' => $body];
     }
 
     /** @return array<string,mixed> */
     private function post(string $path, array $data): array
     {
         $url = self::BASE_URL . $path;
+        $jsonBody = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        $http = new HttpClient();
-        $resp = $http->request('POST', $url, ['Authorization' => 'Bearer ' . $this->apiKey], $data, 30);
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $jsonBody,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => 30,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $this->apiKey,
+                'Content-Type: application/json; charset=UTF-8',
+                'Accept: application/json',
+                'User-Agent: LumiClinic/1.0',
+            ],
+        ]);
 
-        if ($resp['status'] < 200 || $resp['status'] >= 300) {
-            $body = trim((string)($resp['body'] ?? ''));
-            throw new \RuntimeException('Tuquinha API HTTP ' . $resp['status'] . ($body !== '' ? ': ' . mb_substr($body, 0, 200) : ''));
+        $body = curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($status < 200 || $status >= 300) {
+            $body = trim((string)$body);
+            throw new \RuntimeException('Tuquinha API HTTP ' . $status . ($body !== '' ? ': ' . mb_substr($body, 0, 300) : ''));
         }
 
-        return is_array($resp['json']) ? $resp['json'] : ['raw' => $resp['body']];
+        $decoded = json_decode((string)$body, true);
+        return is_array($decoded) ? $decoded : ['raw' => $body];
     }
 }
