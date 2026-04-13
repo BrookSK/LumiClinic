@@ -202,7 +202,8 @@ ob_start();
                                                 onclick="event.stopPropagation(); openApptDetail(<?= (int)$it['id'] ?>);"
                                                 title="<?= htmlspecialchars(($patientNameMonth !== '' ? $patientNameMonth . ' — ' : '') . $sname . ' (' . substr((string)$it['start_at'], 11, 5) . ')', ENT_QUOTES, 'UTF-8') ?>"
                                             >
-                                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0;" class="lc-dot lc-dot--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"></span>
+                                                <?php $svcColor = isset($svcMap[$sid]['color']) && $svcMap[$sid]['color'] !== null ? (string)$svcMap[$sid]['color'] : ''; ?>
+                                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; <?= $svcColor !== '' ? 'background:' . htmlspecialchars($svcColor, ENT_QUOTES, 'UTF-8') : 'background:currentColor' ?>;" class="<?= $svcColor === '' ? 'lc-dot lc-dot--' . htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') : '' ?>"></span>
                                                 <div style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                                     <span style="font-weight:600;"><?= htmlspecialchars(substr((string)$it['start_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></span>
                                                     <?php if ($patientNameMonth !== ''): ?>

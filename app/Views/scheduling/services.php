@@ -67,6 +67,10 @@ ob_start();
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <div class="lc-field">
+                    <label class="lc-label">Cor na agenda</label>
+                    <input class="lc-input" type="color" name="color" value="#2563eb" style="width:50px;height:34px;padding:2px;cursor:pointer;" />
+                </div>
             </div>
 
             <div class="lc-field" style="margin-top:4px;">
@@ -99,7 +103,7 @@ ob_start();
 <div style="border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);overflow:hidden;">
     <div class="lc-table-wrap">
         <table class="lc-table">
-            <thead><tr><th>Serviço</th><th>Categoria</th><th>Duração</th><th>Preço</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Serviço</th><th>Categoria</th><th>Duração</th><th>Preço</th><th></th></tr></thead>
             <tbody>
             <?php foreach ($items as $it): ?>
                 <?php
@@ -107,6 +111,7 @@ ob_start();
                 $display = $pc === null ? '—' : ('R$ ' . number_format(((float)(int)$pc) / 100.0, 2, ',', '.'));
                 ?>
                 <tr>
+                    <td style="width:20px;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:<?= htmlspecialchars((string)($it['color'] ?? '#94a3b8'), ENT_QUOTES, 'UTF-8') ?>;border:1px solid rgba(0,0,0,.1);"></span></td>
                     <td>
                         <div style="font-weight:700;font-size:13px;"><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></div>
                         <?php $procName = trim((string)($it['procedure_name'] ?? '')); ?>
@@ -131,14 +136,15 @@ ob_start();
                 </tr>
                 <!-- Inline edit row (hidden by default) -->
                 <tr id="editRow_<?= (int)$it['id'] ?>" style="display:none;">
-                    <td colspan="5" style="padding:12px;background:rgba(99,102,241,.03);border:1px solid rgba(99,102,241,.12);border-radius:8px;">
+                    <td colspan="6" style="padding:12px;background:rgba(99,102,241,.03);border:1px solid rgba(99,102,241,.12);border-radius:8px;">
                         <form method="post" action="/services/update" class="lc-form">
                             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                             <input type="hidden" name="id" value="<?= (int)$it['id'] ?>" />
-                            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:end;">
+                            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 60px 1fr;gap:8px;align-items:end;">
                                 <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?>" required /></div>
                                 <div class="lc-field"><label class="lc-label">Duração (min)</label><input class="lc-input" type="number" name="duration_minutes" value="<?= (int)$it['duration_minutes'] ?>" min="1" required /></div>
                                 <div class="lc-field"><label class="lc-label">Preço (R$)</label><input class="lc-input" type="text" name="price" value="<?= $pc !== null ? number_format(((float)(int)$pc) / 100.0, 2, ',', '') : '' ?>" placeholder="0,00" /></div>
+                                <div class="lc-field"><label class="lc-label">Cor</label><input type="color" name="color" value="<?= htmlspecialchars((string)($it['color'] ?? '#2563eb'), ENT_QUOTES, 'UTF-8') ?>" style="width:40px;height:34px;padding:2px;cursor:pointer;border:1px solid rgba(0,0,0,.12);border-radius:6px;" /></div>
                                 <div style="display:flex;gap:6px;">
                                     <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button>
                                     <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="document.getElementById('editRow_<?= (int)$it['id'] ?>').style.display='none';">Cancelar</button>

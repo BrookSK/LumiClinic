@@ -22,6 +22,7 @@ final class ServiceCatalogRepository
                 s.buffer_before_minutes,
                 s.buffer_after_minutes,
                 s.price_cents,
+                s.color,
                 s.allow_specific_professional,
                 s.status,
                 COALESCE(p.name, '') AS procedure_name,
@@ -61,6 +62,7 @@ final class ServiceCatalogRepository
                 buffer_before_minutes,
                 buffer_after_minutes,
                 price_cents,
+                color,
                 allow_specific_professional,
                 status
             FROM services
@@ -86,7 +88,8 @@ final class ServiceCatalogRepository
         int $bufferBeforeMinutes,
         int $bufferAfterMinutes,
         ?int $priceCents,
-        bool $allowSpecificProfessional
+        bool $allowSpecificProfessional,
+        ?string $color = null
     ): int {
         $bufferBeforeMinutes = max(0, $bufferBeforeMinutes);
         $bufferAfterMinutes = max(0, $bufferAfterMinutes);
@@ -104,6 +107,7 @@ final class ServiceCatalogRepository
                 buffer_before_minutes,
                 buffer_after_minutes,
                 price_cents,
+                color,
                 allow_specific_professional,
                 status,
                 created_at
@@ -117,6 +121,7 @@ final class ServiceCatalogRepository
                 :buffer_before_minutes,
                 :buffer_after_minutes,
                 :price_cents,
+                :color,
                 :allow_specific_professional,
                 'active',
                 NOW()
@@ -133,6 +138,7 @@ final class ServiceCatalogRepository
             'buffer_before_minutes' => $bufferBeforeMinutes,
             'buffer_after_minutes' => $bufferAfterMinutes,
             'price_cents' => $priceCents,
+            'color' => ($color !== null && $color !== '' ? $color : null),
             'allow_specific_professional' => $allowSpecificProfessional ? 1 : 0,
         ]);
 
@@ -149,7 +155,8 @@ final class ServiceCatalogRepository
         int $bufferBeforeMinutes,
         int $bufferAfterMinutes,
         ?int $priceCents,
-        bool $allowSpecificProfessional
+        bool $allowSpecificProfessional,
+        ?string $color = null
     ): void {
         $sql = "
             UPDATE services
@@ -160,6 +167,7 @@ final class ServiceCatalogRepository
                 buffer_before_minutes = :buffer_before_minutes,
                 buffer_after_minutes = :buffer_after_minutes,
                 price_cents = :price_cents,
+                color = :color,
                 allow_specific_professional = :allow_specific_professional,
                 updated_at = NOW()
             WHERE id = :id
@@ -179,6 +187,7 @@ final class ServiceCatalogRepository
             'buffer_before_minutes' => max(0, $bufferBeforeMinutes),
             'buffer_after_minutes' => max(0, $bufferAfterMinutes),
             'price_cents' => $priceCents,
+            'color' => ($color !== null && $color !== '' ? $color : null),
             'allow_specific_professional' => $allowSpecificProfessional ? 1 : 0,
         ]);
     }

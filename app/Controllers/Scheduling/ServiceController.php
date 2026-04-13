@@ -133,7 +133,7 @@ final class ServiceController extends Controller
         }
 
         $repo = new ServiceCatalogRepository($this->container->get(\PDO::class));
-        $id = $repo->create($clinicId, $procedureId, $categoryId, $name, $duration, $bufferBefore, $bufferAfter, $priceCents, $allowSpecific);
+        $id = $repo->create($clinicId, $procedureId, $categoryId, $name, $duration, $bufferBefore, $bufferAfter, $priceCents, $allowSpecific, trim((string)$request->input('color', '')) ?: null);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($userId, $clinicId, 'scheduling.service_create', [
@@ -182,7 +182,7 @@ final class ServiceController extends Controller
         $categoryId = $categoryIdRaw !== '' ? max(1, (int)$categoryIdRaw) : null;
 
         $repo = new ServiceCatalogRepository($this->container->get(\PDO::class));
-        $repo->update($clinicId, $id, $procedureId, $categoryId, $name, $duration, $bufferBefore, $bufferAfter, $priceCents, $allowSpecific);
+        $repo->update($clinicId, $id, $procedureId, $categoryId, $name, $duration, $bufferBefore, $bufferAfter, $priceCents, $allowSpecific, trim((string)$request->input('color', '')) ?: null);
 
         (new AuditLogRepository($this->container->get(\PDO::class)))->log($userId, $clinicId, 'scheduling.service_update', ['service_id' => $id, 'name' => $name], $request->ip());
 

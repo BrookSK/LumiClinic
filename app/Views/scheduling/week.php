@@ -342,9 +342,10 @@ ob_start();
                                         $serviceName = (string)($it['service_name'] ?? '');
                                         $professionalName = (string)($it['professional_name'] ?? '');
                                     ?>
+                                    <?php $weekSvcColor = isset($svcMap[(int)($it['service_id'] ?? 0)]['color']) ? (string)$svcMap[(int)($it['service_id'] ?? 0)]['color'] : ''; ?>
                                     <button type="button"
                                         class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
-                                        style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; cursor:pointer; overflow:hidden; border:0; z-index:5;"
+                                        style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; cursor:pointer; overflow:hidden; border:0; z-index:5;<?= $weekSvcColor !== '' ? ' border-left:4px solid ' . htmlspecialchars($weekSvcColor, ENT_QUOTES, 'UTF-8') . ';' : '' ?>"
                                         data-open-appointment="1"
                                         data-appt-id="<?= (int)$it['id'] ?>"
                                         data-appt-patient="<?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"
