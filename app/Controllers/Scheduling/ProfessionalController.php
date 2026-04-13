@@ -194,6 +194,7 @@ final class ProfessionalController extends Controller
         $id = (int)$request->input('id', 0);
         $name = trim((string)$request->input('name', ''));
         $specialty = trim((string)$request->input('specialty', ''));
+        $councilNumber = trim((string)$request->input('council_number', ''));
         $allowOnline = (string)$request->input('allow_online_booking', '0') === '1';
 
         if ($id <= 0 || $name === '') {
@@ -214,7 +215,7 @@ final class ProfessionalController extends Controller
             return $this->redirect('/professionals?error=' . urlencode('Profissional não encontrado.'));
         }
 
-        $repo->update($clinicId, $id, $name, $specialty === '' ? null : $specialty, $allowOnline);
+        $repo->update($clinicId, $id, $name, $specialty === '' ? null : $specialty, $allowOnline, $councilNumber === '' ? null : $councilNumber);
 
         (new AuditLogRepository($pdo))->log($userId, $clinicId, 'scheduling.professional_update', [
             'professional_id' => $id,

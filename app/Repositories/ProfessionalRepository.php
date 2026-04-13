@@ -31,7 +31,7 @@ final class ProfessionalRepository
     public function findById(int $clinicId, int $professionalId): ?array
     {
         $sql = "
-            SELECT id, clinic_id, user_id, name, specialty, allow_online_booking, status
+            SELECT id, clinic_id, user_id, name, specialty, council_number, allow_online_booking, status
             FROM professionals
             WHERE id = :id
               AND clinic_id = :clinic_id
@@ -84,15 +84,27 @@ final class ProfessionalRepository
         return (int)$this->pdo->lastInsertId();
     }
 
-    public function update(int $clinicId, int $professionalId, string $name, ?string $specialty, bool $allowOnlineBooking): void
+    public function update(int $clinicId, int $professionalId, string $name, ?string $specialty, bool $allowOnlineBooking, ?string $councilNumber = null): void
     {
-        $stmt = $this->pdo->prepare("\n            UPDATE professionals\n            SET name = :name,\n                specialty = :specialty,\n                allow_online_booking = :allow_online_booking,\n                updated_at = NOW()\n            WHERE id = :id\n              AND clinic_id = :clinic_id\n              AND deleted_at IS NULL\n            LIMIT 1\n        ");
+        $stmt = $this->pdo->prepare("
+            UPDATE professionals
+            SET name = :name,
+                specialty = :specialty,
+                council_number = :council_number,
+                allow_online_booking = :allow_online_booking,
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ");
 
         $stmt->execute([
             'id' => $professionalId,
             'clinic_id' => $clinicId,
             'name' => $name,
             'specialty' => ($specialty === '' ? null : $specialty),
+            'council_number' => ($councilNumber === '' ? null : $councilNumber),
             'allow_online_booking' => $allowOnlineBooking ? 1 : 0,
         ]);
     }
