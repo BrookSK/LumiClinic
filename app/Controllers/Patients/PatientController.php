@@ -44,13 +44,14 @@ final class PatientController extends Controller
         $q = trim((string)$request->input('q', ''));
         $page = (int)$request->input('page', 1);
         $perPage = (int)$request->input('per_page', 25);
+        $originId = (int)$request->input('origin_id', 0);
 
         $page = max(1, $page);
         $perPage = max(5, min(100, $perPage));
         $offset = ($page - 1) * $perPage;
 
         $service = new PatientService($this->container);
-        $patients = $service->search($q, $perPage + 1, $offset);
+        $patients = $service->searchFiltered($q, $originId > 0 ? $originId : null, $perPage + 1, $offset);
         $hasNext = count($patients) > $perPage;
         if ($hasNext) {
             $patients = array_slice($patients, 0, $perPage);
@@ -62,6 +63,8 @@ final class PatientController extends Controller
             'page' => $page,
             'per_page' => $perPage,
             'has_next' => $hasNext,
+            'origin_id' => $originId,
+            'patient_origins' => (new OperationalConfigService($this->container))->listActivePatientOrigins(),
         ]);
     }
 
@@ -207,6 +210,7 @@ final class PatientController extends Controller
             'patient_user' => $patientUser,
             'portal_legal_docs' => $portalDocs,
             'portal_legal_acceptances' => $portalAcceptances,
+            'patient_origins' => (new OperationalConfigService($this->container))->listActivePatientOrigins(),
         ]);
     }
 
@@ -379,6 +383,51 @@ final class PatientController extends Controller
         }
 
         return Response::json(['items' => $items]);
+    }
+
+    public function exportCsv(Request $request): Response
+    {
+        $this->authorize('patients.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return Response::html('Sem contexto de clínica.', 403);
+        }
+
+        $q = trim((string)$request->input('q', ''));
+        $originId = (int)$request->input('origin_id', 0);
+
+        $service = new PatientService($this->container);
+        $rows = $service->exportFiltered($q, $originId > 0 ? $originId : null);
+
+        $statusMap = ['active' => 'Ativo', 'disabled' => 'Desativado', 'inactive' => 'Inativo'];
+        $sexMap = ['male' => 'Masculino', 'female' => 'Feminino', 'other' => 'Outro', 'M' => 'Masculino', 'F' => 'Feminino'];
+
+        $csv = "\xEF\xBB\xBF"; // UTF-8 BOM for Excel
+        $csv .= "ID;Nome;E-mail;Telefone;CPF;Data Nascimento;Sexo;Endereço;Origem;Status;Cadastrado em\n";
+
+        foreach ($rows as $r) {
+            $fields = [
+                (int)($r['id'] ?? 0),
+                (string)($r['name'] ?? ''),
+                (string)($r['email'] ?? ''),
+                (string)($r['phone'] ?? ''),
+                (string)($r['cpf'] ?? ''),
+                (string)($r['birth_date'] ?? ''),
+                (string)($sexMap[(string)($r['sex'] ?? '')] ?? (string)($r['sex'] ?? '')),
+                str_replace(["\r\n", "\n", "\r"], ' | ', (string)($r['address'] ?? '')),
+                (string)($r['origin_name'] ?? ''),
+                (string)($statusMap[(string)($r['status'] ?? '')] ?? (string)($r['status'] ?? '')),
+                (string)($r['created_at'] ?? ''),
+            ];
+            $csv .= implode(';', array_map(fn($v) => '"' . str_replace('"', '""', (string)$v) . '"', $fields)) . "\n";
+        }
+
+        $filename = 'pacientes_' . date('Y-m-d_His') . '.csv';
+        return Response::raw($csv, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     public function packagesJson(Request $request): Response

@@ -144,6 +144,11 @@ ob_start();
                 <option value="<?= $oid ?>" <?= ($oid > 0 && $oid === $currentOrigin) ? 'selected' : '' ?>><?= htmlspecialchars((string)($o['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
             <?php endforeach; ?>
         </select>
+        <?php if ($can('settings.update')): ?>
+            <a href="/settings/operational" style="font-size:11px;color:rgba(99,102,241,.7);margin-top:4px;display:inline-block;">⚙ Gerenciar origens</a>
+        <?php else: ?>
+            <div style="font-size:10px;color:#9ca3af;margin-top:4px;">Origens são cadastradas em Configurações → Operacional</div>
+        <?php endif; ?>
 
         <label class="lc-label">Endereço</label>
         <div class="lc-grid lc-gap-grid">

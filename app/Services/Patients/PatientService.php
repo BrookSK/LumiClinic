@@ -34,6 +34,34 @@ final class PatientService
     }
 
     /** @return list<array<string, mixed>> */
+    public function searchFiltered(string $q, ?int $originId, int $limit = 50, int $offset = 0): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $repo = new PatientRepository($this->container->get(\PDO::class));
+        $limit = max(1, min($limit, 200));
+        $offset = max(0, $offset);
+        return $repo->searchByClinicFiltered($clinicId, $q, $originId, $limit, $offset);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function exportFiltered(string $q, ?int $originId): array
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $repo = new PatientRepository($this->container->get(\PDO::class));
+        return $repo->exportByClinicFiltered($clinicId, $q, $originId);
+    }
+
+    /** @return list<array<string, mixed>> */
     public function listReferenceProfessionals(): array
     {
         $auth = new AuthService($this->container);

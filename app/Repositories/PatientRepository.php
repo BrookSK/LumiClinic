@@ -105,6 +105,80 @@ final class PatientRepository
         return $stmt->fetchAll();
     }
 
+    /** @return list<array<string, mixed>> */
+    public function searchByClinicFiltered(int $clinicId, string $q, ?int $originId, int $limit = 20, int $offset = 0): array
+    {
+        $offset = max(0, $offset);
+        $originFilter = '';
+        $params = [
+            'clinic_id' => $clinicId,
+            'q' => $q,
+            'q_like' => '%' . $q . '%',
+        ];
+        if ($originId !== null && $originId > 0) {
+            $originFilter = ' AND patient_origin_id = :origin_id';
+            $params['origin_id'] = $originId;
+        }
+        $sql = "
+            SELECT p.id, p.name, p.email, p.phone, p.whatsapp_opt_in, p.status, p.patient_origin_id,
+                   po.name AS origin_name
+            FROM patients p
+            LEFT JOIN patient_origins po ON po.id = p.patient_origin_id
+            WHERE p.clinic_id = :clinic_id
+              AND p.deleted_at IS NULL
+              AND (
+                    :q = ''
+                 OR p.name LIKE :q_like
+                 OR p.email LIKE :q_like
+                 OR p.phone LIKE :q_like
+              )
+              {$originFilter}
+            ORDER BY p.name ASC
+            LIMIT " . (int)$limit . "
+            OFFSET " . (int)$offset . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function exportByClinicFiltered(int $clinicId, string $q, ?int $originId, int $limit = 10000): array
+    {
+        $originFilter = '';
+        $params = [
+            'clinic_id' => $clinicId,
+            'q' => $q,
+            'q_like' => '%' . $q . '%',
+        ];
+        if ($originId !== null && $originId > 0) {
+            $originFilter = ' AND p.patient_origin_id = :origin_id';
+            $params['origin_id'] = $originId;
+        }
+        $sql = "
+            SELECT p.id, p.name, p.email, p.phone, p.cpf, p.birth_date, p.sex, p.address, p.status, p.created_at,
+                   po.name AS origin_name
+            FROM patients p
+            LEFT JOIN patient_origins po ON po.id = p.patient_origin_id
+            WHERE p.clinic_id = :clinic_id
+              AND p.deleted_at IS NULL
+              AND (
+                    :q = ''
+                 OR p.name LIKE :q_like
+                 OR p.email LIKE :q_like
+                 OR p.phone LIKE :q_like
+              )
+              {$originFilter}
+            ORDER BY p.name ASC
+            LIMIT " . (int)$limit . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     /** @return array<string, mixed>|null */
     public function findById(int $clinicId, int $id): ?array
     {

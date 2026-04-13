@@ -87,12 +87,21 @@ ob_start();
     <div class="lc-card__body">
         <!-- Read-only view -->
         <div id="patientReadView">
+            <?php
+            $patientOrigins = $patient_origins ?? [];
+            $originName = '—';
+            $originId = (int)($patient['patient_origin_id'] ?? 0);
+            foreach ($patientOrigins as $po) {
+                if ((int)($po['id'] ?? 0) === $originId) { $originName = (string)($po['name'] ?? '—'); break; }
+            }
+            ?>
             <div class="lc-grid lc-grid--2 lc-gap-grid">
                 <div><div class="lc-label">E-mail</div><div><?= htmlspecialchars((string)($patient['email'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">Telefone</div><div><?= htmlspecialchars((string)($patient['phone'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">Data de nascimento</div><div><?= htmlspecialchars((string)($patient['birth_date'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">Sexo</div><div><?= htmlspecialchars((string)($patient['sex'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">CPF</div><div><?php if (isset($patient['cpf']) && (string)$patient['cpf'] !== ''): ?><?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?><?php else: ?><?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '—' ?><?php endif; ?></div></div>
+                <div><div class="lc-label">Origem</div><div style="<?= $originId > 0 ? '' : 'color:#9ca3af;' ?>"><?= htmlspecialchars($originName, ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">Status</div><div><?php $st = (string)($patient['status'] ?? ''); ?><?= htmlspecialchars((string)($statusLabelMap[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></div></div>
             </div>
             <div style="margin-top:14px;"><div class="lc-label">Endereço</div><div><?= nl2br(htmlspecialchars((string)($patient['address'] ?? '—'), ENT_QUOTES, 'UTF-8')) ?></div></div>
@@ -113,6 +122,19 @@ ob_start();
                     <div class="lc-field"><label class="lc-label">Data de nascimento</label><input class="lc-input" type="date" name="birth_date" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
                     <div class="lc-field"><label class="lc-label">Sexo</label><select class="lc-select" name="sex"><option value="">—</option><option value="M" <?= ($patient['sex'] ?? '') === 'M' ? 'selected' : '' ?>>Masculino</option><option value="F" <?= ($patient['sex'] ?? '') === 'F' ? 'selected' : '' ?>>Feminino</option></select></div>
                     <div class="lc-field"><label class="lc-label">CPF</label><input class="lc-input" type="text" name="cpf" value="<?= htmlspecialchars((string)($patient['cpf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
+                    <div class="lc-field"><label class="lc-label">Origem</label>
+                        <select class="lc-select" name="patient_origin_id">
+                            <option value="">—</option>
+                            <?php foreach ($patientOrigins as $po): ?>
+                                <option value="<?= (int)$po['id'] ?>" <?= $originId === (int)$po['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string)($po['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php if ($can('settings.update')): ?>
+                            <a href="/settings/operational" style="font-size:11px;color:rgba(99,102,241,.7);margin-top:4px;display:inline-block;">⚙ Gerenciar origens</a>
+                        <?php else: ?>
+                            <div style="font-size:10px;color:#9ca3af;margin-top:4px;">Origens são cadastradas em Configurações → Operacional</div>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="lc-field" style="margin-top:12px;"><label class="lc-label">Endereço</label><input class="lc-input" type="text" name="address" value="<?= htmlspecialchars((string)($patient['address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
                 <div class="lc-field" style="margin-top:12px;"><label class="lc-label">Observações</label><textarea class="lc-textarea" name="notes" rows="3"><?= htmlspecialchars((string)($patient['notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></div>
