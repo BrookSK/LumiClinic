@@ -520,9 +520,9 @@ ob_start();
             <div id="dayActionLabel" style="font-weight:800;font-size:22px;color:#1f2937;">—</div>
         </div>
         <div style="padding:16px 24px 24px;display:flex;flex-direction:column;gap:10px;">
-            <a id="dayActionOpenDay" href="#" class="lc-btn lc-btn--primary" style="width:100%;text-align:center;text-decoration:none;">📅 Abrir agenda do dia</a>
-            <button type="button" id="dayActionNewAppt" class="lc-btn lc-btn--secondary" style="width:100%;">+ Novo agendamento</button>
-            <button type="button" class="lc-btn lc-btn--secondary" style="width:100%;font-size:12px;color:#6b7280;" onclick="closeDayAction()">Cancelar</button>
+            <a id="dayActionOpenDay" href="#" class="lc-btn lc-btn--primary" style="display:block;width:100%;text-align:center;text-decoration:none;box-sizing:border-box;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:4px;"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Abrir agenda do dia</a>
+            <button type="button" id="dayActionNewAppt" class="lc-btn lc-btn--secondary" style="display:block;width:100%;box-sizing:border-box;">+ Novo agendamento</button>
+            <button type="button" class="lc-btn lc-btn--secondary" style="display:block;width:100%;box-sizing:border-box;font-size:12px;color:#6b7280;" onclick="closeDayAction()">Cancelar</button>
         </div>
     </div>
 </div>
