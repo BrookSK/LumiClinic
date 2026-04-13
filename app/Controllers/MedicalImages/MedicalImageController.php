@@ -341,6 +341,7 @@ final class MedicalImageController extends Controller
         $y = (int)$request->input('y', 0);
         $w = (int)$request->input('w', 0);
         $h = (int)$request->input('h', 0);
+        $mode = trim((string)$request->input('mode', 'replace'));
 
         if ($imageId <= 0 || $w <= 0 || $h <= 0) {
             return $this->redirect('/medical-images');
@@ -348,15 +349,21 @@ final class MedicalImageController extends Controller
 
         try {
             $service = new MedicalImageService($this->container);
-            $patientId = $service->cropImage($imageId, $x, $y, $w, $h, $request->ip(), $request->header('user-agent'));
-            return $this->redirect('/medical-images/annotate?id=' . $imageId);
+
+            if ($mode === 'duplicate') {
+                $newId = $service->cropImageAsCopy($imageId, $x, $y, $w, $h, $request->ip(), $request->header('user-agent'));
+                return $this->redirect('/medical-images/annotate?id=' . $newId);
+            } else {
+                $service->cropImage($imageId, $x, $y, $w, $h, $request->ip(), $request->header('user-agent'));
+                return $this->redirect('/medical-images/annotate?id=' . $imageId);
+            }
         } catch (\RuntimeException $e) {
             $auth = new AuthService($this->container);
             $clinicId = $auth->clinicId();
             $pdo = $this->container->get(\PDO::class);
-            $img = $pdo->prepare('SELECT patient_id FROM medical_images WHERE id = ? AND clinic_id = ? LIMIT 1');
-            $img->execute([$imageId, $clinicId]);
-            $row = $img->fetch();
+            $stmt = $pdo->prepare('SELECT patient_id FROM medical_images WHERE id = ? AND clinic_id = ? LIMIT 1');
+            $stmt->execute([$imageId, $clinicId]);
+            $row = $stmt->fetch();
             $pid = $row ? (int)$row['patient_id'] : 0;
             return $this->redirect('/medical-images?patient_id=' . $pid . '&error=' . urlencode($e->getMessage()));
         }

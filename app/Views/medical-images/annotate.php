@@ -33,16 +33,33 @@ ob_start();
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span style="font-size:13px;font-weight:600;color:#4f46e5;">✂ Modo recorte</span>
         <span class="lc-muted" style="font-size:12px;">Arraste sobre a imagem para selecionar a área.</span>
-        <form id="crop-form" method="post" action="/medical-images/crop" style="margin:0;display:flex;gap:6px;margin-left:auto;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="image_id" value="<?= $imageId ?>" />
-            <input type="hidden" id="crop-x" name="x" value="0" />
-            <input type="hidden" id="crop-y" name="y" value="0" />
-            <input type="hidden" id="crop-w" name="w" value="0" />
-            <input type="hidden" id="crop-h" name="h" value="0" />
-            <button type="submit" id="btn-crop-apply" class="lc-btn lc-btn--primary lc-btn--sm" disabled>Aplicar recorte</button>
+        <div style="display:flex;gap:6px;margin-left:auto;">
+            <input type="hidden" id="crop-x" value="0" />
+            <input type="hidden" id="crop-y" value="0" />
+            <input type="hidden" id="crop-w" value="0" />
+            <input type="hidden" id="crop-h" value="0" />
+            <form method="post" action="/medical-images/crop" style="margin:0;display:inline;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="image_id" value="<?= $imageId ?>" />
+                <input type="hidden" name="mode" value="replace" />
+                <input type="hidden" name="x" class="crop-coord-x" value="0" />
+                <input type="hidden" name="y" class="crop-coord-y" value="0" />
+                <input type="hidden" name="w" class="crop-coord-w" value="0" />
+                <input type="hidden" name="h" class="crop-coord-h" value="0" />
+                <button type="submit" class="btn-crop-apply lc-btn lc-btn--primary lc-btn--sm" disabled>✂ Recortar esta imagem</button>
+            </form>
+            <form method="post" action="/medical-images/crop" style="margin:0;display:inline;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="image_id" value="<?= $imageId ?>" />
+                <input type="hidden" name="mode" value="duplicate" />
+                <input type="hidden" name="x" class="crop-coord-x" value="0" />
+                <input type="hidden" name="y" class="crop-coord-y" value="0" />
+                <input type="hidden" name="w" class="crop-coord-w" value="0" />
+                <input type="hidden" name="h" class="crop-coord-h" value="0" />
+                <button type="submit" class="btn-crop-apply lc-btn lc-btn--secondary lc-btn--sm" disabled>📋 Salvar como cópia</button>
+            </form>
             <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleCropMode()">Cancelar</button>
-        </form>
+        </div>
     </div>
 </div>
 <?php endif; ?>
@@ -319,7 +336,7 @@ window.toggleCropMode=function(){
     if(cropOverlay)cropOverlay.style.display='none';
     if(!cropMode){wrap.style.cursor=canUpload?'crosshair':'default';}
     else{wrap.style.cursor='crosshair';}
-    document.getElementById('btn-crop-apply').disabled=true;
+    document.querySelectorAll('.btn-crop-apply').forEach(function(el){el.disabled=true;});
 };
 if(canUpload&&wrap){
     wrap.addEventListener('pointerdown',function(e){
@@ -346,11 +363,13 @@ if(canUpload&&wrap){
         var pw=Math.abs(cx-cropStart.px),ph=Math.abs(cy-cropStart.py);
         var scaleX=VW/r.width,scaleY=VH/r.height;
         var ix=Math.round(px1*scaleX),iy=Math.round(py1*scaleY),iw=Math.round(pw*scaleX),ih=Math.round(ph*scaleY);
-        document.getElementById('crop-x').value=ix;
-        document.getElementById('crop-y').value=iy;
-        document.getElementById('crop-w').value=iw;
-        document.getElementById('crop-h').value=ih;
-        document.getElementById('btn-crop-apply').disabled=(iw<10||ih<10);
+        // Sync to all crop forms
+        document.querySelectorAll('.crop-coord-x').forEach(function(el){el.value=ix;});
+        document.querySelectorAll('.crop-coord-y').forEach(function(el){el.value=iy;});
+        document.querySelectorAll('.crop-coord-w').forEach(function(el){el.value=iw;});
+        document.querySelectorAll('.crop-coord-h').forEach(function(el){el.value=ih;});
+        var ok=iw>=10&&ih>=10;
+        document.querySelectorAll('.btn-crop-apply').forEach(function(el){el.disabled=!ok;});
         cropStart=null;
         e.preventDefault();e.stopPropagation();
     },true);

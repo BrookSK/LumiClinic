@@ -548,4 +548,96 @@ final class MedicalImageService
 
         return (int)$img['patient_id'];
     }
+
+    /**
+     * Crop and save as a NEW image (copy). Returns the new image ID.
+     */
+    public function cropImageAsCopy(int $imageId, int $x, int $y, int $w, int $h, string $ip, ?string $userAgent = null): int
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new MedicalImageRepository($pdo);
+        $img = $repo->findById($clinicId, $imageId);
+        if ($img === null) {
+            throw new \RuntimeException('Imagem não encontrada.');
+        }
+
+        $storagePath = (string)$img['storage_path'];
+        $fullPath = PrivateStorage::fullPath($clinicId, $storagePath);
+        if (!is_file($fullPath)) {
+            throw new \RuntimeException('Arquivo não encontrado no disco.');
+        }
+
+        $bytes = file_get_contents($fullPath);
+        if ($bytes === false || $bytes === '') {
+            throw new \RuntimeException('Falha ao ler arquivo.');
+        }
+
+        $src = @imagecreatefromstring($bytes);
+        if ($src === false) {
+            throw new \RuntimeException('Formato não suportado pelo GD.');
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+        $x = max(0, min($x, $srcW - 1));
+        $y = max(0, min($y, $srcH - 1));
+        $w = max(1, min($w, $srcW - $x));
+        $h = max(1, min($h, $srcH - $y));
+
+        $dst = imagecreatetruecolor($w, $h);
+        if ($dst === false) { imagedestroy($src); throw new \RuntimeException('Falha ao criar imagem.'); }
+        imagecopy($dst, $src, 0, 0, $x, $y, $w, $h);
+        imagedestroy($src);
+
+        $ext = strtolower(pathinfo($storagePath, PATHINFO_EXTENSION));
+        ob_start();
+        if ($ext === 'png') imagepng($dst, null, 9);
+        elseif ($ext === 'webp' && function_exists('imagewebp')) imagewebp($dst, null, 90);
+        else imagejpeg($dst, null, 92);
+        $croppedBytes = ob_get_clean();
+        imagedestroy($dst);
+
+        if ($croppedBytes === false || $croppedBytes === '') {
+            throw new \RuntimeException('Falha ao gerar imagem recortada.');
+        }
+
+        // Save as new file
+        $patientId = (int)$img['patient_id'];
+        $token = bin2hex(random_bytes(16));
+        $newRelative = 'medical_images/patient_' . $patientId . '/' . date('Ymd') . '_crop_' . $token . '.' . $ext;
+        PrivateStorage::put($clinicId, $newRelative, $croppedBytes);
+
+        // Create new DB record copying metadata from original
+        $mimeMap = ['jpg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'];
+        $newId = $repo->create(
+            $clinicId,
+            $patientId,
+            isset($img['medical_record_id']) ? ($img['medical_record_id'] !== null ? (int)$img['medical_record_id'] : null) : null,
+            isset($img['professional_id']) ? ($img['professional_id'] !== null ? (int)$img['professional_id'] : null) : null,
+            (string)($img['kind'] ?? 'photo'),
+            null, // comparison_key
+            isset($img['taken_at']) && $img['taken_at'] !== null ? (string)$img['taken_at'] : null,
+            isset($img['procedure_type']) && $img['procedure_type'] !== null ? (string)$img['procedure_type'] : null,
+            isset($img['session_number']) && $img['session_number'] !== null ? (int)$img['session_number'] : null,
+            isset($img['pose']) && $img['pose'] !== null ? (string)$img['pose'] : null,
+            $newRelative,
+            'Recorte de #' . $imageId,
+            $mimeMap[$ext] ?? 'image/jpeg',
+            strlen($croppedBytes),
+            $actorId
+        );
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'medical_images.crop_copy', ['source_id' => $imageId, 'new_id' => $newId, 'crop' => ['x' => $x, 'y' => $y, 'w' => $w, 'h' => $h]], $ip, $roleCodes, 'medical_image', $newId, $userAgent);
+
+        return $newId;
+    }
 }
