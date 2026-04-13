@@ -297,7 +297,7 @@ final class SalesService
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
     }
 
-    public function addPayment(int $saleId, string $method, string $amountStr, string $status, string $feesStr, ?string $gatewayRef, string $ip, ?string $userAgent = null, ?string $paidAtDate = null): int
+    public function addPayment(int $saleId, string $method, string $amountStr, string $status, string $feesStr, ?string $gatewayRef, string $ip, ?string $userAgent = null, ?string $paidAtDate = null, int $installments = 1): int
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -318,8 +318,8 @@ final class SalesService
             throw new \RuntimeException('Status inválido.');
         }
 
-        $amount = $this->parseMoney($amountStr);
-        if ($amount <= 0) {
+        $totalAmount = $this->parseMoney($amountStr);
+        if ($totalAmount <= 0) {
             throw new \RuntimeException('Valor inválido.');
         }
 
@@ -339,62 +339,90 @@ final class SalesService
             throw new \RuntimeException('Venda cancelada.');
         }
 
-        $paidAt = null;
-        if ($status === 'paid') {
-            if ($paidAtDate !== null && trim($paidAtDate) !== '') {
-                $paidAt = trim($paidAtDate) . ' ' . date('H:i:s');
-            } else {
-                $paidAt = (new \DateTimeImmutable('now'))->format('Y-m-d H:i:s');
+        $installments = max(1, min(48, $installments));
+        $payRepo = new PaymentRepository($pdo);
+        $saleLog = new SaleLogRepository($pdo);
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+
+        $firstPaymentId = 0;
+
+        // Calculate installment amount (last one absorbs rounding)
+        $installmentAmount = floor($totalAmount / $installments * 100) / 100;
+        $lastInstallmentAmount = round($totalAmount - ($installmentAmount * ($installments - 1)), 2);
+
+        // Parse start date
+        $startDate = new \DateTimeImmutable('now');
+        if ($paidAtDate !== null && trim($paidAtDate) !== '') {
+            $parsed = \DateTimeImmutable::createFromFormat('Y-m-d', trim($paidAtDate));
+            if ($parsed !== false) {
+                $startDate = $parsed;
             }
         }
 
-        $payRepo = new PaymentRepository($pdo);
-        $paymentId = $payRepo->create(
-            $clinicId,
-            $saleId,
-            $method,
-            number_format($amount, 2, '.', ''),
-            $status,
-            number_format($fees, 2, '.', ''),
-            $gatewayRef,
-            $paidAt,
-            $actorId
-        );
+        for ($i = 1; $i <= $installments; $i++) {
+            $isFirst = ($i === 1);
+            $isLast = ($i === $installments);
+            $amt = $isLast ? $lastInstallmentAmount : $installmentAmount;
 
-        $saleLog = new SaleLogRepository($pdo);
-        $saleLog->log(
-            $clinicId,
-            $saleId,
-            'payments.create',
-            [
+            // Due date: first = start date, rest = +N months
+            $dueDate = $startDate->modify('+' . ($i - 1) . ' months');
+
+            // Status: first installment uses selected status, rest are pending
+            $instStatus = $isFirst ? $status : 'pending';
+
+            $paidAt = null;
+            if ($instStatus === 'paid') {
+                $paidAt = $dueDate->format('Y-m-d') . ' ' . date('H:i:s');
+            }
+
+            // Gateway ref: installment label
+            $instRef = $installments > 1 ? ($i . '/' . $installments) : $gatewayRef;
+
+            $paymentId = $payRepo->create(
+                $clinicId,
+                $saleId,
+                $method,
+                number_format($amt, 2, '.', ''),
+                $instStatus,
+                number_format($isFirst ? $fees : 0.0, 2, '.', ''),
+                $instRef,
+                $paidAt,
+                $actorId
+            );
+
+            if ($isFirst) {
+                $firstPaymentId = $paymentId;
+            }
+
+            $saleLog->log($clinicId, $saleId, 'payments.create', [
                 'payment_id' => $paymentId,
                 'method' => $method,
-                'amount' => $amount,
-                'status' => $status,
-                'fees' => $fees,
-                'gateway_ref' => $gatewayRef,
-            ],
-            $actorId,
-            $ip
-        );
+                'amount' => $amt,
+                'status' => $instStatus,
+                'installment' => $i . '/' . $installments,
+            ], $actorId, $ip);
+        }
 
-        $audit = new AuditLogRepository($pdo);
-        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
-        $audit->log($actorId, $clinicId, 'finance.payments.create', ['sale_id' => $saleId, 'payment_id' => $paymentId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+        $audit->log($actorId, $clinicId, 'finance.payments.create', [
+            'sale_id' => $saleId,
+            'payment_id' => $firstPaymentId,
+            'installments' => $installments,
+            'total_amount' => $totalAmount,
+        ], $ip, $roleCodes, 'sale', $saleId, $userAgent);
 
         SystemEvent::dispatch($this->container, 'payment.created', [
             'sale_id' => $saleId,
-            'payment_id' => $paymentId,
+            'payment_id' => $firstPaymentId,
             'method' => $method,
-            'amount' => $amount,
+            'amount' => $totalAmount,
             'status' => $status,
-            'fees' => $fees,
-            'gateway_ref' => $gatewayRef,
-        ], 'payment', $paymentId, $ip, $userAgent);
+            'installments' => $installments,
+        ], 'payment', $firstPaymentId, $ip, $userAgent);
 
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
 
-        return $paymentId;
+        return $firstPaymentId;
     }
 
     public function refundPayment(int $paymentId, string $ip, ?string $userAgent = null): void

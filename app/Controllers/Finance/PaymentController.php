@@ -60,18 +60,13 @@ final class PaymentController extends Controller
             $method = $cardType === 'debit' ? 'debit_card' : 'credit_card';
         }
 
-        // Store installments info in gateway_ref if credit card
-        if ($method === 'credit_card' && $installments > 1) {
-            $gatewayRef = ($gatewayRef !== '' ? $gatewayRef . ' | ' : '') . $installments . 'x';
-        }
-
         if ($saleId <= 0) {
             return $this->redirect('/finance/sales');
         }
 
         try {
             $service = new SalesService($this->container);
-            $service->addPayment($saleId, $method, $amount, $status, $fees, $gatewayRef === '' ? null : $gatewayRef, $request->ip(), $request->header('user-agent'), $paidAtDate !== '' ? $paidAtDate : null);
+            $service->addPayment($saleId, $method, $amount, $status, $fees, $gatewayRef === '' ? null : $gatewayRef, $request->ip(), $request->header('user-agent'), $paidAtDate !== '' ? $paidAtDate : null, $installments);
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));

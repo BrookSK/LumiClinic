@@ -63,12 +63,21 @@ foreach ($services as $s) {
     $svcPriceMap[(int)$s['id']] = isset($s['price_cents']) && $s['price_cents'] !== null ? ((int)$s['price_cents'] / 100) : 0;
 }
 
-// Calculate remaining balance
+// Calculate payment summary
 $totalPaid = 0.0;
+$totalPending = 0.0;
+$countPaid = 0;
+$countPending = 0;
+$countTotal = count($payments);
 foreach ($payments as $pp) {
-    if ((string)($pp['status'] ?? '') === 'paid') $totalPaid += (float)($pp['amount'] ?? 0);
+    $pStatus = (string)($pp['status'] ?? '');
+    $pAmt = (float)($pp['amount'] ?? 0);
+    if ($pStatus === 'paid') { $totalPaid += $pAmt; $countPaid++; }
+    elseif ($pStatus === 'pending') { $totalPending += $pAmt; $countPending++; }
 }
 $remaining = max(0, (float)$sale['total_liquido'] - $totalPaid);
+$hasInstallments = $countTotal > 1;
+$allPaid = $countPending === 0 && $countPaid > 0 && $remaining < 0.01;
 
 ob_start();
 ?>
@@ -87,6 +96,8 @@ ob_start();
             </span>
             <?php if ($isPaid): ?>
                 <span class="lc-badge lc-badge--success">💰 Pago</span>
+            <?php elseif ($countPaid > 0 && $countPending > 0): ?>
+                <span class="lc-badge lc-badge--primary">📋 Pagamento em andamento (<?= $countPaid ?>/<?= $countTotal ?>)</span>
             <?php endif; ?>
             <?php if ($isCancelled): ?>
                 <span class="lc-badge lc-badge--danger">Cancelado</span>
@@ -222,11 +233,17 @@ ob_start();
                         <span>Total</span>
                         <span>R$ <?= number_format((float)$sale['total_liquido'], 2, ',', '.') ?></span>
                     </div>
-                    <?php if ($totalPaid > 0): ?>
+                    <?php if ($totalPaid > 0 || $countPending > 0): ?>
                         <div class="lc-flex lc-flex--between" style="font-size:13px; color:#16a34a; margin-top:4px;">
-                            <span>Pago</span>
+                            <span>Pago (<?= $countPaid ?>/<?= $countTotal ?>)</span>
                             <span>R$ <?= number_format($totalPaid, 2, ',', '.') ?></span>
                         </div>
+                        <?php if ($countPending > 0): ?>
+                        <div class="lc-flex lc-flex--between" style="font-size:13px; color:#eeb810; margin-top:2px;">
+                            <span>Pendente (<?= $countPending ?> parcela<?= $countPending > 1 ? 's' : '' ?>)</span>
+                            <span>R$ <?= number_format($totalPending, 2, ',', '.') ?></span>
+                        </div>
+                        <?php endif; ?>
                         <?php if ($remaining > 0.01): ?>
                         <div class="lc-flex lc-flex--between" style="font-size:13px; color:#b91c1c; margin-top:2px;">
                             <span>Restante</span>
@@ -303,8 +320,9 @@ ob_start();
                             </select>
                         </div>
                         <div class="lc-field">
-                            <label class="lc-label">Valor (R$)</label>
-                            <input class="lc-input" type="text" name="amount" required value="<?= number_format($remaining, 2, ',', '.') ?>" />
+                            <label class="lc-label">Valor total (R$)</label>
+                            <input class="lc-input" type="text" name="amount" required value="<?= number_format($remaining, 2, ',', '.') ?>" id="pay_amount" />
+                            <div id="installment_hint" style="display:none;font-size:11px;color:#6b7280;margin-top:3px;"></div>
                         </div>
                     </div>
                     <!-- Card type fields (hidden by default) -->
@@ -551,6 +569,7 @@ function toggleCardFields() {
     var cardFields = document.getElementById('card_fields');
     if (!method || !cardFields) return;
     cardFields.style.display = method.value === 'card' ? 'block' : 'none';
+    updateInstallmentHint();
 }
 
 function toggleInstallments() {
@@ -558,6 +577,31 @@ function toggleInstallments() {
     var installField = document.getElementById('installments_field');
     if (!cardType || !installField) return;
     installField.style.display = cardType.value === 'credit' ? 'block' : 'none';
+    updateInstallmentHint();
+}
+
+function updateInstallmentHint() {
+    var hint = document.getElementById('installment_hint');
+    var method = document.getElementById('pay_method');
+    var cardType = document.getElementById('card_type');
+    var installSel = document.querySelector('#installments_field select');
+    var amountInput = document.getElementById('pay_amount');
+    if (!hint || !method || !amountInput) return;
+
+    if (method.value !== 'card' || !cardType || cardType.value !== 'credit' || !installSel) {
+        hint.style.display = 'none';
+        return;
+    }
+
+    var n = parseInt(installSel.value) || 1;
+    if (n <= 1) { hint.style.display = 'none'; return; }
+
+    var total = parseFloat((amountInput.value || '0').replace(/\./g, '').replace(',', '.')) || 0;
+    if (total <= 0) { hint.style.display = 'none'; return; }
+
+    var parcela = (total / n).toFixed(2).replace('.', ',');
+    hint.textContent = n + 'x de R$ ' + parcela + ' — primeira parcela com status selecionado, demais como pendente';
+    hint.style.display = 'block';
 }
 
 function applyDiscount() {
@@ -576,6 +620,14 @@ function applyDiscount() {
     document.body.appendChild(f);
     f.submit();
 }
+
+// Attach listeners for installment hint updates
+(function(){
+    var installSel = document.querySelector('#installments_field select');
+    var amountInput = document.getElementById('pay_amount');
+    if (installSel) installSel.addEventListener('change', updateInstallmentHint);
+    if (amountInput) amountInput.addEventListener('input', updateInstallmentHint);
+})();
 </script>
 
 <?php
