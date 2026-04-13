@@ -112,4 +112,29 @@ final class OperationalController extends Controller
             return $this->redirect('/settings/operational?error=' . urlencode($e->getMessage()));
         }
     }
+
+    public function reorder(Request $request): \App\Core\Http\Response
+    {
+        $this->authorize('settings.update');
+
+        $type = trim((string)$request->input('type', ''));
+        $idsRaw = $request->input('ids', '');
+
+        $ids = [];
+        if (is_array($idsRaw)) {
+            $ids = array_map('intval', $idsRaw);
+        } elseif (is_string($idsRaw) && $idsRaw !== '') {
+            $decoded = json_decode($idsRaw, true);
+            if (is_array($decoded)) {
+                $ids = array_map('intval', $decoded);
+            }
+        }
+
+        try {
+            (new OperationalConfigService($this->container))->reorder($type, $ids, $request->ip());
+            return \App\Core\Http\Response::json(['ok' => true]);
+        } catch (\RuntimeException $e) {
+            return \App\Core\Http\Response::json(['ok' => false, 'error' => $e->getMessage()], 400);
+        }
+    }
 }

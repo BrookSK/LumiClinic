@@ -326,6 +326,7 @@ $router->post('/settings/operational/lost-reasons/create', [OperationalControlle
 $router->post('/settings/operational/lost-reasons/delete', [OperationalController::class, 'deleteLostReason']);
 $router->post('/settings/operational/patient-origins/create', [OperationalController::class, 'createPatientOrigin']);
 $router->post('/settings/operational/patient-origins/delete', [OperationalController::class, 'deletePatientOrigin']);
+$router->post('/settings/operational/reorder', [OperationalController::class, 'reorder']);
 
 $router->get('/settings/legal-documents', [SettingsLegalDocumentsController::class, 'index']);
 $router->get('/settings/legal-documents/edit', [SettingsLegalDocumentsController::class, 'edit']);

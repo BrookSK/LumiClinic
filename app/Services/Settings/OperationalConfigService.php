@@ -206,4 +206,34 @@ final class OperationalConfigService
         (new ClinicPatientOriginRepository($pdo))->softDelete($clinicId, $id);
         (new AuditLogRepository($pdo))->log($userId, $clinicId, 'settings.operational.patient_origins.delete', ['id' => $id], $ip);
     }
+
+    /** @param list<int> $ids ordered list of IDs */
+    public function reorder(string $type, array $ids, string $ip): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $userId = $auth->userId();
+        if ($clinicId === null || $userId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $tableMap = [
+            'stages' => 'clinic_funnel_stages',
+            'lost_reasons' => 'clinic_lost_reasons',
+            'origins' => 'clinic_patient_origins',
+        ];
+
+        $table = $tableMap[$type] ?? null;
+        if ($table === null) {
+            throw new \RuntimeException('Tipo inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $stmt = $pdo->prepare("UPDATE {$table} SET sort_order = ? WHERE id = ? AND clinic_id = ? AND deleted_at IS NULL");
+        foreach ($ids as $order => $id) {
+            $stmt->execute([$order + 1, (int)$id, $clinicId]);
+        }
+
+        (new AuditLogRepository($pdo))->log($userId, $clinicId, 'settings.operational.reorder', ['type' => $type, 'ids' => $ids], $ip);
+    }
 }
