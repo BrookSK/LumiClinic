@@ -187,12 +187,38 @@ ob_start();
                     </div>
                 <?php endforeach; ?>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <?php foreach (['draft'=>'Rascunho','sent'=>'Enviado','standby'=>'Em espera','rejected'=>'Recusado'] as $bk => $blbl): ?>
+
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Visualizar orçamentos</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+                <?php foreach ($bsLabels as $bk => $blbl): ?>
                     <?php if ((int)($bsc[$bk] ?? 0) > 0): ?>
-                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales?budget_status=<?= $bk ?>">Ver <?= mb_strtolower($blbl, 'UTF-8') ?> (<?= (int)($bsc[$bk] ?? 0) ?>)</a>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales?budget_status=<?= $bk ?>"><?= $bsIcons[$bk] ?> <?= htmlspecialchars($blbl, ENT_QUOTES, 'UTF-8') ?> (<?= (int)($bsc[$bk] ?? 0) ?>)</a>
                     <?php endif; ?>
                 <?php endforeach; ?>
+            </div>
+
+            <div style="border-top:1px solid rgba(0,0,0,.08);padding-top:12px;margin-top:4px;">
+                <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Exportar relatório de orçamentos</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <select id="exportBudgetStatus" class="lc-select" style="width:180px;font-size:13px;">
+                        <option value="">Todos os status</option>
+                        <?php foreach ($bsLabels as $bk => $blbl): ?>
+                            <option value="<?= $bk ?>"><?= htmlspecialchars($blbl, ENT_QUOTES, 'UTF-8') ?> (<?= (int)($bsc[$bk] ?? 0) ?>)</option>
+                        <?php endforeach; ?>
+                    </select>
+                    <a id="exportBudgetCsvLink" class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales/export.csv">📥 Exportar CSV</a>
+                </div>
+                <script>
+                (function(){
+                    var sel = document.getElementById('exportBudgetStatus');
+                    var link = document.getElementById('exportBudgetCsvLink');
+                    if (!sel || !link) return;
+                    sel.addEventListener('change', function(){
+                        var v = sel.value;
+                        link.href = '/finance/sales/export.csv' + (v ? '?budget_status=' + encodeURIComponent(v) : '');
+                    });
+                })();
+                </script>
             </div>
         <?php endif; ?>
     </div>
