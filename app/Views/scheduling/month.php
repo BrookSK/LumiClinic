@@ -519,10 +519,11 @@ ob_start();
             <div style="font-size:14px;color:#6b7280;margin-bottom:4px;">Dia selecionado</div>
             <div id="dayActionLabel" style="font-weight:800;font-size:22px;color:#1f2937;">—</div>
         </div>
+        <style>#dayActionPopup .da-btn{display:block!important;width:100%!important;margin:0!important;padding:12px 16px!important;border-radius:10px!important;font-size:14px!important;font-weight:600!important;text-align:center!important;text-decoration:none!important;cursor:pointer!important;box-sizing:border-box!important;border:none!important;font-family:inherit!important;}#dayActionPopup .da-primary{background:linear-gradient(135deg,#fde59f,#815901)!important;color:#fff!important;}#dayActionPopup .da-secondary{background:#f3f4f6!important;color:#374151!important;}#dayActionPopup .da-cancel{background:transparent!important;color:#9ca3af!important;font-size:12px!important;padding:8px 16px!important;}</style>
         <div style="padding:16px 24px 24px;display:flex;flex-direction:column;gap:10px;">
-            <a id="dayActionOpenDay" href="#" class="lc-btn lc-btn--primary" style="display:block;width:100%;text-align:center;text-decoration:none;box-sizing:border-box;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:4px;"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Abrir agenda do dia</a>
-            <button type="button" id="dayActionNewAppt" class="lc-btn lc-btn--secondary" style="display:block;width:100%;box-sizing:border-box;">+ Novo agendamento</button>
-            <button type="button" class="lc-btn lc-btn--secondary" style="display:block;width:100%;box-sizing:border-box;font-size:12px;color:#6b7280;" onclick="closeDayAction()">Cancelar</button>
+            <a id="dayActionOpenDay" href="#" class="da-btn da-primary"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:4px;"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Abrir agenda do dia</a>
+            <button type="button" id="dayActionNewAppt" class="da-btn da-secondary">+ Novo agendamento</button>
+            <button type="button" class="da-btn da-cancel" onclick="closeDayAction()">Cancelar</button>
         </div>
     </div>
 </div>
