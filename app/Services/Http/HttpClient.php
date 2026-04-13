@@ -49,6 +49,7 @@ final class HttpClient
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_UNRESTRICTED_AUTH => true,
             CURLOPT_CONNECTTIMEOUT => $timeoutSeconds,
             CURLOPT_TIMEOUT => $timeoutSeconds,
             CURLOPT_HTTPHEADER => $curlHeaders,
