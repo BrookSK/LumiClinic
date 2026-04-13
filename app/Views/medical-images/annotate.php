@@ -21,7 +21,6 @@ $canUpload = $can('medical_images.upload');
 ob_start();
 ?>
 
-<!-- Cabeçalho -->
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:16px; gap:10px;">
     <div>
         <div style="font-weight:800; font-size:18px;">Marcações na imagem</div>
@@ -37,52 +36,43 @@ ob_start();
 
 <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 280px; align-items:start;">
 
-    <!-- Imagem com canvas de anotação -->
     <div class="lc-card" style="margin:0; overflow:hidden;">
         <div id="anno-wrap" style="position:relative; width:100%; background:#111; border-radius:10px; overflow:hidden; cursor:<?= $canUpload ? 'crosshair' : 'default' ?>;">
-            <img id="anno-img"
-                src="/medical-images/file?id=<?= $imageId ?>"
-                alt="Imagem"
-                style="display:block; width:100%; height:auto; max-height:75vh; object-fit:contain;"
-                draggable="false"
-            />
-            <!-- Layer de anotações (SVG) -->
+            <img id="anno-img" src="/medical-images/file?id=<?= $imageId ?>" alt="Imagem" style="display:block; width:100%; height:auto; max-height:75vh; object-fit:contain;" draggable="false" />
             <svg id="anno-svg" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none;"></svg>
         </div>
     </div>
 
-    <!-- Painel lateral -->
     <div style="display:flex; flex-direction:column; gap:12px;">
 
-        <!-- Ferramentas de desenho -->
         <?php if ($canUpload): ?>
         <div class="lc-card" style="margin:0;">
             <div class="lc-card__header" style="font-weight:700; font-size:13px;">Nova marcação</div>
             <div class="lc-card__body">
                 <div style="margin-bottom:10px;">
                     <div class="lc-label" style="margin-bottom:6px;">Ferramenta</div>
-                    <div class="lc-flex lc-gap-sm">
-                        <button type="button" id="tool-rect" class="lc-btn lc-btn--primary lc-btn--sm" onclick="setTool('rect')" title="Retângulo">▭ Retângulo</button>
-                        <button type="button" id="tool-arrow" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="setTool('arrow')" title="Seta">↗ Seta</button>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                        <button type="button" id="tool-rect" class="lc-btn lc-btn--primary lc-btn--sm" onclick="setTool('rect')" title="Retângulo" style="font-size:11px;padding:4px 8px;">▭ Retângulo</button>
+                        <button type="button" id="tool-arrow" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="setTool('arrow')" title="Seta" style="font-size:11px;padding:4px 8px;">↗ Seta</button>
+                        <button type="button" id="tool-circle" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="setTool('circle')" title="Círculo" style="font-size:11px;padding:4px 8px;">◯ Círculo</button>
+                        <button type="button" id="tool-line" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="setTool('line')" title="Traço livre" style="font-size:11px;padding:4px 8px;">✏ Traço</button>
                     </div>
                 </div>
 
                 <div class="lc-field">
                     <label class="lc-label">Texto da marcação</label>
-                    <input class="lc-input" type="text" id="note" placeholder="Ex: Área de aplicação..." maxlength="120" />
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <input class="lc-input" type="text" id="note" placeholder="Ex: Área de aplicação..." maxlength="120" style="flex:1;" />
+                        <button type="button" id="btn-mic" onclick="toggleAudioRec()" title="Gravar áudio" style="background:none;border:1px solid rgba(0,0,0,.12);border-radius:8px;padding:6px 8px;cursor:pointer;font-size:14px;">🎤</button>
+                    </div>
+                    <div id="audio-status" style="display:none;font-size:11px;margin-top:4px;color:#b91c1c;"></div>
                 </div>
 
                 <div class="lc-field" style="margin-top:8px;">
                     <label class="lc-label">Cor</label>
                     <div class="lc-flex lc-gap-sm" style="flex-wrap:wrap;">
-                        <?php foreach (['#e11d48'=>'Vermelho','#2563eb'=>'Azul','#16a34a'=>'Verde','#d97706'=>'Laranja','#7c3aed'=>'Roxo'] as $hex => $name): ?>
-                            <button type="button"
-                                class="color-btn"
-                                data-color="<?= $hex ?>"
-                                onclick="setColor('<?= $hex ?>')"
-                                title="<?= $name ?>"
-                                style="width:24px; height:24px; border-radius:50%; background:<?= $hex ?>; border:2px solid transparent; cursor:pointer; padding:0;"
-                            ></button>
+                        <?php foreach (['#e11d48'=>'Vermelho','#2563eb'=>'Azul','#16a34a'=>'Verde','#d97706'=>'Laranja','#7c3aed'=>'Roxo','#ffffff'=>'Branco'] as $hex => $name): ?>
+                            <button type="button" class="color-btn" data-color="<?= $hex ?>" onclick="setColor('<?= $hex ?>')" title="<?= $name ?>" style="width:24px; height:24px; border-radius:50%; background:<?= $hex ?>; border:2px solid <?= $hex === '#ffffff' ? '#ccc' : 'transparent' ?>; cursor:pointer; padding:0;"></button>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -98,7 +88,6 @@ ob_start();
         </div>
         <?php endif; ?>
 
-        <!-- Lista de marcações -->
         <div class="lc-card" style="margin:0;">
             <div class="lc-card__header" style="font-weight:700; font-size:13px;">
                 Marcações
@@ -110,7 +99,6 @@ ob_start();
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -120,155 +108,128 @@ ob_start();
     var csrf     = <?= json_encode((string)$csrf) ?>;
     var canUpload = <?= json_encode((bool)$canUpload) ?>;
 
-    var img      = document.getElementById('anno-img');
-    var wrap     = document.getElementById('anno-wrap');
-    var svg      = document.getElementById('anno-svg');
-    var noteEl   = document.getElementById('note');
-    var noteHid  = document.getElementById('note_hidden');
-    var payload  = document.getElementById('payload_json');
-    var btnSave  = document.getElementById('btn-save');
-    var listEl   = document.getElementById('anno-list');
-    var countEl  = document.getElementById('anno-count');
+    var img = document.getElementById('anno-img');
+    var wrap = document.getElementById('anno-wrap');
+    var svg = document.getElementById('anno-svg');
+    var noteEl = document.getElementById('note');
+    var noteHid = document.getElementById('note_hidden');
+    var payload = document.getElementById('payload_json');
+    var btnSave = document.getElementById('btn-save');
+    var listEl = document.getElementById('anno-list');
+    var countEl = document.getElementById('anno-count');
 
     if (!img || !wrap || !svg) return;
 
-    var currentTool  = 'rect';
-    var currentColor = '#e11d48';
-    var drawing = false;
-    var startPt = null;
-    var previewEl = null;
+    var currentTool = 'rect', currentColor = '#e11d48';
+    var drawing = false, startPt = null, previewEl = null;
+    var freehandPoints = [];
 
-    // ── Ferramentas ──────────────────────────────────────────────
+    var TOOLS = ['rect','arrow','circle','line'];
     window.setTool = function(t) {
         currentTool = t;
-        ['rect','arrow'].forEach(function(id){
+        TOOLS.forEach(function(id){
             var btn = document.getElementById('tool-' + id);
-            if (!btn) return;
-            btn.className = id === t ? 'lc-btn lc-btn--primary lc-btn--sm' : 'lc-btn lc-btn--secondary lc-btn--sm';
+            if (btn) btn.className = id === t ? 'lc-btn lc-btn--primary lc-btn--sm' : 'lc-btn lc-btn--secondary lc-btn--sm';
         });
     };
 
     window.setColor = function(c) {
         currentColor = c;
         document.querySelectorAll('.color-btn').forEach(function(b){
-            b.style.border = b.getAttribute('data-color') === c
-                ? '2px solid #111'
-                : '2px solid transparent';
+            var bc = b.getAttribute('data-color');
+            b.style.border = bc === c ? '2px solid #111' : ('2px solid ' + (bc === '#ffffff' ? '#ccc' : 'transparent'));
         });
     };
     setColor('#e11d48');
 
-    // ── Coordenadas normalizadas ──────────────────────────────────
     function normPt(e) {
         var r = img.getBoundingClientRect();
-        return {
-            x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)),
-            y: Math.max(0, Math.min(1, (e.clientY - r.top)  / r.height)),
-        };
+        return { x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)) };
     }
 
-    // ── SVG helpers ───────────────────────────────────────────────
     function svgNS(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
-
     function pct(v) { return (v * 100).toFixed(3) + '%'; }
 
     function drawRect(r, color, label, id) {
-        var g = svgNS('g');
-        g.setAttribute('data-id', id || '');
-
+        var g = svgNS('g'); g.setAttribute('data-id', id || '');
         var rect = svgNS('rect');
-        rect.setAttribute('x', pct(r.x));
-        rect.setAttribute('y', pct(r.y));
-        rect.setAttribute('width', pct(r.w));
-        rect.setAttribute('height', pct(r.h));
-        rect.setAttribute('fill', color + '22');
-        rect.setAttribute('stroke', color);
-        rect.setAttribute('stroke-width', '2');
-        rect.setAttribute('rx', '4');
+        rect.setAttribute('x', pct(r.x)); rect.setAttribute('y', pct(r.y));
+        rect.setAttribute('width', pct(r.w)); rect.setAttribute('height', pct(r.h));
+        rect.setAttribute('fill', color + '22'); rect.setAttribute('stroke', color);
+        rect.setAttribute('stroke-width', '2'); rect.setAttribute('rx', '4');
         g.appendChild(rect);
+        if (label) addLabel(g, r.x, r.y, label, color);
+        svg.appendChild(g); return g;
+    }
 
-        if (label) {
-            var text = svgNS('text');
-            text.setAttribute('x', pct(r.x));
-            text.setAttribute('y', pct(r.y));
-            text.setAttribute('dy', '-6');
-            text.setAttribute('fill', '#fff');
-            text.setAttribute('font-size', '12');
-            text.setAttribute('font-family', 'system-ui,sans-serif');
-            text.setAttribute('font-weight', '600');
-
-            var bg = svgNS('rect');
-            bg.setAttribute('x', pct(r.x));
-            bg.setAttribute('y', pct(r.y - 0.04));
-            bg.setAttribute('width', pct(Math.min(label.length * 0.012 + 0.02, 0.5)));
-            bg.setAttribute('height', pct(0.04));
-            bg.setAttribute('fill', color);
-            bg.setAttribute('rx', '3');
-            g.appendChild(bg);
-
-            text.textContent = label;
-            g.appendChild(text);
-        }
-        svg.appendChild(g);
-        return g;
+    function drawCircle(cx, cy, rx, ry, color, label, id) {
+        var g = svgNS('g'); g.setAttribute('data-id', id || '');
+        var el = svgNS('ellipse');
+        el.setAttribute('cx', pct(cx)); el.setAttribute('cy', pct(cy));
+        el.setAttribute('rx', pct(rx)); el.setAttribute('ry', pct(ry));
+        el.setAttribute('fill', color + '18'); el.setAttribute('stroke', color);
+        el.setAttribute('stroke-width', '2');
+        g.appendChild(el);
+        if (label) addLabel(g, cx - rx, cy - ry, label, color);
+        svg.appendChild(g); return g;
     }
 
     function drawArrow(x1, y1, x2, y2, color, label, id) {
-        var g = svgNS('g');
-        g.setAttribute('data-id', id || '');
-
+        var g = svgNS('g'); g.setAttribute('data-id', id || '');
+        ensureArrowMarker(color);
         var line = svgNS('line');
         line.setAttribute('x1', pct(x1)); line.setAttribute('y1', pct(y1));
         line.setAttribute('x2', pct(x2)); line.setAttribute('y2', pct(y2));
-        line.setAttribute('stroke', color);
-        line.setAttribute('stroke-width', '2.5');
-        line.setAttribute('marker-end', 'url(#arrowhead-' + color.replace('#','') + ')');
+        line.setAttribute('stroke', color); line.setAttribute('stroke-width', '2');
+        line.setAttribute('marker-end', 'url(#ah-' + color.replace('#','') + ')');
         g.appendChild(line);
+        if (label) { var t = svgNS('text'); t.setAttribute('x', pct(x2)); t.setAttribute('y', pct(y2)); t.setAttribute('dy', '-6'); t.setAttribute('fill', color); t.setAttribute('font-size', '11'); t.setAttribute('font-family', 'system-ui,sans-serif'); t.setAttribute('font-weight', '600'); t.textContent = label; g.appendChild(t); }
+        svg.appendChild(g); return g;
+    }
 
-        if (label) {
-            var text = svgNS('text');
-            text.setAttribute('x', pct(x2));
-            text.setAttribute('y', pct(y2));
-            text.setAttribute('dy', '-8');
-            text.setAttribute('fill', color);
-            text.setAttribute('font-size', '12');
-            text.setAttribute('font-family', 'system-ui,sans-serif');
-            text.setAttribute('font-weight', '600');
-            text.textContent = label;
-            g.appendChild(text);
-        }
-        svg.appendChild(g);
-        return g;
+    function drawFreehand(points, color, label, id) {
+        if (!points || points.length < 2) return null;
+        var g = svgNS('g'); g.setAttribute('data-id', id || '');
+        var d = 'M' + points.map(function(p){ return pct(p.x) + ' ' + pct(p.y); }).join(' L');
+        var path = svgNS('path');
+        path.setAttribute('d', d); path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', color); path.setAttribute('stroke-width', '2.5');
+        path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round');
+        g.appendChild(path);
+        if (label && points.length > 0) { var t = svgNS('text'); t.setAttribute('x', pct(points[0].x)); t.setAttribute('y', pct(points[0].y)); t.setAttribute('dy', '-6'); t.setAttribute('fill', color); t.setAttribute('font-size', '11'); t.setAttribute('font-family', 'system-ui,sans-serif'); t.setAttribute('font-weight', '600'); t.textContent = label; g.appendChild(t); }
+        svg.appendChild(g); return g;
+    }
+
+    function addLabel(g, x, y, label, color) {
+        var bg = svgNS('rect');
+        bg.setAttribute('x', pct(x)); bg.setAttribute('y', pct(y - 0.035));
+        bg.setAttribute('width', pct(Math.min(label.length * 0.011 + 0.02, 0.45)));
+        bg.setAttribute('height', pct(0.035)); bg.setAttribute('fill', color); bg.setAttribute('rx', '3');
+        g.appendChild(bg);
+        var t = svgNS('text');
+        t.setAttribute('x', pct(x + 0.005)); t.setAttribute('y', pct(y - 0.01));
+        t.setAttribute('fill', '#fff'); t.setAttribute('font-size', '11');
+        t.setAttribute('font-family', 'system-ui,sans-serif'); t.setAttribute('font-weight', '600');
+        t.textContent = label; g.appendChild(t);
     }
 
     function ensureArrowMarker(color) {
-        var id = 'arrowhead-' + color.replace('#','');
+        var id = 'ah-' + color.replace('#','');
         if (svg.querySelector('#' + id)) return;
         var defs = svg.querySelector('defs') || svg.insertBefore(svgNS('defs'), svg.firstChild);
-        var marker = svgNS('marker');
-        marker.setAttribute('id', id);
-        marker.setAttribute('markerWidth', '8');
-        marker.setAttribute('markerHeight', '8');
-        marker.setAttribute('refX', '6');
-        marker.setAttribute('refY', '3');
-        marker.setAttribute('orient', 'auto');
-        var path = svgNS('path');
-        path.setAttribute('d', 'M0,0 L0,6 L8,3 z');
-        path.setAttribute('fill', color);
-        marker.appendChild(path);
-        defs.appendChild(marker);
+        var m = svgNS('marker');
+        m.setAttribute('id', id); m.setAttribute('markerWidth', '6'); m.setAttribute('markerHeight', '6');
+        m.setAttribute('refX', '5'); m.setAttribute('refY', '3'); m.setAttribute('orient', 'auto');
+        var p = svgNS('path'); p.setAttribute('d', 'M0,0 L0,6 L6,3 z'); p.setAttribute('fill', color);
+        m.appendChild(p); defs.appendChild(m);
     }
 
-    // ── Desenho interativo ────────────────────────────────────────
+    // Drawing interaction
     if (canUpload) {
-        wrap.style.cursor = 'crosshair';
-
         wrap.addEventListener('pointerdown', function(e){
             if (e.target !== img && e.target !== svg && !svg.contains(e.target)) return;
-            drawing = true;
-            startPt = normPt(e);
-            try { wrap.setPointerCapture(e.pointerId); } catch(err){}
-            e.preventDefault();
+            drawing = true; startPt = normPt(e); freehandPoints = [startPt];
+            try { wrap.setPointerCapture(e.pointerId); } catch(err){} e.preventDefault();
         });
 
         wrap.addEventListener('pointermove', function(e){
@@ -277,107 +238,122 @@ ob_start();
             if (previewEl) { try { svg.removeChild(previewEl); } catch(err){} previewEl = null; }
 
             if (currentTool === 'rect') {
-                var r = {
-                    x: Math.min(startPt.x, cur.x),
-                    y: Math.min(startPt.y, cur.y),
-                    w: Math.abs(cur.x - startPt.x),
-                    h: Math.abs(cur.y - startPt.y),
-                };
-                previewEl = drawRect(r, currentColor, '', '');
-            } else {
-                ensureArrowMarker(currentColor);
+                previewEl = drawRect({ x: Math.min(startPt.x, cur.x), y: Math.min(startPt.y, cur.y), w: Math.abs(cur.x - startPt.x), h: Math.abs(cur.y - startPt.y) }, currentColor, '', '');
+            } else if (currentTool === 'arrow') {
                 previewEl = drawArrow(startPt.x, startPt.y, cur.x, cur.y, currentColor, '', '');
+            } else if (currentTool === 'circle') {
+                var cx = (startPt.x + cur.x) / 2, cy = (startPt.y + cur.y) / 2;
+                previewEl = drawCircle(cx, cy, Math.abs(cur.x - startPt.x) / 2, Math.abs(cur.y - startPt.y) / 2, currentColor, '', '');
+            } else if (currentTool === 'line') {
+                freehandPoints.push(cur);
+                previewEl = drawFreehand(freehandPoints, currentColor, '', '');
             }
             e.preventDefault();
         });
 
         wrap.addEventListener('pointerup', function(e){
             if (!drawing || !startPt) return;
-            drawing = false;
-            var cur = normPt(e);
-
+            drawing = false; var cur = normPt(e);
             var payloadObj;
+
             if (currentTool === 'rect') {
-                payloadObj = {
-                    type: 'rect',
-                    color: currentColor,
-                    rect: {
-                        x: Math.min(startPt.x, cur.x),
-                        y: Math.min(startPt.y, cur.y),
-                        w: Math.abs(cur.x - startPt.x),
-                        h: Math.abs(cur.y - startPt.y),
-                    }
-                };
-            } else {
-                payloadObj = {
-                    type: 'arrow',
-                    color: currentColor,
-                    x1: startPt.x, y1: startPt.y,
-                    x2: cur.x, y2: cur.y,
-                };
+                payloadObj = { type: 'rect', color: currentColor, rect: { x: Math.min(startPt.x, cur.x), y: Math.min(startPt.y, cur.y), w: Math.abs(cur.x - startPt.x), h: Math.abs(cur.y - startPt.y) } };
+            } else if (currentTool === 'arrow') {
+                payloadObj = { type: 'arrow', color: currentColor, x1: startPt.x, y1: startPt.y, x2: cur.x, y2: cur.y };
+            } else if (currentTool === 'circle') {
+                payloadObj = { type: 'circle', color: currentColor, cx: (startPt.x + cur.x) / 2, cy: (startPt.y + cur.y) / 2, rx: Math.abs(cur.x - startPt.x) / 2, ry: Math.abs(cur.y - startPt.y) / 2 };
+            } else if (currentTool === 'line') {
+                freehandPoints.push(cur);
+                payloadObj = { type: 'line', color: currentColor, points: freehandPoints };
             }
 
             if (payload) payload.value = JSON.stringify(payloadObj);
             if (noteHid && noteEl) noteHid.value = noteEl.value;
             if (btnSave) btnSave.disabled = false;
-            startPt = null;
+            startPt = null; freehandPoints = [];
         });
     }
 
-    // ── Carregar anotações ────────────────────────────────────────
-    function renderAnnotations(items) {
-        // Limpar SVG (manter defs)
-        Array.from(svg.childNodes).forEach(function(n){
-            if (n.tagName !== 'defs') svg.removeChild(n);
+    // Audio recording
+    var audioRec = null, audioChunks = [], audioRecording = false;
+    window.toggleAudioRec = function() {
+        if (audioRecording) { stopAudioRec(); return; }
+        startAudioRec();
+    };
+
+    function startAudioRec() {
+        var statusEl = document.getElementById('audio-status');
+        var btnMic = document.getElementById('btn-mic');
+        navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+            audioChunks = [];
+            audioRec = new MediaRecorder(stream);
+            audioRec.ondataavailable = function(e){ if(e.data && e.data.size) audioChunks.push(e.data); };
+            audioRec.onstop = function(){
+                stream.getTracks().forEach(function(t){ t.stop(); });
+                if (!audioChunks.length) { if(statusEl) statusEl.style.display='none'; return; }
+                var blob = new Blob(audioChunks, {type: audioChunks[0].type || 'audio/webm'});
+                if(statusEl){ statusEl.textContent='Transcrevendo...'; statusEl.style.display='block'; statusEl.style.color='#2563eb'; }
+                var fd = new FormData();
+                fd.append('_csrf', csrf);
+                fd.append('patient_id', String(<?= $patientId ?>));
+                fd.append('audio', new File([blob], 'rec.webm', {type:blob.type}));
+                fetch('/medical-records/audio/transcribe-json', {method:'POST', body:fd, credentials:'same-origin'})
+                    .then(function(r){ return r.json(); })
+                    .then(function(j){
+                        if(j && j.ok && j.transcript && noteEl) {
+                            noteEl.value = (noteEl.value ? noteEl.value + ' ' : '') + j.transcript;
+                            if(statusEl){ statusEl.textContent='✓ Transcrito'; statusEl.style.color='#16a34a'; }
+                        } else {
+                            if(statusEl){ statusEl.textContent=(j&&j.error)?j.error:'Falha na transcrição'; statusEl.style.color='#b91c1c'; }
+                        }
+                    })
+                    .catch(function(){ if(statusEl){ statusEl.textContent='Erro de conexão'; statusEl.style.color='#b91c1c'; } });
+            };
+            audioRec.start();
+            audioRecording = true;
+            if(btnMic) btnMic.style.background='#fee2e2';
+            if(statusEl){ statusEl.textContent='🔴 Gravando... clique no 🎤 para parar'; statusEl.style.display='block'; statusEl.style.color='#b91c1c'; }
+        }).catch(function(e){
+            if(statusEl){ statusEl.textContent='Sem acesso ao microfone'; statusEl.style.display='block'; statusEl.style.color='#b91c1c'; }
         });
+    }
+
+    function stopAudioRec() {
+        audioRecording = false;
+        var btnMic = document.getElementById('btn-mic');
+        if(btnMic) btnMic.style.background='';
+        if(audioRec && audioRec.state !== 'inactive') audioRec.stop();
+    }
+
+    // Load annotations
+    function renderAnnotations(items) {
+        Array.from(svg.childNodes).forEach(function(n){ if (n.tagName !== 'defs') svg.removeChild(n); });
         listEl.innerHTML = '';
+        if (!items.length) { listEl.innerHTML = '<div class="lc-muted" style="padding:12px; font-size:13px;">Nenhuma marcação.</div>'; if(countEl) countEl.textContent='0'; return; }
+        if(countEl) countEl.textContent = String(items.length);
 
-        if (!items.length) {
-            listEl.innerHTML = '<div class="lc-muted" style="padding:12px; font-size:13px;">Nenhuma marcação.</div>';
-            if (countEl) countEl.textContent = '0';
-            return;
-        }
-
-        if (countEl) countEl.textContent = String(items.length);
-
+        var toolLabels = {rect:'Retângulo',arrow:'Seta',circle:'Círculo',line:'Traço'};
         items.forEach(function(it){
-            var p = {};
-            try { p = JSON.parse(it.payload_json || '{}'); } catch(e){}
-            var color = p.color || '#e11d48';
-            var label = it.note || '';
+            var p = {}; try { p = JSON.parse(it.payload_json || '{}'); } catch(e){}
+            var color = p.color || '#e11d48', label = it.note || '';
 
-            if (p.type === 'rect' && p.rect) {
-                drawRect(p.rect, color, label, it.id);
-            } else if (p.type === 'arrow') {
-                ensureArrowMarker(color);
-                drawArrow(p.x1||0, p.y1||0, p.x2||0, p.y2||0, color, label, it.id);
-            }
+            if (p.type === 'rect' && p.rect) drawRect(p.rect, color, label, it.id);
+            else if (p.type === 'arrow') { ensureArrowMarker(color); drawArrow(p.x1||0, p.y1||0, p.x2||0, p.y2||0, color, label, it.id); }
+            else if (p.type === 'circle') drawCircle(p.cx||0, p.cy||0, p.rx||0, p.ry||0, color, label, it.id);
+            else if (p.type === 'line' && p.points) drawFreehand(p.points, color, label, it.id);
 
-            // Item na lista
             var div = document.createElement('div');
             div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-bottom:1px solid rgba(0,0,0,.06); gap:8px;';
-            div.innerHTML = '<div style="display:flex; align-items:center; gap:8px; min-width:0;">'
-                + '<span style="width:10px; height:10px; border-radius:50%; background:' + color + '; flex-shrink:0;"></span>'
-                + '<span style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + esc(label || (p.type === 'arrow' ? 'Seta' : 'Retângulo')) + '</span>'
+            div.innerHTML = '<div style="display:flex;align-items:center;gap:8px;min-width:0;">'
+                + '<span style="width:10px;height:10px;border-radius:50%;background:'+color+';flex-shrink:0;"></span>'
+                + '<span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(label || (toolLabels[p.type] || 'Marcação'))+'</span>'
                 + '</div>'
-                + (canUpload ? (
-                    '<form method="post" action="/medical-images/annotations/delete" style="flex-shrink:0;">'
-                    + '<input type="hidden" name="_csrf" value="' + esc(csrf) + '" />'
-                    + '<input type="hidden" name="image_id" value="' + esc(String(imageId)) + '" />'
-                    + '<input type="hidden" name="id" value="' + esc(String(it.id)) + '" />'
-                    + '<button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="font-size:11px; padding:2px 8px;">✕</button>'
-                    + '</form>'
-                ) : '')
-                + '</div>';
+                + (canUpload ? '<form method="post" action="/medical-images/annotations/delete" style="flex-shrink:0;"><input type="hidden" name="_csrf" value="'+esc(csrf)+'"/><input type="hidden" name="image_id" value="'+esc(String(imageId))+'"/><input type="hidden" name="id" value="'+esc(String(it.id))+'"/><button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="font-size:11px;padding:2px 8px;">✕</button></form>' : '');
             listEl.appendChild(div);
         });
     }
 
-    function esc(s) {
-        return String(s||'').replace(/[&<>"']/g, function(c){
-            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-        });
-    }
+    function esc(s) { return String(s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
     fetch('/medical-images/annotations.json?image_id=' + encodeURIComponent(String(imageId)), { credentials: 'same-origin' })
         .then(function(r){ return r.json(); })

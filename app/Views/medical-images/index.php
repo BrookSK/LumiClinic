@@ -78,6 +78,15 @@ ob_start();
                     </div>
                 </div>
 
+                <div class="lc-field" style="margin-top:8px;">
+                    <label class="lc-label">Descrição (opcional)</label>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <input class="lc-input" type="text" name="description" id="img_desc" placeholder="Ex: Foto frontal pré-procedimento..." style="flex:1;" />
+                        <button type="button" id="img-mic-btn" onclick="toggleImgAudio()" title="Gravar áudio" style="background:none;border:1px solid rgba(0,0,0,.12);border-radius:8px;padding:6px 8px;cursor:pointer;font-size:14px;">🎤</button>
+                    </div>
+                    <div id="img-audio-status" style="display:none;font-size:11px;margin-top:4px;"></div>
+                </div>
+
                 <div class="lc-flex lc-gap-sm" style="margin-top:12px;">
                     <button class="lc-btn lc-btn--primary" type="submit">Enviar</button>
                     <button type="button" class="lc-btn lc-btn--secondary" onclick="toggleForm('form-upload')">Cancelar</button>
@@ -216,16 +225,64 @@ function toggleForm(id) {
     var el = document.getElementById(id);
     if (!el) return;
     var isOpen = el.style.display !== 'none';
-    // Fechar todos os formulários primeiro
     ['form-upload','form-pair'].forEach(function(fid){
         var f = document.getElementById(fid);
         if (f) f.style.display = 'none';
     });
-    // Abrir o clicado se estava fechado
     if (!isOpen) {
         el.style.display = 'block';
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+}
+
+// Audio recording for image description
+var imgAudioRec = null, imgAudioChunks = [], imgAudioRecording = false;
+function toggleImgAudio() {
+    if (imgAudioRecording) { stopImgAudio(); return; }
+    startImgAudio();
+}
+function startImgAudio() {
+    var statusEl = document.getElementById('img-audio-status');
+    var btn = document.getElementById('img-mic-btn');
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        imgAudioChunks = [];
+        imgAudioRec = new MediaRecorder(stream);
+        imgAudioRec.ondataavailable = function(e){ if(e.data && e.data.size) imgAudioChunks.push(e.data); };
+        imgAudioRec.onstop = function(){
+            stream.getTracks().forEach(function(t){ t.stop(); });
+            if (!imgAudioChunks.length) { if(statusEl) statusEl.style.display='none'; return; }
+            var blob = new Blob(imgAudioChunks, {type: imgAudioChunks[0].type || 'audio/webm'});
+            if(statusEl){ statusEl.textContent='Transcrevendo...'; statusEl.style.display='block'; statusEl.style.color='#2563eb'; }
+            var fd = new FormData();
+            fd.append('_csrf', <?= json_encode($csrf) ?>);
+            fd.append('patient_id', String(<?= $patientId ?>));
+            fd.append('audio', new File([blob], 'rec.webm', {type:blob.type}));
+            fetch('/medical-records/audio/transcribe-json', {method:'POST', body:fd, credentials:'same-origin'})
+                .then(function(r){ return r.json(); })
+                .then(function(j){
+                    var descEl = document.getElementById('img_desc');
+                    if(j && j.ok && j.transcript && descEl) {
+                        descEl.value = (descEl.value ? descEl.value + ' ' : '') + j.transcript;
+                        if(statusEl){ statusEl.textContent='✓ Transcrito'; statusEl.style.color='#16a34a'; }
+                    } else {
+                        if(statusEl){ statusEl.textContent=(j&&j.error)?j.error:'Falha'; statusEl.style.color='#b91c1c'; }
+                    }
+                })
+                .catch(function(){ if(statusEl){ statusEl.textContent='Erro de conexão'; statusEl.style.color='#b91c1c'; } });
+        };
+        imgAudioRec.start();
+        imgAudioRecording = true;
+        if(btn) btn.style.background='#fee2e2';
+        if(statusEl){ statusEl.textContent='🔴 Gravando... clique no 🎤 para parar'; statusEl.style.display='block'; statusEl.style.color='#b91c1c'; }
+    }).catch(function(){
+        if(statusEl){ statusEl.textContent='Sem acesso ao microfone'; statusEl.style.display='block'; statusEl.style.color='#b91c1c'; }
+    });
+}
+function stopImgAudio() {
+    imgAudioRecording = false;
+    var btn = document.getElementById('img-mic-btn');
+    if(btn) btn.style.background='';
+    if(imgAudioRec && imgAudioRec.state !== 'inactive') imgAudioRec.stop();
 }
 </script>
 
