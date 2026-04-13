@@ -573,7 +573,7 @@ final class ScheduleController extends Controller
             throw new \RuntimeException('Contexto inv?lido.');
         }
 
-        $view = trim((string)$request->input('view', 'day'));
+        $view = trim((string)$request->input('view', 'week'));
         $date = trim((string)$request->input('date', date('Y-m-d')));
         $professionalId = (int)$request->input('professional_id', 0);
         $page = (int)$request->input('page', 1);

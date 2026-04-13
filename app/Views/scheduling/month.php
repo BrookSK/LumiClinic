@@ -477,17 +477,55 @@ ob_start();
         const t = e.target;
         if (!(t instanceof HTMLElement)) return;
         const createCell = t.closest('[data-open-create]');
-        if (!createCell || !createModal) return;
+        if (!createCell) return;
         const d = createCell.getAttribute('data-create-date') || '';
-        createDate = d;
-        if (dateFilterEl && d) {
-          dateFilterEl.value = d;
+        // Show day action popup instead of opening create modal directly
+        window.__dayActionDate = d;
+        var popup = document.getElementById('dayActionPopup');
+        if (popup) {
+          // Position near click
+          popup.style.display = 'flex';
+          var dayLabel = document.getElementById('dayActionLabel');
+          if (dayLabel && d) {
+            var parts = d.split('-');
+            dayLabel.textContent = parts[2] + '/' + parts[1] + '/' + parts[0];
+          }
+          var linkDay = document.getElementById('dayActionOpenDay');
+          if (linkDay) linkDay.href = '/schedule?view=day&date=' + encodeURIComponent(d) + '<?= $professionalId > 0 ? "&professional_id=" . (int)$professionalId : "" ?>';
+          var btnNew = document.getElementById('dayActionNewAppt');
+          if (btnNew) {
+            btnNew.onclick = function() {
+              closeDayAction();
+              createDate = d;
+              if (dateFilterEl && d) dateFilterEl.value = d;
+              if (createModal) openModal(createModal);
+              loadSlots();
+            };
+          }
         }
-        openModal(createModal);
-        loadSlots();
       });
+
+      window.closeDayAction = function() {
+        var popup = document.getElementById('dayActionPopup');
+        if (popup) popup.style.display = 'none';
+      };
     })();
     </script>
+
+<!-- Day action popup -->
+<div id="dayActionPopup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;align-items:center;justify-content:center;padding:18px;" onclick="if(event.target===this)closeDayAction();">
+    <div style="width:100%;max-width:340px;background:#fff;border-radius:14px;box-shadow:0 16px 50px rgba(0,0,0,.3);overflow:hidden;text-align:center;">
+        <div style="padding:20px 24px 8px;">
+            <div style="font-size:14px;color:#6b7280;margin-bottom:4px;">Dia selecionado</div>
+            <div id="dayActionLabel" style="font-weight:800;font-size:22px;color:#1f2937;">—</div>
+        </div>
+        <div style="padding:16px 24px 24px;display:flex;flex-direction:column;gap:10px;">
+            <a id="dayActionOpenDay" href="#" class="lc-btn lc-btn--primary" style="width:100%;text-align:center;text-decoration:none;">📅 Abrir agenda do dia</a>
+            <button type="button" id="dayActionNewAppt" class="lc-btn lc-btn--secondary" style="width:100%;">+ Novo agendamento</button>
+            <button type="button" class="lc-btn lc-btn--secondary" style="width:100%;font-size:12px;color:#6b7280;" onclick="closeDayAction()">Cancelar</button>
+        </div>
+    </div>
+</div>
 <?php endif; ?>
 
 </div>
