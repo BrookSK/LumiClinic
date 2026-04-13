@@ -811,7 +811,22 @@ final class SalesService
 
         $s = str_replace(['R$', ' '], '', $s);
 
-        if (substr_count($s, ',') > 0 && substr_count($s, '.') === 0) {
+        // Handle Brazilian format: 1.140,00 (dot=thousands, comma=decimal)
+        // If both dot and comma exist, it's Brazilian format
+        if (str_contains($s, ',') && str_contains($s, '.')) {
+            // Check if comma comes after last dot → Brazilian format (1.140,00)
+            $lastDot = strrpos($s, '.');
+            $lastComma = strrpos($s, ',');
+            if ($lastComma !== false && ($lastDot === false || $lastComma > $lastDot)) {
+                // Brazilian: remove dots (thousands), replace comma with dot (decimal)
+                $s = str_replace('.', '', $s);
+                $s = str_replace(',', '.', $s);
+            } else {
+                // US format (1,140.00): remove commas (thousands)
+                $s = str_replace(',', '', $s);
+            }
+        } elseif (str_contains($s, ',') && !str_contains($s, '.')) {
+            // Only comma, no dot: treat comma as decimal (140,00 → 140.00)
             $s = str_replace(',', '.', $s);
         }
 

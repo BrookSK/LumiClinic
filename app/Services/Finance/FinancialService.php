@@ -636,7 +636,17 @@ final class FinancialService
 
         $s = str_replace(['R$', ' '], '', $s);
 
-        if (substr_count($s, ',') > 0 && substr_count($s, '.') === 0) {
+        // Handle Brazilian format: 1.140,00 (dot=thousands, comma=decimal)
+        if (str_contains($s, ',') && str_contains($s, '.')) {
+            $lastDot = strrpos($s, '.');
+            $lastComma = strrpos($s, ',');
+            if ($lastComma !== false && ($lastDot === false || $lastComma > $lastDot)) {
+                $s = str_replace('.', '', $s);
+                $s = str_replace(',', '.', $s);
+            } else {
+                $s = str_replace(',', '', $s);
+            }
+        } elseif (str_contains($s, ',') && !str_contains($s, '.')) {
             $s = str_replace(',', '.', $s);
         }
 
