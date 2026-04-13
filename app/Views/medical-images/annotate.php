@@ -27,11 +27,32 @@ ob_start();
         <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= $imageId ?>" target="_blank">Ver original</a>
     </div>
 </div>
+<!-- Crop bar (above grid) -->
+<?php if ($canUpload): ?>
+<div id="crop-bar" style="display:none;margin-bottom:12px;padding:12px;border-radius:10px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:600;color:#4f46e5;">✂ Modo recorte</span>
+        <span class="lc-muted" style="font-size:12px;">Arraste sobre a imagem para selecionar a área.</span>
+        <form id="crop-form" method="post" action="/medical-images/crop" style="margin:0;display:flex;gap:6px;margin-left:auto;">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <input type="hidden" name="image_id" value="<?= $imageId ?>" />
+            <input type="hidden" id="crop-x" name="x" value="0" />
+            <input type="hidden" id="crop-y" name="y" value="0" />
+            <input type="hidden" id="crop-w" name="w" value="0" />
+            <input type="hidden" id="crop-h" name="h" value="0" />
+            <button type="submit" id="btn-crop-apply" class="lc-btn lc-btn--primary lc-btn--sm" disabled>Aplicar recorte</button>
+            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleCropMode()">Cancelar</button>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="lc-grid lc-gap-grid" style="grid-template-columns:1fr 280px;align-items:start;">
     <div class="lc-card" style="margin:0;overflow:hidden;">
         <div id="anno-wrap" style="position:relative;width:100%;background:#111;border-radius:10px;overflow:hidden;cursor:<?= $canUpload ? 'crosshair' : 'default' ?>;">
             <img id="anno-img" src="/medical-images/file?id=<?= $imageId ?>" alt="" style="display:block;width:100%;height:auto;max-height:75vh;object-fit:contain;" draggable="false" />
             <svg id="anno-svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></svg>
+            <div id="crop-overlay" style="display:none;position:absolute;border:2px dashed #4f46e5;background:rgba(99,102,241,.15);pointer-events:none;z-index:10;"></div>
         </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -86,26 +107,6 @@ ob_start();
     </div>
 </div>
 
-<!-- Crop overlay -->
-<?php if ($canUpload): ?>
-<div id="crop-bar" style="display:none;margin-top:10px;padding:12px;border-radius:10px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <span style="font-size:13px;font-weight:600;color:#4f46e5;">✂ Modo recorte</span>
-        <span class="lc-muted" style="font-size:12px;">Arraste sobre a imagem para selecionar a área de recorte.</span>
-        <form id="crop-form" method="post" action="/medical-images/crop" style="margin:0;display:flex;gap:6px;margin-left:auto;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <input type="hidden" name="image_id" value="<?= $imageId ?>" />
-            <input type="hidden" id="crop-x" name="x" value="0" />
-            <input type="hidden" id="crop-y" name="y" value="0" />
-            <input type="hidden" id="crop-w" name="w" value="0" />
-            <input type="hidden" id="crop-h" name="h" value="0" />
-            <button type="submit" id="btn-crop-apply" class="lc-btn lc-btn--primary lc-btn--sm" disabled>Aplicar recorte</button>
-            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleCropMode()">Cancelar</button>
-        </form>
-    </div>
-</div>
-<div id="crop-overlay" style="display:none;position:absolute;border:2px dashed #4f46e5;background:rgba(99,102,241,.15);pointer-events:none;z-index:10;"></div>
-<?php endif; ?>
 
 <script>
 (function(){
@@ -323,27 +324,26 @@ window.toggleCropMode=function(){
 if(canUpload&&wrap){
     wrap.addEventListener('pointerdown',function(e){
         if(!cropMode)return;
-        var r=img.getBoundingClientRect();
-        cropStart={px:e.clientX-r.left,py:e.clientY-r.top,bx:r.left,by:r.top,bw:r.width,bh:r.height};
+        var r=wrap.getBoundingClientRect();
+        cropStart={px:e.clientX-r.left,py:e.clientY-r.top,bw:r.width,bh:r.height};
         if(cropOverlay){cropOverlay.style.display='block';cropOverlay.style.left=cropStart.px+'px';cropOverlay.style.top=cropStart.py+'px';cropOverlay.style.width='0';cropOverlay.style.height='0';}
         try{wrap.setPointerCapture(e.pointerId);}catch(x){}
         e.preventDefault();e.stopPropagation();
     },true);
     wrap.addEventListener('pointermove',function(e){
         if(!cropMode||!cropStart)return;
-        var r=img.getBoundingClientRect();
-        var cx=e.clientX-r.left,cy=e.clientY-r.top;
+        var r=wrap.getBoundingClientRect();
+        var cx=Math.max(0,Math.min(e.clientX-r.left,r.width)),cy=Math.max(0,Math.min(e.clientY-r.top,r.height));
         var x=Math.min(cropStart.px,cx),y=Math.min(cropStart.py,cy),w=Math.abs(cx-cropStart.px),h=Math.abs(cy-cropStart.py);
         if(cropOverlay){cropOverlay.style.left=x+'px';cropOverlay.style.top=y+'px';cropOverlay.style.width=w+'px';cropOverlay.style.height=h+'px';}
         e.preventDefault();e.stopPropagation();
     },true);
     wrap.addEventListener('pointerup',function(e){
         if(!cropMode||!cropStart)return;
-        var r=img.getBoundingClientRect();
-        var cx=e.clientX-r.left,cy=e.clientY-r.top;
+        var r=wrap.getBoundingClientRect();
+        var cx=Math.max(0,Math.min(e.clientX-r.left,r.width)),cy=Math.max(0,Math.min(e.clientY-r.top,r.height));
         var px1=Math.min(cropStart.px,cx),py1=Math.min(cropStart.py,cy);
         var pw=Math.abs(cx-cropStart.px),ph=Math.abs(cy-cropStart.py);
-        // Convert screen px to image px
         var scaleX=VW/r.width,scaleY=VH/r.height;
         var ix=Math.round(px1*scaleX),iy=Math.round(py1*scaleY),iw=Math.round(pw*scaleX),ih=Math.round(ph*scaleY);
         document.getElementById('crop-x').value=ix;
