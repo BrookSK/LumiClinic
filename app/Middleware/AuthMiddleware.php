@@ -38,6 +38,7 @@ final class AuthMiddleware implements MiddlewareInterface
             '/choose-access',
             '/criar-conta',
             '/a/confirm',
+            '/a/anamnese',
             '/private/tutorial/platform',
             '/private/tutorial/clinic',
             '/tutorial/api-tokens/paciente',

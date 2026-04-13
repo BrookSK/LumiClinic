@@ -24,7 +24,7 @@ final class AnamnesisLinkSendService
     /**
      * @param string $channel 'whatsapp' | 'email' | 'portal'
      */
-    public function send(int $patientId, int $templateId, string $channel, string $waTemplateCode, string $ip): array
+    public function send(int $patientId, int $templateId, string $channel, string $waTemplateCode, string $ip, bool $skipLogin = true): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -92,7 +92,13 @@ final class AnamnesisLinkSendService
             $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
             $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'];
         }
-        $link = $baseUrl . '/a/anamnese?token=' . urlencode($token);
+        if ($skipLogin) {
+            // Public link — no login required
+            $link = $baseUrl . '/a/anamnese?token=' . urlencode($token);
+        } else {
+            // Portal link — requires patient login
+            $link = $baseUrl . '/portal/anamnese/preencher?id=' . $responseId;
+        }
 
         $clinic = (new ClinicRepository($pdo))->findById($clinicId);
         $clinicName = $clinic !== null ? (string)($clinic['name'] ?? 'LumiClinic') : 'LumiClinic';

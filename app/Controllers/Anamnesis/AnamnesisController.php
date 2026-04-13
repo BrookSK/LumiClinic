@@ -215,6 +215,7 @@ final class AnamnesisController extends Controller
         $templateId   = (int)$request->input('template_id', 0);
         $channel      = trim((string)$request->input('channel', 'email'));
         $waCode       = trim((string)$request->input('wa_template_code', ''));
+        $skipLogin    = (string)$request->input('skip_login', '1') === '1';
 
         if ($patientId <= 0 || $templateId <= 0) {
             return \App\Core\Http\Response::json(['ok' => false, 'error' => 'Parâmetros inválidos.'], 400);
@@ -222,7 +223,7 @@ final class AnamnesisController extends Controller
 
         try {
             $result = (new \App\Services\Anamnesis\AnamnesisLinkSendService($this->container))
-                ->send($patientId, $templateId, $channel, $waCode, $request->ip());
+                ->send($patientId, $templateId, $channel, $waCode, $request->ip(), $skipLogin);
             return \App\Core\Http\Response::json($result);
         } catch (\RuntimeException $e) {
             return \App\Core\Http\Response::json(['ok' => false, 'error' => $e->getMessage()], 400);

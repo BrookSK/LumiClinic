@@ -62,9 +62,14 @@ ob_start();
 
         <!-- Painel de envio (oculto) -->
         <div id="send-panel" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid rgba(0,0,0,.08);">
-            <div class="lc-muted" style="font-size:13px; margin-bottom:12px;">
+            <div class="lc-muted" style="font-size:13px; margin-bottom:8px;">
                 O paciente receberá um link para preencher a anamnese. Ao final, ele assina digitalmente.
             </div>
+
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;font-size:13px;color:rgba(31,41,55,.70);">
+                <input type="checkbox" id="skipLoginCheck" checked style="width:16px;height:16px;accent-color:rgba(99,102,241,.8);" />
+                Não exigir login para preenchimento (o paciente acessa direto pelo link)
+            </label>
             <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 1fr;">
                 <!-- Via WhatsApp -->
                 <div class="lc-card lc-card--soft" style="margin:0; padding:14px;">
@@ -187,12 +192,15 @@ ob_start();
         var resultEl = document.getElementById('send-result');
         if (resultEl) resultEl.textContent = 'Enviando...';
 
+        var skipLogin = document.getElementById('skipLoginCheck') ? (document.getElementById('skipLoginCheck').checked ? '1' : '0') : '1';
+
         var fd = new FormData();
         fd.append('_csrf', csrf);
         fd.append('patient_id', patientId);
         fd.append('template_id', parseInt(tid, 10));
         fd.append('channel', channel);
         fd.append('wa_template_code', 'anamnesis_request');
+        fd.append('skip_login', skipLogin);
 
         fetch('/anamnesis/send-link', {
             method: 'POST',
