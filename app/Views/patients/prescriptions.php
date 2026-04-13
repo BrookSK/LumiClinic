@@ -41,15 +41,22 @@ ob_start();
         <!-- Patient & prescriber info -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;padding:12px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.06);">
             <div>
-                <div style="font-weight:700;font-size:12px;color:#6b7280;margin-bottom:6px;">Paciente</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span style="font-weight:700;font-size:12px;color:#6b7280;">Paciente</span>
+                    <a href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>" style="font-size:11px;color:rgba(99,102,241,.7);text-decoration:none;" title="Editar dados do paciente">✏️ editar</a>
+                </div>
                 <div style="font-size:13px;font-weight:600;color:#1f2937;"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-                <?php if (($patient['cpf'] ?? '') !== ''): ?><div style="font-size:12px;color:#6b7280;">CPF: <?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-                <?php if (($patient['address'] ?? '') !== ''): ?><div style="font-size:12px;color:#6b7280;"><?= htmlspecialchars((string)$patient['address'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+                <?php if (($patient['cpf'] ?? '') !== ''): ?><div style="font-size:12px;color:#6b7280;">CPF: <?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?></div><?php else: ?><div style="font-size:11px;color:#d97706;">⚠ CPF não cadastrado — <a href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>" style="color:#d97706;">cadastrar</a></div><?php endif; ?>
+                <?php if (($patient['address'] ?? '') !== ''): ?><div style="font-size:12px;color:#6b7280;"><?= htmlspecialchars((string)$patient['address'], ENT_QUOTES, 'UTF-8') ?></div><?php else: ?><div style="font-size:11px;color:#d97706;">⚠ Endereço não cadastrado — <a href="/patients/edit?id=<?= (int)($patient['id'] ?? 0) ?>" style="color:#d97706;">cadastrar</a></div><?php endif; ?>
             </div>
             <div id="prescriberInfo" style="display:none;">
-                <div style="font-weight:700;font-size:12px;color:#6b7280;margin-bottom:6px;">Prescritor</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span style="font-weight:700;font-size:12px;color:#6b7280;">Prescritor</span>
+                    <a id="prescriberEditLink" href="#" style="font-size:11px;color:rgba(99,102,241,.7);text-decoration:none;" title="Editar dados do profissional">✏️ editar</a>
+                </div>
                 <div id="prescriberName" style="font-size:13px;font-weight:600;color:#1f2937;"></div>
                 <div id="prescriberCouncil" style="font-size:12px;color:#6b7280;"></div>
+                <div id="prescriberCouncilWarn" style="display:none;font-size:11px;color:#d97706;"></div>
             </div>
         </div>
 
@@ -95,15 +102,26 @@ function updatePrescriberInfo() {
     var info = document.getElementById('prescriberInfo');
     var nameEl = document.getElementById('prescriberName');
     var councilEl = document.getElementById('prescriberCouncil');
+    var warnEl = document.getElementById('prescriberCouncilWarn');
+    var editLink = document.getElementById('prescriberEditLink');
     if (!sel || !info) return;
     var opt = sel.options[sel.selectedIndex];
     if (sel.value === '') { info.style.display = 'none'; return; }
     info.style.display = 'block';
     if (nameEl) nameEl.textContent = opt.dataset.name || '';
+    if (editLink) editLink.href = '/professionals/edit?id=' + sel.value;
     var parts = [];
     if (opt.dataset.specialty) parts.push(opt.dataset.specialty);
     if (opt.dataset.council) parts.push('Conselho: ' + opt.dataset.council);
     if (councilEl) councilEl.textContent = parts.join(' · ') || '';
+    if (warnEl) {
+        if (!opt.dataset.council) {
+            warnEl.style.display = 'block';
+            warnEl.innerHTML = '⚠ Nº do conselho não cadastrado — <a href="/professionals/edit?id=' + sel.value + '" style="color:#d97706;">cadastrar</a>';
+        } else {
+            warnEl.style.display = 'none';
+        }
+    }
 }
 </script>
 
