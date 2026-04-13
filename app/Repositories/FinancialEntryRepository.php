@@ -9,9 +9,19 @@ final class FinancialEntryRepository
     public function __construct(private readonly \PDO $pdo) {}
 
     /** @return list<array<string,mixed>> */
-    public function listByClinicRange(int $clinicId, string $fromDate, string $toDate, int $limit = 300, int $offset = 0): array
+    public function listByClinicRange(int $clinicId, string $fromDate, string $toDate, int $limit = 300, int $offset = 0, ?string $kind = null): array
     {
         $offset = max(0, $offset);
+        $kindFilter = '';
+        $params = [
+            'clinic_id' => $clinicId,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ];
+        if ($kind !== null && in_array($kind, ['in', 'out'], true)) {
+            $kindFilter = ' AND kind = :kind';
+            $params['kind'] = $kind;
+        }
         $sql = "
             SELECT
                 id, clinic_id, kind, occurred_on,
@@ -24,6 +34,7 @@ final class FinancialEntryRepository
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
               AND occurred_on BETWEEN :from_date AND :to_date
+              {$kindFilter}
             ORDER BY occurred_on DESC, id DESC
             LIMIT " . (int)$limit . "
             OFFSET " . (int)$offset . "

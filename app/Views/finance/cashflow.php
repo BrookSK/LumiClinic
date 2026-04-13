@@ -9,6 +9,7 @@ $cost_centers = $cost_centers ?? [];
 $page    = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 100;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
+$currentKind = isset($kind) ? trim((string)$kind) : '';
 
 $can = function (string $p): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) return true;
@@ -75,6 +76,14 @@ ob_start();
             <div class="lc-field">
                 <label class="lc-label">Até</label>
                 <input class="lc-input" type="date" name="to" value="<?= htmlspecialchars($to, ENT_QUOTES, 'UTF-8') ?>" />
+            </div>
+            <div class="lc-field">
+                <label class="lc-label">Tipo</label>
+                <select class="lc-select" name="kind">
+                    <option value="" <?= $currentKind === '' ? 'selected' : '' ?>>Todos</option>
+                    <option value="in" <?= $currentKind === 'in' ? 'selected' : '' ?>>Entradas</option>
+                    <option value="out" <?= $currentKind === 'out' ? 'selected' : '' ?>>Saídas</option>
+                </select>
             </div>
             <button class="lc-btn lc-btn--primary" type="submit">Filtrar</button>
         </form>
@@ -185,10 +194,10 @@ ob_start();
                 <div class="lc-muted" style="font-size:12px;">Página <?= (int)$page ?></div>
                 <div class="lc-flex lc-gap-sm">
                     <?php if ($page > 1): ?>
-                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/cashflow?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&per_page=<?= $perPage ?>&page=<?= $page-1 ?>">Anterior</a>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/cashflow?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&kind=<?= urlencode($currentKind) ?>&per_page=<?= $perPage ?>&page=<?= $page-1 ?>">Anterior</a>
                     <?php endif; ?>
                     <?php if ($hasNext): ?>
-                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/cashflow?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&per_page=<?= $perPage ?>&page=<?= $page+1 ?>">Próxima</a>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/cashflow?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&kind=<?= urlencode($currentKind) ?>&per_page=<?= $perPage ?>&page=<?= $page+1 ?>">Próxima</a>
                     <?php endif; ?>
                 </div>
             </div>

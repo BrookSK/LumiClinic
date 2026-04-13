@@ -181,7 +181,7 @@ final class FinancialService
     }
 
     /** @return array{from:string,to:string,entries:list<array<string,mixed>>,totals:array{in:float,out:float,balance:float}} */
-    public function listEntries(string $from, string $to, int $limit = 200, int $offset = 0): array
+    public function listEntries(string $from, string $to, int $limit = 200, int $offset = 0, ?string $kind = null): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -196,7 +196,7 @@ final class FinancialService
         $offset = max(0, $offset);
 
         $repo = new FinancialEntryRepository($this->container->get(\PDO::class));
-        $entries = $repo->listByClinicRange($clinicId, $from, $to, $limit, $offset);
+        $entries = $repo->listByClinicRange($clinicId, $from, $to, $limit, $offset, $kind);
 
         $totals = $repo->summarizeTotalsByClinicRange($clinicId, $from, $to);
         $in = (float)$totals['in_total'];

@@ -71,13 +71,17 @@ final class FinancialController extends Controller
         $to = trim((string)$request->input('to', date('Y-m-d')));
         $page = (int)$request->input('page', 1);
         $perPage = (int)$request->input('per_page', 100);
+        $kind = trim((string)$request->input('kind', ''));
+        if ($kind !== '' && !in_array($kind, ['in', 'out'], true)) {
+            $kind = '';
+        }
 
         $page = max(1, $page);
         $perPage = max(25, min(200, $perPage));
         $offset = ($page - 1) * $perPage;
 
         $service = new FinancialService($this->container);
-        $data = $service->listEntries($from, $to, $perPage + 1, $offset);
+        $data = $service->listEntries($from, $to, $perPage + 1, $offset, $kind !== '' ? $kind : null);
 
         $hasNext = count($data['entries']) > $perPage;
         if ($hasNext) {
@@ -94,6 +98,7 @@ final class FinancialController extends Controller
             'page' => $page,
             'per_page' => $perPage,
             'has_next' => $hasNext,
+            'kind' => $kind,
         ]);
     }
 
