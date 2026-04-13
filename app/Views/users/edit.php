@@ -75,6 +75,31 @@ ob_start();
             <input class="lc-input" type="password" name="new_password" placeholder="••••••••" />
         </div>
 
+        <?php
+        $prof = $professional ?? null;
+        $isProfessional = is_array($prof);
+        $roleCode = '';
+        foreach ($roles as $r) {
+            if ((int)$r['id'] === $currentRoleId) { $roleCode = (string)($r['code'] ?? ''); break; }
+        }
+        ?>
+        <?php if ($isProfessional || $roleCode === 'professional'): ?>
+        <div style="margin-top:12px;padding:14px;border-radius:10px;background:rgba(99,102,241,.03);border:1px solid rgba(99,102,241,.12);">
+            <div style="font-weight:700;font-size:13px;color:rgba(99,102,241,.8);margin-bottom:10px;">👨‍⚕️ Dados profissionais</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="lc-field">
+                    <label class="lc-label">Especialidade</label>
+                    <input class="lc-input" type="text" name="specialty" value="<?= htmlspecialchars((string)($prof['specialty'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="Ex: Dermatologia, Estética" />
+                </div>
+                <div class="lc-field">
+                    <label class="lc-label">Nº do conselho (CRM, CRO, etc.)</label>
+                    <input class="lc-input" type="text" name="council_number" value="<?= htmlspecialchars((string)($prof['council_number'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="Ex: CRM 123456/SP" />
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Aparece no receituário e na impressão de receitas.</div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div style="display:flex;gap:10px;margin-top:16px;">
             <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
             <a class="lc-btn lc-btn--secondary" href="/users">Cancelar</a>

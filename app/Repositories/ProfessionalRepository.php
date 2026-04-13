@@ -50,7 +50,7 @@ final class ProfessionalRepository
     public function findByUserId(int $clinicId, int $userId): ?array
     {
         $sql = "
-            SELECT id, clinic_id, user_id, name, specialty, allow_online_booking, status
+            SELECT id, clinic_id, user_id, name, specialty, council_number, allow_online_booking, status
             FROM professionals
             WHERE clinic_id = :clinic_id
               AND user_id = :user_id

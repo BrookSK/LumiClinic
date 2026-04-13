@@ -70,7 +70,7 @@ ob_start();
                     <select class="lc-select" name="professional_id" id="rxProfSelect" onchange="updatePrescriberInfo()">
                         <option value="">(selecione)</option>
                         <?php foreach ($professionals as $pr): ?>
-                            <option value="<?= (int)$pr['id'] ?>" data-name="<?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?>" data-specialty="<?= htmlspecialchars((string)($pr['specialty'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-council="<?= htmlspecialchars((string)($pr['council_number'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <option value="<?= (int)$pr['id'] ?>" data-user-id="<?= (int)($pr['user_id'] ?? 0) ?>" data-name="<?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?>" data-specialty="<?= htmlspecialchars((string)($pr['specialty'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-council="<?= htmlspecialchars((string)($pr['council_number'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -109,7 +109,10 @@ function updatePrescriberInfo() {
     if (sel.value === '') { info.style.display = 'none'; return; }
     info.style.display = 'block';
     if (nameEl) nameEl.textContent = opt.dataset.name || '';
-    if (editLink) editLink.href = '/professionals/edit?id=' + sel.value;
+    if (editLink) {
+        var userId = opt.dataset.userId || '';
+        editLink.href = userId ? '/users/edit?id=' + userId : '/professionals/edit?id=' + sel.value;
+    }
     var parts = [];
     if (opt.dataset.specialty) parts.push(opt.dataset.specialty);
     if (opt.dataset.council) parts.push('Conselho: ' + opt.dataset.council);
@@ -117,7 +120,7 @@ function updatePrescriberInfo() {
     if (warnEl) {
         if (!opt.dataset.council) {
             warnEl.style.display = 'block';
-            warnEl.innerHTML = '⚠ Nº do conselho não cadastrado — <a href="/professionals/edit?id=' + sel.value + '" style="color:#d97706;">cadastrar</a>';
+            warnEl.innerHTML = '⚠ Nº do conselho não cadastrado — <a href="' + (userId ? '/users/edit?id=' + userId : '/professionals/edit?id=' + sel.value) + '" style="color:#d97706;">cadastrar</a>';
         } else {
             warnEl.style.display = 'none';
         }

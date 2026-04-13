@@ -119,9 +119,18 @@ final class UserController extends Controller
             return $this->redirect('/users');
         }
 
+        // Load linked professional if exists
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $professional = null;
+        if ($clinicId !== null) {
+            $professional = (new \App\Repositories\ProfessionalRepository($this->container->get(\PDO::class)))->findByUserId($clinicId, $id);
+        }
+
         return $this->view('users/edit', [
             'user' => $user,
             'roles' => $roles,
+            'professional' => $professional,
         ]);
     }
 
@@ -152,6 +161,19 @@ final class UserController extends Controller
 
         $service = new UserAdminService($this->container);
         $service->updateUser($id, $name, $email, $status, $roleId, ($newPassword === '' ? null : $newPassword), $request->ip());
+
+        // Update council_number if professional
+        $councilNumber = trim((string)$request->input('council_number', ''));
+        $specialty = trim((string)$request->input('specialty', ''));
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId !== null) {
+            $profRepo = new \App\Repositories\ProfessionalRepository($this->container->get(\PDO::class));
+            $prof = $profRepo->findByUserId($clinicId, $id);
+            if ($prof !== null) {
+                $profRepo->update($clinicId, (int)$prof['id'], $name, $specialty !== '' ? $specialty : ((string)($prof['specialty'] ?? '') ?: null), (bool)($prof['allow_online_booking'] ?? false), $councilNumber !== '' ? $councilNumber : null);
+            }
+        }
 
         return $this->redirect('/users');
     }
