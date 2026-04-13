@@ -577,7 +577,7 @@ ob_start();
 
                 body.innerHTML = [
                     row('Paciente', it.patient_name || '—'),
-                    row('Serviço', it.service_name || '—'),
+                    '<div style="margin-bottom:10px;"><div style="font-size:12px; color:#6b7280; margin-bottom:2px;">Serviço</div><div style="font-weight:600;">' + (it.service_color ? '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:'+escHtml(it.service_color)+';vertical-align:middle;margin-right:6px;border:1px solid rgba(0,0,0,.1);"></span>' : '') + escHtml(it.service_name || '—') + '</div></div>',
                     row('Profissional', it.professional_name || '—'),
                     row('Data', startDate),
                     row('Horário', startTime + (endTime ? ' – ' + endTime : '')),

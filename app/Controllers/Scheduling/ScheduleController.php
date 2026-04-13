@@ -913,11 +913,23 @@ final class ScheduleController extends Controller
             }
         }
 
+        // Get service color
+        $serviceColor = null;
+        $serviceId = isset($appointment['service_id']) ? (int)$appointment['service_id'] : 0;
+        if ($serviceId > 0) {
+            $svcRepo = new ServiceCatalogRepository($this->container->get(\PDO::class));
+            $svc = $svcRepo->findById($clinicId, $serviceId);
+            if ($svc !== null && isset($svc['color']) && $svc['color'] !== null) {
+                $serviceColor = (string)$svc['color'];
+            }
+        }
+
         return Response::json([
             'item' => [
                 'id' => (int)($appointment['id'] ?? 0),
                 'patient_name' => (string)($appointment['patient_name'] ?? ''),
                 'service_name' => (string)($appointment['service_name'] ?? ''),
+                'service_color' => $serviceColor,
                 'professional_name' => (string)($appointment['professional_name'] ?? ''),
                 'start_at' => (string)($appointment['start_at'] ?? ''),
                 'end_at' => (string)($appointment['end_at'] ?? ''),

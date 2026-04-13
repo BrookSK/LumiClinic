@@ -199,7 +199,11 @@ ob_start();
                     <td><?= htmlspecialchars(substr((string)$it['end_at'], 11, 5), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= $patientName !== '' ? htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') : '<span class="lc-muted">-</span>' ?></td>
                     <td><?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?></td>
+                    <td>
+                        <?php $daySvcColor = isset($svcMap[$sid]['color']) ? trim((string)$svcMap[$sid]['color']) : ''; ?>
+                        <?php if ($daySvcColor !== ''): ?><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:<?= htmlspecialchars($daySvcColor, ENT_QUOTES, 'UTF-8') ?>;vertical-align:middle;margin-right:4px;"></span><?php endif; ?>
+                        <?= htmlspecialchars($sname, ENT_QUOTES, 'UTF-8') ?>
+                    </td>
                     <td>
                         <span class="lc-badge lc-badge--status lc-badge--status-<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>">
                             <?= htmlspecialchars((string)$statusLabel, ENT_QUOTES, 'UTF-8') ?>
@@ -469,10 +473,11 @@ ob_start();
                                             $status = (string)($it['status'] ?? '');
                                             $statusClass = isset($statusClassMap[$status]) ? (string)$statusClassMap[$status] : 'scheduled';
                                         ?>
+                                        <?php $slotSvcColor = isset($svcMap[$sid]['color']) ? trim((string)$svcMap[$sid]['color']) : ''; ?>
                                         <button type="button"
                                              class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
                                              data-appointment-id="<?= (int)($it['id'] ?? 0) ?>"
-                                             style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; overflow:hidden; border:0; z-index:5; cursor:pointer;">
+                                             style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; overflow:hidden; border:0; z-index:5; cursor:pointer;<?= $slotSvcColor !== '' ? ' border-left:4px solid ' . htmlspecialchars($slotSvcColor, ENT_QUOTES, 'UTF-8') . ';' : '' ?>">
                                             <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Agendamento #<?= (int)($it['id'] ?? 0) ?></div>
                                             <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                                 <?= htmlspecialchars(substr($st, 11, 5), ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(substr($en, 11, 5), ENT_QUOTES, 'UTF-8') ?>
@@ -722,7 +727,7 @@ ob_start();
             '<div style="font-weight:850; margin-bottom:10px;">' + esc(title) + '</div>' +
             '<div style="display:grid; grid-template-columns: 1fr; gap:8px;">' +
               '<div><span class="lc-muted">Paciente</span><div style="font-weight:700;">' + esc(it.patient_name || '') + '</div></div>' +
-              '<div><span class="lc-muted">Serviço</span><div style="font-weight:700;">' + esc(it.service_name || '') + '</div></div>' +
+              '<div><span class="lc-muted">Serviço</span><div style="font-weight:700;">' + (it.service_color ? '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:'+esc(it.service_color)+';vertical-align:middle;margin-right:6px;border:1px solid rgba(0,0,0,.1);"></span>' : '') + esc(it.service_name || '') + '</div></div>' +
               '<div><span class="lc-muted">Profissional</span><div style="font-weight:700;">' + esc(it.professional_name || '') + '</div></div>' +
             '</div>' +
           '</div>' +
