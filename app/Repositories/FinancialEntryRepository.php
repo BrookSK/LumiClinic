@@ -41,11 +41,7 @@ final class FinancialEntryRepository
         ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            'clinic_id' => $clinicId,
-            'from_date' => $fromDate,
-            'to_date' => $toDate,
-        ]);
+        $stmt->execute($params);
 
         /** @var list<array<string,mixed>> */
         return $stmt->fetchAll();
