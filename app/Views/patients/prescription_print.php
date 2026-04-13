@@ -242,8 +242,11 @@ $clinicAddress = trim((string)($clinic['contact_address'] ?? ''));
 $clinicEmail   = trim((string)($clinic['contact_email'] ?? ''));
 
 $patientName   = trim((string)($rx['patient_name'] ?? ''));
+$patientCpf    = is_array($patient ?? null) ? trim((string)($patient['cpf'] ?? '')) : '';
+$patientAddr   = is_array($patient ?? null) ? trim((string)($patient['address'] ?? '')) : '';
 $profName      = trim((string)($rx['professional_name'] ?? ''));
 $profSpecialty = trim((string)($professional_specialty ?? ''));
+$profCouncil   = trim((string)($professional_council ?? ''));
 $issuedAt      = trim((string)($rx['issued_at'] ?? ''));
 $rxTitle       = trim((string)($rx['title'] ?? 'Receita'));
 $rxBody        = trim((string)($rx['body'] ?? ''));
@@ -282,6 +285,12 @@ if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $issuedAt, $m)) {
         <!-- Paciente -->
         <div class="patient-block">
             <div class="patient-name"><?= htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php if ($patientCpf !== ''): ?>
+                <div class="patient-meta">CPF: <?= htmlspecialchars($patientCpf, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php endif; ?>
+            <?php if ($patientAddr !== ''): ?>
+                <div class="patient-meta"><?= htmlspecialchars($patientAddr, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php endif; ?>
         </div>
 
         <hr class="divider" />
@@ -298,6 +307,9 @@ if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $issuedAt, $m)) {
             <div class="signature-name"><?= htmlspecialchars($profName !== '' ? $profName : $clinicName, ENT_QUOTES, 'UTF-8') ?></div>
             <?php if ($profSpecialty !== ''): ?>
                 <div class="signature-detail"><?= htmlspecialchars($profSpecialty, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php endif; ?>
+            <?php if ($profCouncil !== ''): ?>
+                <div class="signature-detail"><?= htmlspecialchars($profCouncil, ENT_QUOTES, 'UTF-8') ?></div>
             <?php endif; ?>
         </div>
 

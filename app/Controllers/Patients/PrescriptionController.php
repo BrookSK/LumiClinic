@@ -161,17 +161,28 @@ final class PrescriptionController extends Controller
 
         $clinic = (new \App\Repositories\ClinicRepository($pdo))->findById($clinicId);
 
-        // Buscar specialty do profissional se houver
+        // Load patient data (CPF, address)
+        $patient = null;
+        $patientId = (int)($rx['patient_id'] ?? 0);
+        if ($patientId > 0) {
+            $patient = (new PatientRepository($pdo))->findClinicalById($clinicId, $patientId);
+        }
+
+        // Load professional data (specialty, council_number)
         $professionalSpecialty = '';
+        $professionalCouncil = '';
         if (!empty($rx['professional_id'])) {
-            $prof = (new \App\Repositories\ProfessionalRepository($pdo))->findById($clinicId, (int)$rx['professional_id']);
+            $prof = (new ProfessionalRepository($pdo))->findById($clinicId, (int)$rx['professional_id']);
             $professionalSpecialty = trim((string)($prof['specialty'] ?? ''));
+            $professionalCouncil = trim((string)($prof['council_number'] ?? ''));
         }
 
         return $this->view('patients/prescription_print', [
-            'rx'                    => $rx,
-            'clinic'                => $clinic,
+            'rx'                     => $rx,
+            'clinic'                 => $clinic,
+            'patient'                => $patient,
             'professional_specialty' => $professionalSpecialty,
+            'professional_council'   => $professionalCouncil,
         ]);
     }
 }
