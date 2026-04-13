@@ -43,11 +43,14 @@ final class MarketingCalendarController extends Controller
         $svc = new MarketingCalendarService($this->container);
         $rows = $svc->listByMonth($month);
         $users = $svc->listUsers();
+        $tuquinhaKey = '';
+        try { $tuquinhaKey = $svc->getTuquinhaApiKey(); } catch (\Throwable $e) {}
 
         return $this->view('marketing/calendar', [
             'rows' => $rows,
             'users' => $users,
             'month' => $month,
+            'tuquinha_api_key' => $tuquinhaKey,
             'error' => trim((string)$request->input('error', '')),
             'success' => trim((string)$request->input('success', '')),
         ]);
@@ -173,6 +176,76 @@ final class MarketingCalendarController extends Controller
             if ($month !== '') {
                 $to = '/marketing/calendar?month=' . urlencode($month) . '&error=' . urlencode($e->getMessage());
             }
+            return $this->redirect($to);
+        }
+    }
+
+    public function tuquinhaConfig(Request $request)
+    {
+        $this->authorize('marketing.calendar.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $month = trim((string)$request->input('month', ''));
+        $apiKey = trim((string)$request->input('tuquinha_api_key', ''));
+
+        try {
+            (new MarketingCalendarService($this->container))->setTuquinhaApiKey($apiKey, $request->ip());
+            $to = '/marketing/calendar?success=' . urlencode($apiKey !== '' ? 'API Key do Tuquinha salva.' : 'API Key do Tuquinha removida.');
+            if ($month !== '') $to .= '&month=' . urlencode($month);
+            return $this->redirect($to);
+        } catch (\RuntimeException $e) {
+            $to = '/marketing/calendar?error=' . urlencode($e->getMessage());
+            if ($month !== '') $to .= '&month=' . urlencode($month);
+            return $this->redirect($to);
+        }
+    }
+
+    public function tuquinhaSync(Request $request)
+    {
+        $this->authorize('marketing.calendar.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $month = trim((string)$request->input('month', ''));
+        $direction = trim((string)$request->input('direction', 'pull'));
+
+        $monthDt = $month !== '' ? \DateTimeImmutable::createFromFormat('Y-m-d', $month) : null;
+        if ($monthDt === null || $monthDt === false) {
+            $monthDt = new \DateTimeImmutable('first day of this month');
+        }
+        $year = (int)$monthDt->format('Y');
+        $mo = (int)$monthDt->format('n');
+
+        try {
+            $svc = new MarketingCalendarService($this->container);
+
+            if ($direction === 'push') {
+                $result = $svc->pushToTuquinha($year, $mo, $request->ip());
+                $msg = 'Enviados ' . $result['pushed'] . ' evento(s) para o Tuquinha.';
+                if ($result['errors'] !== []) {
+                    $msg .= ' Erros: ' . implode('; ', array_slice($result['errors'], 0, 3));
+                }
+            } else {
+                $result = $svc->syncFromTuquinha($year, $mo, $request->ip());
+                $msg = 'Importados ' . $result['imported'] . ', atualizados ' . $result['updated'] . ', ignorados ' . $result['skipped'] . '.';
+                if ($result['errors'] !== []) {
+                    $msg .= ' Erros: ' . implode('; ', array_slice($result['errors'], 0, 3));
+                }
+            }
+
+            $to = '/marketing/calendar?success=' . urlencode($msg);
+            if ($month !== '') $to .= '&month=' . urlencode($month);
+            return $this->redirect($to);
+        } catch (\RuntimeException $e) {
+            $to = '/marketing/calendar?error=' . urlencode($e->getMessage());
+            if ($month !== '') $to .= '&month=' . urlencode($month);
             return $this->redirect($to);
         }
     }

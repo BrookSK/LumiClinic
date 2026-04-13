@@ -65,9 +65,60 @@ ob_start();
         <a class="lc-btn lc-btn--secondary" href="/marketing/calendar?month=<?= urlencode($next) ?>">Próximo →</a>
         <?php if ($can('marketing.calendar.manage')): ?>
             <button type="button" class="lc-btn lc-btn--primary" onclick="toggleForm('form-new')">+ Novo conteúdo</button>
+            <button type="button" class="lc-btn lc-btn--secondary" onclick="toggleForm('tuquinha-panel')" title="Integração Tuquinha">🔌 Tuquinha</button>
         <?php endif; ?>
     </div>
 </div>
+
+<!-- Painel Tuquinha (oculto) -->
+<?php if ($can('marketing.calendar.manage')): ?>
+<?php $tuquinhaKey = $tuquinha_api_key ?? ''; $tuquinhaConnected = $tuquinhaKey !== ''; ?>
+<div id="tuquinha-panel" style="display:none; margin-bottom:16px;">
+    <div class="lc-card">
+        <div class="lc-card__header" style="font-weight:700;">🔌 Integração Tuquinha</div>
+        <div class="lc-card__body">
+            <!-- Config API Key -->
+            <form method="post" action="/marketing/calendar/tuquinha-config" class="lc-form" style="margin-bottom:14px;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
+                <div class="lc-flex lc-gap-sm" style="align-items:end;">
+                    <div class="lc-field" style="flex:1;">
+                        <label class="lc-label">API Key do Tuquinha</label>
+                        <input class="lc-input" type="text" name="tuquinha_api_key" value="<?= htmlspecialchars($tuquinhaKey, ENT_QUOTES, 'UTF-8') ?>" placeholder="tuq_sua_chave_aqui" />
+                    </div>
+                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit"><?= $tuquinhaConnected ? 'Atualizar' : 'Conectar' ?></button>
+                </div>
+                <?php if ($tuquinhaConnected): ?>
+                    <div style="font-size:11px;color:#16a34a;margin-top:4px;">✓ Conectado — chave configurada</div>
+                <?php else: ?>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Cole a API Key gerada no painel do Tuquinha</div>
+                <?php endif; ?>
+            </form>
+
+            <?php if ($tuquinhaConnected): ?>
+            <div style="border-top:1px solid rgba(0,0,0,.08);padding-top:12px;">
+                <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Sincronizar <?= htmlspecialchars($monthLabel, ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="lc-flex lc-gap-sm lc-flex--wrap">
+                    <form method="post" action="/marketing/calendar/tuquinha-sync" style="margin:0;">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="direction" value="pull" />
+                        <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">⬇️ Importar do Tuquinha</button>
+                    </form>
+                    <form method="post" action="/marketing/calendar/tuquinha-sync" style="margin:0;">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
+                        <input type="hidden" name="direction" value="push" />
+                        <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">⬆️ Enviar para o Tuquinha</button>
+                    </form>
+                </div>
+                <div class="lc-muted" style="font-size:11px;margin-top:6px;">Importar traz eventos do Tuquinha para cá. Enviar cria no Tuquinha os eventos locais que ainda não foram sincronizados.</div>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Formulário novo (oculto) -->
 <?php if ($can('marketing.calendar.manage')): ?>

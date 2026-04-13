@@ -385,6 +385,8 @@ $router->post('/marketing/calendar/create', [\App\Controllers\Marketing\Marketin
 $router->get('/marketing/calendar/edit', [\App\Controllers\Marketing\MarketingCalendarController::class, 'edit']);
 $router->post('/marketing/calendar/update', [\App\Controllers\Marketing\MarketingCalendarController::class, 'update']);
 $router->post('/marketing/calendar/delete', [\App\Controllers\Marketing\MarketingCalendarController::class, 'delete']);
+$router->post('/marketing/calendar/tuquinha-config', [\App\Controllers\Marketing\MarketingCalendarController::class, 'tuquinhaConfig']);
+$router->post('/marketing/calendar/tuquinha-sync', [\App\Controllers\Marketing\MarketingCalendarController::class, 'tuquinhaSync']);
 
 $router->get('/marketing/automation/segments', [MarketingAutomationUiController::class, 'segments']);
 $router->post('/marketing/automation/segment/create', [MarketingAutomationUiController::class, 'segmentCreate']);
