@@ -106,4 +106,77 @@ final class PaymentController extends Controller
             return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));
         }
     }
+
+    public function update(Request $request)
+    {
+        $this->authorize('finance.payments.create');
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $paymentId = (int)$request->input('payment_id', 0);
+        $saleId = (int)$request->input('sale_id', 0);
+        $method = trim((string)$request->input('method', ''));
+        $amount = trim((string)$request->input('amount', ''));
+        $status = trim((string)$request->input('status', 'pending'));
+        $fees = trim((string)$request->input('fees', '0'));
+        $gatewayRef = trim((string)$request->input('gateway_ref', ''));
+        $paidAtDate = trim((string)$request->input('paid_at', ''));
+        $cardType = trim((string)$request->input('card_type', ''));
+        $installments = (int)$request->input('installments', 1);
+
+        if ($method === 'card' && $cardType !== '') {
+            $method = $cardType === 'debit' ? 'debit_card' : 'credit_card';
+        }
+        if ($method === 'credit_card' && $installments > 1) {
+            $gatewayRef = ($gatewayRef !== '' ? $gatewayRef . ' | ' : '') . $installments . 'x';
+        }
+
+        if ($paymentId <= 0 || $saleId <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        try {
+            $service = new SalesService($this->container);
+            $service->updatePayment($paymentId, $method, $amount, $status, $fees, $gatewayRef === '' ? null : $gatewayRef, $request->ip(), $request->header('user-agent'), $paidAtDate !== '' ? $paidAtDate : null);
+            return $this->redirect('/finance/sales/view?id=' . $saleId);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function delete(Request $request)
+    {
+        $this->authorize('finance.payments.create');
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $paymentId = (int)$request->input('payment_id', 0);
+        $saleId = (int)$request->input('sale_id', 0);
+
+        if ($paymentId <= 0 || $saleId <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        try {
+            $service = new SalesService($this->container);
+            $service->deletePayment($paymentId, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/sales/view?id=' . $saleId);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));
+        }
+    }
 }

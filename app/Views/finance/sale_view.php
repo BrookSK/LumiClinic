@@ -360,23 +360,89 @@ ob_start();
                         $ps = (string)($p['status'] ?? '');
                         $paidAt = (string)($p['paid_at'] ?? '');
                         $paidFmt = '';
-                        try { $paidFmt = $paidAt !== '' ? (new \DateTimeImmutable($paidAt))->format('d/m/Y') : ''; } catch (\Throwable $e) {}
+                        $paidDateVal = '';
+                        try {
+                            if ($paidAt !== '') {
+                                $dtObj = new \DateTimeImmutable($paidAt);
+                                $paidFmt = $dtObj->format('d/m/Y');
+                                $paidDateVal = $dtObj->format('Y-m-d');
+                            }
+                        } catch (\Throwable $e) {}
                         $gRef = trim((string)($p['gateway_ref'] ?? ''));
+                        $pId = (int)$p['id'];
                         ?>
-                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(0,0,0,.05);">
-                            <div>
-                                <div style="font-size:13px; font-weight:600;">
-                                    <?= htmlspecialchars($paymentMethodLabel[$pm] ?? $pm, ENT_QUOTES, 'UTF-8') ?>
-                                    <?php if ($gRef !== ''): ?><span class="lc-muted" style="font-size:11px;margin-left:4px;">(<?= htmlspecialchars($gRef, ENT_QUOTES, 'UTF-8') ?>)</span><?php endif; ?>
-                                    <span class="lc-badge <?= $ps === 'paid' ? 'lc-badge--success' : ($ps === 'refunded' ? 'lc-badge--danger' : 'lc-badge--secondary') ?>" style="font-size:11px; margin-left:4px;">
-                                        <?= htmlspecialchars($paymentStatusLabel[$ps] ?? $ps, ENT_QUOTES, 'UTF-8') ?>
-                                    </span>
+                        <div style="padding:6px 0; border-bottom:1px solid rgba(0,0,0,.05);">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-size:13px; font-weight:600;">
+                                        <?= htmlspecialchars($paymentMethodLabel[$pm] ?? $pm, ENT_QUOTES, 'UTF-8') ?>
+                                        <?php if ($gRef !== ''): ?><span class="lc-muted" style="font-size:11px;margin-left:4px;">(<?= htmlspecialchars($gRef, ENT_QUOTES, 'UTF-8') ?>)</span><?php endif; ?>
+                                        <span class="lc-badge <?= $ps === 'paid' ? 'lc-badge--success' : ($ps === 'refunded' ? 'lc-badge--danger' : 'lc-badge--secondary') ?>" style="font-size:11px; margin-left:4px;">
+                                            <?= htmlspecialchars($paymentStatusLabel[$ps] ?? $ps, ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
+                                    </div>
+                                    <?php if ($paidFmt !== ''): ?>
+                                        <div class="lc-muted" style="font-size:12px;"><?= htmlspecialchars($paidFmt, ENT_QUOTES, 'UTF-8') ?></div>
+                                    <?php endif; ?>
                                 </div>
-                                <?php if ($paidFmt !== ''): ?>
-                                    <div class="lc-muted" style="font-size:12px;"><?= htmlspecialchars($paidFmt, ENT_QUOTES, 'UTF-8') ?></div>
-                                <?php endif; ?>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <div style="font-weight:700;">R$ <?= number_format((float)$p['amount'], 2, ',', '.') ?></div>
+                                    <?php if (!$isProfessional && $can('finance.payments.create') && !$isCancelled): ?>
+                                        <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" style="padding:2px 6px;font-size:10px;" onclick="toggleForm('edit-pay-<?= $pId ?>')" title="Editar">✏️</button>
+                                        <form method="post" action="/finance/payments/delete" onsubmit="return confirm('Remover este pagamento?');" style="margin:0;">
+                                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                            <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                                            <input type="hidden" name="payment_id" value="<?= $pId ?>" />
+                                            <button type="submit" class="lc-btn lc-btn--danger lc-btn--sm" style="padding:2px 6px;font-size:10px;" title="Remover">✕</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                            <div style="font-weight:700;">R$ <?= number_format((float)$p['amount'], 2, ',', '.') ?></div>
+                            <!-- Inline edit form (hidden) -->
+                            <?php if (!$isProfessional && $can('finance.payments.create') && !$isCancelled): ?>
+                            <div id="edit-pay-<?= $pId ?>" style="display:none;margin-top:8px;padding:10px;background:rgba(0,0,0,.02);border-radius:8px;">
+                                <form method="post" action="/finance/payments/update" class="lc-form">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                                    <input type="hidden" name="payment_id" value="<?= $pId ?>" />
+                                    <div class="lc-grid lc-gap-grid" style="grid-template-columns:1fr 1fr;align-items:end;">
+                                        <div class="lc-field">
+                                            <label class="lc-label">Método</label>
+                                            <select class="lc-select" name="method">
+                                                <option value="pix" <?= $pm === 'pix' ? 'selected' : '' ?>>PIX</option>
+                                                <option value="credit_card" <?= $pm === 'credit_card' ? 'selected' : '' ?>>Cartão Crédito</option>
+                                                <option value="debit_card" <?= $pm === 'debit_card' ? 'selected' : '' ?>>Cartão Débito</option>
+                                                <option value="cash" <?= $pm === 'cash' ? 'selected' : '' ?>>Dinheiro</option>
+                                                <option value="boleto" <?= $pm === 'boleto' ? 'selected' : '' ?>>Boleto</option>
+                                            </select>
+                                        </div>
+                                        <div class="lc-field">
+                                            <label class="lc-label">Valor (R$)</label>
+                                            <input class="lc-input" type="text" name="amount" value="<?= number_format((float)$p['amount'], 2, ',', '.') ?>" required />
+                                        </div>
+                                    </div>
+                                    <div class="lc-grid lc-gap-grid" style="grid-template-columns:1fr 1fr;align-items:end;margin-top:6px;">
+                                        <div class="lc-field">
+                                            <label class="lc-label">Data</label>
+                                            <input class="lc-input" type="date" name="paid_at" value="<?= htmlspecialchars($paidDateVal, ENT_QUOTES, 'UTF-8') ?>" />
+                                        </div>
+                                        <div class="lc-field">
+                                            <label class="lc-label">Status</label>
+                                            <select class="lc-select" name="status">
+                                                <option value="paid" <?= $ps === 'paid' ? 'selected' : '' ?>>Pago</option>
+                                                <option value="pending" <?= $ps === 'pending' ? 'selected' : '' ?>>Pendente</option>
+                                                <option value="refunded" <?= $ps === 'refunded' ? 'selected' : '' ?>>Estornado</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="fees" value="<?= number_format((float)($p['fees'] ?? 0), 2, '.', '') ?>" />
+                                    <div class="lc-flex lc-gap-sm" style="margin-top:8px;">
+                                        <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button>
+                                        <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleForm('edit-pay-<?= $pId ?>')">Cancelar</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                     </div>

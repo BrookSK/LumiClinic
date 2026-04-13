@@ -143,4 +143,50 @@ final class PaymentRepository
             'paid_at' => ($paidAt === '' ? null : $paidAt),
         ]);
     }
+
+    public function updateFull(int $clinicId, int $id, string $method, string $amount, string $status, string $fees, ?string $gatewayRef, ?string $paidAt): void
+    {
+        $sql = "
+            UPDATE payments
+            SET method = :method,
+                amount = :amount,
+                status = :status,
+                fees = :fees,
+                gateway_ref = :gateway_ref,
+                paid_at = :paid_at,
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $id,
+            'clinic_id' => $clinicId,
+            'method' => $method,
+            'amount' => $amount,
+            'status' => $status,
+            'fees' => $fees,
+            'gateway_ref' => ($gatewayRef === '' ? null : $gatewayRef),
+            'paid_at' => ($paidAt === '' ? null : $paidAt),
+        ]);
+    }
+
+    public function softDelete(int $clinicId, int $id): void
+    {
+        $sql = "
+            UPDATE payments
+            SET deleted_at = NOW(),
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $id, 'clinic_id' => $clinicId]);
+    }
 }

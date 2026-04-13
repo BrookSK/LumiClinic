@@ -412,6 +412,8 @@ $router->post('/finance/sales/cancel', [SalesController::class, 'cancel']);
 $router->get('/finance/sales/print', [SalesController::class, 'printBudget']);
 
 $router->post('/finance/payments/create', [PaymentController::class, 'create']);
+$router->post('/finance/payments/update', [PaymentController::class, 'update']);
+$router->post('/finance/payments/delete', [PaymentController::class, 'delete']);
 $router->post('/finance/payments/refund', [PaymentController::class, 'refund']);
 
 $router->get('/finance/cashflow', [FinancialController::class, 'cashflow']);

@@ -458,6 +458,108 @@ final class SalesService
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
     }
 
+    public function updatePayment(int $paymentId, string $method, string $amountStr, string $status, string $feesStr, ?string $gatewayRef, string $ip, ?string $userAgent = null, ?string $paidAtDate = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $payRepo = new PaymentRepository($pdo);
+        $payment = $payRepo->findById($clinicId, $paymentId);
+        if ($payment === null) {
+            throw new \RuntimeException('Pagamento inválido.');
+        }
+
+        $saleId = (int)$payment['sale_id'];
+
+        $method = trim($method);
+        $allowedMethods = ['pix', 'credit_card', 'debit_card', 'cash', 'boleto', 'card'];
+        if (!in_array($method, $allowedMethods, true)) {
+            throw new \RuntimeException('Método inválido.');
+        }
+
+        $status = trim($status);
+        $allowedStatuses = ['pending', 'paid', 'refunded'];
+        if (!in_array($status, $allowedStatuses, true)) {
+            throw new \RuntimeException('Status inválido.');
+        }
+
+        $amount = $this->parseMoney($amountStr);
+        if ($amount <= 0) {
+            throw new \RuntimeException('Valor inválido.');
+        }
+
+        $fees = $this->parseMoney($feesStr);
+        if ($fees < 0) $fees = 0.0;
+
+        $paidAt = null;
+        if ($status === 'paid') {
+            if ($paidAtDate !== null && trim($paidAtDate) !== '') {
+                $paidAt = trim($paidAtDate) . ' ' . date('H:i:s');
+            } else {
+                $paidAt = (string)($payment['paid_at'] ?? '') !== '' ? (string)$payment['paid_at'] : (new \DateTimeImmutable('now'))->format('Y-m-d H:i:s');
+            }
+        }
+
+        (new DataVersionRepository($pdo))->record($clinicId, 'payment', $paymentId, 'finance.payments.update', $payment, $actorId, $ip, $userAgent);
+
+        $payRepo->updateFull(
+            $clinicId,
+            $paymentId,
+            $method,
+            number_format($amount, 2, '.', ''),
+            $status,
+            number_format($fees, 2, '.', ''),
+            $gatewayRef,
+            $paidAt
+        );
+
+        $saleLog = new SaleLogRepository($pdo);
+        $saleLog->log($clinicId, $saleId, 'payments.update', ['payment_id' => $paymentId, 'method' => $method, 'amount' => $amount, 'status' => $status], $actorId, $ip);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.payments.update', ['sale_id' => $saleId, 'payment_id' => $paymentId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
+        $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
+    }
+
+    public function deletePayment(int $paymentId, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $payRepo = new PaymentRepository($pdo);
+        $payment = $payRepo->findById($clinicId, $paymentId);
+        if ($payment === null) {
+            throw new \RuntimeException('Pagamento inválido.');
+        }
+
+        $saleId = (int)$payment['sale_id'];
+
+        (new DataVersionRepository($pdo))->record($clinicId, 'payment', $paymentId, 'finance.payments.delete', $payment, $actorId, $ip, $userAgent);
+
+        $payRepo->softDelete($clinicId, $paymentId);
+
+        $saleLog = new SaleLogRepository($pdo);
+        $saleLog->log($clinicId, $saleId, 'payments.delete', ['payment_id' => $paymentId], $actorId, $ip);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.payments.delete', ['sale_id' => $saleId, 'payment_id' => $paymentId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
+        $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
+    }
+
     public function cancelSale(int $saleId, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
