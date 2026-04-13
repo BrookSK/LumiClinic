@@ -20,18 +20,20 @@ $can = function (string $p): bool {
 };
 
 $budgetStatusLabel = [
-    'draft'    => 'Rascunho',
-    'sent'     => 'Enviado',
-    'approved' => 'Aprovado',
-    'standby'  => 'Em espera',
-    'rejected' => 'Recusado',
+    'draft'     => 'Rascunho',
+    'sent'      => 'Enviado',
+    'approved'  => 'Aprovado',
+    'standby'   => 'Em espera',
+    'rejected'  => 'Recusado',
+    'completed' => 'Concluído',
 ];
 $budgetStatusBadge = [
-    'draft'    => 'lc-badge--secondary',
-    'sent'     => 'lc-badge--primary',
-    'approved' => 'lc-badge--success',
-    'standby'  => 'lc-badge--secondary',
-    'rejected' => 'lc-badge--danger',
+    'draft'     => 'lc-badge--secondary',
+    'sent'      => 'lc-badge--primary',
+    'approved'  => 'lc-badge--success',
+    'standby'   => 'lc-badge--secondary',
+    'rejected'  => 'lc-badge--danger',
+    'completed' => 'lc-badge--success',
 ];
 
 ob_start();
@@ -183,7 +185,7 @@ ob_start();
                             <span class="lc-badge <?= $budgetStatusBadge[$bs] ?? 'lc-badge--secondary' ?>">
                                 <?= htmlspecialchars($budgetStatusLabel[$bs] ?? $bs, ENT_QUOTES, 'UTF-8') ?>
                             </span>
-                            <?php if ((string)($s['status'] ?? '') === 'paid'): ?>
+                            <?php if ((string)($s['status'] ?? '') === 'paid' && $bs !== 'completed'): ?>
                                 <span class="lc-badge lc-badge--success" style="margin-left:4px;">💰 Pago</span>
                             <?php elseif ((string)($s['status'] ?? '') === 'cancelled'): ?>
                                 <span class="lc-badge lc-badge--danger" style="margin-left:4px;">Cancelado</span>

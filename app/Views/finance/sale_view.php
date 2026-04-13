@@ -19,18 +19,20 @@ $can = function (string $p): bool {
 };
 
 $budgetStatusLabel = [
-    'draft'    => 'Rascunho',
-    'sent'     => 'Enviado ao paciente',
-    'approved' => 'Aprovado',
-    'standby'  => 'Em espera',
-    'rejected' => 'Recusado',
+    'draft'     => 'Rascunho',
+    'sent'      => 'Enviado ao paciente',
+    'approved'  => 'Aprovado',
+    'standby'   => 'Em espera',
+    'rejected'  => 'Recusado',
+    'completed' => 'Concluído',
 ];
 $budgetStatusBadge = [
-    'draft'    => 'lc-badge--secondary',
-    'sent'     => 'lc-badge--primary',
-    'approved' => 'lc-badge--success',
-    'standby'  => 'lc-badge--secondary',
-    'rejected' => 'lc-badge--danger',
+    'draft'     => 'lc-badge--secondary',
+    'sent'      => 'lc-badge--primary',
+    'approved'  => 'lc-badge--success',
+    'standby'   => 'lc-badge--secondary',
+    'rejected'  => 'lc-badge--danger',
+    'completed' => 'lc-badge--success',
 ];
 $paymentMethodLabel = [
     'pix'         => 'PIX',
@@ -94,7 +96,7 @@ ob_start();
             <span class="lc-badge <?= $budgetStatusBadge[$bs] ?? 'lc-badge--secondary' ?>">
                 <?= htmlspecialchars($budgetStatusLabel[$bs] ?? $bs, ENT_QUOTES, 'UTF-8') ?>
             </span>
-            <?php if ($isPaid): ?>
+            <?php if ($isPaid && $bs !== 'completed'): ?>
                 <span class="lc-badge lc-badge--success">💰 Pago</span>
             <?php elseif ($countPaid > 0 && $countPending > 0): ?>
                 <span class="lc-badge lc-badge--primary">📋 Pagamento em andamento (<?= $countPaid ?>/<?= $countTotal ?>)</span>

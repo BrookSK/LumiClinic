@@ -170,9 +170,9 @@ ob_start();
     <div class="fr-section__body">
         <?php
         $bsc = $budget_status_counts ?? [];
-        $bsLabels = ['draft'=>'Rascunho','sent'=>'Enviado ao paciente','approved'=>'Aprovado','standby'=>'Em espera','rejected'=>'Recusado'];
-        $bsColors = ['draft'=>'#6b7280','sent'=>'#2563eb','approved'=>'#16a34a','standby'=>'#eeb810','rejected'=>'#b91c1c'];
-        $bsIcons  = ['draft'=>'📝','sent'=>'📤','approved'=>'✅','standby'=>'⏸️','rejected'=>'❌'];
+        $bsLabels = ['draft'=>'Rascunho','sent'=>'Enviado ao paciente','approved'=>'Aprovado','standby'=>'Em espera','rejected'=>'Recusado','completed'=>'Concluído'];
+        $bsColors = ['draft'=>'#6b7280','sent'=>'#2563eb','approved'=>'#16a34a','standby'=>'#eeb810','rejected'=>'#b91c1c','completed'=>'#059669'];
+        $bsIcons  = ['draft'=>'📝','sent'=>'📤','approved'=>'✅','standby'=>'⏸️','rejected'=>'❌','completed'=>'🏁'];
         $totalBudgets = array_sum($bsc);
         ?>
         <?php if ($totalBudgets === 0): ?>

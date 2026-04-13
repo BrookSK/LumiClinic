@@ -670,7 +670,7 @@ final class SalesService
         }
 
         $budgetStatus = trim($budgetStatus);
-        $allowed = ['draft', 'sent', 'approved', 'rejected', 'standby'];
+        $allowed = ['draft', 'sent', 'approved', 'rejected', 'standby', 'completed'];
         if (!in_array($budgetStatus, $allowed, true)) {
             throw new \RuntimeException('Status inv?lido.');
         }
@@ -1124,6 +1124,23 @@ final class SalesService
 
             $saleLog = new SaleLogRepository($pdo);
             $saleLog->log($clinicId, $saleId, 'sales.budget_status', ['from' => $currentBudget, 'to' => 'approved', 'reason' => 'auto_payment'], $actorId, $ip);
+            $currentBudget = 'approved';
+        }
+
+        // Auto-promote to 'completed' when fully paid
+        if ($newStatus === 'paid' && $currentBudget !== 'completed') {
+            $saleRepo->updateBudgetStatus($clinicId, $saleId, 'completed');
+
+            $saleLog = new SaleLogRepository($pdo);
+            $saleLog->log($clinicId, $saleId, 'sales.budget_status', ['from' => $currentBudget, 'to' => 'completed', 'reason' => 'fully_paid'], $actorId, $ip);
+        }
+
+        // Revert from 'completed' if no longer fully paid (e.g. payment deleted/refunded)
+        if ($newStatus !== 'paid' && $currentBudget === 'completed') {
+            $saleRepo->updateBudgetStatus($clinicId, $saleId, 'approved');
+
+            $saleLog = new SaleLogRepository($pdo);
+            $saleLog->log($clinicId, $saleId, 'sales.budget_status', ['from' => 'completed', 'to' => 'approved', 'reason' => 'no_longer_fully_paid'], $actorId, $ip);
         }
     }
 }
