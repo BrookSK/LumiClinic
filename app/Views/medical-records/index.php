@@ -45,11 +45,7 @@ ob_start();
         </div>
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
-        <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= $patientId ?>">Paciente</a>
-        <a class="lc-btn lc-btn--secondary" href="/patients/clinical-sheet?patient_id=<?= $patientId ?>">Ficha clínica</a>
-        <?php if (!empty($images) || !empty($imagePairs)): ?>
-            <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= $patientId ?>">Imagens (<?= count($images) ?>)</a>
-        <?php endif; ?>
+        <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= $patientId ?>">Voltar ao paciente</a>
         <a class="lc-btn lc-btn--primary" href="/medical-records/create?patient_id=<?= $patientId ?>">+ Novo registro</a>
     </div>
 </div>

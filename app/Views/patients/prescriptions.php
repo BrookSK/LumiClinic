@@ -24,7 +24,6 @@ ob_start();
     <div class="lc-badge lc-badge--primary">Receituário — <?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>">Voltar ao paciente</a>
-        <a class="lc-btn lc-btn--secondary" href="/medical-records?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Prontuário</a>
     </div>
 </div>
 
@@ -39,11 +38,35 @@ ob_start();
 <div class="lc-card" style="margin-bottom:16px;">
     <div class="lc-card__header">Nova receita</div>
     <div class="lc-card__body">
+        <!-- Patient & prescriber info -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;padding:12px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.06);">
+            <div>
+                <div style="font-weight:700;font-size:12px;color:#6b7280;margin-bottom:6px;">Paciente</div>
+                <div style="font-size:13px;font-weight:600;color:#1f2937;"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+                <?php if (($patient['cpf'] ?? '') !== ''): ?><div style="font-size:12px;color:#6b7280;">CPF: <?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+                <?php if (($patient['address'] ?? '') !== ''): ?><div style="font-size:12px;color:#6b7280;"><?= htmlspecialchars((string)$patient['address'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
+            </div>
+            <div id="prescriberInfo" style="display:none;">
+                <div style="font-weight:700;font-size:12px;color:#6b7280;margin-bottom:6px;">Prescritor</div>
+                <div id="prescriberName" style="font-size:13px;font-weight:600;color:#1f2937;"></div>
+                <div id="prescriberCouncil" style="font-size:12px;color:#6b7280;"></div>
+            </div>
+        </div>
+
         <form method="post" action="/patients/prescriptions/create" class="lc-form">
             <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
             <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
 
-            <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 1fr; align-items:end;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;">
+                <div class="lc-field">
+                    <label class="lc-label">Profissional que prescreve</label>
+                    <select class="lc-select" name="professional_id" id="rxProfSelect" onchange="updatePrescriberInfo()">
+                        <option value="">(selecione)</option>
+                        <?php foreach ($professionals as $pr): ?>
+                            <option value="<?= (int)$pr['id'] ?>" data-name="<?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?>" data-specialty="<?= htmlspecialchars((string)($pr['specialty'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-council="<?= htmlspecialchars((string)($pr['council_number'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
                 <div class="lc-field">
                     <label class="lc-label">Título</label>
                     <input class="lc-input" type="text" name="title" value="Receita" />
@@ -51,15 +74,6 @@ ob_start();
                 <div class="lc-field">
                     <label class="lc-label">Data de emissão</label>
                     <input class="lc-input" type="date" name="issued_at" value="<?= date('Y-m-d') ?>" required />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Profissional (opcional)</label>
-                    <select class="lc-select" name="professional_id">
-                        <option value="">(opcional)</option>
-                        <?php foreach ($professionals as $pr): ?>
-                            <option value="<?= (int)$pr['id'] ?>"><?= htmlspecialchars((string)$pr['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
                 </div>
             </div>
 
@@ -74,6 +88,25 @@ ob_start();
         </form>
     </div>
 </div>
+
+<script>
+function updatePrescriberInfo() {
+    var sel = document.getElementById('rxProfSelect');
+    var info = document.getElementById('prescriberInfo');
+    var nameEl = document.getElementById('prescriberName');
+    var councilEl = document.getElementById('prescriberCouncil');
+    if (!sel || !info) return;
+    var opt = sel.options[sel.selectedIndex];
+    if (sel.value === '') { info.style.display = 'none'; return; }
+    info.style.display = 'block';
+    if (nameEl) nameEl.textContent = opt.dataset.name || '';
+    var parts = [];
+    if (opt.dataset.specialty) parts.push(opt.dataset.specialty);
+    if (opt.dataset.council) parts.push('Conselho: ' + opt.dataset.council);
+    if (councilEl) councilEl.textContent = parts.join(' · ') || '';
+}
+</script>
+
 <?php endif; ?>
 
 <div class="lc-card">

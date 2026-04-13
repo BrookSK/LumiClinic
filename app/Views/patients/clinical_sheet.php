@@ -38,13 +38,10 @@ ob_start();
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:16px; gap:10px;">
     <div>
         <div style="font-weight:800; font-size:18px;"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-        <div class="lc-muted" style="font-size:13px; margin-top:2px;">Ficha clínica</div>
+        <div class="lc-muted" style="font-size:13px; margin-top:2px;">Alertas Clínicos</div>
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
-        <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= $patientId ?>">Paciente</a>
-        <?php if ($can('medical_records.read')): ?>
-            <a class="lc-btn lc-btn--primary" href="/medical-records?patient_id=<?= $patientId ?>">Prontuário</a>
-        <?php endif; ?>
+        <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= $patientId ?>">Voltar ao paciente</a>
     </div>
 </div>
 
