@@ -344,6 +344,7 @@ final class FinancialController extends Controller
             'kpi_revenue_total' => $data['kpi_revenue_total'] ?? 0,
             'recent_sales' => $data['recent_sales'] ?? [],
             'recent_entries' => $data['recent_entries'] ?? [],
+            'budget_status_counts' => $data['budget_status_counts'] ?? [],
             'professionals' => $sales->listReferenceProfessionals(),
             'is_professional' => $this->isProfessionalRole(),
         ]);

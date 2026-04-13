@@ -164,6 +164,43 @@ ob_start();
 <!-- Receita por profissional -->
 <details class="fr-section" open>
     <summary>
+        Orçamentos por status (follow-up)
+        <svg class="fr-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </summary>
+    <div class="fr-section__body">
+        <?php
+        $bsc = $budget_status_counts ?? [];
+        $bsLabels = ['draft'=>'Rascunho','sent'=>'Enviado ao paciente','approved'=>'Aprovado','standby'=>'Em espera','rejected'=>'Recusado'];
+        $bsColors = ['draft'=>'#6b7280','sent'=>'#2563eb','approved'=>'#16a34a','standby'=>'#eeb810','rejected'=>'#b91c1c'];
+        $bsIcons  = ['draft'=>'📝','sent'=>'📤','approved'=>'✅','standby'=>'⏸️','rejected'=>'❌'];
+        $totalBudgets = array_sum($bsc);
+        ?>
+        <?php if ($totalBudgets === 0): ?>
+            <div class="fr-empty">Sem orçamentos no período.</div>
+        <?php else: ?>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;">
+                <?php foreach ($bsLabels as $bk => $blbl): ?>
+                    <?php $cnt = (int)($bsc[$bk] ?? 0); ?>
+                    <div style="padding:12px;border-radius:10px;border:1px solid <?= $bsColors[$bk] ?>22;background:<?= $bsColors[$bk] ?>08;">
+                        <div style="font-size:11px;color:<?= $bsColors[$bk] ?>;font-weight:600;"><?= $bsIcons[$bk] ?> <?= htmlspecialchars($blbl, ENT_QUOTES, 'UTF-8') ?></div>
+                        <div style="font-size:22px;font-weight:900;color:<?= $bsColors[$bk] ?>;"><?= $cnt ?></div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <?php foreach (['draft'=>'Rascunho','sent'=>'Enviado','standby'=>'Em espera','rejected'=>'Recusado'] as $bk => $blbl): ?>
+                    <?php if ((int)($bsc[$bk] ?? 0) > 0): ?>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales?budget_status=<?= $bk ?>">Ver <?= mb_strtolower($blbl, 'UTF-8') ?> (<?= (int)($bsc[$bk] ?? 0) ?>)</a>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</details>
+
+<!-- Receita por profissional -->
+<details class="fr-section" open>
+    <summary>
         Receita por profissional
         <span class="fr-section__hint"><?= count($by_professional) ?> profissional(is)</span>
         <svg class="fr-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>

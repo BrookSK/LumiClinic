@@ -183,6 +183,11 @@ ob_start();
                             <span class="lc-badge <?= $budgetStatusBadge[$bs] ?? 'lc-badge--secondary' ?>">
                                 <?= htmlspecialchars($budgetStatusLabel[$bs] ?? $bs, ENT_QUOTES, 'UTF-8') ?>
                             </span>
+                            <?php if ((string)($s['status'] ?? '') === 'paid'): ?>
+                                <span class="lc-badge lc-badge--success" style="margin-left:4px;">💰 Pago</span>
+                            <?php elseif ((string)($s['status'] ?? '') === 'cancelled'): ?>
+                                <span class="lc-badge lc-badge--danger" style="margin-left:4px;">Cancelado</span>
+                            <?php endif; ?>
                         </td>
                         <td style="font-weight:600;">
                             R$ <?= number_format((float)$s['total_liquido'], 2, ',', '.') ?>

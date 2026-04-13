@@ -405,9 +405,11 @@ $router->get('/finance/sales/view', [SalesController::class, 'show']);
 $router->post('/finance/sales/create', [SalesController::class, 'create']);
 $router->get('/finance/sales/patients/search-json', [SalesController::class, 'patientSearchJson']);
 $router->post('/finance/sales/items/add', [SalesController::class, 'addItem']);
+$router->post('/finance/sales/items/remove', [SalesController::class, 'removeItem']);
 $router->post('/finance/sales/budget-status', [SalesController::class, 'setBudgetStatus']);
 $router->post('/finance/sales/generate-appointments', [SalesController::class, 'generateAppointments']);
 $router->post('/finance/sales/cancel', [SalesController::class, 'cancel']);
+$router->get('/finance/sales/print', [SalesController::class, 'printBudget']);
 
 $router->post('/finance/payments/create', [PaymentController::class, 'create']);
 $router->post('/finance/payments/refund', [PaymentController::class, 'refund']);

@@ -291,6 +291,85 @@ final class SalesController extends Controller
         }
     }
 
+    public function removeItem(Request $request)
+    {
+        $this->authorize('finance.sales.update');
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $saleId = (int)$request->input('sale_id', 0);
+        $itemId = (int)$request->input('item_id', 0);
+
+        if ($saleId <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        try {
+            $service = new SalesService($this->container);
+            $service->removeItem($saleId, $itemId, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/sales/view?id=' . $saleId);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    public function printBudget(Request $request)
+    {
+        $this->authorize('finance.sales.read');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        if ($this->isProfessionalRole()) {
+            $this->assertProfessionalOwnsSale($clinicId, $id);
+        }
+
+        $service = new SalesService($this->container);
+        $data = $service->getSale($id);
+        if ($data === null) {
+            return $this->redirect('/finance/sales');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $clinic = (new \App\Repositories\ClinicRepository($pdo))->findById($clinicId);
+        $patient = null;
+        if ($data['sale']['patient_id'] !== null) {
+            $patient = (new \App\Repositories\PatientRepository($pdo))->findById($clinicId, (int)$data['sale']['patient_id']);
+        }
+
+        return $this->view('finance/sale_print', [
+            'sale' => $data['sale'],
+            'items' => $data['items'],
+            'payments' => $data['payments'],
+            'services' => $service->listServices(),
+            'packages' => $service->listPackages(),
+            'plans' => $service->listSubscriptionPlans(),
+            'professionals' => $service->listReferenceProfessionals(),
+            'clinic' => $clinic,
+            'patient' => $patient,
+        ]);
+    }
+
     public function cancel(Request $request)
     {
         $this->authorize('finance.sales.cancel');

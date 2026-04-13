@@ -62,6 +62,15 @@ final class SalesService
             return null;
         }
 
+        // Enrich with patient name
+        if ($sale['patient_id'] !== null) {
+            $patRepo = new PatientRepository($pdo);
+            $pat = $patRepo->findById($clinicId, (int)$sale['patient_id']);
+            $sale['patient_name'] = $pat !== null ? (string)($pat['name'] ?? '') : '';
+        } else {
+            $sale['patient_name'] = '';
+        }
+
         $itemsRepo = new SaleItemRepository($pdo);
         $payRepo = new PaymentRepository($pdo);
         $logRepo = new SaleLogRepository($pdo);
@@ -255,30 +264,63 @@ final class SalesService
         return $itemId;
     }
 
-    public function addPayment(int $saleId, string $method, string $amountStr, string $status, string $feesStr, ?string $gatewayRef, string $ip, ?string $userAgent = null): int
+    public function removeItem(int $saleId, int $itemId, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $saleRepo = new SaleRepository($pdo);
+        $sale = $saleRepo->findById($clinicId, $saleId);
+        if ($sale === null) {
+            throw new \RuntimeException('Venda inválida.');
+        }
+
+        if ((string)$sale['status'] !== 'open') {
+            throw new \RuntimeException('Não é possível remover itens de um orçamento que não está aberto.');
+        }
+
+        $itemRepo = new SaleItemRepository($pdo);
+        $itemRepo->softDelete($clinicId, $itemId);
+
+        $saleLog = new SaleLogRepository($pdo);
+        $saleLog->log($clinicId, $saleId, 'sale_items.delete', ['sale_item_id' => $itemId], $actorId, $ip);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.sales.update', ['sale_id' => $saleId, 'removed_item_id' => $itemId], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+
+        $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
+    }
+
+    public function addPayment(int $saleId, string $method, string $amountStr, string $status, string $feesStr, ?string $gatewayRef, string $ip, ?string $userAgent = null, ?string $paidAtDate = null): int
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $method = trim($method);
-        $allowedMethods = ['pix', 'card', 'cash', 'boleto'];
+        $allowedMethods = ['pix', 'credit_card', 'debit_card', 'cash', 'boleto', 'card'];
         if (!in_array($method, $allowedMethods, true)) {
-            throw new \RuntimeException('M?todo inv?lido.');
+            throw new \RuntimeException('Método inválido.');
         }
 
         $status = trim($status);
         $allowedStatuses = ['pending', 'paid'];
         if (!in_array($status, $allowedStatuses, true)) {
-            throw new \RuntimeException('Status inv?lido.');
+            throw new \RuntimeException('Status inválido.');
         }
 
         $amount = $this->parseMoney($amountStr);
         if ($amount <= 0) {
-            throw new \RuntimeException('Valor inv?lido.');
+            throw new \RuntimeException('Valor inválido.');
         }
 
         $fees = $this->parseMoney($feesStr);
@@ -290,7 +332,7 @@ final class SalesService
         $saleRepo = new SaleRepository($pdo);
         $sale = $saleRepo->findById($clinicId, $saleId);
         if ($sale === null) {
-            throw new \RuntimeException('Venda inv?lida.');
+            throw new \RuntimeException('Venda inválida.');
         }
 
         if ((string)$sale['status'] === 'cancelled') {
@@ -299,7 +341,11 @@ final class SalesService
 
         $paidAt = null;
         if ($status === 'paid') {
-            $paidAt = (new \DateTimeImmutable('now'))->format('Y-m-d H:i:s');
+            if ($paidAtDate !== null && trim($paidAtDate) !== '') {
+                $paidAt = trim($paidAtDate) . ' ' . date('H:i:s');
+            } else {
+                $paidAt = (new \DateTimeImmutable('now'))->format('Y-m-d H:i:s');
+            }
         }
 
         $payRepo = new PaymentRepository($pdo);

@@ -33,10 +33,12 @@ $budgetStatusBadge = [
     'rejected' => 'lc-badge--danger',
 ];
 $paymentMethodLabel = [
-    'pix'    => 'PIX',
-    'card'   => 'Cartão',
-    'cash'   => 'Dinheiro',
-    'boleto' => 'Boleto',
+    'pix'         => 'PIX',
+    'card'        => 'Cartão',
+    'credit_card' => 'Cartão de Crédito',
+    'debit_card'  => 'Cartão de Débito',
+    'cash'        => 'Dinheiro',
+    'boleto'      => 'Boleto',
 ];
 $paymentStatusLabel = [
     'pending'  => 'Pendente',
@@ -51,7 +53,22 @@ $dateFmt = '';
 try { $dateFmt = (new \DateTimeImmutable($createdAt))->format('d/m/Y'); } catch (\Throwable $e) { $dateFmt = $createdAt; }
 
 $isCancelled = (string)$sale['status'] === 'cancelled';
+$isPaid = (string)$sale['status'] === 'paid';
+$isLocked = $isCancelled || $isPaid;
 $isProfessional = isset($is_professional) && (bool)$is_professional;
+
+// Build service price map for JS
+$svcPriceMap = [];
+foreach ($services as $s) {
+    $svcPriceMap[(int)$s['id']] = isset($s['price_cents']) && $s['price_cents'] !== null ? ((int)$s['price_cents'] / 100) : 0;
+}
+
+// Calculate remaining balance
+$totalPaid = 0.0;
+foreach ($payments as $pp) {
+    if ((string)($pp['status'] ?? '') === 'paid') $totalPaid += (float)($pp['amount'] ?? 0);
+}
+$remaining = max(0, (float)$sale['total_liquido'] - $totalPaid);
 
 ob_start();
 ?>
@@ -68,6 +85,9 @@ ob_start();
             <span class="lc-badge <?= $budgetStatusBadge[$bs] ?? 'lc-badge--secondary' ?>">
                 <?= htmlspecialchars($budgetStatusLabel[$bs] ?? $bs, ENT_QUOTES, 'UTF-8') ?>
             </span>
+            <?php if ($isPaid): ?>
+                <span class="lc-badge lc-badge--success">💰 Pago</span>
+            <?php endif; ?>
             <?php if ($isCancelled): ?>
                 <span class="lc-badge lc-badge--danger">Cancelado</span>
             <?php endif; ?>
@@ -83,6 +103,7 @@ ob_start();
         </div>
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
+        <a class="lc-btn lc-btn--secondary" href="/finance/sales/print?id=<?= (int)$sale['id'] ?>" target="_blank">🖨️ Imprimir</a>
         <?php if ($sale['patient_id'] !== null): ?>
             <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)$sale['patient_id'] ?>">Ver paciente</a>
         <?php endif; ?>
@@ -96,13 +117,13 @@ ob_start();
     <div class="lc-card" style="margin:0;">
         <div class="lc-flex lc-flex--between lc-flex--center" style="padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06);">
             <div style="font-weight:700;">Serviços / Itens</div>
-            <?php if (!$isProfessional && $can('finance.sales.update') && !$isCancelled): ?>
+            <?php if (!$isProfessional && $can('finance.sales.update') && !$isLocked): ?>
                 <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleForm('form-add-item')">+ Adicionar</button>
             <?php endif; ?>
         </div>
 
         <!-- Formulário adicionar item (oculto) -->
-        <?php if (!$isProfessional && $can('finance.sales.update') && !$isCancelled): ?>
+        <?php if (!$isProfessional && $can('finance.sales.update') && !$isLocked): ?>
         <div id="form-add-item" style="display:none; padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06); background:rgba(0,0,0,.02);">
             <form method="post" action="/finance/sales/items/add" class="lc-form">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
@@ -110,17 +131,17 @@ ob_start();
                 <div class="lc-grid lc-gap-grid" style="grid-template-columns: 2fr 1fr 80px; align-items:end;">
                     <div class="lc-field">
                         <label class="lc-label">Serviço</label>
-                        <select class="lc-select" name="reference_id" id="add_item_svc" required>
+                        <select class="lc-select" name="reference_id" id="add_item_svc" required onchange="autoFillPrice()">
                             <option value="">Selecione</option>
                             <?php foreach ($services as $s): ?>
-                                <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="<?= (int)$s['id'] ?>" data-price="<?= isset($s['price_cents']) && $s['price_cents'] !== null ? number_format((int)$s['price_cents'] / 100, 2, '.', '') : '0' ?>"><?= htmlspecialchars((string)$s['name'], ENT_QUOTES, 'UTF-8') ?></option>
                             <?php endforeach; ?>
                         </select>
                         <input type="hidden" name="type" value="procedure" />
                     </div>
                     <div class="lc-field">
-                        <label class="lc-label">Valor unit (0=auto)</label>
-                        <input class="lc-input" type="text" name="unit_price" value="0" />
+                        <label class="lc-label">Valor unit. (R$)</label>
+                        <input class="lc-input" type="text" name="unit_price" id="add_item_price" value="0" />
                     </div>
                     <div class="lc-field">
                         <label class="lc-label">Qtd</label>
@@ -168,8 +189,18 @@ ob_start();
                                 <?php if ($pname !== ''): ?> · <?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?><?php endif; ?>
                             </div>
                         </div>
-                        <div style="text-align:right; font-weight:700; font-size:14px;">
-                            R$ <?= number_format((float)$it['subtotal'], 2, ',', '.') ?>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="text-align:right; font-weight:700; font-size:14px;">
+                                R$ <?= number_format((float)$it['subtotal'], 2, ',', '.') ?>
+                            </div>
+                            <?php if (!$isProfessional && $can('finance.sales.update') && !$isLocked): ?>
+                                <form method="post" action="/finance/sales/items/remove" onsubmit="return confirm('Remover este item?');" style="margin:0;">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                                    <input type="hidden" name="item_id" value="<?= (int)$it['id'] ?>" />
+                                    <button type="submit" class="lc-btn lc-btn--danger lc-btn--sm" style="padding:2px 8px;font-size:11px;" title="Remover item">✕</button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -191,6 +222,18 @@ ob_start();
                         <span>Total</span>
                         <span>R$ <?= number_format((float)$sale['total_liquido'], 2, ',', '.') ?></span>
                     </div>
+                    <?php if ($totalPaid > 0): ?>
+                        <div class="lc-flex lc-flex--between" style="font-size:13px; color:#16a34a; margin-top:4px;">
+                            <span>Pago</span>
+                            <span>R$ <?= number_format($totalPaid, 2, ',', '.') ?></span>
+                        </div>
+                        <?php if ($remaining > 0.01): ?>
+                        <div class="lc-flex lc-flex--between" style="font-size:13px; color:#b91c1c; margin-top:2px;">
+                            <span>Restante</span>
+                            <span>R$ <?= number_format($remaining, 2, ',', '.') ?></span>
+                        </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -200,7 +243,7 @@ ob_start();
     <div style="display:flex; flex-direction:column; gap:14px;">
 
         <!-- Status do orçamento -->
-        <?php if (!$isProfessional && $can('finance.sales.update') && !$isCancelled): ?>
+        <?php if (!$isProfessional && $can('finance.sales.update') && !$isLocked): ?>
         <div class="lc-card" style="margin:0;">
             <div class="lc-card__header" style="font-weight:700;">Status do orçamento</div>
             <div class="lc-card__body">
@@ -218,9 +261,6 @@ ob_start();
                 <!-- Desconto -->
                 <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(0,0,0,.06);">
                     <div class="lc-label" style="margin-bottom:6px;">Desconto</div>
-                    <form method="post" action="/finance/sales/create" class="lc-flex lc-gap-sm" style="align-items:center;">
-                        <?php /* Reutiliza o endpoint de criação não — usa um campo inline via JS */ ?>
-                    </form>
                     <div class="lc-flex lc-gap-sm" style="align-items:center;">
                         <input class="lc-input" type="text" id="discount_val" value="<?= number_format((float)$sale['desconto'], 2, ',', '.') ?>" style="max-width:100px;" />
                         <select class="lc-select" id="discount_type" style="max-width:80px;">
@@ -229,55 +269,33 @@ ob_start();
                         </select>
                         <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="applyDiscount()">Aplicar</button>
                     </div>
-                    <form id="discountForm" method="post" action="/finance/sales/create" style="display:none;">
-                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                        <input type="hidden" name="patient_id" value="<?= (int)($sale['patient_id'] ?? 0) ?>" />
-                        <input type="hidden" name="origin" value="reception" />
-                        <input type="hidden" name="notes" value="<?= htmlspecialchars((string)($sale['notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
-                        <input type="hidden" name="desconto" id="discount_hidden" value="0" />
-                    </form>
-                    <script>
-                    function applyDiscount() {
-                        var val = parseFloat((document.getElementById('discount_val').value||'0').replace(',','.')) || 0;
-                        var type = document.getElementById('discount_type').value;
-                        var total = <?= (float)$sale['total_bruto'] ?>;
-                        var final = type === 'percent' ? (total * val / 100) : val;
-                        if (final < 0) final = 0;
-                        // Envia via form dedicado de atualização de desconto
-                        var f = document.createElement('form');
-                        f.method = 'post';
-                        f.action = '/finance/sales/budget-status'; // reutiliza endpoint
-                        f.innerHTML = '<input name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>"/>'
-                            + '<input name="sale_id" value="<?= (int)$sale['id'] ?>"/>'
-                            + '<input name="budget_status" value="<?= htmlspecialchars($bs, ENT_QUOTES, 'UTF-8') ?>"/>'
-                            + '<input name="desconto" value="'+final.toFixed(2)+'"/>';
-                        document.body.appendChild(f);
-                        f.submit();
-                    }
-                    </script>
                 </div>
             </div>
         </div>
+        <?php endif; ?>
+
+        <?php if ($isPaid): ?>
+        <div class="lc-alert lc-alert--success" style="margin:0;">💰 Orçamento pago integralmente. Não é possível editar.</div>
         <?php endif; ?>
 
         <!-- Pagamentos -->
         <div class="lc-card" style="margin:0;">
             <div class="lc-flex lc-flex--between lc-flex--center" style="padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06);">
                 <div style="font-weight:700;">Pagamentos</div>
-                <?php if (!$isProfessional && $can('finance.payments.create') && !$isCancelled): ?>
+                <?php if (!$isProfessional && $can('finance.payments.create') && !$isLocked): ?>
                     <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleForm('form-payment')">+ Registrar</button>
                 <?php endif; ?>
             </div>
 
-            <?php if (!$isProfessional && $can('finance.payments.create') && !$isCancelled): ?>
+            <?php if (!$isProfessional && $can('finance.payments.create') && !$isLocked): ?>
             <div id="form-payment" style="display:none; padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06); background:rgba(0,0,0,.02);">
                 <form method="post" action="/finance/payments/create" class="lc-form">
                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                     <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
-                    <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr 1fr; align-items:end;">
+                    <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr; align-items:end;">
                         <div class="lc-field">
                             <label class="lc-label">Método</label>
-                            <select class="lc-select" name="method">
+                            <select class="lc-select" name="method" id="pay_method" onchange="toggleCardFields()">
                                 <option value="pix">PIX</option>
                                 <option value="card">Cartão</option>
                                 <option value="cash">Dinheiro</option>
@@ -286,7 +304,33 @@ ob_start();
                         </div>
                         <div class="lc-field">
                             <label class="lc-label">Valor (R$)</label>
-                            <input class="lc-input" type="text" name="amount" required placeholder="0,00" />
+                            <input class="lc-input" type="text" name="amount" required value="<?= number_format($remaining, 2, ',', '.') ?>" />
+                        </div>
+                    </div>
+                    <!-- Card type fields (hidden by default) -->
+                    <div id="card_fields" style="display:none;margin-top:8px;">
+                        <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr; align-items:end;">
+                            <div class="lc-field">
+                                <label class="lc-label">Tipo do cartão</label>
+                                <select class="lc-select" name="card_type" id="card_type" onchange="toggleInstallments()">
+                                    <option value="credit">Crédito</option>
+                                    <option value="debit">Débito</option>
+                                </select>
+                            </div>
+                            <div class="lc-field" id="installments_field">
+                                <label class="lc-label">Parcelas</label>
+                                <select class="lc-select" name="installments">
+                                    <?php for ($i = 1; $i <= 12; $i++): ?>
+                                        <option value="<?= $i ?>"><?= $i ?>x</option>
+                                    <?php endfor; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lc-grid lc-gap-grid" style="grid-template-columns: 1fr 1fr; align-items:end;margin-top:8px;">
+                        <div class="lc-field">
+                            <label class="lc-label">Data do pagamento</label>
+                            <input class="lc-input" type="date" name="paid_at" value="<?= date('Y-m-d') ?>" />
                         </div>
                         <div class="lc-field">
                             <label class="lc-label">Status</label>
@@ -317,11 +361,13 @@ ob_start();
                         $paidAt = (string)($p['paid_at'] ?? '');
                         $paidFmt = '';
                         try { $paidFmt = $paidAt !== '' ? (new \DateTimeImmutable($paidAt))->format('d/m/Y') : ''; } catch (\Throwable $e) {}
+                        $gRef = trim((string)($p['gateway_ref'] ?? ''));
                         ?>
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(0,0,0,.05);">
                             <div>
                                 <div style="font-size:13px; font-weight:600;">
                                     <?= htmlspecialchars($paymentMethodLabel[$pm] ?? $pm, ENT_QUOTES, 'UTF-8') ?>
+                                    <?php if ($gRef !== ''): ?><span class="lc-muted" style="font-size:11px;margin-left:4px;">(<?= htmlspecialchars($gRef, ENT_QUOTES, 'UTF-8') ?>)</span><?php endif; ?>
                                     <span class="lc-badge <?= $ps === 'paid' ? 'lc-badge--success' : ($ps === 'refunded' ? 'lc-badge--danger' : 'lc-badge--secondary') ?>" style="font-size:11px; margin-left:4px;">
                                         <?= htmlspecialchars($paymentStatusLabel[$ps] ?? $ps, ENT_QUOTES, 'UTF-8') ?>
                                     </span>
@@ -338,23 +384,23 @@ ob_start();
             </div>
         </div>
 
-        <!-- Ações -->
+        <!-- Cancelar orçamento -->
+        <?php if (!$isProfessional && $can('finance.sales.cancel') && !$isLocked): ?>
         <div class="lc-card" style="margin:0;">
-            <div class="lc-card__body" style="display:flex; flex-direction:column; gap:8px;">
-                <?php if (!$isProfessional && $can('finance.sales.cancel') && !$isCancelled): ?>
-                    <details style="margin:0;">
-                        <summary class="lc-muted" style="font-size:12px; cursor:pointer;">Mais opções</summary>
-                        <div style="margin-top:8px;">
-                            <form method="post" action="/finance/sales/cancel" onsubmit="return confirm('Cancelar este orçamento?');">
-                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                                <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
-                                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="color:#b91c1c;">Cancelar orçamento</button>
-                            </form>
-                        </div>
-                    </details>
-                <?php endif; ?>
+            <div class="lc-card__body">
+                <details style="margin:0;">
+                    <summary class="lc-muted" style="font-size:12px; cursor:pointer;">Cancelar orçamento</summary>
+                    <div style="margin-top:8px;">
+                        <form method="post" action="/finance/sales/cancel" onsubmit="return confirm('Tem certeza que deseja cancelar este orçamento?');">
+                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                            <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                            <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit">Confirmar cancelamento</button>
+                        </form>
+                    </div>
+                </details>
             </div>
         </div>
+        <?php endif; ?>
 
     </div>
 </div>
@@ -420,6 +466,49 @@ function toggleForm(id) {
         var first = el.querySelector('input:not([type=hidden]),select');
         if (first) first.focus();
     }
+}
+
+function autoFillPrice() {
+    var sel = document.getElementById('add_item_svc');
+    var priceInput = document.getElementById('add_item_price');
+    if (!sel || !priceInput) return;
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || sel.value === '') return;
+    var price = parseFloat(opt.dataset.price || '0');
+    if (price > 0) {
+        priceInput.value = price.toFixed(2).replace('.', ',');
+    }
+}
+
+function toggleCardFields() {
+    var method = document.getElementById('pay_method');
+    var cardFields = document.getElementById('card_fields');
+    if (!method || !cardFields) return;
+    cardFields.style.display = method.value === 'card' ? 'block' : 'none';
+}
+
+function toggleInstallments() {
+    var cardType = document.getElementById('card_type');
+    var installField = document.getElementById('installments_field');
+    if (!cardType || !installField) return;
+    installField.style.display = cardType.value === 'credit' ? 'block' : 'none';
+}
+
+function applyDiscount() {
+    var val = parseFloat((document.getElementById('discount_val').value||'0').replace(',','.')) || 0;
+    var type = document.getElementById('discount_type').value;
+    var total = <?= (float)$sale['total_bruto'] ?>;
+    var final_val = type === 'percent' ? (total * val / 100) : val;
+    if (final_val < 0) final_val = 0;
+    var f = document.createElement('form');
+    f.method = 'post';
+    f.action = '/finance/sales/budget-status';
+    f.innerHTML = '<input name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>"/>'
+        + '<input name="sale_id" value="<?= (int)$sale['id'] ?>"/>'
+        + '<input name="budget_status" value="<?= htmlspecialchars($bs, ENT_QUOTES, 'UTF-8') ?>"/>'
+        + '<input name="desconto" value="'+final_val.toFixed(2)+'"/>';
+    document.body.appendChild(f);
+    f.submit();
 }
 </script>
 

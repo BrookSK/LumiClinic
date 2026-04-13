@@ -51,6 +51,19 @@ final class PaymentController extends Controller
         $status = trim((string)$request->input('status', 'pending'));
         $fees = trim((string)$request->input('fees', '0'));
         $gatewayRef = trim((string)$request->input('gateway_ref', ''));
+        $paidAtDate = trim((string)$request->input('paid_at', ''));
+        $cardType = trim((string)$request->input('card_type', ''));
+        $installments = (int)$request->input('installments', 1);
+
+        // Map card type to method
+        if ($method === 'card' && $cardType !== '') {
+            $method = $cardType === 'debit' ? 'debit_card' : 'credit_card';
+        }
+
+        // Store installments info in gateway_ref if credit card
+        if ($method === 'credit_card' && $installments > 1) {
+            $gatewayRef = ($gatewayRef !== '' ? $gatewayRef . ' | ' : '') . $installments . 'x';
+        }
 
         if ($saleId <= 0) {
             return $this->redirect('/finance/sales');
@@ -58,7 +71,7 @@ final class PaymentController extends Controller
 
         try {
             $service = new SalesService($this->container);
-            $service->addPayment($saleId, $method, $amount, $status, $fees, $gatewayRef === '' ? null : $gatewayRef, $request->ip(), $request->header('user-agent'));
+            $service->addPayment($saleId, $method, $amount, $status, $fees, $gatewayRef === '' ? null : $gatewayRef, $request->ip(), $request->header('user-agent'), $paidAtDate !== '' ? $paidAtDate : null);
             return $this->redirect('/finance/sales/view?id=' . $saleId);
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));

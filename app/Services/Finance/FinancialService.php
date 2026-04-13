@@ -586,6 +586,27 @@ final class FinancialService
 
         $recentEntries = (new FinancialEntryRepository($pdo))->listByClinicRange((int)$clinicId, $from, $to, 10, 0);
 
+        // Budget status counts for follow-up
+        $sqlBudgetStatus = "
+            SELECT budget_status, COUNT(*) AS cnt
+            FROM sales
+            WHERE clinic_id = :clinic_id
+              AND deleted_at IS NULL
+              AND status <> 'cancelled'
+              AND created_at BETWEEN :from_dt AND :to_dt
+            GROUP BY budget_status
+        ";
+        $stmtBS = $pdo->prepare($sqlBudgetStatus);
+        $stmtBS->execute([
+            'clinic_id' => $clinicId,
+            'from_dt' => $from . ' 00:00:00',
+            'to_dt' => $to . ' 23:59:59',
+        ]);
+        $budgetStatusCounts = [];
+        foreach ($stmtBS->fetchAll() as $r) {
+            $budgetStatusCounts[(string)$r['budget_status']] = (int)$r['cnt'];
+        }
+
         return [
             'from' => $from,
             'to' => $to,
@@ -602,6 +623,7 @@ final class FinancialService
             'kpi_revenue_total' => $revenueTotal,
             'recent_sales' => is_array($recentSales) ? $recentSales : [],
             'recent_entries' => is_array($recentEntries) ? $recentEntries : [],
+            'budget_status_counts' => $budgetStatusCounts,
         ];
     }
 
