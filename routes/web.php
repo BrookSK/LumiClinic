@@ -590,6 +590,7 @@ $router->get('/medical-images/annotate', [MedicalImageController::class, 'annota
 $router->get('/medical-images/annotations.json', [MedicalImageController::class, 'annotationsJson']);
 $router->post('/medical-images/annotations/create', [MedicalImageController::class, 'annotationsCreate']);
 $router->post('/medical-images/annotations/delete', [MedicalImageController::class, 'annotationsDelete']);
+$router->post('/medical-images/crop', [MedicalImageController::class, 'crop']);
 
 $router->get('/medical-images/moderation', [PatientUploadModerationController::class, 'index']);
 $router->post('/medical-images/moderation/approve', [PatientUploadModerationController::class, 'approve']);

@@ -326,4 +326,39 @@ final class MedicalImageController extends Controller
         $service = new MedicalImageService($this->container);
         return $service->serveFile($id, $request->ip(), $request->header('user-agent'));
     }
+
+    public function crop(Request $request)
+    {
+        $this->authorize('medical_images.upload');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $imageId = (int)$request->input('image_id', 0);
+        $x = (int)$request->input('x', 0);
+        $y = (int)$request->input('y', 0);
+        $w = (int)$request->input('w', 0);
+        $h = (int)$request->input('h', 0);
+
+        if ($imageId <= 0 || $w <= 0 || $h <= 0) {
+            return $this->redirect('/medical-images');
+        }
+
+        try {
+            $service = new MedicalImageService($this->container);
+            $patientId = $service->cropImage($imageId, $x, $y, $w, $h, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/medical-images/annotate?id=' . $imageId);
+        } catch (\RuntimeException $e) {
+            $auth = new AuthService($this->container);
+            $clinicId = $auth->clinicId();
+            $pdo = $this->container->get(\PDO::class);
+            $img = $pdo->prepare('SELECT patient_id FROM medical_images WHERE id = ? AND clinic_id = ? LIMIT 1');
+            $img->execute([$imageId, $clinicId]);
+            $row = $img->fetch();
+            $pid = $row ? (int)$row['patient_id'] : 0;
+            return $this->redirect('/medical-images?patient_id=' . $pid . '&error=' . urlencode($e->getMessage()));
+        }
+    }
 }

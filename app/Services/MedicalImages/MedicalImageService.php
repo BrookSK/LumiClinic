@@ -462,4 +462,90 @@ final class MedicalImageService
 
         return max(0, $sum1) + max(0, $sum2);
     }
+
+    /**
+     * Crop an existing medical image using GD.
+     * Replaces the file in-place and returns the patient_id.
+     */
+    public function cropImage(int $imageId, int $x, int $y, int $w, int $h, string $ip, ?string $userAgent = null): int
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new MedicalImageRepository($pdo);
+        $img = $repo->findById($clinicId, $imageId);
+        if ($img === null) {
+            throw new \RuntimeException('Imagem não encontrada.');
+        }
+
+        $storagePath = (string)$img['storage_path'];
+        $fullPath = PrivateStorage::fullPath($clinicId, $storagePath);
+        if (!is_file($fullPath)) {
+            throw new \RuntimeException('Arquivo não encontrado no disco.');
+        }
+
+        $bytes = file_get_contents($fullPath);
+        if ($bytes === false || $bytes === '') {
+            throw new \RuntimeException('Falha ao ler arquivo.');
+        }
+
+        $src = @imagecreatefromstring($bytes);
+        if ($src === false) {
+            throw new \RuntimeException('Formato de imagem não suportado pelo GD.');
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+
+        // Clamp crop area to image bounds
+        $x = max(0, min($x, $srcW - 1));
+        $y = max(0, min($y, $srcH - 1));
+        $w = max(1, min($w, $srcW - $x));
+        $h = max(1, min($h, $srcH - $y));
+
+        $dst = imagecreatetruecolor($w, $h);
+        if ($dst === false) {
+            imagedestroy($src);
+            throw new \RuntimeException('Falha ao criar imagem recortada.');
+        }
+
+        imagecopy($dst, $src, 0, 0, $x, $y, $w, $h);
+        imagedestroy($src);
+
+        // Determine output format from extension
+        $ext = strtolower(pathinfo($storagePath, PATHINFO_EXTENSION));
+        ob_start();
+        if ($ext === 'png') {
+            imagepng($dst, null, 9);
+        } elseif ($ext === 'webp' && function_exists('imagewebp')) {
+            imagewebp($dst, null, 90);
+        } else {
+            imagejpeg($dst, null, 92);
+        }
+        $croppedBytes = ob_get_clean();
+        imagedestroy($dst);
+
+        if ($croppedBytes === false || $croppedBytes === '') {
+            throw new \RuntimeException('Falha ao gerar imagem recortada.');
+        }
+
+        // Overwrite the file
+        PrivateStorage::put($clinicId, $storagePath, $croppedBytes);
+
+        // Update file size in DB
+        $pdo->prepare('UPDATE medical_images SET file_size_bytes = ?, updated_at = NOW() WHERE id = ? AND clinic_id = ?')
+            ->execute([strlen($croppedBytes), $imageId, $clinicId]);
+
+        // Audit
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'medical_images.crop', ['image_id' => $imageId, 'crop' => ['x' => $x, 'y' => $y, 'w' => $w, 'h' => $h]], $ip, $roleCodes, 'medical_image', $imageId, $userAgent);
+
+        return (int)$img['patient_id'];
+    }
 }

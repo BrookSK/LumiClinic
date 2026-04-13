@@ -20,6 +20,9 @@ ob_start();
         <div class="lc-muted" style="font-size:13px;margin-top:2px;"><?= $canUpload ? 'Clique e arraste sobre a imagem.' : 'Visualização.' ?></div>
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
+        <?php if ($canUpload): ?>
+        <button type="button" id="btn-crop-toggle" class="lc-btn lc-btn--secondary" onclick="toggleCropMode()">✂ Recortar</button>
+        <?php endif; ?>
         <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= $patientId ?>">Voltar</a>
         <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= $imageId ?>" target="_blank">Ver original</a>
     </div>
@@ -82,6 +85,27 @@ ob_start();
         </div>
     </div>
 </div>
+
+<!-- Crop overlay -->
+<?php if ($canUpload): ?>
+<div id="crop-bar" style="display:none;margin-top:10px;padding:12px;border-radius:10px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:600;color:#4f46e5;">✂ Modo recorte</span>
+        <span class="lc-muted" style="font-size:12px;">Arraste sobre a imagem para selecionar a área de recorte.</span>
+        <form id="crop-form" method="post" action="/medical-images/crop" style="margin:0;display:flex;gap:6px;margin-left:auto;">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <input type="hidden" name="image_id" value="<?= $imageId ?>" />
+            <input type="hidden" id="crop-x" name="x" value="0" />
+            <input type="hidden" id="crop-y" name="y" value="0" />
+            <input type="hidden" id="crop-w" name="w" value="0" />
+            <input type="hidden" id="crop-h" name="h" value="0" />
+            <button type="submit" id="btn-crop-apply" class="lc-btn lc-btn--primary lc-btn--sm" disabled>Aplicar recorte</button>
+            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="toggleCropMode()">Cancelar</button>
+        </form>
+    </div>
+</div>
+<div id="crop-overlay" style="display:none;position:absolute;border:2px dashed #4f46e5;background:rgba(99,102,241,.15);pointer-events:none;z-index:10;"></div>
+<?php endif; ?>
 
 <script>
 (function(){
@@ -217,6 +241,7 @@ if(canUpload){
     function rmPreview(){if(preview){try{svg.removeChild(preview);}catch(x){}preview=null;}}
 
     wrap.addEventListener('pointerdown',function(e){
+        if(cropMode)return;
         if(e.target!==img&&e.target!==svg&&!svg.contains(e.target))return;
         var pt=norm(e);
         if(tool==='dot'){
@@ -281,6 +306,54 @@ function renderAll(items){
 function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function loadAnnotations(){
     fetch('/medical-images/annotations.json?image_id='+imageId,{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){renderAll((d&&d.items)?d.items:[]);}).catch(function(){listEl.innerHTML='<div class="lc-muted" style="padding:12px;">Erro.</div>';});
+}
+
+/* ── Crop mode ── */
+var cropMode=false,cropStart=null,cropOverlay=document.getElementById('crop-overlay');
+window.toggleCropMode=function(){
+    cropMode=!cropMode;
+    var bar=document.getElementById('crop-bar'),btn=document.getElementById('btn-crop-toggle');
+    if(bar)bar.style.display=cropMode?'block':'none';
+    if(btn)btn.className=cropMode?'lc-btn lc-btn--primary':'lc-btn lc-btn--secondary';
+    if(cropOverlay)cropOverlay.style.display='none';
+    if(!cropMode){wrap.style.cursor=canUpload?'crosshair':'default';}
+    else{wrap.style.cursor='crosshair';}
+    document.getElementById('btn-crop-apply').disabled=true;
+};
+if(canUpload&&wrap){
+    wrap.addEventListener('pointerdown',function(e){
+        if(!cropMode)return;
+        var r=img.getBoundingClientRect();
+        cropStart={px:e.clientX-r.left,py:e.clientY-r.top,bx:r.left,by:r.top,bw:r.width,bh:r.height};
+        if(cropOverlay){cropOverlay.style.display='block';cropOverlay.style.left=cropStart.px+'px';cropOverlay.style.top=cropStart.py+'px';cropOverlay.style.width='0';cropOverlay.style.height='0';}
+        try{wrap.setPointerCapture(e.pointerId);}catch(x){}
+        e.preventDefault();e.stopPropagation();
+    },true);
+    wrap.addEventListener('pointermove',function(e){
+        if(!cropMode||!cropStart)return;
+        var r=img.getBoundingClientRect();
+        var cx=e.clientX-r.left,cy=e.clientY-r.top;
+        var x=Math.min(cropStart.px,cx),y=Math.min(cropStart.py,cy),w=Math.abs(cx-cropStart.px),h=Math.abs(cy-cropStart.py);
+        if(cropOverlay){cropOverlay.style.left=x+'px';cropOverlay.style.top=y+'px';cropOverlay.style.width=w+'px';cropOverlay.style.height=h+'px';}
+        e.preventDefault();e.stopPropagation();
+    },true);
+    wrap.addEventListener('pointerup',function(e){
+        if(!cropMode||!cropStart)return;
+        var r=img.getBoundingClientRect();
+        var cx=e.clientX-r.left,cy=e.clientY-r.top;
+        var px1=Math.min(cropStart.px,cx),py1=Math.min(cropStart.py,cy);
+        var pw=Math.abs(cx-cropStart.px),ph=Math.abs(cy-cropStart.py);
+        // Convert screen px to image px
+        var scaleX=VW/r.width,scaleY=VH/r.height;
+        var ix=Math.round(px1*scaleX),iy=Math.round(py1*scaleY),iw=Math.round(pw*scaleX),ih=Math.round(ph*scaleY);
+        document.getElementById('crop-x').value=ix;
+        document.getElementById('crop-y').value=iy;
+        document.getElementById('crop-w').value=iw;
+        document.getElementById('crop-h').value=ih;
+        document.getElementById('btn-crop-apply').disabled=(iw<10||ih<10);
+        cropStart=null;
+        e.preventDefault();e.stopPropagation();
+    },true);
 }
 })();
 </script>
