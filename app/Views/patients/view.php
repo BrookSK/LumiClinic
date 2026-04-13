@@ -77,54 +77,67 @@ ob_start();
 </div>
 
 <div class="lc-card">
-    <div class="lc-card__title"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+    <div class="lc-card__title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span id="patNameDisplay"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+        <?php if ($can('patients.update')): ?>
+            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="togglePatientEdit()" id="btnEditPatient" style="font-size:11px;">✏️ Editar dados</button>
+        <?php endif; ?>
+    </div>
 
     <div class="lc-card__body">
-        <div class="lc-grid lc-grid--2 lc-gap-grid">
-            <div>
-                <div class="lc-label">E-mail</div>
-                <div><?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+        <!-- Read-only view -->
+        <div id="patientReadView">
+            <div class="lc-grid lc-grid--2 lc-gap-grid">
+                <div><div class="lc-label">E-mail</div><div><?= htmlspecialchars((string)($patient['email'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
+                <div><div class="lc-label">Telefone</div><div><?= htmlspecialchars((string)($patient['phone'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
+                <div><div class="lc-label">Data de nascimento</div><div><?= htmlspecialchars((string)($patient['birth_date'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
+                <div><div class="lc-label">Sexo</div><div><?= htmlspecialchars((string)($patient['sex'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
+                <div><div class="lc-label">CPF</div><div><?php if (isset($patient['cpf']) && (string)$patient['cpf'] !== ''): ?><?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?><?php else: ?><?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '—' ?><?php endif; ?></div></div>
+                <div><div class="lc-label">Status</div><div><?php $st = (string)($patient['status'] ?? ''); ?><?= htmlspecialchars((string)($statusLabelMap[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></div></div>
             </div>
-            <div>
-                <div class="lc-label">Telefone</div>
-                <div><?= htmlspecialchars((string)($patient['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-            </div>
-            <div>
-                <div class="lc-label">Data de nascimento</div>
-                <div><?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-            </div>
-            <div>
-                <div class="lc-label">Sexo</div>
-                <div><?= htmlspecialchars((string)($patient['sex'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
-            </div>
-            <div>
-                <div class="lc-label">CPF</div>
-                <div>
-                    <?php if (isset($patient['cpf']) && (string)$patient['cpf'] !== ''): ?>
-                        <?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?>
-                    <?php else: ?>
-                        <?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '' ?>
-                    <?php endif; ?>
+            <div style="margin-top:14px;"><div class="lc-label">Endereço</div><div><?= nl2br(htmlspecialchars((string)($patient['address'] ?? '—'), ENT_QUOTES, 'UTF-8')) ?></div></div>
+            <div style="margin-top:14px;"><div class="lc-label">Observações</div><div><?= nl2br(htmlspecialchars((string)($patient['notes'] ?? '—'), ENT_QUOTES, 'UTF-8')) ?></div></div>
+        </div>
+
+        <!-- Inline edit form (hidden by default) -->
+        <?php if ($can('patients.update')): ?>
+        <div id="patientEditView" style="display:none;">
+            <form method="post" action="/patients/edit" class="lc-form">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['_csrf'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+                <input type="hidden" name="id" value="<?= (int)($patient['id'] ?? 0) ?>" />
+                <input type="hidden" name="_redirect" value="/patients/view?id=<?= (int)($patient['id'] ?? 0) ?>" />
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required /></div>
+                    <div class="lc-field"><label class="lc-label">E-mail</label><input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
+                    <div class="lc-field"><label class="lc-label">Telefone</label><input class="lc-input" type="text" name="phone" value="<?= htmlspecialchars((string)($patient['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
+                    <div class="lc-field"><label class="lc-label">Data de nascimento</label><input class="lc-input" type="date" name="birth_date" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
+                    <div class="lc-field"><label class="lc-label">Sexo</label><select class="lc-select" name="sex"><option value="">—</option><option value="M" <?= ($patient['sex'] ?? '') === 'M' ? 'selected' : '' ?>>Masculino</option><option value="F" <?= ($patient['sex'] ?? '') === 'F' ? 'selected' : '' ?>>Feminino</option></select></div>
+                    <div class="lc-field"><label class="lc-label">CPF</label><input class="lc-input" type="text" name="cpf" value="<?= htmlspecialchars((string)($patient['cpf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
                 </div>
-            </div>
-            <div>
-                <div class="lc-label">Status</div>
-                <?php $st = (string)($patient['status'] ?? ''); ?>
-                <div><?= htmlspecialchars((string)($statusLabelMap[$st] ?? $st), ENT_QUOTES, 'UTF-8') ?></div>
-            </div>
+                <div class="lc-field" style="margin-top:12px;"><label class="lc-label">Endereço</label><input class="lc-input" type="text" name="address" value="<?= htmlspecialchars((string)($patient['address'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
+                <div class="lc-field" style="margin-top:12px;"><label class="lc-label">Observações</label><textarea class="lc-textarea" name="notes" rows="3"><?= htmlspecialchars((string)($patient['notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea></div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button>
+                    <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="togglePatientEdit()">Cancelar</button>
+                </div>
+            </form>
         </div>
-
-        <div style="margin-top:14px;">
-            <div class="lc-label">Endereço</div>
-            <div><?= nl2br(htmlspecialchars((string)($patient['address'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></div>
-        </div>
-
-        <div style="margin-top:14px;">
-            <div class="lc-label">Observações</div>
-            <div><?= nl2br(htmlspecialchars((string)($patient['notes'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></div>
-        </div>
+        <?php endif; ?>
     </div>
 </div>
+
+<script>
+function togglePatientEdit() {
+    var rv = document.getElementById('patientReadView');
+    var ev = document.getElementById('patientEditView');
+    var btn = document.getElementById('btnEditPatient');
+    if (!rv || !ev) return;
+    var editing = ev.style.display !== 'none';
+    rv.style.display = editing ? 'block' : 'none';
+    ev.style.display = editing ? 'none' : 'block';
+    if (btn) btn.textContent = editing ? '✏️ Editar dados' : '✕ Cancelar';
+}
+</script>
 
 <?php if (is_array($portalDocs) && $portalDocs !== []): ?>
     <div class="lc-card" style="margin-top:14px;">

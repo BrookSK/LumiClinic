@@ -332,7 +332,7 @@ final class PatientController extends Controller
                 'status' => ($status === '' ? 'active' : $status),
             ], $request->ip(), $request->header('user-agent'));
 
-            return $this->redirect('/patients/view?id=' . $id);
+            return $this->redirect(trim((string)$request->input('_redirect', '')) ?: '/patients/view?id=' . $id);
         } catch (\RuntimeException $e) {
             $patient = $service->get($id, $request->ip()) ?? $fallbackPatient;
             return $this->view('patients/edit', [
