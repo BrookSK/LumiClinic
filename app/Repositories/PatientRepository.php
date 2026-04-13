@@ -123,7 +123,7 @@ final class PatientRepository
             SELECT p.id, p.name, p.email, p.phone, p.whatsapp_opt_in, p.status, p.patient_origin_id,
                    po.name AS origin_name
             FROM patients p
-            LEFT JOIN patient_origins po ON po.id = p.patient_origin_id
+            LEFT JOIN clinic_patient_origins po ON po.id = p.patient_origin_id
             WHERE p.clinic_id = :clinic_id
               AND p.deleted_at IS NULL
               AND (
@@ -160,7 +160,7 @@ final class PatientRepository
             SELECT p.id, p.name, p.email, p.phone, p.cpf, p.birth_date, p.sex, p.address, p.status, p.created_at,
                    po.name AS origin_name
             FROM patients p
-            LEFT JOIN patient_origins po ON po.id = p.patient_origin_id
+            LEFT JOIN clinic_patient_origins po ON po.id = p.patient_origin_id
             WHERE p.clinic_id = :clinic_id
               AND p.deleted_at IS NULL
               AND (
