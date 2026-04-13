@@ -393,58 +393,43 @@ final class FinancialController extends Controller
             $svcNameMap[(int)$s['id']] = (string)($s['name'] ?? '');
         }
 
-        $out = fopen('php://temp', 'r+');
-        fputcsv($out, ['relatorio', 'de', 'ate', 'profissional_id']);
-        fputcsv($out, ['financeiro', (string)$data['from'], (string)$data['to'], (string)$professionalId]);
-        fputcsv($out, []);
+        $xlsx = new \App\Services\Export\XlsxWriter();
+        $xlsx->setSheetName('Relatório Financeiro');
+        $xlsx->setHeaders(['Indicador', 'Valor']);
+        $xlsx->setColumnFormats([0 => 'text', 1 => 'currency']);
 
-        fputcsv($out, ['indicador', 'valor']);
-        fputcsv($out, ['ticket_medio', (string)$data['ticket_medio']]);
-        fputcsv($out, ['agendamentos', (string)$data['appointments']]);
-        fputcsv($out, ['vendas_pagas', (string)$data['paid_sales']]);
-        fputcsv($out, ['taxa_conversao', (string)$data['conversion_rate']]);
-        fputcsv($out, ['receita_recorrente', (string)$data['recurring_revenue']]);
-        fputcsv($out, []);
-
-        fputcsv($out, ['receita_por_profissional']);
-        fputcsv($out, ['profissional', 'receita']);
+        $xlsx->addRow(['Período', $data['from'] . ' a ' . $data['to']]);
+        $xlsx->addRow(['Ticket médio', (float)$data['ticket_medio']]);
+        $xlsx->addRow(['Agendamentos', (int)$data['appointments']]);
+        $xlsx->addRow(['Vendas pagas', (int)$data['paid_sales']]);
+        $xlsx->addRow(['Taxa de conversão', round((float)$data['conversion_rate'] * 100, 1) . '%']);
+        $xlsx->addRow(['Receita recorrente', (float)$data['recurring_revenue']]);
+        $xlsx->addRow(['', '']);
+        $xlsx->addRow(['— Receita por profissional —', '']);
         foreach (($data['by_professional'] ?? []) as $r) {
             $pid = $r['professional_id'] === null ? 0 : (int)$r['professional_id'];
-            $pname = $pid > 0 ? (string)($profNameMap[$pid] ?? '') : '';
-            fputcsv($out, [$pname !== '' ? $pname : ($pid > 0 ? ('Profissional #' . $pid) : ''), (string)($r['revenue'] ?? '')]);
+            $pname = $pid > 0 ? (string)($profNameMap[$pid] ?? 'Profissional #' . $pid) : '—';
+            $xlsx->addRow([$pname, (float)($r['revenue'] ?? 0)]);
         }
-        fputcsv($out, []);
-
-        fputcsv($out, ['receita_por_servico']);
-        fputcsv($out, ['servico', 'receita']);
+        $xlsx->addRow(['', '']);
+        $xlsx->addRow(['— Receita por serviço —', '']);
         foreach (($data['by_service'] ?? []) as $r) {
             $sid = (int)($r['service_id'] ?? 0);
-            $sname = $sid > 0 ? (string)($svcNameMap[$sid] ?? '') : '';
-            fputcsv($out, [$sname !== '' ? $sname : ($sid > 0 ? ('Serviço #' . $sid) : ''), (string)($r['revenue'] ?? '')]);
+            $sname = $sid > 0 ? (string)($svcNameMap[$sid] ?? 'Serviço #' . $sid) : '—';
+            $xlsx->addRow([$sname, (float)($r['revenue'] ?? 0)]);
         }
 
-        rewind($out);
-        $csv = stream_get_contents($out);
-        fclose($out);
+        $bytes = $xlsx->generate();
 
         (new DataExportService($this->container))->record(
-            'finance.reports.export',
-            null,
-            null,
-            'csv',
-            null,
-            [
-                'from' => $from,
-                'to' => $to,
-                'professional_id' => $professionalId,
-            ],
-            $request->ip(),
-            $request->header('user-agent')
+            'finance.reports.export', null, null, 'xlsx', null,
+            ['from' => $from, 'to' => $to, 'professional_id' => $professionalId],
+            $request->ip(), $request->header('user-agent')
         );
 
-        $filename = 'finance_reports_' . date('Ymd_His') . '.csv';
-        return Response::raw((string)$csv, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+        $filename = 'relatorio_financeiro_' . date('Ymd_His') . '.xlsx';
+        return Response::raw($bytes, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }

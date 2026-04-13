@@ -206,7 +206,7 @@ ob_start();
                             <option value="<?= $bk ?>"><?= htmlspecialchars($blbl, ENT_QUOTES, 'UTF-8') ?> (<?= (int)($bsc[$bk] ?? 0) ?>)</option>
                         <?php endforeach; ?>
                     </select>
-                    <a id="exportBudgetCsvLink" class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales/export.csv">📥 Exportar CSV</a>
+                    <a id="exportBudgetCsvLink" class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales/export.csv">📥 Exportar planilha</a>
                 </div>
                 <script>
                 (function(){

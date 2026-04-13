@@ -410,35 +410,37 @@ final class SalesController extends Controller
         $statusLabels = ['open'=>'Aberto','paid'=>'Pago','cancelled'=>'Cancelado'];
         $budgetLabels = ['draft'=>'Rascunho','sent'=>'Enviado','approved'=>'Aprovado','standby'=>'Em espera','rejected'=>'Recusado','completed'=>'Concluído'];
 
-        $csv = "\xEF\xBB\xBF";
-        $csv .= "ID;Data;Paciente;Status Orçamento;Status Pagamento;Total Bruto;Desconto;Total Líquido;Pago;Pendente;Parcelas Pagas;Parcelas Pendentes\n";
+        $xlsx = new \App\Services\Export\XlsxWriter();
+        $xlsx->setSheetName('Orçamentos');
+        $xlsx->setHeaders(['ID', 'Data', 'Paciente', 'Status Orçamento', 'Status Pagamento', 'Total Bruto', 'Desconto', 'Total Líquido', 'Pago', 'Pendente', 'Parcelas Pagas', 'Parcelas Pendentes']);
+        $xlsx->setColumnFormats([0 => 'number', 5 => 'currency', 6 => 'currency', 7 => 'currency', 8 => 'currency', 9 => 'currency', 10 => 'number', 11 => 'number']);
 
         foreach ($sales as $s) {
             $createdAt = (string)($s['created_at'] ?? '');
             $dateFmt = '';
             try { $dateFmt = $createdAt !== '' ? (new \DateTimeImmutable($createdAt))->format('d/m/Y') : ''; } catch (\Throwable $e) {}
 
-            $fields = [
+            $xlsx->addRow([
                 (int)($s['id'] ?? 0),
                 $dateFmt,
                 (string)($s['patient_name'] ?? ''),
                 (string)($budgetLabels[(string)($s['budget_status'] ?? '')] ?? (string)($s['budget_status'] ?? '')),
                 (string)($statusLabels[(string)($s['status'] ?? '')] ?? (string)($s['status'] ?? '')),
-                number_format((float)($s['total_bruto'] ?? 0), 2, ',', '.'),
-                number_format((float)($s['desconto'] ?? 0), 2, ',', '.'),
-                number_format((float)($s['total_liquido'] ?? 0), 2, ',', '.'),
-                number_format((float)($s['paid_total'] ?? 0), 2, ',', '.'),
-                number_format((float)($s['pending_total'] ?? 0), 2, ',', '.'),
+                (float)($s['total_bruto'] ?? 0),
+                (float)($s['desconto'] ?? 0),
+                (float)($s['total_liquido'] ?? 0),
+                (float)($s['paid_total'] ?? 0),
+                (float)($s['pending_total'] ?? 0),
                 (int)($s['paid_count'] ?? 0),
                 (int)($s['pending_count'] ?? 0),
-            ];
-            $csv .= implode(';', array_map(fn($v) => '"' . str_replace('"', '""', (string)$v) . '"', $fields)) . "\n";
+            ]);
         }
 
+        $bytes = $xlsx->generate();
         $suffix = $budgetStatus !== '' ? ('_' . $budgetStatus) : '';
-        $filename = 'orcamentos' . $suffix . '_' . date('Y-m-d_His') . '.csv';
-        return Response::raw($csv, 200, [
-            'Content-Type' => 'text/csv; charset=utf-8',
+        $filename = 'orcamentos' . $suffix . '_' . date('Y-m-d_His') . '.xlsx';
+        return Response::raw($bytes, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
