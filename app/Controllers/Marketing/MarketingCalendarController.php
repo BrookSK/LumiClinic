@@ -43,14 +43,11 @@ final class MarketingCalendarController extends Controller
         $svc = new MarketingCalendarService($this->container);
         $rows = $svc->listByMonth($month);
         $users = $svc->listUsers();
-        $tuquinhaKey = '';
-        try { $tuquinhaKey = $svc->getTuquinhaApiKey(); } catch (\Throwable $e) {}
 
         return $this->view('marketing/calendar', [
             'rows' => $rows,
             'users' => $users,
             'month' => $month,
-            'tuquinha_api_key' => $tuquinhaKey,
             'error' => trim((string)$request->input('error', '')),
             'success' => trim((string)$request->input('success', '')),
         ]);
@@ -189,18 +186,14 @@ final class MarketingCalendarController extends Controller
             return $redirect;
         }
 
-        $month = trim((string)$request->input('month', ''));
         $apiKey = trim((string)$request->input('tuquinha_api_key', ''));
 
         try {
             (new MarketingCalendarService($this->container))->setTuquinhaApiKey($apiKey, $request->ip());
-            $to = '/marketing/calendar?success=' . urlencode($apiKey !== '' ? 'API Key do Tuquinha salva.' : 'API Key do Tuquinha removida.');
-            if ($month !== '') $to .= '&month=' . urlencode($month);
-            return $this->redirect($to);
+            $msg = $apiKey !== '' ? 'API Key do Tuquinha salva.' : 'API Key do Tuquinha removida.';
+            return $this->redirect('/settings?success=' . urlencode($msg));
         } catch (\RuntimeException $e) {
-            $to = '/marketing/calendar?error=' . urlencode($e->getMessage());
-            if ($month !== '') $to .= '&month=' . urlencode($month);
-            return $this->redirect($to);
+            return $this->redirect('/settings?error=' . urlencode($e->getMessage()));
         }
     }
 
@@ -240,13 +233,9 @@ final class MarketingCalendarController extends Controller
                 }
             }
 
-            $to = '/marketing/calendar?success=' . urlencode($msg);
-            if ($month !== '') $to .= '&month=' . urlencode($month);
-            return $this->redirect($to);
+            return $this->redirect('/settings?success=' . urlencode($msg));
         } catch (\RuntimeException $e) {
-            $to = '/marketing/calendar?error=' . urlencode($e->getMessage());
-            if ($month !== '') $to .= '&month=' . urlencode($month);
-            return $this->redirect($to);
+            return $this->redirect('/settings?error=' . urlencode($e->getMessage()));
         }
     }
 }

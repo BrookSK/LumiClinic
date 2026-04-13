@@ -42,11 +42,17 @@ final class SettingsController extends Controller
             $anamnesisTemplates = [];
         }
 
+        $tuquinhaKey = '';
+        try {
+            $tuquinhaKey = (new \App\Services\Marketing\MarketingCalendarService($this->container))->getTuquinhaApiKey();
+        } catch (\Throwable $e) {}
+
         return $this->view('settings/index', [
             'settings' => $service->getSettings(),
             'anamnesis_templates' => $anamnesisTemplates,
             'terminology' => $service->getTerminology(),
             'ai_global_key' => (new \App\Services\Ai\AiConfigService($this->container))->getAiSettings()['global_key'] ?? false,
+            'tuquinha_api_key' => $tuquinhaKey,
         ]);
     }
 
