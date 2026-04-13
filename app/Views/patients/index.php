@@ -50,7 +50,6 @@ ob_start();
             </select>
             <button class="lc-btn lc-btn--secondary" type="submit">Buscar</button>
         </form>
-        <a class="lc-btn lc-btn--secondary" href="/patients/export.csv?q=<?= urlencode((string)$q) ?>&origin_id=<?= (int)$originId ?>" title="Exportar CSV">📥 Exportar</a>
         <?php if ($can('patients.create')): ?>
             <a class="lc-btn lc-btn--primary" href="/patients/create">Novo <?= htmlspecialchars(mb_strtolower($patientLabel, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?></a>
         <?php endif; ?>
