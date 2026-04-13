@@ -191,9 +191,9 @@ final class MarketingCalendarController extends Controller
         try {
             (new MarketingCalendarService($this->container))->setTuquinhaApiKey($apiKey, $request->ip());
             $msg = $apiKey !== '' ? 'API Key do Tuquinha salva.' : 'API Key do Tuquinha removida.';
-            return $this->redirect('/settings?success=' . urlencode($msg));
+            return $this->redirect('/settings/tuquinha?success=' . urlencode($msg));
         } catch (\RuntimeException $e) {
-            return $this->redirect('/settings?error=' . urlencode($e->getMessage()));
+            return $this->redirect('/settings/tuquinha?error=' . urlencode($e->getMessage()));
         }
     }
 
@@ -233,9 +233,9 @@ final class MarketingCalendarController extends Controller
                 }
             }
 
-            return $this->redirect('/settings?success=' . urlencode($msg));
+            return $this->redirect('/settings/tuquinha?success=' . urlencode($msg));
         } catch (\RuntimeException $e) {
-            return $this->redirect('/settings?error=' . urlencode($e->getMessage()));
+            return $this->redirect('/settings/tuquinha?error=' . urlencode($e->getMessage()));
         }
     }
 }

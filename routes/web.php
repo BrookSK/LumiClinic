@@ -300,6 +300,7 @@ $router->get('/settings/google-calendar', [\App\Controllers\Settings\GoogleCalen
 
 $router->get('/settings/importer', [ImporterController::class, 'index']);
 $router->post('/settings/importer/upload', [ImporterController::class, 'upload']);
+$router->get('/settings/tuquinha', [\App\Controllers\Settings\SettingsController::class, 'tuquinha']);
 $router->post('/settings/google-calendar/connect', [\App\Controllers\Settings\GoogleCalendarController::class, 'connect']);
 $router->get('/settings/google-calendar/callback', [\App\Controllers\Settings\GoogleCalendarController::class, 'callback']);
 $router->post('/settings/google-calendar/disconnect', [\App\Controllers\Settings\GoogleCalendarController::class, 'disconnect']);
