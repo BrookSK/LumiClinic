@@ -413,6 +413,7 @@ final class MarketingCalendarService
         $localEvents = $this->listByMonth($monthYmd);
 
         $client = new TuquinhaClient($apiKey);
+        $pdo = $this->container->get(\PDO::class);
         $typeMap = ['post'=>'post','story'=>'story','reel'=>'reels','video'=>'video','email'=>'email','ad'=>'anuncio','other'=>'outro','blog'=>'outro'];
         $statusMap = ['planned'=>'planejado','produced'=>'produzido','posted'=>'postado','cancelled'=>'planejado'];
 
@@ -422,7 +423,9 @@ final class MarketingCalendarService
         foreach ($localEvents as $ev) {
             try {
                 $notes = (string)($ev['notes'] ?? '');
-                // Skip if already has tuquinha_id (was imported from there)
+                $localId = (int)($ev['id'] ?? 0);
+
+                // Skip if already has tuquinha_id (was imported or already pushed)
                 if (preg_match('/\[tuquinha_id:\d+\]/', $notes)) { continue; }
 
                 $title = trim((string)($ev['title'] ?? ''));
@@ -443,7 +446,16 @@ final class MarketingCalendarService
                     'reference_links' => $links,
                 ];
 
-                $client->createEvent($payload);
+                $result = $client->createEvent($payload);
+
+                // Mark local event with tuquinha_id to prevent duplicates on pull
+                $remoteId = (int)($result['event']['id'] ?? $result['id'] ?? 0);
+                if ($remoteId > 0 && $localId > 0) {
+                    $tag = "\n[tuquinha_id:" . $remoteId . ']';
+                    $pdo->prepare("UPDATE marketing_calendar_entries SET notes = CONCAT(COALESCE(notes,''), ?) WHERE id = ? AND clinic_id = ?")
+                        ->execute([$tag, $localId, $clinicId]);
+                }
+
                 $pushed++;
             } catch (\Throwable $e) {
                 $errors[] = 'Evento local #' . ($ev['id'] ?? '?') . ': ' . $e->getMessage();
