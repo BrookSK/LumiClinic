@@ -194,6 +194,25 @@ ob_start();
                             <?php if ((float)$s['desconto'] > 0): ?>
                                 <span class="lc-muted" style="font-size:12px; font-weight:400;">(-R$ <?= number_format((float)$s['desconto'], 2, ',', '.') ?>)</span>
                             <?php endif; ?>
+                            <?php
+                            $sPaidTotal = (float)($s['paid_total'] ?? 0);
+                            $sPendingTotal = (float)($s['pending_total'] ?? 0);
+                            $sPaidCount = (int)($s['paid_count'] ?? 0);
+                            $sPendingCount = (int)($s['pending_count'] ?? 0);
+                            $sTotalPayments = (int)($s['total_payments'] ?? 0);
+                            $sRemaining = max(0, (float)$s['total_liquido'] - $sPaidTotal);
+                            ?>
+                            <?php if ($sTotalPayments > 0): ?>
+                                <div style="font-size:11px;font-weight:400;margin-top:3px;line-height:1.5;">
+                                    <?php if ($sPaidTotal > 0): ?>
+                                        <span style="color:#16a34a;">✓ Pago R$ <?= number_format($sPaidTotal, 2, ',', '.') ?></span>
+                                        <?php if ($sTotalPayments > 1): ?><span class="lc-muted"> (<?= $sPaidCount ?>/<?= $sTotalPayments ?>)</span><?php endif; ?>
+                                    <?php endif; ?>
+                                    <?php if ($sPendingCount > 0): ?>
+                                        <br/><span style="color:#eeb810;">⏳ Falta R$ <?= number_format($sPendingTotal, 2, ',', '.') ?> em <?= $sPendingCount ?> parcela<?= $sPendingCount > 1 ? 's' : '' ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales/view?id=<?= (int)$s['id'] ?>">Abrir</a>

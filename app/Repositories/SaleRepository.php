@@ -53,7 +53,12 @@ final class SaleRepository
                    s.total_bruto, s.desconto, s.total_liquido,
                    s.status, s.budget_status, s.origin, s.notes,
                    s.created_by_user_id,
-                   s.created_at, s.updated_at
+                   s.created_at, s.updated_at,
+                   COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.sale_id = s.id AND py.clinic_id = s.clinic_id AND py.deleted_at IS NULL AND py.status = 'paid'), 0) AS paid_total,
+                   COALESCE((SELECT SUM(py.amount) FROM payments py WHERE py.sale_id = s.id AND py.clinic_id = s.clinic_id AND py.deleted_at IS NULL AND py.status = 'pending'), 0) AS pending_total,
+                   COALESCE((SELECT COUNT(*) FROM payments py WHERE py.sale_id = s.id AND py.clinic_id = s.clinic_id AND py.deleted_at IS NULL AND py.status = 'paid'), 0) AS paid_count,
+                   COALESCE((SELECT COUNT(*) FROM payments py WHERE py.sale_id = s.id AND py.clinic_id = s.clinic_id AND py.deleted_at IS NULL AND py.status = 'pending'), 0) AS pending_count,
+                   COALESCE((SELECT COUNT(*) FROM payments py WHERE py.sale_id = s.id AND py.clinic_id = s.clinic_id AND py.deleted_at IS NULL), 0) AS total_payments
             FROM sales s
             " . $join . "
             WHERE " . $where . "
