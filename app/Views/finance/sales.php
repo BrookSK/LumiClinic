@@ -7,6 +7,7 @@ $perPage    = isset($per_page) ? (int)$per_page : 50;
 $hasNext    = isset($has_next) ? (bool)$has_next : false;
 $patientId  = isset($patient_id) && (int)$patient_id > 0 ? (int)$patient_id : null;
 $selectedPatient = isset($selected_patient) && is_array($selected_patient) ? $selected_patient : null;
+$currentBudgetStatus = isset($budget_status) ? trim((string)$budget_status) : '';
 
 $can = function (string $p): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) return true;
@@ -59,6 +60,20 @@ ob_start();
         </button>
     <?php endif; ?>
 </div>
+
+<!-- Filtros por status -->
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+    <a class="lc-btn lc-btn--sm <?= $currentBudgetStatus === '' ? 'lc-btn--primary' : 'lc-btn--secondary' ?>" href="/finance/sales<?= $patientId !== null ? '?patient_id='.(int)$patientId : '' ?>">Todos</a>
+    <?php foreach (['draft'=>'📝 Rascunho','sent'=>'📤 Enviado','standby'=>'⏸️ Em espera','approved'=>'✅ Aprovado','rejected'=>'❌ Recusado','completed'=>'🏁 Concluído'] as $fk => $flbl): ?>
+        <a class="lc-btn lc-btn--sm <?= $currentBudgetStatus === $fk ? 'lc-btn--primary' : 'lc-btn--secondary' ?>" href="/finance/sales?budget_status=<?= $fk ?><?= $patientId !== null ? '&patient_id='.(int)$patientId : '' ?>"><?= $flbl ?></a>
+    <?php endforeach; ?>
+</div>
+<?php if ($currentBudgetStatus !== ''): ?>
+    <div class="lc-alert lc-alert--info" style="margin-bottom:14px;font-size:13px;">
+        Filtrando por: <strong><?= htmlspecialchars($budgetStatusLabel[$currentBudgetStatus] ?? $currentBudgetStatus, ENT_QUOTES, 'UTF-8') ?></strong>
+        <a href="/finance/sales<?= $patientId !== null ? '?patient_id='.(int)$patientId : '' ?>" style="margin-left:8px;">✕ Limpar filtro</a>
+    </div>
+<?php endif; ?>
 
 <!-- Formulário de criação — oculto por padrão, abre ao clicar -->
 <?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.create')): ?>
@@ -228,10 +243,10 @@ ob_start();
                 <div class="lc-muted" style="font-size:12px;">Página <?= (int)$page ?></div>
                 <div class="lc-flex lc-gap-sm">
                     <?php if ($page > 1): ?>
-                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page-1) ?><?= $patientId !== null ? ('&patient_id='.(int)$patientId) : '' ?>">Anterior</a>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page-1) ?><?= $patientId !== null ? ('&patient_id='.(int)$patientId) : '' ?><?= $currentBudgetStatus !== '' ? ('&budget_status='.urlencode($currentBudgetStatus)) : '' ?>">Anterior</a>
                     <?php endif; ?>
                     <?php if ($hasNext): ?>
-                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page+1) ?><?= $patientId !== null ? ('&patient_id='.(int)$patientId) : '' ?>">Próxima</a>
+                        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales?per_page=<?= (int)$perPage ?>&page=<?= (int)($page+1) ?><?= $patientId !== null ? ('&patient_id='.(int)$patientId) : '' ?><?= $currentBudgetStatus !== '' ? ('&budget_status='.urlencode($currentBudgetStatus)) : '' ?>">Próxima</a>
                     <?php endif; ?>
                 </div>
             </div>

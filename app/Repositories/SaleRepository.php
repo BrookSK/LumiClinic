@@ -28,7 +28,7 @@ final class SaleRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function listByClinic(int $clinicId, int $limit = 200, ?int $professionalId = null, int $offset = 0, ?int $patientId = null): array
+    public function listByClinic(int $clinicId, int $limit = 200, ?int $professionalId = null, int $offset = 0, ?int $patientId = null, ?string $budgetStatus = null): array
     {
         $offset = max(0, $offset);
         $where = " s.clinic_id = :clinic_id AND s.deleted_at IS NULL ";
@@ -44,6 +44,11 @@ final class SaleRepository
         if ($patientId !== null && $patientId > 0) {
             $where .= " AND s.patient_id = :patient_id ";
             $params['patient_id'] = $patientId;
+        }
+
+        if ($budgetStatus !== null && $budgetStatus !== '') {
+            $where .= " AND s.budget_status = :budget_status ";
+            $params['budget_status'] = $budgetStatus;
         }
 
         $sql = "

@@ -106,7 +106,13 @@ final class SalesController extends Controller
         $perPage = max(25, min(200, $perPage));
         $offset = ($page - 1) * $perPage;
 
-        $sales = $service->listSales($professionalId, $perPage + 1, $offset, $patientId);
+        $budgetStatus = trim((string)$request->input('budget_status', ''));
+        $allowedBudget = ['draft', 'sent', 'approved', 'standby', 'rejected', 'completed'];
+        if ($budgetStatus !== '' && !in_array($budgetStatus, $allowedBudget, true)) {
+            $budgetStatus = '';
+        }
+
+        $sales = $service->listSales($professionalId, $perPage + 1, $offset, $patientId, $budgetStatus !== '' ? $budgetStatus : null);
         $hasNext = count($sales) > $perPage;
         if ($hasNext) {
             $sales = array_slice($sales, 0, $perPage);
@@ -126,6 +132,7 @@ final class SalesController extends Controller
             'has_next' => $hasNext,
             'patient_id' => $patientId,
             'selected_patient' => $selectedPatient,
+            'budget_status' => $budgetStatus,
         ]);
     }
 

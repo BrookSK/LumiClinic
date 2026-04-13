@@ -30,7 +30,7 @@ final class SalesService
     public function __construct(private readonly Container $container) {}
 
     /** @return list<array<string,mixed>> */
-    public function listSales(?int $professionalId = null, int $limit = 200, int $offset = 0, ?int $patientId = null): array
+    public function listSales(?int $professionalId = null, int $limit = 200, int $offset = 0, ?int $patientId = null, ?string $budgetStatus = null): array
     {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -42,7 +42,7 @@ final class SalesService
         $offset = max(0, $offset);
 
         $repo = new SaleRepository($this->container->get(\PDO::class));
-        return $repo->listByClinic($clinicId, $limit, $professionalId, $offset, $patientId);
+        return $repo->listByClinic($clinicId, $limit, $professionalId, $offset, $patientId, $budgetStatus);
     }
 
     /** @return array{sale:array<string,mixed>,items:list<array<string,mixed>>,payments:list<array<string,mixed>>,logs:list<array<string,mixed>>}|null */
