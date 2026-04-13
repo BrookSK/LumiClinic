@@ -1093,7 +1093,9 @@ final class SalesService
         $payments = $payRepo->listBySale($clinicId, $saleId);
 
         $paid = 0.0;
+        $hasAnyPayment = false;
         foreach ($payments as $p) {
+            $hasAnyPayment = true;
             if ((string)$p['status'] === 'paid') {
                 $paid += (float)$p['amount'];
             }
@@ -1113,6 +1115,15 @@ final class SalesService
                 $saleLog = new SaleLogRepository($pdo);
                 $saleLog->log($clinicId, $saleId, 'sales.status', ['from' => (string)$sale['status'], 'to' => $newStatus], $actorId, $ip);
             }
+        }
+
+        // Auto-promote budget_status to 'approved' when payments exist
+        $currentBudget = (string)($sale['budget_status'] ?? 'draft');
+        if ($hasAnyPayment && in_array($currentBudget, ['draft', 'sent', 'standby'], true)) {
+            $saleRepo->updateBudgetStatus($clinicId, $saleId, 'approved');
+
+            $saleLog = new SaleLogRepository($pdo);
+            $saleLog->log($clinicId, $saleId, 'sales.budget_status', ['from' => $currentBudget, 'to' => 'approved', 'reason' => 'auto_payment'], $actorId, $ip);
         }
     }
 }
