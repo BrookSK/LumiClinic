@@ -62,11 +62,14 @@ ob_start();
 </div>
 
 <!-- Filtros por status -->
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
     <a class="lc-btn lc-btn--sm <?= $currentBudgetStatus === '' ? 'lc-btn--primary' : 'lc-btn--secondary' ?>" href="/finance/sales<?= $patientId !== null ? '?patient_id='.(int)$patientId : '' ?>">Todos</a>
     <?php foreach (['draft'=>'📝 Rascunho','sent'=>'📤 Enviado','standby'=>'⏸️ Em espera','approved'=>'✅ Aprovado','rejected'=>'❌ Recusado','completed'=>'🏁 Concluído'] as $fk => $flbl): ?>
         <a class="lc-btn lc-btn--sm <?= $currentBudgetStatus === $fk ? 'lc-btn--primary' : 'lc-btn--secondary' ?>" href="/finance/sales?budget_status=<?= $fk ?><?= $patientId !== null ? '&patient_id='.(int)$patientId : '' ?>"><?= $flbl ?></a>
     <?php endforeach; ?>
+    <span style="margin-left:auto;">
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/sales/export.csv?budget_status=<?= urlencode($currentBudgetStatus) ?><?= $patientId !== null ? '&patient_id='.(int)$patientId : '' ?>">📥 Exportar CSV</a>
+    </span>
 </div>
 <?php if ($currentBudgetStatus !== ''): ?>
     <div class="lc-alert lc-alert--info" style="margin-bottom:14px;font-size:13px;">
