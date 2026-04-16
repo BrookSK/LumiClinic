@@ -80,6 +80,12 @@ final class GoogleCalendarController extends Controller
             $request->ip()
         );
 
+        // If AJAX request, return JSON with redirect URL (avoids CSP form-action block)
+        $isAjax = $request->header('x-requested-with') === 'XMLHttpRequest';
+        if ($isAjax) {
+            return \App\Core\Http\Response::json(['redirect' => $url]);
+        }
+
         return $this->redirect($url);
     }
 

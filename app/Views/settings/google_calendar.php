@@ -92,18 +92,44 @@ ob_start();
     </div>
 
     <?php if ($can('settings.update')): ?>
-    <form method="post" action="/settings/google-calendar/connect">
-        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+    <div id="gcal-connect-form">
         <div class="lc-field" style="max-width:400px;">
             <label class="lc-label">Calendar ID</label>
-            <input class="lc-input" type="text" name="calendar_id" value="<?= htmlspecialchars($calendarId, ENT_QUOTES, 'UTF-8') ?>" placeholder="primary" autocomplete="off" />
+            <input class="lc-input" type="text" id="gcal_calendar_id" value="<?= htmlspecialchars($calendarId, ENT_QUOTES, 'UTF-8') ?>" placeholder="primary" autocomplete="off" />
             <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Deixe "primary" para o calendário principal. Só mude se souber o que está fazendo.</div>
         </div>
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-            <button class="lc-btn lc-btn--primary" type="submit" <?= (!$clientReady || !$libReady) ? 'disabled' : '' ?>>Conectar Google Calendar</button>
+            <button class="lc-btn lc-btn--primary" type="button" id="gcal-connect-btn" <?= (!$clientReady || !$libReady) ? 'disabled' : '' ?> onclick="connectGcal()">Conectar Google Calendar</button>
             <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/settings/google-calendar/logs">Ver logs</a>
         </div>
-    </form>
+    </div>
+    <script>
+    function connectGcal() {
+        var calId = document.getElementById('gcal_calendar_id');
+        var val = calId ? calId.value.trim() : 'primary';
+        if (!val) val = 'primary';
+        var btn = document.getElementById('gcal-connect-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Conectando...'; }
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/settings/google-calendar/connect', true);
+        xhr.setRequestHeader('X-CSRF-Token', <?= json_encode($csrf) ?>);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    var j = JSON.parse(xhr.responseText);
+                    if (j && j.redirect) { window.location.href = j.redirect; return; }
+                    if (j && j.error) { alert(j.error); }
+                } catch(e) {}
+                if (btn) { btn.disabled = false; btn.textContent = 'Conectar Google Calendar'; }
+            }
+        };
+        var fd = new FormData();
+        fd.append('_csrf', <?= json_encode($csrf) ?>);
+        fd.append('calendar_id', val);
+        xhr.send(fd);
+    }
+    </script>
 
     <?php if ($connected): ?>
     <details style="margin-top:14px;">
