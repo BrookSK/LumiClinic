@@ -92,6 +92,24 @@ ob_start();
     </div>
 
     <?php if ($can('settings.update')): ?>
+    <?php if ($connected): ?>
+    <!-- Já conectado: mostrar desconectar -->
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:13px;color:#16a34a;font-weight:600;">✅ Sincronização ativa</span>
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/settings/google-calendar/logs">Ver logs</a>
+    </div>
+    <details style="margin-top:14px;">
+        <summary style="font-size:12px;color:rgba(185,28,28,.60);cursor:pointer;list-style:none;">Desconectar Google Calendar</summary>
+        <div style="margin-top:8px;padding:12px;border-radius:12px;border:1px solid rgba(185,28,28,.18);background:rgba(185,28,28,.04);">
+            <div style="font-size:12px;color:rgba(185,28,28,.70);margin-bottom:8px;">Isso vai parar a sincronização. Eventos já criados no Google Calendar não serão removidos.</div>
+            <form method="post" action="/settings/google-calendar/disconnect" style="margin:0;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit" onclick="return confirm('Desconectar Google Calendar?');">Confirmar desconexão</button>
+            </form>
+        </div>
+    </details>
+    <?php else: ?>
+    <!-- Não conectado: mostrar formulário de conexão -->
     <div id="gcal-connect-form">
         <div class="lc-field" style="max-width:400px;">
             <label class="lc-label">Calendar ID</label>
@@ -130,18 +148,6 @@ ob_start();
         xhr.send(fd);
     }
     </script>
-
-    <?php if ($connected): ?>
-    <details style="margin-top:14px;">
-        <summary style="font-size:12px;color:rgba(185,28,28,.60);cursor:pointer;list-style:none;">Desconectar</summary>
-        <div style="margin-top:8px;padding:12px;border-radius:12px;border:1px solid rgba(185,28,28,.18);background:rgba(185,28,28,.04);">
-            <div style="font-size:12px;color:rgba(185,28,28,.70);margin-bottom:8px;">Isso vai parar a sincronização.</div>
-            <form method="post" action="/settings/google-calendar/disconnect" style="margin:0;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit" onclick="return confirm('Desconectar?');">Confirmar</button>
-            </form>
-        </div>
-    </details>
     <?php endif; ?>
     <?php endif; ?>
 </div>
