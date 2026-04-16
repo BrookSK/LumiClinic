@@ -214,15 +214,16 @@ final class GoogleCalendarSyncService
             return (new \DateTimeImmutable('now'))->format(\DateTimeInterface::ATOM);
         }
 
+        // The datetime from the DB is already in the clinic's local timezone, not UTC.
+        // Create it directly in the target timezone so no conversion happens.
         try {
-            $d = new \DateTimeImmutable($dtUtc, new \DateTimeZone('UTC'));
+            $d = new \DateTimeImmutable($dtUtc, new \DateTimeZone($timezone));
         } catch (\Throwable $e) {
-            return (new \DateTimeImmutable('now'))->format(\DateTimeInterface::ATOM);
-        }
-
-        try {
-            $d = $d->setTimezone(new \DateTimeZone($timezone));
-        } catch (\Throwable $e) {
+            try {
+                $d = new \DateTimeImmutable($dtUtc);
+            } catch (\Throwable $e2) {
+                return (new \DateTimeImmutable('now'))->format(\DateTimeInterface::ATOM);
+            }
         }
 
         return $d->format(\DateTimeInterface::ATOM);
