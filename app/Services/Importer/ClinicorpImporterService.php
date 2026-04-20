@@ -930,10 +930,14 @@ final class ClinicorpImporterService
                 $isProfessionalType = in_array($roleCode, ['professional'], true);
 
                 // Check existing user by email
+                $existingUserId = null;
                 if ($email !== '') {
                     $existUser = $this->pdo->prepare('SELECT id FROM users WHERE clinic_id = ? AND email = ? AND deleted_at IS NULL LIMIT 1');
                     $existUser->execute([$clinicId, $email]);
-                    if ($existUser->fetch()) { $skipped++; continue; }
+                    $existUserRow = $existUser->fetch(\PDO::FETCH_ASSOC);
+                    if ($existUserRow) {
+                        $existingUserId = (int)$existUserRow['id'];
+                    }
                 }
 
                 // Check existing professional by name — if exists WITHOUT user, upgrade it
@@ -944,13 +948,21 @@ final class ClinicorpImporterService
                     $profRow = $existProf->fetch(\PDO::FETCH_ASSOC);
                     if ($profRow) {
                         if ($profRow['user_id'] !== null && (int)$profRow['user_id'] > 0) {
-                            // Already has user — skip
                             $skipped++; continue;
                         }
-                        // Exists but no user — we'll create user and link
                         $existingProfId = (int)$profRow['id'];
                     }
                 }
+
+                // If both user and professional already exist, just link them
+                if ($existingUserId !== null && $existingProfId !== null) {
+                    $this->pdo->prepare('UPDATE professionals SET user_id = ?, updated_at = NOW() WHERE id = ? AND clinic_id = ?')
+                        ->execute([$existingUserId, $existingProfId, $clinicId]);
+                    $imported++; continue;
+                }
+
+                // If user already exists but no professional, skip user creation
+                $userId = $existingUserId;
 
                 // Parse birth date (format YYYYMMDD or other)
                 $birthDate = null;
@@ -962,18 +974,24 @@ final class ClinicorpImporterService
                     }
                 }
 
-                // 1) Create user
-                $password = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
-                $userStatus = ($active === 'false' || $active === '0' || $active === 'não' || $active === 'x') ? 'disabled' : 'active';
-                $userStmt = $this->pdo->prepare('INSERT INTO users (clinic_id, name, email, phone, password, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
-                $userStmt->execute([$clinicId, $name, $email ?: null, $phone ?: null, $password, $userStatus]);
-                $userId = (int)$this->pdo->lastInsertId();
+                // 1) Create user (only if doesn't exist yet)
+                if ($userId === null) {
+                    $password = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
+                    $userStatus = ($active === 'false' || $active === '0' || $active === 'não' || $active === 'x') ? 'disabled' : 'active';
+                    $userStmt = $this->pdo->prepare('INSERT INTO users (clinic_id, name, email, phone, password, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+                    $userStmt->execute([$clinicId, $name, $email ?: null, $phone ?: null, $password, $userStatus]);
+                    $userId = (int)$this->pdo->lastInsertId();
+                }
 
-                // 2) Assign role
+                // 2) Assign role (if not already assigned)
                 $assignRoleId = $roleIds[$roleCode] ?? ($roleIds['professional'] ?? null);
                 if ($assignRoleId !== null && $userId > 0) {
-                    $this->pdo->prepare('INSERT INTO user_roles (clinic_id, user_id, role_id, created_at) VALUES (?, ?, ?, NOW())')
-                        ->execute([$clinicId, $userId, $assignRoleId]);
+                    $existRole = $this->pdo->prepare('SELECT 1 FROM user_roles WHERE clinic_id = ? AND user_id = ? AND role_id = ? LIMIT 1');
+                    $existRole->execute([$clinicId, $userId, $assignRoleId]);
+                    if (!$existRole->fetch()) {
+                        $this->pdo->prepare('INSERT INTO user_roles (clinic_id, user_id, role_id, created_at) VALUES (?, ?, ?, NOW())')
+                            ->execute([$clinicId, $userId, $assignRoleId]);
+                    }
                 }
 
                 // 3) Create or link professional record (only for professional-type roles)
