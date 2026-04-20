@@ -977,7 +977,7 @@ final class ClinicorpImporterService
                 // 1) Create user (only if doesn't exist yet)
                 if ($userId === null) {
                     $password = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
-                    $userStatus = ($active === 'false' || $active === '0' || $active === 'não' || $active === 'x') ? 'disabled' : 'active';
+                    $userStatus = ($active === 'false' || $active === '0' || $active === 'não' || $active === 'no' || $active === 'inactive') ? 'disabled' : 'active';
                     $userStmt = $this->pdo->prepare('INSERT INTO users (clinic_id, name, email, phone, password_hash, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
                     $userStmt->execute([$clinicId, $name, $email ?: null, $phone ?: null, $password, $userStatus]);
                     $userId = (int)$this->pdo->lastInsertId();
