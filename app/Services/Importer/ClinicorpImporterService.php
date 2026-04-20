@@ -150,11 +150,11 @@ final class ClinicorpImporterService
             'status' => 'construction',
         ],
         'profissionais' => [
-            'label' => 'Profissionais',
+            'label' => 'Profissionais / Funcionários',
             'group' => 'Configurações',
             'icon'  => '👨‍⚕️',
-            'desc'  => 'Cadastro de profissionais da clínica.',
-            'clinicorp_cols' => 'Name, Email, MobilePhone, BirthDate, Sex, Active',
+            'desc'  => 'Importa profissionais e funcionários como usuários do sistema. O campo "Type" da Clinicorp define o papel: DENTIST/DOCTOR/NURSE → Profissional (aparece na agenda), ASSISTANT/RECEPTIONIST/SECRETARY → Recepção, ADMIN/MANAGER → Administrador. Todos recebem senha aleatória (trocar no primeiro acesso).',
+            'clinicorp_cols' => 'Name, Email, MobilePhone, BirthDate, Sex, Active, Type, City, OtherDocumentId',
         ],
     ];
 
@@ -890,18 +890,90 @@ final class ClinicorpImporterService
         $colMap = $this->mapCols($headers);
         $imported = 0; $skipped = 0; $errors = [];
 
+        // Map Clinicorp Type → system role code
+        // DENTIST, HYGIENIST, etc → professional (creates professional record)
+        // ASSISTANT, RECEPTIONIST, SECRETARY → reception
+        // ADMIN, MANAGER, OWNER → admin
+        // Others → professional (default)
+        $typeToRole = [
+            'dentist' => 'professional', 'hygienist' => 'professional', 'doctor' => 'professional',
+            'nurse' => 'professional', 'therapist' => 'professional', 'nutritionist' => 'professional',
+            'physiotherapist' => 'professional', 'psychologist' => 'professional', 'dermatologist' => 'professional',
+            'assistant' => 'reception', 'receptionist' => 'reception', 'secretary' => 'reception',
+            'admin' => 'admin', 'manager' => 'admin', 'owner' => 'owner',
+        ];
+
+        // Pre-load role IDs
+        $roleIds = [];
+        $roleStmt = $this->pdo->prepare("SELECT id, code FROM roles WHERE clinic_id = ? AND deleted_at IS NULL");
+        $roleStmt->execute([$clinicId]);
+        foreach ($roleStmt->fetchAll(\PDO::FETCH_ASSOC) as $r) {
+            $roleIds[(string)$r['code']] = (int)$r['id'];
+        }
+
         foreach ($dataRows as $i => $row) {
             try {
                 $name = $this->col($row, $colMap, 'Name');
                 if ($name === '') { $skipped++; continue; }
 
-                // Check existing
-                $stmt = $this->pdo->prepare('SELECT id FROM professionals WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
-                $stmt->execute([$clinicId, $name]);
-                if ($stmt->fetch()) { $skipped++; continue; }
+                $email = strtolower(trim($this->col($row, $colMap, 'Email')));
+                $phone = preg_replace('/[^\d]/', '', $this->col($row, $colMap, 'MobilePhone'));
+                $birthDateRaw = $this->col($row, $colMap, 'BirthDate');
+                $sex = strtolower(trim($this->col($row, $colMap, 'Sex')));
+                $active = strtolower(trim($this->col($row, $colMap, 'Active')));
+                $type = strtolower(trim($this->col($row, $colMap, 'Type')));
+                $cpf = preg_replace('/[^\d]/', '', $this->col($row, $colMap, 'OtherDocumentId'));
+                $city = trim($this->col($row, $colMap, 'City'));
 
-                $stmt = $this->pdo->prepare('INSERT INTO professionals (clinic_id, name, status, created_at) VALUES (?, ?, \'active\', NOW())');
-                $stmt->execute([$clinicId, $name]);
+                // Determine role
+                $roleCode = $typeToRole[$type] ?? 'professional';
+                $isProfessionalType = in_array($roleCode, ['professional'], true);
+
+                // Check existing user by email
+                if ($email !== '') {
+                    $existUser = $this->pdo->prepare('SELECT id FROM users WHERE clinic_id = ? AND email = ? AND deleted_at IS NULL LIMIT 1');
+                    $existUser->execute([$clinicId, $email]);
+                    if ($existUser->fetch()) { $skipped++; continue; }
+                }
+
+                // Check existing professional by name
+                if ($isProfessionalType) {
+                    $existProf = $this->pdo->prepare('SELECT id FROM professionals WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
+                    $existProf->execute([$clinicId, $name]);
+                    if ($existProf->fetch()) { $skipped++; continue; }
+                }
+
+                // Parse birth date (format YYYYMMDD or other)
+                $birthDate = null;
+                if ($birthDateRaw !== '') {
+                    if (preg_match('/^(\d{4})(\d{2})(\d{2})$/', $birthDateRaw, $m)) {
+                        $birthDate = $m[1] . '-' . $m[2] . '-' . $m[3];
+                    } else {
+                        $birthDate = XlsxReader::excelDateToString($birthDateRaw);
+                    }
+                }
+
+                // 1) Create user
+                $password = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
+                $userStatus = ($active === 'false' || $active === '0' || $active === 'não' || $active === 'x') ? 'disabled' : 'active';
+                $userStmt = $this->pdo->prepare('INSERT INTO users (clinic_id, name, email, phone, password, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+                $userStmt->execute([$clinicId, $name, $email ?: null, $phone ?: null, $password, $userStatus]);
+                $userId = (int)$this->pdo->lastInsertId();
+
+                // 2) Assign role
+                $assignRoleId = $roleIds[$roleCode] ?? ($roleIds['professional'] ?? null);
+                if ($assignRoleId !== null && $userId > 0) {
+                    $this->pdo->prepare('INSERT INTO user_roles (clinic_id, user_id, role_id, created_at) VALUES (?, ?, ?, NOW())')
+                        ->execute([$clinicId, $userId, $assignRoleId]);
+                }
+
+                // 3) Create professional record (only for professional-type roles)
+                if ($isProfessionalType && $userId > 0) {
+                    $profStatus = $userStatus === 'active' ? 'ativo' : 'inativo';
+                    $this->pdo->prepare('INSERT INTO professionals (clinic_id, user_id, name, status, created_at) VALUES (?, ?, ?, ?, NOW())')
+                        ->execute([$clinicId, $userId, $name, $profStatus]);
+                }
+
                 $imported++;
             } catch (\Throwable $e) {
                 $errors[] = 'Linha ' . ($i + 2) . ': ' . $e->getMessage();
