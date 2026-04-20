@@ -153,7 +153,7 @@ final class ClinicorpImporterService
             'label' => 'Profissionais / Funcionários',
             'group' => 'Configurações',
             'icon'  => '👨‍⚕️',
-            'desc'  => 'Importa profissionais e funcionários como usuários do sistema. O campo "Type" da Clinicorp define o papel: DENTIST/DOCTOR/NURSE → Profissional (aparece na agenda), ASSISTANT/RECEPTIONIST/SECRETARY → Recepção, ADMIN/MANAGER → Administrador. Todos recebem senha aleatória (trocar no primeiro acesso).',
+            'desc'  => 'Importa profissionais e funcionários como usuários do sistema. O campo "Type" da Clinicorp define o papel: DENTIST/DOCTOR/NURSE → Profissional (aparece na agenda), ASSISTANT/RECEPTIONIST/SECRETARY → Recepção, ADMIN/MANAGER → Administrador. Após importar, cada usuário deve usar "Esqueci minha senha" na tela de login para definir sua senha e acessar o sistema.',
             'clinicorp_cols' => 'Name, Email, MobilePhone, BirthDate, Sex, Active, Type, City, OtherDocumentId',
         ],
     ];
