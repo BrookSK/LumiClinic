@@ -936,11 +936,20 @@ final class ClinicorpImporterService
                     if ($existUser->fetch()) { $skipped++; continue; }
                 }
 
-                // Check existing professional by name
+                // Check existing professional by name — if exists WITHOUT user, upgrade it
+                $existingProfId = null;
                 if ($isProfessionalType) {
-                    $existProf = $this->pdo->prepare('SELECT id FROM professionals WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
+                    $existProf = $this->pdo->prepare('SELECT id, user_id FROM professionals WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
                     $existProf->execute([$clinicId, $name]);
-                    if ($existProf->fetch()) { $skipped++; continue; }
+                    $profRow = $existProf->fetch(\PDO::FETCH_ASSOC);
+                    if ($profRow) {
+                        if ($profRow['user_id'] !== null && (int)$profRow['user_id'] > 0) {
+                            // Already has user — skip
+                            $skipped++; continue;
+                        }
+                        // Exists but no user — we'll create user and link
+                        $existingProfId = (int)$profRow['id'];
+                    }
                 }
 
                 // Parse birth date (format YYYYMMDD or other)
@@ -967,11 +976,17 @@ final class ClinicorpImporterService
                         ->execute([$clinicId, $userId, $assignRoleId]);
                 }
 
-                // 3) Create professional record (only for professional-type roles)
+                // 3) Create or link professional record (only for professional-type roles)
                 if ($isProfessionalType && $userId > 0) {
                     $profStatus = $userStatus === 'active' ? 'ativo' : 'inativo';
-                    $this->pdo->prepare('INSERT INTO professionals (clinic_id, user_id, name, status, created_at) VALUES (?, ?, ?, ?, NOW())')
-                        ->execute([$clinicId, $userId, $name, $profStatus]);
+                    if ($existingProfId !== null) {
+                        // Link existing professional to the new user
+                        $this->pdo->prepare('UPDATE professionals SET user_id = ?, status = ?, updated_at = NOW() WHERE id = ? AND clinic_id = ?')
+                            ->execute([$userId, $profStatus, $existingProfId, $clinicId]);
+                    } else {
+                        $this->pdo->prepare('INSERT INTO professionals (clinic_id, user_id, name, status, created_at) VALUES (?, ?, ?, ?, NOW())')
+                            ->execute([$clinicId, $userId, $name, $profStatus]);
+                    }
                 }
 
                 $imported++;
