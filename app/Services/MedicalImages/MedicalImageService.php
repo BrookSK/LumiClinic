@@ -194,10 +194,18 @@ final class MedicalImageService
         $mime = (string)$finfo->file($tmp);
         $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
         if (!isset($allowed[$mime])) {
-            throw new \RuntimeException('Formato n?o suportado. Use JPG/PNG/WEBP.');
+            throw new \RuntimeException('Formato não suportado. Use JPG/PNG/WEBP.');
         }
 
-        $ext = $allowed[$mime];
+        // Compress: convert to WebP, resize if > 2048px (saves ~50% storage)
+        $compressed = $this->compressImage($bytes, $mime);
+        if ($compressed !== null) {
+            $bytes = $compressed;
+            $ext = 'webp';
+        } else {
+            $ext = $allowed[$mime];
+        }
+
         $token = bin2hex(random_bytes(16));
         $relative = 'medical_images/patient_' . $patientId . '/' . date('Ymd') . '_' . $token . '.' . $ext;
 
@@ -371,17 +379,26 @@ final class MedicalImageService
         $mime = (string)$finfo->file($tmp);
         $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
         if (!isset($allowed[$mime])) {
-            throw new \RuntimeException('Formato n?o suportado. Use JPG/PNG/WEBP.');
+            throw new \RuntimeException('Formato não suportado. Use JPG/PNG/WEBP.');
         }
 
-        $ext = $allowed[$mime];
+        // Compress: convert to WebP, resize if > 2048px
+        $compressed = $this->compressImage($bytes, $mime);
+        if ($compressed !== null) {
+            $bytes = $compressed;
+            $ext = 'webp';
+            $mime = 'image/webp';
+        } else {
+            $ext = $allowed[$mime];
+        }
+
         $token = bin2hex(random_bytes(16));
         $relative = 'medical_images/patient_' . $patientId . '/' . date('Ymd') . '_' . $token . '.' . $ext;
 
         PrivateStorage::put($clinicId, $relative, $bytes);
 
         $originalName = isset($file['name']) ? (string)$file['name'] : null;
-        $size = isset($file['size']) ? (int)$file['size'] : null;
+        $size = strlen($bytes);
 
         return ['relative' => $relative, 'original_name' => $originalName, 'mime' => $mime, 'size' => $size];
     }
@@ -461,6 +478,68 @@ final class MedicalImageService
         $sum2 = (int)($r2['s'] ?? 0);
 
         return max(0, $sum1) + max(0, $sum2);
+    }
+
+    /**
+     * Compress image: convert to WebP and resize if larger than max dimension.
+     * Returns compressed bytes or null if compression not available/beneficial.
+     */
+    private function compressImage(string $bytes, string $mime, int $maxDimension = 2048, int $webpQuality = 82): ?string
+    {
+        if (!function_exists('imagecreatefromstring') || !function_exists('imagewebp')) {
+            return null;
+        }
+
+        $src = @imagecreatefromstring($bytes);
+        if ($src === false) {
+            return null;
+        }
+
+        $w = imagesx($src);
+        $h = imagesy($src);
+
+        // Resize if larger than max dimension
+        $needsResize = ($w > $maxDimension || $h > $maxDimension);
+        if ($needsResize) {
+            if ($w >= $h) {
+                $newW = $maxDimension;
+                $newH = (int)round($h * ($maxDimension / $w));
+            } else {
+                $newH = $maxDimension;
+                $newW = (int)round($w * ($maxDimension / $h));
+            }
+
+            $dst = imagecreatetruecolor($newW, $newH);
+            if ($dst === false) {
+                imagedestroy($src);
+                return null;
+            }
+
+            // Preserve transparency for PNG
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+
+            imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
+            imagedestroy($src);
+            $src = $dst;
+        }
+
+        // Convert to WebP
+        ob_start();
+        imagewebp($src, null, $webpQuality);
+        $compressed = ob_get_clean();
+        imagedestroy($src);
+
+        if ($compressed === false || $compressed === '') {
+            return null;
+        }
+
+        // Only use compressed if it's actually smaller
+        if (strlen($compressed) >= strlen($bytes)) {
+            return null;
+        }
+
+        return $compressed;
     }
 
     /**
