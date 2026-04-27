@@ -85,34 +85,20 @@ final class App
         try {
             return $this->pipeline->handle($request, fn (Request $request) => $this->router->dispatch($request));
         } catch (\RuntimeException $e) {
+            error_log('[LumiClinic] RuntimeException: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+
             if ($e->getMessage() === 'Acesso negado.') {
-                (new SystemErrorLogService($this->container))->logHttpError(
-                    $request,
-                    403,
-                    'access_denied',
-                    'Acesso negado',
-                    $e
-                );
+                try { (new SystemErrorLogService($this->container))->logHttpError($request, 403, 'access_denied', 'Acesso negado', $e); } catch (\Throwable $ignore) {}
                 return Response::html(View::render('errors/403', ['title' => 'Acesso negado']), 403);
             }
 
-            (new SystemErrorLogService($this->container))->logHttpError(
-                $request,
-                500,
-                'runtime_exception',
-                $e->getMessage(),
-                $e
-            );
+            try { (new SystemErrorLogService($this->container))->logHttpError($request, 500, 'runtime_exception', $e->getMessage(), $e); } catch (\Throwable $ignore) {}
 
             return Response::html(View::render('errors/500', ['title' => 'Algo deu errado']), 500);
         } catch (\Throwable $e) {
-            (new SystemErrorLogService($this->container))->logHttpError(
-                $request,
-                500,
-                'exception',
-                $e->getMessage(),
-                $e
-            );
+            error_log('[LumiClinic] Exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+
+            try { (new SystemErrorLogService($this->container))->logHttpError($request, 500, 'exception', $e->getMessage(), $e); } catch (\Throwable $ignore) {}
 
             return Response::html(View::render('errors/500', ['title' => 'Algo deu errado']), 500);
         }

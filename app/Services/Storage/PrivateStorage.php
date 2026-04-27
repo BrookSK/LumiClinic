@@ -27,7 +27,7 @@ final class PrivateStorage
         }
 
         error_log('[PrivateStorage] Não foi possível criar: ' . $dir
-            . ' — execute no servidor: sudo chown -R www-data:www-data '
+            . ' — execute no servidor: sudo chown -R www:www '
             . self::storageBase() . ' && sudo chmod -R 775 ' . self::storageBase());
 
         return false;
