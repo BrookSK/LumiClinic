@@ -85,7 +85,7 @@ final class App
         try {
             return $this->pipeline->handle($request, fn (Request $request) => $this->router->dispatch($request));
         } catch (\RuntimeException $e) {
-            error_log('[LumiClinic] RuntimeException: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            error_log('[LumiClinic] RuntimeException: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString());
 
             if ($e->getMessage() === 'Acesso negado.') {
                 try { (new SystemErrorLogService($this->container))->logHttpError($request, 403, 'access_denied', 'Acesso negado', $e); } catch (\Throwable $ignore) {}
@@ -94,11 +94,19 @@ final class App
 
             try { (new SystemErrorLogService($this->container))->logHttpError($request, 500, 'runtime_exception', $e->getMessage(), $e); } catch (\Throwable $ignore) {}
 
+            if (isset($_GET['_debug']) && $_GET['_debug'] === 'lumi2026') {
+                return Response::html('<pre>' . htmlspecialchars($e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine() . "\n\n" . $e->getTraceAsString(), ENT_QUOTES, 'UTF-8') . '</pre>', 500);
+            }
+
             return Response::html(View::render('errors/500', ['title' => 'Algo deu errado']), 500);
         } catch (\Throwable $e) {
-            error_log('[LumiClinic] Exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            error_log('[LumiClinic] Exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString());
 
             try { (new SystemErrorLogService($this->container))->logHttpError($request, 500, 'exception', $e->getMessage(), $e); } catch (\Throwable $ignore) {}
+
+            if (isset($_GET['_debug']) && $_GET['_debug'] === 'lumi2026') {
+                return Response::html('<pre>' . htmlspecialchars($e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine() . "\n\n" . $e->getTraceAsString(), ENT_QUOTES, 'UTF-8') . '</pre>', 500);
+            }
 
             return Response::html(View::render('errors/500', ['title' => 'Algo deu errado']), 500);
         }
