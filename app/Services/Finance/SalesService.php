@@ -67,8 +67,12 @@ final class SalesService
             $patRepo = new PatientRepository($pdo);
             $pat = $patRepo->findById($clinicId, (int)$sale['patient_id']);
             $sale['patient_name'] = $pat !== null ? (string)($pat['name'] ?? '') : '';
+            $sale['patient_email'] = $pat !== null ? trim((string)($pat['email'] ?? '')) : '';
+            $sale['patient_phone'] = $pat !== null ? trim((string)($pat['phone'] ?? '')) : '';
         } else {
             $sale['patient_name'] = '';
+            $sale['patient_email'] = '';
+            $sale['patient_phone'] = '';
         }
 
         $itemsRepo = new SaleItemRepository($pdo);

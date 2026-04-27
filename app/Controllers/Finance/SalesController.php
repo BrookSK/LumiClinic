@@ -509,6 +509,142 @@ final class SalesController extends Controller
         }
     }
 
+    public function sendBudget(Request $request)
+    {
+        $this->authorize('finance.sales.update');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $saleId = (int)$request->input('sale_id', 0);
+        $via = trim((string)$request->input('send_via', ''));
+        if ($saleId <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/finance/sales');
+        }
+
+        $service = new SalesService($this->container);
+        $data = $service->getSale($saleId);
+        if ($data === null) {
+            return $this->redirect('/finance/sales');
+        }
+
+        $sale = $data['sale'];
+        $patientName = (string)($sale['patient_name'] ?? '');
+        $patientPhone = trim((string)($sale['patient_phone'] ?? ''));
+        $patientEmail = trim((string)($sale['patient_email'] ?? ''));
+        $total = number_format((float)($sale['total_liquido'] ?? 0), 2, ',', '.');
+
+        // Get clinic name
+        $pdo = $this->container->get(\PDO::class);
+        $clinicName = '';
+        try {
+            $stmt = $pdo->prepare("SELECT name FROM clinics WHERE id = :id LIMIT 1");
+            $stmt->execute(['id' => $clinicId]);
+            $row = $stmt->fetch();
+            $clinicName = trim((string)($row['name'] ?? ''));
+        } catch (\Throwable $e) {}
+
+        // Build print URL
+        $cfg = $this->container->has('config') ? $this->container->get('config') : [];
+        $baseUrl = is_array($cfg) && isset($cfg['app']['base_url']) ? (string)$cfg['app']['base_url'] : '';
+        if ($baseUrl === '' && isset($_SERVER['HTTP_HOST'])) {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'];
+        }
+        $printUrl = rtrim($baseUrl, '/') . '/finance/sales/print?id=' . $saleId;
+
+        // Build items summary
+        $itemsSummary = '';
+        foreach ($data['items'] as $it) {
+            $itemName = (string)($it['description'] ?? $it['service_name'] ?? '');
+            $itemTotal = number_format((float)($it['total'] ?? 0), 2, ',', '.');
+            if ($itemName !== '') {
+                $itemsSummary .= "\n• {$itemName} — R$ {$itemTotal}";
+            }
+        }
+
+        $sent = false;
+
+        if ($via === 'whatsapp' && $patientPhone !== '') {
+            try {
+                $number = preg_replace('/\D/', '', $patientPhone);
+                $msg = "Olá {$patientName}, segue seu orçamento da *{$clinicName}*:\n"
+                    . $itemsSummary . "\n\n"
+                    . "*Total: R$ {$total}*\n\n"
+                    . "Para visualizar o orçamento completo, acesse:\n{$printUrl}";
+
+                $client = new \App\Services\Whatsapp\EvolutionClient($this->container);
+                $client->sendText($number, $msg);
+                $sent = true;
+            } catch (\Throwable $e) {
+                error_log('[SalesController] WhatsApp send error: ' . $e->getMessage());
+                return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode('Falha ao enviar WhatsApp: ' . $e->getMessage()));
+            }
+        } elseif ($via === 'email' && $patientEmail !== '') {
+            try {
+                $safeName = htmlspecialchars($patientName !== '' ? $patientName : $patientEmail, ENT_QUOTES, 'UTF-8');
+                $safeClinic = htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8');
+                $safeUrl = htmlspecialchars($printUrl, ENT_QUOTES, 'UTF-8');
+
+                $itemsHtml = '';
+                foreach ($data['items'] as $it) {
+                    $iName = htmlspecialchars((string)($it['description'] ?? $it['service_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+                    $iTotal = number_format((float)($it['total'] ?? 0), 2, ',', '.');
+                    if ($iName !== '') {
+                        $itemsHtml .= '<tr><td style="padding:6px 10px;border-bottom:1px solid #eee;">' . $iName . '</td><td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600;">R$ ' . $iTotal . '</td></tr>';
+                    }
+                }
+
+                $html = '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">'
+                    . '<div style="background:linear-gradient(135deg,#fde59f,#815901);padding:20px;text-align:center;border-radius:12px 12px 0 0;">'
+                    . '<div style="font-size:18px;font-weight:800;color:#fff;">' . $safeClinic . '</div>'
+                    . '<div style="font-size:13px;color:rgba(255,255,255,.85);">Orçamento</div></div>'
+                    . '<div style="padding:24px;background:#fffdf8;border:1px solid #eee;border-top:0;border-radius:0 0 12px 12px;">'
+                    . '<p>Olá, <strong>' . $safeName . '</strong>!</p>'
+                    . '<p>Segue seu orçamento:</p>'
+                    . '<table style="width:100%;border-collapse:collapse;margin:16px 0;">'
+                    . '<thead><tr><th style="padding:8px 10px;text-align:left;border-bottom:2px solid #eeb810;font-size:12px;color:#815901;">Item</th><th style="padding:8px 10px;text-align:right;border-bottom:2px solid #eeb810;font-size:12px;color:#815901;">Valor</th></tr></thead>'
+                    . '<tbody>' . $itemsHtml . '</tbody>'
+                    . '<tfoot><tr><td style="padding:10px;font-weight:800;font-size:14px;">Total</td><td style="padding:10px;text-align:right;font-weight:800;font-size:14px;color:#815901;">R$ ' . htmlspecialchars($total, ENT_QUOTES, 'UTF-8') . '</td></tr></tfoot>'
+                    . '</table>'
+                    . '<p style="text-align:center;"><a href="' . $safeUrl . '" style="display:inline-block;background:#815901;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Ver orçamento completo</a></p>'
+                    . '</div></div>';
+
+                (new \App\Services\Mail\MailerService($this->container))->send(
+                    $patientEmail,
+                    $patientName !== '' ? $patientName : $patientEmail,
+                    'Orçamento — ' . ($clinicName !== '' ? $clinicName : 'LumiClinic'),
+                    $html
+                );
+                $sent = true;
+            } catch (\Throwable $e) {
+                error_log('[SalesController] Email send error: ' . $e->getMessage());
+                return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode('Falha ao enviar e-mail: ' . $e->getMessage()));
+            }
+        } else {
+            return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode('Paciente sem ' . ($via === 'whatsapp' ? 'telefone' : 'e-mail') . ' cadastrado.'));
+        }
+
+        if ($sent) {
+            // Update budget status to 'sent' if still draft
+            try {
+                if ((string)($sale['budget_status'] ?? '') === 'draft') {
+                    $service->setBudgetStatus($saleId, 'sent', $request->ip(), $request->header('user-agent'));
+                }
+            } catch (\Throwable $ignore) {}
+        }
+
+        return $this->redirect('/finance/sales/view?id=' . $saleId);
+    }
+
     public function generateAppointments(Request $request)
     {
         $this->authorize('finance.sales.update');

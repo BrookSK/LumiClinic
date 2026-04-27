@@ -417,6 +417,7 @@ $router->post('/finance/sales/items/remove', [SalesController::class, 'removeIte
 $router->post('/finance/sales/budget-status', [SalesController::class, 'setBudgetStatus']);
 $router->post('/finance/sales/generate-appointments', [SalesController::class, 'generateAppointments']);
 $router->post('/finance/sales/cancel', [SalesController::class, 'cancel']);
+$router->post('/finance/sales/send', [SalesController::class, 'sendBudget']);
 $router->get('/finance/sales/print', [SalesController::class, 'printBudget']);
 $router->get('/finance/sales/export.csv', [SalesController::class, 'exportCsv']);
 

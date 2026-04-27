@@ -117,6 +117,26 @@ ob_start();
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/finance/sales/print?id=<?= (int)$sale['id'] ?>" target="_blank">🖨️ Imprimir</a>
+        <?php
+        $patPhone = trim((string)($sale['patient_phone'] ?? ''));
+        $patEmail = trim((string)($sale['patient_email'] ?? ''));
+        ?>
+        <?php if ($patPhone !== ''): ?>
+        <form method="post" action="/finance/sales/send" style="margin:0;display:inline;">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+            <input type="hidden" name="send_via" value="whatsapp" />
+            <button type="submit" class="lc-btn lc-btn--secondary">📱 Enviar WhatsApp</button>
+        </form>
+        <?php endif; ?>
+        <?php if ($patEmail !== ''): ?>
+        <form method="post" action="/finance/sales/send" style="margin:0;display:inline;">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+            <input type="hidden" name="send_via" value="email" />
+            <button type="submit" class="lc-btn lc-btn--secondary">📧 Enviar E-mail</button>
+        </form>
+        <?php endif; ?>
         <?php if ($sale['patient_id'] !== null): ?>
             <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)$sale['patient_id'] ?>">Ver paciente</a>
         <?php endif; ?>
