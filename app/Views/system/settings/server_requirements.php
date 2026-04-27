@@ -17,20 +17,28 @@ foreach ($exts as $e) {
 // ffmpeg
 $ffmpegOk = false;
 $ffmpegVersion = '';
-$out = [];
-@exec('ffmpeg -version 2>&1', $out, $code);
-if ($code === 0 && isset($out[0])) {
-    $ffmpegOk = true;
-    $ffmpegVersion = trim((string)$out[0]);
+if (function_exists('exec')) {
+    $out = [];
+    @exec('ffmpeg -version 2>&1', $out, $code);
+    if ($code === 0 && isset($out[0])) {
+        $ffmpegOk = true;
+        $ffmpegVersion = trim((string)$out[0]);
+    }
 }
-$checks[] = ['name'=>'ffmpeg','version'=>$ffmpegOk ? $ffmpegVersion : 'Não instalado','ok'=>$ffmpegOk,'cmd'=>'apt install ffmpeg','note'=>'Necessário para transcrição de áudio longo (>25MB)'];
+$checks[] = ['name'=>'ffmpeg','version'=>$ffmpegOk ? $ffmpegVersion : 'Não verificável (exec desabilitado)','ok'=>$ffmpegOk,'cmd'=>'apt install ffmpeg','note'=>'Necessário para transcrição de áudio longo (>25MB). Verifique via SSH.'];
 
 // Composer
 $composerOk = false;
-$out2 = [];
-@exec('composer --version 2>&1', $out2, $code2);
-if ($code2 === 0 && isset($out2[0])) $composerOk = true;
-$checks[] = ['name'=>'Composer','version'=>$composerOk ? trim((string)($out2[0] ?? '')) : 'Não encontrado','ok'=>$composerOk,'cmd'=>'curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer','note'=>'Gerenciador de dependências PHP'];
+$composerVersion = '';
+if (function_exists('exec')) {
+    $out2 = [];
+    @exec('composer --version 2>&1', $out2, $code2);
+    if ($code2 === 0 && isset($out2[0])) {
+        $composerOk = true;
+        $composerVersion = trim((string)($out2[0] ?? ''));
+    }
+}
+$checks[] = ['name'=>'Composer','version'=>$composerOk ? $composerVersion : 'Não verificável (exec desabilitado)','ok'=>$composerOk,'cmd'=>'curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer','note'=>'Gerenciador de dependências PHP. Verifique via SSH.'];
 
 // Google API Client (opcional)
 $googleOk = class_exists('Google\\Client');
