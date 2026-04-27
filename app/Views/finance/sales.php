@@ -48,17 +48,22 @@ ob_start();
     <div>
         <div style="font-weight:800; font-size:18px;">Orçamentos</div>
         <?php if ($selectedPatient !== null): ?>
-            <div class="lc-muted" style="font-size:13px; margin-top:2px;">
-                <?= htmlspecialchars((string)($selectedPatient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                <a class="lc-muted" style="margin-left:8px; font-size:12px;" href="/finance/sales">Ver todos</a>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                <span style="font-size:14px;font-weight:600;color:rgba(31,41,55,.75);"><?= htmlspecialchars((string)($selectedPatient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                <a class="lc-muted" style="font-size:12px;" href="/finance/sales">Ver todos</a>
             </div>
         <?php endif; ?>
     </div>
-    <?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.create')): ?>
-        <button class="lc-btn lc-btn--primary" type="button" onclick="document.getElementById('newBudgetForm').style.display = document.getElementById('newBudgetForm').style.display === 'none' ? 'block' : 'none'">
-            + Novo orçamento
-        </button>
-    <?php endif; ?>
+    <div class="lc-flex lc-gap-sm lc-flex--wrap">
+        <?php if ($selectedPatient !== null): ?>
+            <a class="lc-btn lc-btn--secondary" href="/patients/view?id=<?= (int)($selectedPatient['id'] ?? 0) ?>">← Voltar ao paciente</a>
+        <?php endif; ?>
+        <?php if ((!isset($is_professional) || !$is_professional) && $can('finance.sales.create')): ?>
+            <button class="lc-btn lc-btn--primary" type="button" onclick="document.getElementById('newBudgetForm').style.display = document.getElementById('newBudgetForm').style.display === 'none' ? 'block' : 'none'">
+                + Novo orçamento
+            </button>
+        <?php endif; ?>
+    </div>
 </div>
 
 <!-- Filtros por status -->
