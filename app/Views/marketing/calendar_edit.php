@@ -251,32 +251,40 @@ ob_start();
                 </div>
             </div>
 
-            <!-- Excluir — movido para fora do form de edição -->
+            <!-- Excluir (fora do form de edição via JS) -->
+            <div class="mke-section" style="margin-top:12px;">
+                <details class="mke-delete">
+                    <summary>
+                        <span class="mke-delete__trigger">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Excluir este item
+                        </span>
+                    </summary>
+                    <div class="mke-delete__content">
+                        <div class="mke-delete__warn">Esta ação não pode ser desfeita.</div>
+                        <button type="button" class="lc-btn lc-btn--danger lc-btn--sm" onclick="submitDeleteForm()">Confirmar exclusão</button>
+                    </div>
+                </details>
+            </div>
         </div>
     </div>
 </form>
 
-<div style="padding:0 22px 22px;">
-    <details class="mke-delete">
-        <summary>
-            <span class="mke-delete__trigger">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                Excluir este item
-            </span>
-        </summary>
-        <div class="mke-delete__content">
-            <div class="mke-delete__warn">Esta ação não pode ser desfeita. O item será removido permanentemente da agenda.</div>
-            <form method="post" action="/marketing/calendar/delete">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input type="hidden" name="id" value="<?= $id ?>" />
-                <?php if ($month !== ''): ?>
-                    <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
-                <?php endif; ?>
-                <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit">Confirmar exclusão</button>
-            </form>
-        </div>
-    </details>
-</div>
+<!-- Form de exclusão separado (fora do form de edição) -->
+<form id="deleteEntryForm" method="post" action="/marketing/calendar/delete" style="display:none;">
+    <input type="hidden" name="_csrf" value="<?= htmlspecialchars((string)$csrf, ENT_QUOTES, 'UTF-8') ?>" />
+    <input type="hidden" name="id" value="<?= $id ?>" />
+    <?php if ($month !== ''): ?>
+        <input type="hidden" name="month" value="<?= htmlspecialchars($month, ENT_QUOTES, 'UTF-8') ?>" />
+    <?php endif; ?>
+</form>
+<script>
+function submitDeleteForm() {
+    if (confirm('Tem certeza que deseja excluir?')) {
+        document.getElementById('deleteEntryForm').submit();
+    }
+}
+</script>
 
 <?php else: ?>
 <!-- Somente leitura -->
