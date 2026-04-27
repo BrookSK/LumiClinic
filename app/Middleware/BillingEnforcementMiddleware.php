@@ -33,7 +33,9 @@ final class BillingEnforcementMiddleware implements MiddlewareInterface
             str_starts_with($path, '/js') ||
             str_starts_with($path, '/webhooks') ||
             str_starts_with($path, '/portal') ||
-            str_starts_with($path, '/api')
+            str_starts_with($path, '/api') ||
+            str_starts_with($path, '/pub/') ||
+            str_starts_with($path, '/doc/')
         ) {
             return $next($request);
         }

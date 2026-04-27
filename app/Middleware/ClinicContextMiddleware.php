@@ -57,6 +57,13 @@ final class ClinicContextMiddleware implements MiddlewareInterface
 
     public function handle(Request $request, callable $next): Response
     {
+        $path = $request->path();
+
+        // Rotas públicas não precisam de contexto de clínica
+        if (str_starts_with($path, '/pub/') || str_starts_with($path, '/doc/')) {
+            return $next($request);
+        }
+
         $auth = new AuthService($this->container);
 
         $sessionClinicId = $auth->clinicId();
