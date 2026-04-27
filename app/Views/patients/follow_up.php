@@ -14,6 +14,7 @@ ob_start();
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/patients">Pacientes</a>
         <a class="lc-btn lc-btn--secondary" href="/patients/birthdays">Aniversariantes</a>
+        <a class="lc-btn lc-btn--secondary" href="/patients/follow-up/export.pdf?days=<?= (int)$days ?>" target="_blank">📄 Exportar PDF</a>
     </div>
 </div>
 
