@@ -12,10 +12,15 @@ $stock_alerts = $stock_alerts ?? [];
 
 $userName = trim((string)($_SESSION['user_name'] ?? ''));
 $greeting = '';
+date_default_timezone_set('America/Sao_Paulo');
 $hour = (int)date('H');
 if ($hour < 12) { $greeting = 'Bom dia'; }
 elseif ($hour < 18) { $greeting = 'Boa tarde'; }
 else { $greeting = 'Boa noite'; }
+
+$diasSemana = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+$meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+$dataFormatada = $diasSemana[(int)date('w')] . ', ' . date('d') . ' de ' . $meses[(int)date('n')] . ' de ' . date('Y');
 
 ob_start();
 ?>
@@ -330,7 +335,7 @@ ob_start();
 <!-- Greeting -->
 <div class="dash-header">
     <div class="dash-header__greeting"><?= htmlspecialchars($greeting, ENT_QUOTES, 'UTF-8') ?><?= $userName !== '' ? ', ' . htmlspecialchars(explode(' ', $userName)[0], ENT_QUOTES, 'UTF-8') : '' ?> 👋</div>
-    <div class="dash-header__sub"><?= date('l, d \d\e F \d\e Y') ?> — Aqui está o resumo do dia.</div>
+    <div class="dash-header__sub"><?= $dataFormatada ?> — Aqui está o resumo do dia.</div>
 </div>
 
 <!-- KPI Cards -->
