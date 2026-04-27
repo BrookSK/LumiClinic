@@ -69,13 +69,15 @@ final class FollowUpReportController extends Controller
             return Response::html('Exportação em PDF indisponível. Instale a dependência dompdf/dompdf via Composer.', 501);
         }
 
+        @ini_set('memory_limit', '256M');
+
         $days = (int)$request->input('days', 180);
         if ($days < 30) { $days = 30; }
         if ($days > 730) { $days = 730; }
 
         $pdo = $this->container->get(\PDO::class);
         $repo = new PatientRepository($pdo);
-        $patients = $repo->listInactivePatients($clinicId, $days);
+        $patients = $repo->listInactivePatients($clinicId, $days, 200);
 
         // Clinic name
         $clinicName = '';
@@ -85,16 +87,6 @@ final class FollowUpReportController extends Controller
             $row = $stmt->fetch();
             $clinicName = trim((string)($row['name'] ?? ''));
         } catch (\Throwable $e) {}
-
-        // Logo
-        $logoDataUri = null;
-        $logoPath = realpath(__DIR__ . '/../../../public/icone_1.png');
-        if (is_string($logoPath) && $logoPath !== '' && is_file($logoPath)) {
-            $bin = @file_get_contents($logoPath);
-            if (is_string($bin) && $bin !== '') {
-                $logoDataUri = 'data:image/png;base64,' . base64_encode($bin);
-            }
-        }
 
         $diasSemana = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
         $meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -113,64 +105,38 @@ final class FollowUpReportController extends Controller
 
         $html = '<!doctype html><html><head><meta charset="utf-8" />'
             . '<style>'
-            . 'body{font-family:DejaVu Sans, sans-serif;font-size:11px;color:#1f2937;margin:0;padding:20px}'
-            . '.header{width:100%;margin-bottom:16px;border-bottom:2px solid #eeb810;padding-bottom:12px}'
-            . '.header td{border:0;padding:0;vertical-align:middle}'
-            . '.logo{width:42px;height:42px;object-fit:contain}'
-            . '.clinic-name{font-size:16px;font-weight:bold;color:#1f2937}'
-            . '.report-title{font-size:14px;font-weight:bold;color:#815901;margin:0 0 4px}'
-            . '.report-meta{font-size:10px;color:#6b7280}'
-            . '.stats{width:100%;border:0;margin-bottom:14px}'
-            . '.stats td{border:0;padding:8px;border-radius:6px;text-align:center;width:25%}'
-            . '.stat-value{font-size:22px;font-weight:bold;line-height:1}'
-            . '.stat-label{font-size:10px;color:#6b7280;text-transform:uppercase;margin-top:2px}'
-            . 'table.data{width:100%;border-collapse:collapse;margin-top:8px}'
-            . 'table.data th{background:#f9f5e8;color:#815901;font-size:10px;text-transform:uppercase;letter-spacing:0.3px;padding:8px 6px;text-align:left;border-bottom:2px solid #eeb810}'
-            . 'table.data td{padding:7px 6px;border-bottom:1px solid #e5e7eb;font-size:11px}'
-            . 'table.data tr:nth-child(even) td{background:#fefcf5}'
-            . '.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:bold}'
-            . '.tag-critical{background:#fef2f2;color:#dc2626}'
-            . '.tag-warning{background:#fffbeb;color:#92400e}'
-            . '.tag-info{background:#f0f9ff;color:#0369a1}'
-            . '.tag-ok{background:#f0fdf4;color:#16a34a}'
-            . '.tag-muted{background:#f3f4f6;color:#6b7280}'
-            . '.footer{margin-top:16px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;text-align:center}'
+            . 'body{font-family:DejaVu Sans,sans-serif;font-size:11px;color:#333;margin:0;padding:20px}'
+            . 'h1{font-size:16px;color:#815901;margin:0 0 2px}'
+            . '.meta{font-size:10px;color:#888;margin-bottom:14px}'
+            . 'table{width:100%;border-collapse:collapse}'
+            . 'th{background:#f9f5e8;color:#815901;font-size:10px;padding:6px;text-align:left;border-bottom:2px solid #eeb810}'
+            . 'td{padding:5px 6px;border-bottom:1px solid #ddd;font-size:11px}'
+            . '.footer{margin-top:14px;border-top:1px solid #ddd;padding-top:6px;font-size:9px;color:#aaa;text-align:center}'
             . '</style></head><body>';
 
         // Header
-        $html .= '<table class="header"><tr>';
-        if ($logoDataUri !== null) {
-            $html .= '<td style="width:50px"><img class="logo" src="' . htmlspecialchars($logoDataUri, ENT_QUOTES, 'UTF-8') . '" alt="Logo" /></td>';
-        }
-        $html .= '<td>';
+        $html .= '<h1>Relatório de Follow-up</h1>';
         if ($clinicName !== '') {
-            $html .= '<div class="clinic-name">' . htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') . '</div>';
+            $html .= '<div class="meta">' . htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') . '</div>';
         }
-        $html .= '<div class="report-title">Relatório de Follow-up</div>';
-        $html .= '<div class="report-meta">Pacientes sem retorno há mais de ' . $days . ' dias · Gerado em ' . htmlspecialchars($dataHoje, ENT_QUOTES, 'UTF-8') . ' às ' . date('H:i') . '</div>';
-        $html .= '</td>';
-        $html .= '<td style="text-align:right"><div class="report-meta">' . $totalPatients . ' paciente(s)</div></td>';
-        $html .= '</tr></table>';
+        $html .= '<div class="meta">Pacientes sem retorno há mais de ' . $days . ' dias · Gerado em ' . htmlspecialchars($dataHoje, ENT_QUOTES, 'UTF-8') . ' às ' . date('H:i') . '</div>';
 
-        // Stats
-        $html .= '<table class="stats"><tr>';
-        $html .= '<td style="background:#fffdf8;border:1px solid #eeb810"><div class="stat-value" style="color:#815901">' . $totalPatients . '</div><div class="stat-label">Total</div></td>';
-        $html .= '<td style="width:8px;background:transparent"></td>';
-        $html .= '<td style="background:#fef2f2;border:1px solid #fca5a5"><div class="stat-value" style="color:#dc2626">' . $neverCame . '</div><div class="stat-label">Nunca vieram</div></td>';
-        $html .= '<td style="width:8px;background:transparent"></td>';
-        $html .= '<td style="background:#f0fdf4;border:1px solid #86efac"><div class="stat-value" style="color:#16a34a">' . $withWa . '</div><div class="stat-label">Com WhatsApp</div></td>';
-        $html .= '<td style="width:8px;background:transparent"></td>';
-        $html .= '<td style="background:#f0f9ff;border:1px solid #93c5fd"><div class="stat-value" style="color:#2563eb">' . $withPhone . '</div><div class="stat-label">Com telefone</div></td>';
-        $html .= '</tr></table>';
+        // Summary line
+        $html .= '<div style="margin-bottom:12px;font-size:11px;">'
+            . '<strong>' . $totalPatients . '</strong> pacientes · '
+            . '<strong style="color:#dc2626">' . $neverCame . '</strong> nunca vieram · '
+            . '<strong style="color:#16a34a">' . $withWa . '</strong> com WhatsApp · '
+            . '<strong style="color:#2563eb">' . $withPhone . '</strong> com telefone'
+            . '</div>';
 
         // Data table
-        $html .= '<table class="data"><thead><tr>';
-        $html .= '<th style="width:5%">#</th>';
-        $html .= '<th style="width:30%">Paciente</th>';
-        $html .= '<th style="width:18%">Última consulta</th>';
-        $html .= '<th style="width:14%">Dias sem retorno</th>';
-        $html .= '<th style="width:20%">Telefone</th>';
-        $html .= '<th style="width:13%">WhatsApp</th>';
+        $html .= '<table><thead><tr>';
+        $html .= '<th>#</th>';
+        $html .= '<th>Paciente</th>';
+        $html .= '<th>Última consulta</th>';
+        $html .= '<th>Dias sem retorno</th>';
+        $html .= '<th>Telefone</th>';
+        $html .= '<th>WhatsApp</th>';
         $html .= '</tr></thead><tbody>';
 
         $i = 0;
@@ -183,28 +149,24 @@ final class FollowUpReportController extends Controller
 
             $lastFormatted = 'Nunca';
             $daysSince = '—';
-            $urgencyClass = 'tag-critical';
+            $color = '#dc2626';
             if ($lastAt !== '') {
                 $ts = strtotime($lastAt);
                 $lastFormatted = date('d/m/Y', $ts);
                 $diff = (int)round((time() - $ts) / 86400);
                 $daysSince = (string)$diff;
-                if ($diff > 365) { $urgencyClass = 'tag-critical'; }
-                elseif ($diff > 180) { $urgencyClass = 'tag-warning'; }
-                else { $urgencyClass = 'tag-info'; }
+                if ($diff > 365) { $color = '#dc2626'; }
+                elseif ($diff > 180) { $color = '#92400e'; }
+                else { $color = '#0369a1'; }
             }
-
-            $waLabel = $waOptIn
-                ? '<span class="tag tag-ok">Sim</span>'
-                : '<span class="tag tag-muted">Não</span>';
 
             $html .= '<tr>';
             $html .= '<td>' . $i . '</td>';
             $html .= '<td><strong>' . $name . '</strong></td>';
             $html .= '<td>' . $lastFormatted . '</td>';
-            $html .= '<td><span class="tag ' . $urgencyClass . '">' . $daysSince . ' dias</span></td>';
+            $html .= '<td style="color:' . $color . ';font-weight:bold">' . $daysSince . '</td>';
             $html .= '<td>' . $phone . '</td>';
-            $html .= '<td>' . $waLabel . '</td>';
+            $html .= '<td>' . ($waOptIn ? 'Sim' : 'Não') . '</td>';
             $html .= '</tr>';
         }
 
