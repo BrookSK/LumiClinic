@@ -483,11 +483,12 @@ $ico = [
                     $reportsActive =
                         $isActive('/finance/reports') ||
                         $isActive('/stock/reports') ||
+                        $isActive('/patients/follow-up') ||
                         $isActive('/audit-logs') ||
                         $isActiveSegment('/bi') ||
                         $isActive('/compliance');
                 ?>
-                <?php if ($hasClinicContext && ($can('finance.reports.read') || $can('stock.reports.read') || $can('audit.read') || $can('bi.read') || $can('compliance.lgpd.read') || $can('compliance.policies.read') || $can('compliance.incidents.read'))): ?>
+                <?php if ($hasClinicContext && ($can('finance.reports.read') || $can('stock.reports.read') || $can('patients.read') || $can('audit.read') || $can('bi.read') || $can('compliance.lgpd.read') || $can('compliance.policies.read') || $can('compliance.incidents.read'))): ?>
                     <details class="lc-navgroup" <?= $reportsActive ? 'open' : '' ?>>
                         <summary class="lc-nav__item lc-navgroup__summary<?= $reportsActive ? ' lc-nav__item--active' : '' ?>">
                             <span class="lc-nav__icon" aria-hidden="true"><?= $ico['dashboard'] ?></span>
@@ -503,6 +504,9 @@ $ico = [
                                 <?php endif; ?>
                                 <?php if ($can('stock.reports.read')): ?>
                                     <?= $navItem('/stock/reports', 'Estoque', $ico['stock'], $isActive('/stock/reports')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('patients.read')): ?>
+                                    <?= $navItem('/patients/follow-up', 'Follow-up', $ico['patients'], $isActive('/patients/follow-up')) ?>
                                 <?php endif; ?>
                                 <?php if ($isSuperAdmin && $can('audit.read')): ?>
                                     <?= $navItem('/audit-logs', 'Auditoria', $ico['shield'], $isActive('/audit-logs')) ?>
