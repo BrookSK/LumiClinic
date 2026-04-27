@@ -57,21 +57,12 @@ ob_start();
 
             <div class="lc-field" style="margin-top:10px;">
                 <label class="lc-label">Enviar via</label>
-                <div class="lc-flex lc-gap-sm" style="margin-top:4px;">
-                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                        <input type="radio" name="send_via" value="whatsapp" checked /> 📱 WhatsApp
-                    </label>
-                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                        <input type="radio" name="send_via" value="email" /> 📧 E-mail
-                    </label>
-                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                        <input type="radio" name="send_via" value="portal" /> 🌐 Apenas no Portal
-                    </label>
+                <input type="hidden" name="send_via" id="sendViaInput" value="whatsapp" />
+                <div class="lc-flex lc-gap-sm" style="margin-top:6px;">
+                    <button type="submit" class="lc-btn lc-btn--primary" onclick="document.getElementById('sendViaInput').value='whatsapp'">📱 Enviar via WhatsApp</button>
+                    <button type="submit" class="lc-btn lc-btn--secondary" onclick="document.getElementById('sendViaInput').value='email'">📧 Enviar via E-mail</button>
+                    <button type="submit" class="lc-btn lc-btn--secondary" onclick="document.getElementById('sendViaInput').value='portal'">🌐 Disponibilizar no Portal</button>
                 </div>
-            </div>
-
-            <div style="margin-top:12px;">
-                <button class="lc-btn lc-btn--primary" type="submit">Enviar para assinatura</button>
             </div>
         </form>
     </div>
