@@ -65,6 +65,8 @@ final class BudgetViewController extends Controller
             $patient = $pStmt->fetch() ?: null;
         }
         $sale['patient_name'] = $patient ? (string)($patient['name'] ?? '') : '';
+        $sale['patient_email'] = $patient ? trim((string)($patient['email'] ?? '')) : '';
+        $sale['patient_phone'] = $patient ? trim((string)($patient['phone'] ?? '')) : '';
 
         // Clinic
         $cStmt = $pdo->prepare("SELECT * FROM clinics WHERE id = :id LIMIT 1");
@@ -91,7 +93,15 @@ final class BudgetViewController extends Controller
         $proStmt->execute(['c' => $clinicId]);
         $professionals = $proStmt->fetchAll();
 
-        return $this->view('finance/sale_print', [
+        // Render the view directly (sale_print is a standalone HTML page, no layout needed)
+        $sale_data = $sale;
+        $items_data = $items;
+        $payments_data = $payments;
+        $services_data = $services;
+        $professionals_data = $professionals;
+
+        // Extract variables for the view
+        $viewVars = [
             'sale' => $sale,
             'items' => $items,
             'payments' => $payments,
@@ -101,6 +111,13 @@ final class BudgetViewController extends Controller
             'professionals' => $professionals,
             'clinic' => $clinic,
             'patient' => $patient,
-        ]);
+        ];
+        extract($viewVars);
+
+        ob_start();
+        require dirname(__DIR__, 2) . '/Views/finance/sale_print.php';
+        $html = (string)ob_get_clean();
+
+        return Response::html($html);
     }
 }
