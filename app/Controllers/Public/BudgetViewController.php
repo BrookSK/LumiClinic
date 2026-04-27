@@ -115,7 +115,12 @@ final class BudgetViewController extends Controller
         extract($viewVars);
 
         ob_start();
-        require dirname(__DIR__, 2) . '/Views/finance/sale_print.php';
+        try {
+            require dirname(__DIR__, 2) . '/Views/finance/sale_print.php';
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            return Response::html('<pre>Erro: ' . htmlspecialchars($e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine(), ENT_QUOTES, 'UTF-8') . '</pre>', 500);
+        }
         $html = (string)ob_get_clean();
 
         return Response::html($html);
