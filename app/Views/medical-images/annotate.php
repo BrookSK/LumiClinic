@@ -145,8 +145,19 @@ if(img.complete&&img.naturalWidth)boot(); else img.addEventListener('load',boot)
 var tool='rect',color='#e11d48',drawing=false,sp=null,preview=null,fp=[];
 var TOOLS=['rect','circle','arrow','straightline','freehand','dot','text','measure'];
 
-function norm(e){var r=img.getBoundingClientRect();return{x:Math.round(Math.max(0,Math.min(VW,((e.clientX-r.left)/r.width)*VW))),y:Math.round(Math.max(0,Math.min(VH,((e.clientY-r.top)/r.height)*VH)))};}
-function S(t){return document.createElementNS('http://www.w3.org/2000/svg',t);}
+function norm(e){
+    var r=img.getBoundingClientRect();
+    /* object-fit:contain pode criar barras — calcular a área real da imagem renderizada */
+    var natW=img.naturalWidth||1,natH=img.naturalHeight||1;
+    var scale=Math.min(r.width/natW,r.height/natH);
+    var rendW=natW*scale,rendH=natH*scale;
+    var offX=(r.width-rendW)/2,offY=(r.height-rendH)/2;
+    var mx=e.clientX-r.left-offX,my=e.clientY-r.top-offY;
+    return{
+        x:Math.round(Math.max(0,Math.min(VW,(mx/rendW)*VW))),
+        y:Math.round(Math.max(0,Math.min(VH,(my/rendH)*VH)))
+    };
+}function S(t){return document.createElementNS('http://www.w3.org/2000/svg',t);}
 /* scale-aware sizes */
 function sw(){return Math.max(2,Math.round(Math.min(VW,VH)*0.004));}
 function fz(){return Math.max(12,Math.round(Math.min(VW,VH)*0.022));}

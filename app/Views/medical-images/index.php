@@ -25,6 +25,15 @@ $kindLabel = ['photo' => 'Foto', 'exam' => 'Exame', 'progress' => 'Acompanhament
 ob_start();
 ?>
 
+<?php
+$uploadError = trim((string)($_GET['error'] ?? ''));
+if ($uploadError !== ''):
+?>
+<div style="padding:12px 16px;border-radius:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);margin-bottom:14px;font-size:13px;color:#dc2626;font-weight:600;">
+    ⚠ Erro no upload: <?= htmlspecialchars($uploadError, ENT_QUOTES, 'UTF-8') ?>
+</div>
+<?php endif; ?>
+
 <!-- Cabeçalho -->
 <div class="lc-flex lc-flex--between lc-flex--center lc-flex--wrap" style="margin-bottom:16px; gap:10px;">
     <div>

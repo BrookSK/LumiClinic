@@ -82,15 +82,20 @@ final class MedicalImageController extends Controller
         }
 
         $service = new MedicalImageService($this->container);
-        $service->upload($patientId, [
-            'kind' => $kind,
-            'taken_at' => ($takenAt === '' ? null : $takenAt),
-            'procedure_type' => ($procedureType === '' ? null : $procedureType),
-            'session_number' => ($sessionNumber > 0 ? $sessionNumber : null),
-            'pose' => ($pose === '' ? null : $pose),
-            'professional_id' => ($professionalId > 0 ? $professionalId : null),
-            'medical_record_id' => ($medicalRecordId > 0 ? $medicalRecordId : null),
-        ], $file, $request->ip(), $request->header('user-agent'));
+        try {
+            $service->upload($patientId, [
+                'kind' => $kind,
+                'taken_at' => ($takenAt === '' ? null : $takenAt),
+                'procedure_type' => ($procedureType === '' ? null : $procedureType),
+                'session_number' => ($sessionNumber > 0 ? $sessionNumber : null),
+                'pose' => ($pose === '' ? null : $pose),
+                'professional_id' => ($professionalId > 0 ? $professionalId : null),
+                'medical_record_id' => ($medicalRecordId > 0 ? $medicalRecordId : null),
+            ], $file, $request->ip(), $request->header('user-agent'));
+        } catch (\Throwable $e) {
+            error_log('[MedicalImages] Upload error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return $this->redirect('/medical-images?patient_id=' . $patientId . '&error=' . urlencode($e->getMessage()));
+        }
 
         return $this->redirect('/medical-images?patient_id=' . $patientId);
     }
