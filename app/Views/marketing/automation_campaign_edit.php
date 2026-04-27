@@ -197,7 +197,7 @@ ob_start();
                 </select>
             </div>
             <div style="font-size:11px;color:rgba(31,41,55,.45);margin-top:6px;line-height:1.5;">
-                O template define o texto da mensagem. Variáveis disponíveis: <code>{patient_name}</code> (nome do paciente) e <code>{click_url}</code> (link rastreável).
+                O template define o texto da mensagem. Variáveis disponíveis: <code>{nome_paciente}</code> (nome do paciente) e <code>{link}</code> (link rastreável).
                 <br>Gerencie seus templates em <a href="/whatsapp-templates" style="color:rgba(129,89,1,1);font-weight:600;">Configurações → WhatsApp (templates)</a>.
             </div>
         </div>
@@ -213,7 +213,7 @@ ob_start();
                 <textarea class="lc-input" name="email_body" rows="5" placeholder="Escreva o conteúdo..."><?= htmlspecialchars($emailBody, ENT_QUOTES, 'UTF-8') ?></textarea>
             </div>
             <div style="font-size:11px;color:rgba(31,41,55,.45);margin-top:6px;">
-                Variáveis: <code>{patient_name}</code> e <code>{click_url}</code>
+                Variáveis: <code>{nome_paciente}</code> e <code>{link}</code>
             </div>
         </div>
     </div>

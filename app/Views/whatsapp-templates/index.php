@@ -32,7 +32,7 @@ ob_start();
 </div>
 
 <div style="padding:14px 16px;border-radius:12px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.12);font-size:13px;color:rgba(31,41,55,.70);line-height:1.5;margin-bottom:16px;">
-    Templates definem o texto das mensagens automáticas. Use variáveis como <code>{patient_name}</code>, <code>{date}</code>, <code>{time}</code> e <code>{clinic_name}</code> para personalizar.
+    Templates definem o texto das mensagens automáticas. Use variáveis como <code>{nome_paciente}</code>, <code>{data}</code>, <code>{horario}</code> e <code>{nome_clinica}</code> para personalizar.
 </div>
 
 <?php if ($templates === []): ?>

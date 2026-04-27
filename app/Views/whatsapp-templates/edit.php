@@ -86,23 +86,23 @@ ob_start();
         <div style="font-weight:750;font-size:13px;color:rgba(31,41,55,.55);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Variáveis disponíveis</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="padding:8px 10px;border-radius:8px;border:1px solid rgba(17,24,39,.06);background:rgba(0,0,0,.01);">
-                <code style="font-weight:700;font-size:12px;">{patient_name}</code>
+                <code style="font-weight:700;font-size:12px;">{nome_paciente}</code>
                 <div style="font-size:11px;color:rgba(31,41,55,.45);margin-top:2px;">Nome do paciente</div>
             </div>
             <div style="padding:8px 10px;border-radius:8px;border:1px solid rgba(17,24,39,.06);background:rgba(0,0,0,.01);">
-                <code style="font-weight:700;font-size:12px;">{date}</code>
+                <code style="font-weight:700;font-size:12px;">{data}</code>
                 <div style="font-size:11px;color:rgba(31,41,55,.45);margin-top:2px;">Data da consulta</div>
             </div>
             <div style="padding:8px 10px;border-radius:8px;border:1px solid rgba(17,24,39,.06);background:rgba(0,0,0,.01);">
-                <code style="font-weight:700;font-size:12px;">{time}</code>
+                <code style="font-weight:700;font-size:12px;">{horario}</code>
                 <div style="font-size:11px;color:rgba(31,41,55,.45);margin-top:2px;">Horário da consulta</div>
             </div>
             <div style="padding:8px 10px;border-radius:8px;border:1px solid rgba(17,24,39,.06);background:rgba(0,0,0,.01);">
-                <code style="font-weight:700;font-size:12px;">{clinic_name}</code>
+                <code style="font-weight:700;font-size:12px;">{nome_clinica}</code>
                 <div style="font-size:11px;color:rgba(31,41,55,.45);margin-top:2px;">Nome da clínica</div>
             </div>
             <div style="padding:8px 10px;border-radius:8px;border:1px solid rgba(17,24,39,.06);background:rgba(0,0,0,.01);">
-                <code style="font-weight:700;font-size:12px;">{click_url}</code>
+                <code style="font-weight:700;font-size:12px;">{link}</code>
                 <div style="font-size:11px;color:rgba(31,41,55,.45);margin-top:2px;">Link rastreável (campanhas)</div>
             </div>
         </div>

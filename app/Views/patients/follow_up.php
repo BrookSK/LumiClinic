@@ -53,7 +53,7 @@ ob_start();
             <button type="button" class="lc-btn lc-btn--primary" id="btnSendAll">Enviar para todos com WhatsApp</button>
         </div>
         <div class="lc-muted" style="margin-top:6px; font-size:12px;">
-            Variáveis disponíveis nos templates: <code>{patient_name}</code>, <code>{clinic_name}</code>
+            Variáveis disponíveis nos templates: <code>{nome_paciente}</code>, <code>{nome_clinica}</code>
         </div>
         <div id="batchResult" style="margin-top:10px;"></div>
     </div>

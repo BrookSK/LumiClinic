@@ -48,9 +48,9 @@ ob_start();
 
         <div class="lc-field">
             <label class="lc-label">Mensagem</label>
-            <textarea class="lc-input" name="body" rows="6" required placeholder="Olá {patient_name}, lembramos que sua consulta está marcada para {date} às {time}. Clínica {clinic_name}."><?= htmlspecialchars((string)($template['body'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+            <textarea class="lc-input" name="body" rows="6" required placeholder="Olá {nome_paciente}, lembramos que sua consulta está marcada para {data} às {horario}. Clínica {nome_clinica}."><?= htmlspecialchars((string)($template['body'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
             <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">
-                Variáveis: <code>{patient_name}</code> <code>{date}</code> <code>{time}</code> <code>{clinic_name}</code> <code>{click_url}</code>
+                Variáveis: <code>{nome_paciente}</code> <code>{data}</code> <code>{horario}</code> <code>{nome_clinica}</code> <code>{link}</code>
             </div>
         </div>
 
