@@ -69,6 +69,7 @@ ob_start();
         <?php endif; ?>
         <?php if ($can('patients.read')): ?>
             <a class="lc-btn lc-btn--secondary" href="/patients/documents?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Documentos</a>
+            <a class="lc-btn lc-btn--secondary" href="/patients/document-sign?patient_id=<?= (int)($patient['id'] ?? 0) ?>">✍ Enviar p/ Assinatura</a>
         <?php endif; ?>
         <?php if ($can('consent_terms.accept')): ?>
             <a class="lc-btn lc-btn--secondary" href="/consent?patient_id=<?= (int)($patient['id'] ?? 0) ?>">Termos</a>

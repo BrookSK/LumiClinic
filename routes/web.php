@@ -543,6 +543,12 @@ $router->post('/patients/documents/upload', [\App\Controllers\Patients\PatientDo
 $router->get('/patients/documents/file', [\App\Controllers\Patients\PatientDocumentsController::class, 'file']);
 $router->post('/patients/documents/delete', [\App\Controllers\Patients\PatientDocumentsController::class, 'delete']);
 
+$router->get('/patients/document-sign', [\App\Controllers\Patients\PatientDocumentSignController::class, 'index']);
+$router->post('/patients/document-sign/create', [\App\Controllers\Patients\PatientDocumentSignController::class, 'create']);
+
+$router->get('/doc/sign', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicSign']);
+$router->post('/doc/sign/submit', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicSignSubmit']);
+
 $router->get('/patients/timeline', [\App\Controllers\Patients\PatientTimelineController::class, 'index']);
 $router->get('/patients/timeline/export.csv', [\App\Controllers\Patients\PatientTimelineController::class, 'exportCsv']);
 
