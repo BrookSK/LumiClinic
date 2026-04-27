@@ -118,7 +118,10 @@ final class MedicalRecordAudioService
         $ext = $allowed[$mime];
         $token = bin2hex(random_bytes(16));
         $relative = 'medical_record_audio/patient_' . $patientId . '/' . date('Ymd') . '_' . $token . '.' . $ext;
-        PrivateStorage::put($clinicId, $relative, $bytes);
+        $stored = PrivateStorage::put($clinicId, $relative, $bytes);
+        if ($stored === false) {
+            throw new \RuntimeException('Falha ao salvar arquivo de áudio. Verifique as permissões da pasta storage/.');
+        }
 
         $size = isset($file['size']) ? (int)$file['size'] : null;
 

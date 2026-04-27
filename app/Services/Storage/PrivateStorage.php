@@ -11,46 +11,50 @@ final class PrivateStorage
         return dirname(__DIR__, 3) . '/storage/private';
     }
 
-    /**
-     * Garante que o diretório base storage/private existe.
-     */
-    private static function ensureStorageBase(): void
+    private static function ensureDir(string $dir): bool
     {
-        $base = self::storageBase();
-        if (!is_dir($base)) {
-            @mkdir($base, 0775, true);
+        if (is_dir($dir)) {
+            return true;
         }
+
+        if (@mkdir($dir, 0775, true)) {
+            return true;
+        }
+
+        // mkdir pode falhar mas outro processo criou ao mesmo tempo
+        if (is_dir($dir)) {
+            return true;
+        }
+
+        error_log('[PrivateStorage] Não foi possível criar: ' . $dir
+            . ' — execute no servidor: sudo chown -R www-data:www-data '
+            . self::storageBase() . ' && sudo chmod -R 775 ' . self::storageBase());
+
+        return false;
     }
 
     public static function clinicBasePath(int $clinicId): string
     {
-        self::ensureStorageBase();
-
         $base = self::storageBase() . '/clinic_' . $clinicId;
-        if (!is_dir($base)) {
-            if (!@mkdir($base, 0775, true) && !is_dir($base)) {
-                error_log('[PrivateStorage] Falha ao criar diretório: ' . $base
-                    . ' — verifique as permissões da pasta storage/');
-            }
-        }
+        self::ensureDir($base);
         return $base;
     }
 
-    public static function put(int $clinicId, string $relativePath, string $bytes): string
+    public static function put(int $clinicId, string $relativePath, string $bytes): string|false
     {
         $base = self::clinicBasePath($clinicId);
         $relativePath = ltrim($relativePath, '/');
         $full = $base . '/' . $relativePath;
 
         $dir = dirname($full);
-        if (!is_dir($dir)) {
-            if (!@mkdir($dir, 0775, true) && !is_dir($dir)) {
-                error_log('[PrivateStorage] Falha ao criar diretório: ' . $dir
-                    . ' — verifique as permissões da pasta storage/');
-            }
+        if (!self::ensureDir($dir)) {
+            return false;
         }
 
-        file_put_contents($full, $bytes);
+        if (@file_put_contents($full, $bytes) === false) {
+            error_log('[PrivateStorage] Falha ao gravar arquivo: ' . $full);
+            return false;
+        }
 
         return $full;
     }
