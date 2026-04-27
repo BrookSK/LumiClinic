@@ -219,6 +219,8 @@ $router->post('/private/tutorial/clinic', [PrivateTutorialController::class, 'cl
 $router->get('/tutorial/api-tokens/paciente', [ApiTokensTutorialController::class, 'patient']);
 
 $router->get('/tutorial/sistema', [SystemTutorialController::class, 'index']);
+$router->get('/tutorial/guia-completo', [\App\Controllers\Tutorial\UserGuideController::class, 'index']);
+$router->get('/tutorial/guia-completo/export.pdf', [\App\Controllers\Tutorial\UserGuideController::class, 'exportPdf']);
 $router->get('/tutorial/sistema/configuracao-inicial', [SystemTutorialController::class, 'onboarding']);
 $router->get('/tutorial/sistema/primeiros-passos', [SystemTutorialController::class, 'primeirosPassos']);
 $router->get('/tutorial/sistema/dashboard', [SystemTutorialController::class, 'dashboard']);

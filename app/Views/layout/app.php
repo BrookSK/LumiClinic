@@ -533,7 +533,8 @@ $ico = [
                     <?= $configNav ?>
                 <?php endif; ?>
 
-                <?= $navItem('/tutorial/sistema', 'Ajuda', $ico['help'], $isActive('/tutorial/sistema') && !$isActive('/tutorial/sistema/configuracao-inicial')) ?>
+                <?= $navItem('/tutorial/sistema', 'Ajuda', $ico['help'], $isActive('/tutorial/sistema') && !$isActive('/tutorial/sistema/configuracao-inicial') && !$isActive('/tutorial/guia-completo')) ?>
+                <?= $navItem('/tutorial/guia-completo', 'Guia Completo', $ico['help'], $isActive('/tutorial/guia-completo')) ?>
                 <?= $navItem('/tutorial/sistema/configuracao-inicial', 'Configuração inicial', $ico['help'], $isActive('/tutorial/sistema/configuracao-inicial')) ?>
             <?php endif; ?>
         </nav>
