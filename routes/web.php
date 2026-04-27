@@ -203,6 +203,8 @@ $router->get('/ai/anomalies', [AiController::class, 'anomalies']);
 
 $router->get('/reports/metrics.csv', [ReportsController::class, 'metricsCsv']);
 $router->get('/reports/performance.csv', [ReportsController::class, 'performanceCsv']);
+$router->get('/reports/follow-up', [\App\Controllers\Reports\FollowUpReportController::class, 'index']);
+$router->get('/reports/follow-up/export.pdf', [\App\Controllers\Reports\FollowUpReportController::class, 'exportPdf']);
 
 $router->get('/m/click', [MarketingAutomationController::class, 'click']);
 $router->post('/webhooks/marketing/whatsapp', [MarketingAutomationController::class, 'whatsappWebhook']);

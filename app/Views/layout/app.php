@@ -483,7 +483,7 @@ $ico = [
                     $reportsActive =
                         $isActive('/finance/reports') ||
                         $isActive('/stock/reports') ||
-                        $isActive('/patients/follow-up') ||
+                        $isActive('/reports/follow-up') ||
                         $isActive('/audit-logs') ||
                         $isActiveSegment('/bi') ||
                         $isActive('/compliance');
@@ -506,7 +506,7 @@ $ico = [
                                     <?= $navItem('/stock/reports', 'Estoque', $ico['stock'], $isActive('/stock/reports')) ?>
                                 <?php endif; ?>
                                 <?php if ($can('patients.read')): ?>
-                                    <?= $navItem('/patients/follow-up', 'Follow-up', $ico['patients'], $isActive('/patients/follow-up')) ?>
+                                    <?= $navItem('/reports/follow-up', 'Follow-up', $ico['patients'], $isActive('/reports/follow-up')) ?>
                                 <?php endif; ?>
                                 <?php if ($isSuperAdmin && $can('audit.read')): ?>
                                     <?= $navItem('/audit-logs', 'Auditoria', $ico['shield'], $isActive('/audit-logs')) ?>
