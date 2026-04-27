@@ -6,11 +6,32 @@ namespace App\Services\Storage;
 
 final class PrivateStorage
 {
+    private static function storageBase(): string
+    {
+        return dirname(__DIR__, 3) . '/storage/private';
+    }
+
+    /**
+     * Garante que o diretório base storage/private existe.
+     */
+    private static function ensureStorageBase(): void
+    {
+        $base = self::storageBase();
+        if (!is_dir($base)) {
+            @mkdir($base, 0775, true);
+        }
+    }
+
     public static function clinicBasePath(int $clinicId): string
     {
-        $base = dirname(__DIR__, 3) . '/storage/private/clinic_' . $clinicId;
+        self::ensureStorageBase();
+
+        $base = self::storageBase() . '/clinic_' . $clinicId;
         if (!is_dir($base)) {
-            mkdir($base, 0775, true);
+            if (!@mkdir($base, 0775, true) && !is_dir($base)) {
+                error_log('[PrivateStorage] Falha ao criar diretório: ' . $base
+                    . ' — verifique as permissões da pasta storage/');
+            }
         }
         return $base;
     }
@@ -23,7 +44,10 @@ final class PrivateStorage
 
         $dir = dirname($full);
         if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
+            if (!@mkdir($dir, 0775, true) && !is_dir($dir)) {
+                error_log('[PrivateStorage] Falha ao criar diretório: ' . $dir
+                    . ' — verifique as permissões da pasta storage/');
+            }
         }
 
         file_put_contents($full, $bytes);
