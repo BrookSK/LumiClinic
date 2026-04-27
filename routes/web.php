@@ -550,6 +550,8 @@ $router->post('/patients/document-sign/create', [\App\Controllers\Patients\Patie
 $router->get('/doc/sign', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicSign']);
 $router->post('/doc/sign/submit', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicSignSubmit']);
 
+$router->get('/pub/budget', [\App\Controllers\Public\BudgetViewController::class, 'show']);
+
 $router->get('/patients/timeline', [\App\Controllers\Patients\PatientTimelineController::class, 'index']);
 $router->get('/patients/timeline/export.csv', [\App\Controllers\Patients\PatientTimelineController::class, 'exportCsv']);
 

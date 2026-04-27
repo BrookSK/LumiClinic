@@ -552,14 +552,8 @@ final class SalesController extends Controller
             $clinicName = trim((string)($row['name'] ?? ''));
         } catch (\Throwable $e) {}
 
-        // Build print URL
-        $cfg = $this->container->has('config') ? $this->container->get('config') : [];
-        $baseUrl = is_array($cfg) && isset($cfg['app']['base_url']) ? (string)$cfg['app']['base_url'] : '';
-        if ($baseUrl === '' && isset($_SERVER['HTTP_HOST'])) {
-            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'];
-        }
-        $printUrl = rtrim($baseUrl, '/') . '/finance/sales/print?id=' . $saleId;
+        // Build public URL for patient
+        $printUrl = \App\Controllers\Public\BudgetViewController::buildPublicUrl($saleId);
 
         // Build items summary
         $itemsSummary = '';
