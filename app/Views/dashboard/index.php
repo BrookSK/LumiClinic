@@ -12,7 +12,6 @@ $stock_alerts = $stock_alerts ?? [];
 
 $userName = trim((string)($_SESSION['user_name'] ?? ''));
 $greeting = '';
-date_default_timezone_set('America/Sao_Paulo');
 $hour = (int)date('H');
 if ($hour < 12) { $greeting = 'Bom dia'; }
 elseif ($hour < 18) { $greeting = 'Boa tarde'; }
