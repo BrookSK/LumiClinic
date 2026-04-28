@@ -124,6 +124,38 @@ ob_start();
     </form>
 </div>
 
+<!-- Materiais usados neste prontuário -->
+<?php
+$linkedMaterials = $linked_materials ?? [];
+if (!empty($linkedMaterials)):
+?>
+<div class="lc-card" style="margin-top:16px;">
+    <div class="lc-card__header" style="font-weight:700;font-size:13px;">📦 Materiais usados neste prontuário</div>
+    <div class="lc-card__body" style="padding:0;">
+        <table class="lc-table" style="margin:0;">
+            <thead>
+            <tr>
+                <th>Material</th>
+                <th>Quantidade</th>
+                <th>Lote</th>
+                <th>Descrição</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($linkedMaterials as $lm): ?>
+            <tr>
+                <td style="font-weight:600;"><?= htmlspecialchars((string)($lm['material_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?> <span class="lc-muted" style="font-size:11px;">(<?= htmlspecialchars((string)($lm['material_unit'] ?? ''), ENT_QUOTES, 'UTF-8') ?>)</span></td>
+                <td><?= number_format((float)($lm['quantity'] ?? 0), 3, ',', '.') ?></td>
+                <td><?= htmlspecialchars(trim((string)($lm['lote'] ?? '')) !== '' ? (string)$lm['lote'] : '—', ENT_QUOTES, 'UTF-8') ?></td>
+                <td><?= htmlspecialchars(trim((string)($lm['description'] ?? '')) !== '' ? (string)$lm['description'] : '—', ENT_QUOTES, 'UTF-8') ?></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Imagens vinculadas a este prontuário -->
 <?php
 $linkedImages = $linked_images ?? [];

@@ -328,6 +328,16 @@ final class MedicalRecordController extends Controller
             }
         } catch (\Throwable $e) {}
 
+        // Linked materials
+        $linkedMaterials = [];
+        try {
+            if ($clinicId !== null) {
+                $stmt2 = $pdo->prepare("SELECT mrm.*, m.name AS material_name, m.unit AS material_unit FROM medical_record_materials mrm JOIN materials m ON m.id = mrm.material_id WHERE mrm.clinic_id = :c AND mrm.medical_record_id = :mr ORDER BY mrm.id");
+                $stmt2->execute(['c' => $clinicId, 'mr' => $id]);
+                $linkedMaterials = $stmt2->fetchAll();
+            }
+        } catch (\Throwable $e) {}
+
         return $this->view('medical-records/edit', [
             'patient' => $data['patient'],
             'record' => $data['record'],
@@ -338,6 +348,7 @@ final class MedicalRecordController extends Controller
             'image_pairs' => $summary['image_pairs'] ?? [],
             'professionals' => $service->listProfessionals(),
             'linked_images' => $linkedImages,
+            'linked_materials' => $linkedMaterials,
         ]);
     }
 
