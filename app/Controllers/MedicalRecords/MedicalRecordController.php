@@ -204,7 +204,6 @@ final class MedicalRecordController extends Controller
                 $clinicId = $auth->clinicId();
                 $userId = $auth->userId();
                 $pdo = $this->container->get(\PDO::class);
-                $stockService = new \App\Services\Stock\StockService($this->container);
 
                 foreach ($materialIds as $idx => $matId) {
                     $matId = (int)$matId;
@@ -215,11 +214,11 @@ final class MedicalRecordController extends Controller
 
                     try {
                         // Verificar estoque disponível
-                        $mat = (new \App\Repositories\MaterialRepository($pdo))->findById((int)$clinicId, $matId);
+                        $matRepo = new \App\Repositories\MaterialRepository($pdo);
+                        $mat = $matRepo->findById((int)$clinicId, $matId);
                         if ($mat === null) continue;
                         $currentStock = (float)($mat['stock_current'] ?? 0);
                         if ($currentStock < $qty) {
-                            // Não permitir estoque negativo — pular este material
                             error_log('[MedicalRecord] Estoque insuficiente para material #' . $matId . ': disponível=' . $currentStock . ', solicitado=' . $qty);
                             continue;
                         }
@@ -228,16 +227,26 @@ final class MedicalRecordController extends Controller
                         $pdo->prepare("INSERT INTO medical_record_materials (clinic_id, medical_record_id, material_id, quantity, lote, description, created_at) VALUES (:c, :mr, :m, :q, :l, :d, NOW())")
                             ->execute(['c' => $clinicId, 'mr' => $id, 'm' => $matId, 'q' => $qty, 'l' => $lote !== '' ? $lote : null, 'd' => $desc !== '' ? $desc : null]);
 
-                        // Dar baixa no estoque
-                        $stockService->createMovement(
+                        // Dar baixa no estoque — atualizar saldo e criar movimentação
+                        $newStock = $currentStock - $qty;
+                        $unitCost = (float)($mat['unit_cost'] ?? 0);
+                        $totalCost = round($unitCost * $qty, 2);
+
+                        $matRepo->updateStockCurrent((int)$clinicId, $matId, number_format($newStock, 3, '.', ''));
+
+                        $moveRepo = new \App\Repositories\StockMovementRepository($pdo);
+                        $moveRepo->create(
+                            (int)$clinicId,
                             $matId,
                             'exit',
                             number_format($qty, 3, '.', ''),
-                            null,
-                            'Uso em prontuário #' . $id . ($desc !== '' ? ' — ' . $desc : '') . ($lote !== '' ? ' (Lote: ' . $lote . ')' : ''),
                             'medical_record',
                             $id,
-                            $request->ip()
+                            null,
+                            number_format($unitCost, 2, '.', ''),
+                            number_format($totalCost, 2, '.', ''),
+                            'Uso em prontuário #' . $id . ($desc !== '' ? ' — ' . $desc : '') . ($lote !== '' ? ' (Lote: ' . $lote . ')' : ''),
+                            $userId
                         );
                     } catch (\Throwable $e) {
                         error_log('[MedicalRecord] Material/stock error: ' . $e->getMessage());
