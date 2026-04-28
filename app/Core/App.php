@@ -57,6 +57,8 @@ final class App
                 ]
             );
 
+            $pdo->exec("SET time_zone = '-03:00'");
+
             return $pdo;
         });
 

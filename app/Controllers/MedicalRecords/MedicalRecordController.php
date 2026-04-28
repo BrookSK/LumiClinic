@@ -199,10 +199,6 @@ final class MedicalRecordController extends Controller
             $materialQtys = $_POST['material_qty'] ?? [];
             $materialLotes = $_POST['material_lote'] ?? [];
             $materialDescs = $_POST['material_desc'] ?? [];
-        // Debug: contar materiais recebidos
-        $matCount = is_array($materialIds) ? count(array_filter($materialIds, fn($v) => (int)$v > 0)) : 0;
-        $savedMats = 0;
-
         if (is_array($materialIds)) {
                 $auth = new AuthService($this->container);
                 $clinicId = $auth->clinicId();
@@ -252,7 +248,6 @@ final class MedicalRecordController extends Controller
                             'Uso em prontuário #' . $id . ($desc !== '' ? ' — ' . $desc : '') . ($lote !== '' ? ' (Lote: ' . $lote . ')' : ''),
                             $userId
                         );
-                        $savedMats++;
                     } catch (\Throwable $e) {
                         error_log('[MedicalRecord] Material/stock error: ' . $e->getMessage());
                     }
@@ -298,7 +293,7 @@ final class MedicalRecordController extends Controller
             ]);
         }
 
-        return $this->redirect('/medical-records/edit?patient_id=' . $patientId . '&id=' . $id . '&_mat_debug=' . $matCount . '_received_' . $savedMats . '_saved');
+        return $this->redirect('/medical-records/edit?patient_id=' . $patientId . '&id=' . $id);
     }    public function edit(Request $request)
     {
         $this->authorize('medical_records.update');
