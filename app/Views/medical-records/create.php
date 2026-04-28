@@ -146,11 +146,11 @@ ob_start();
             <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="addMaterialRow()" style="margin-top:8px;">+ Adicionar material</button>
         </div>
 
-        <!-- Anexar imagem -->
+        <!-- Anexar imagens -->
         <div style="margin-top:14px;padding:16px;border-radius:12px;border:1px solid rgba(16,185,129,.15);background:rgba(16,185,129,.02);">
-            <div style="font-weight:700;font-size:14px;color:rgba(16,185,129,.8);margin-bottom:10px;">📷 Anexar imagem ao prontuário</div>
-            <input type="file" name="record_image" accept="image/*,.pdf" class="lc-input" />
-            <div class="lc-muted" style="font-size:11px;margin-top:4px;">A imagem será vinculada a este prontuário e aparecerá nas imagens clínicas do paciente.</div>
+            <div style="font-weight:700;font-size:14px;color:rgba(16,185,129,.8);margin-bottom:4px;">📷 Anexar imagens ao prontuário</div>
+            <div style="font-size:12px;color:rgba(31,41,55,.50);margin-bottom:10px;">As imagens serão vinculadas a este prontuário e aparecerão nas imagens clínicas do paciente. Você pode selecionar várias de uma vez.</div>
+            <input type="file" name="record_images[]" accept="image/*,.pdf" class="lc-input" multiple />
         </div>
 
         <!-- Notas -->

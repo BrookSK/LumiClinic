@@ -245,18 +245,29 @@ final class MedicalRecordController extends Controller
                 }
             }
 
-            // Upload de imagem vinculada ao prontuário
-            $imageFile = $_FILES['record_image'] ?? null;
-            if (is_array($imageFile) && ($imageFile['error'] ?? 4) === UPLOAD_ERR_OK && ($imageFile['size'] ?? 0) > 0) {
-                try {
-                    $imgService = new \App\Services\MedicalImages\MedicalImageService($this->container);
-                    $imgService->upload($patientId, [
-                        'kind' => 'photo',
-                        'medical_record_id' => $id,
-                        'professional_id' => ($professionalId > 0 ? $professionalId : null),
-                    ], $imageFile, $request->ip(), $request->header('user-agent'));
-                } catch (\Throwable $e) {
-                    error_log('[MedicalRecord] Image upload error: ' . $e->getMessage());
+            // Upload de imagens vinculadas ao prontuário
+            $imageFiles = $_FILES['record_images'] ?? null;
+            if (is_array($imageFiles) && isset($imageFiles['name']) && is_array($imageFiles['name'])) {
+                $imgService = new \App\Services\MedicalImages\MedicalImageService($this->container);
+                for ($fi = 0; $fi < count($imageFiles['name']); $fi++) {
+                    if (($imageFiles['error'][$fi] ?? 4) !== UPLOAD_ERR_OK) continue;
+                    if (($imageFiles['size'][$fi] ?? 0) <= 0) continue;
+                    $singleFile = [
+                        'name' => $imageFiles['name'][$fi],
+                        'type' => $imageFiles['type'][$fi] ?? '',
+                        'tmp_name' => $imageFiles['tmp_name'][$fi] ?? '',
+                        'error' => $imageFiles['error'][$fi] ?? 0,
+                        'size' => $imageFiles['size'][$fi] ?? 0,
+                    ];
+                    try {
+                        $imgService->upload($patientId, [
+                            'kind' => 'photo',
+                            'medical_record_id' => $id,
+                            'professional_id' => ($professionalId > 0 ? $professionalId : null),
+                        ], $singleFile, $request->ip(), $request->header('user-agent'));
+                    } catch (\Throwable $e) {
+                        error_log('[MedicalRecord] Image upload error: ' . $e->getMessage());
+                    }
                 }
             }
         } catch (\RuntimeException $e) {
