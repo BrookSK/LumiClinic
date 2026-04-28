@@ -295,6 +295,19 @@ final class MedicalRecordController extends Controller
         $data = $service->getForEdit($patientId, $id, $request->ip(), $request->header('user-agent'));
         $summary = $service->timeline($patientId, $request->ip(), $request->header('user-agent'));
 
+        // Linked images
+        $linkedImages = [];
+        try {
+            $auth = new AuthService($this->container);
+            $clinicId = $auth->clinicId();
+            if ($clinicId !== null) {
+                $pdo = $this->container->get(\PDO::class);
+                $stmt = $pdo->prepare("SELECT id, created_at FROM medical_images WHERE clinic_id = :c AND medical_record_id = :mr AND deleted_at IS NULL ORDER BY id");
+                $stmt->execute(['c' => $clinicId, 'mr' => $id]);
+                $linkedImages = $stmt->fetchAll();
+            }
+        } catch (\Throwable $e) {}
+
         return $this->view('medical-records/edit', [
             'patient' => $data['patient'],
             'record' => $data['record'],
@@ -304,6 +317,7 @@ final class MedicalRecordController extends Controller
             'images' => $summary['images'] ?? [],
             'image_pairs' => $summary['image_pairs'] ?? [],
             'professionals' => $service->listProfessionals(),
+            'linked_images' => $linkedImages,
         ]);
     }
 

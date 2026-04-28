@@ -124,6 +124,30 @@ ob_start();
     </form>
 </div>
 
+<!-- Imagens vinculadas a este prontuário -->
+<?php
+$linkedImages = $linked_images ?? [];
+if (!empty($linkedImages)):
+?>
+<div class="lc-card" style="margin-top:16px;">
+    <div class="lc-card__header" style="font-weight:700;font-size:13px;">📷 Imagens vinculadas a este prontuário</div>
+    <div class="lc-card__body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
+            <?php foreach ($linkedImages as $li): ?>
+            <a href="/medical-images/annotate?id=<?= (int)$li['id'] ?>" style="display:block;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,.08);">
+                <div style="height:90px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                    <img src="/medical-images/file?id=<?= (int)$li['id'] ?>" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy" />
+                </div>
+                <div style="padding:4px 8px;font-size:10px;color:#6b7280;">
+                    <?= htmlspecialchars(date('d/m/Y', strtotime((string)($li['created_at'] ?? ''))), ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script>
 (function(){
   try {

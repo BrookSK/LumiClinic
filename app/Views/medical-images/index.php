@@ -217,6 +217,14 @@ if ($uploadError !== ''):
                     <?php if ($dateFmt !== ''): ?>
                         <div class="lc-muted" style="font-size:11px;"><?= htmlspecialchars($dateFmt, ENT_QUOTES, 'UTF-8') ?></div>
                     <?php endif; ?>
+                    <?php
+                    $mrId = (int)($img['medical_record_id'] ?? 0);
+                    if ($mrId > 0):
+                    ?>
+                        <div style="margin-top:3px;">
+                            <a href="/medical-records/edit?patient_id=<?= $patientId ?>&id=<?= $mrId ?>" style="font-size:10px;color:rgba(99,102,241,.7);font-weight:600;text-decoration:none;">📋 Prontuário #<?= $mrId ?></a>
+                        </div>
+                    <?php endif; ?>
                     <?php if ($can('files.read')): ?>
                         <div class="lc-flex lc-gap-sm" style="margin-top:6px;">
                             <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/medical-images/file?id=<?= $imgId ?>" target="_blank" style="flex:1; text-align:center; font-size:11px;">Ver</a>

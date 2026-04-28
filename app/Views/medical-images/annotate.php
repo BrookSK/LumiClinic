@@ -25,6 +25,9 @@ ob_start();
         <?php endif; ?>
         <a class="lc-btn lc-btn--secondary" href="/medical-images?patient_id=<?= $patientId ?>">Voltar</a>
         <a class="lc-btn lc-btn--secondary" href="/medical-images/file?id=<?= $imageId ?>" target="_blank">Ver original</a>
+        <?php $mrIdAnnot = (int)($image['medical_record_id'] ?? 0); if ($mrIdAnnot > 0): ?>
+            <a class="lc-btn lc-btn--secondary" href="/medical-records/edit?patient_id=<?= $patientId ?>&id=<?= $mrIdAnnot ?>">📋 Prontuário #<?= $mrIdAnnot ?></a>
+        <?php endif; ?>
     </div>
 </div>
 <!-- Crop bar (above grid) -->
