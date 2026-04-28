@@ -79,7 +79,7 @@ final class BudgetViewController extends Controller
         $items = $iStmt->fetchAll();
 
         // Payments
-        $pyStmt = $pdo->prepare("SELECT * FROM payments WHERE sale_id = :id AND deleted_at IS NULL ORDER BY due_date, id");
+        $pyStmt = $pdo->prepare("SELECT * FROM payments WHERE sale_id = :id AND deleted_at IS NULL ORDER BY id");
         $pyStmt->execute(['id' => $id]);
         $payments = $pyStmt->fetchAll();
 
