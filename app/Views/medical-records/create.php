@@ -137,7 +137,11 @@ ob_start();
 
         <!-- Produtos e materiais usados -->
         <div style="margin-top:18px;padding:16px;border-radius:12px;border:1px solid rgba(99,102,241,.15);background:rgba(99,102,241,.02);">
-            <div style="font-weight:700;font-size:14px;color:rgba(99,102,241,.8);margin-bottom:10px;">📦 Produtos e materiais usados</div>
+            <div style="font-weight:700;font-size:14px;color:rgba(99,102,241,.8);margin-bottom:4px;">📦 Produtos e materiais usados</div>
+            <div style="font-size:12px;color:rgba(31,41,55,.50);margin-bottom:12px;line-height:1.5;">
+                Os materiais adicionados aqui serão <strong>descontados automaticamente do estoque</strong>.
+                Não é possível registrar quantidade maior do que o disponível em estoque.
+            </div>
             <div id="materialsContainer"></div>
             <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="addMaterialRow()" style="margin-top:8px;">+ Adicionar material</button>
         </div>
@@ -171,7 +175,9 @@ ob_start();
 
 <script>
 (function(){
-    var materials = <?= json_encode($materials ?? [], JSON_UNESCAPED_UNICODE) ?>;
+    var materials = <?= json_encode(array_map(function($m) {
+        return ['id' => (int)$m['id'], 'name' => (string)($m['name'] ?? ''), 'unit' => (string)($m['unit'] ?? ''), 'stock' => (float)($m['stock_current'] ?? 0)];
+    }, $materials), JSON_UNESCAPED_UNICODE) ?>;
     var rowCount = 0;
 
     window.addMaterialRow = function() {
@@ -180,19 +186,53 @@ ob_start();
         var row = document.createElement('div');
         row.style.cssText = 'display:grid;grid-template-columns:1fr 80px 120px 1fr 32px;gap:8px;align-items:end;margin-bottom:8px;';
         row.id = 'matRow_' + rowCount;
+        var rc = rowCount;
 
         var selectHtml = '<option value="">Selecione...</option>';
         materials.forEach(function(m) {
-            selectHtml += '<option value="' + m.id + '">' + (m.name || '') + (m.unit ? ' (' + m.unit + ')' : '') + '</option>';
+            var stockLabel = m.stock > 0 ? ' [' + m.stock + ' disp.]' : ' [ZERADO]';
+            selectHtml += '<option value="' + m.id + '" data-stock="' + m.stock + '">' + (m.name || '') + (m.unit ? ' (' + m.unit + ')' : '') + stockLabel + '</option>';
         });
 
-        row.innerHTML = '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Material</label><select class="lc-select" name="material_id[]" style="font-size:12px;">' + selectHtml + '</select></div>'
-            + '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Qtd</label><input class="lc-input" type="number" name="material_qty[]" value="1" min="0.001" step="0.001" style="font-size:12px;" /></div>'
+        row.innerHTML = '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Material</label><select class="lc-select" name="material_id[]" id="matSel_' + rc + '" style="font-size:12px;" onchange="updateMatStock(' + rc + ')">' + selectHtml + '</select><div id="matStockInfo_' + rc + '" style="font-size:10px;color:#6b7280;margin-top:2px;"></div></div>'
+            + '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Qtd</label><input class="lc-input" type="number" name="material_qty[]" id="matQty_' + rc + '" value="1" min="0.001" step="0.001" style="font-size:12px;" onchange="validateMatQty(' + rc + ')" /></div>'
             + '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Lote</label><input class="lc-input" type="text" name="material_lote[]" placeholder="Opcional" style="font-size:12px;" /></div>'
             + '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Descrição</label><input class="lc-input" type="text" name="material_desc[]" placeholder="Opcional" style="font-size:12px;" /></div>'
             + '<button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:16px;color:#dc2626;padding:6px;" title="Remover">✕</button>';
 
         container.appendChild(row);
+    };
+
+    window.updateMatStock = function(rc) {
+        var sel = document.getElementById('matSel_' + rc);
+        var info = document.getElementById('matStockInfo_' + rc);
+        var qtyInput = document.getElementById('matQty_' + rc);
+        if (!sel || !info) return;
+        var opt = sel.options[sel.selectedIndex];
+        if (!opt || !opt.value) { info.textContent = ''; return; }
+        var stock = parseFloat(opt.getAttribute('data-stock') || '0');
+        if (stock <= 0) {
+            info.innerHTML = '<span style="color:#dc2626;font-weight:600;">⚠ Estoque zerado!</span>';
+            if (qtyInput) { qtyInput.max = 0; qtyInput.value = 0; }
+        } else {
+            info.innerHTML = 'Disponível: <strong>' + stock + '</strong>';
+            if (qtyInput) { qtyInput.max = stock; if (parseFloat(qtyInput.value) > stock) qtyInput.value = stock; }
+        }
+    };
+
+    window.validateMatQty = function(rc) {
+        var sel = document.getElementById('matSel_' + rc);
+        var qtyInput = document.getElementById('matQty_' + rc);
+        var info = document.getElementById('matStockInfo_' + rc);
+        if (!sel || !qtyInput) return;
+        var opt = sel.options[sel.selectedIndex];
+        if (!opt || !opt.value) return;
+        var stock = parseFloat(opt.getAttribute('data-stock') || '0');
+        var qty = parseFloat(qtyInput.value || '0');
+        if (qty > stock) {
+            qtyInput.value = stock;
+            if (info) info.innerHTML = '<span style="color:#dc2626;font-weight:600;">⚠ Máximo: ' + stock + '</span>';
+        }
     };
 })();
 </script>

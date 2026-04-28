@@ -194,7 +194,7 @@ final class MedicalRecordController extends Controller
                 'notes' => ($notes === '' ? null : $notes),
             ], $request->ip(), $request->header('user-agent'));
 
-            // Salvar materiais usados
+            // Salvar materiais usados e dar baixa no estoque
             $materialIds = $_POST['material_id'] ?? [];
             $materialQtys = $_POST['material_qty'] ?? [];
             $materialLotes = $_POST['material_lote'] ?? [];
@@ -202,18 +202,45 @@ final class MedicalRecordController extends Controller
             if (is_array($materialIds)) {
                 $auth = new AuthService($this->container);
                 $clinicId = $auth->clinicId();
+                $userId = $auth->userId();
                 $pdo = $this->container->get(\PDO::class);
+                $stockService = new \App\Services\Stock\StockService($this->container);
+
                 foreach ($materialIds as $idx => $matId) {
                     $matId = (int)$matId;
                     $qty = (float)($materialQtys[$idx] ?? 1);
                     $lote = trim((string)($materialLotes[$idx] ?? ''));
                     $desc = trim((string)($materialDescs[$idx] ?? ''));
                     if ($matId <= 0 || $qty <= 0) continue;
+
                     try {
+                        // Verificar estoque disponível
+                        $mat = (new \App\Repositories\MaterialRepository($pdo))->findById((int)$clinicId, $matId);
+                        if ($mat === null) continue;
+                        $currentStock = (float)($mat['stock_current'] ?? 0);
+                        if ($currentStock < $qty) {
+                            // Não permitir estoque negativo — pular este material
+                            error_log('[MedicalRecord] Estoque insuficiente para material #' . $matId . ': disponível=' . $currentStock . ', solicitado=' . $qty);
+                            continue;
+                        }
+
+                        // Registrar na tabela do prontuário
                         $pdo->prepare("INSERT INTO medical_record_materials (clinic_id, medical_record_id, material_id, quantity, lote, description, created_at) VALUES (:c, :mr, :m, :q, :l, :d, NOW())")
                             ->execute(['c' => $clinicId, 'mr' => $id, 'm' => $matId, 'q' => $qty, 'l' => $lote !== '' ? $lote : null, 'd' => $desc !== '' ? $desc : null]);
+
+                        // Dar baixa no estoque
+                        $stockService->createMovement(
+                            $matId,
+                            'exit',
+                            number_format($qty, 3, '.', ''),
+                            null,
+                            'Uso em prontuário #' . $id . ($desc !== '' ? ' — ' . $desc : '') . ($lote !== '' ? ' (Lote: ' . $lote . ')' : ''),
+                            'medical_record',
+                            $id,
+                            $request->ip()
+                        );
                     } catch (\Throwable $e) {
-                        error_log('[MedicalRecord] Material save error: ' . $e->getMessage());
+                        error_log('[MedicalRecord] Material/stock error: ' . $e->getMessage());
                     }
                 }
             }
