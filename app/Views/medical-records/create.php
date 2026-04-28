@@ -11,6 +11,7 @@ $allergies    = $allergies ?? [];
 $conditions   = $conditions ?? [];
 $images       = $images ?? [];
 $imagePairs   = $image_pairs ?? [];
+$materials    = $materials ?? [];
 
 $patientId = (int)($patient['id'] ?? 0);
 $activeAlerts = array_filter($alerts, fn($a) => (int)($a['active'] ?? 1) === 1);
@@ -58,7 +59,7 @@ ob_start();
         <div class="lc-alert lc-alert--danger" style="margin:12px 16px 0;"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
 
-    <form method="post" class="lc-form" action="/medical-records/create" style="padding:16px;">
+    <form method="post" class="lc-form" action="/medical-records/create" enctype="multipart/form-data" style="padding:16px;">
         <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
         <input type="hidden" name="patient_id" value="<?= $patientId ?>" />
 
@@ -118,7 +119,6 @@ ob_start();
         $fields = [
             'clinical_description' => 'Descrição clínica',
             'clinical_evolution'   => 'Evolução',
-            'notes'                => 'Notas',
         ];
         foreach ($fields as $key => $label):
         ?>
@@ -131,9 +131,36 @@ ob_start();
                     title="Gravar">🎤</button>
             </div>
             <div class="lc-muted" id="lcMicStatus_<?= $key ?>" style="display:none; font-size:12px; margin-bottom:4px;"></div>
-            <textarea class="lc-input" name="<?= $key ?>" rows="<?= $key === 'notes' ? 3 : 5 ?>" id="lcField_<?= $key ?>"></textarea>
+            <textarea class="lc-input" name="<?= $key ?>" rows="5" id="lcField_<?= $key ?>"></textarea>
         </div>
         <?php endforeach; ?>
+
+        <!-- Produtos e materiais usados -->
+        <div style="margin-top:18px;padding:16px;border-radius:12px;border:1px solid rgba(99,102,241,.15);background:rgba(99,102,241,.02);">
+            <div style="font-weight:700;font-size:14px;color:rgba(99,102,241,.8);margin-bottom:10px;">📦 Produtos e materiais usados</div>
+            <div id="materialsContainer"></div>
+            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="addMaterialRow()" style="margin-top:8px;">+ Adicionar material</button>
+        </div>
+
+        <!-- Anexar imagem -->
+        <div style="margin-top:14px;padding:16px;border-radius:12px;border:1px solid rgba(16,185,129,.15);background:rgba(16,185,129,.02);">
+            <div style="font-weight:700;font-size:14px;color:rgba(16,185,129,.8);margin-bottom:10px;">📷 Anexar imagem ao prontuário</div>
+            <input type="file" name="record_image" accept="image/*,.pdf" class="lc-input" />
+            <div class="lc-muted" style="font-size:11px;margin-top:4px;">A imagem será vinculada a este prontuário e aparecerá nas imagens clínicas do paciente.</div>
+        </div>
+
+        <!-- Notas -->
+        <div class="lc-field" style="margin-top:14px;">
+            <div class="lc-flex lc-flex--between" style="align-items:center; margin-bottom:4px;">
+                <label class="lc-label" style="margin:0;">Notas</label>
+                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="button"
+                    data-lc-mic="notes"
+                    style="width:32px; height:32px; padding:0; display:inline-flex; align-items:center; justify-content:center;"
+                    title="Gravar">🎤</button>
+            </div>
+            <div class="lc-muted" id="lcMicStatus_notes" style="display:none; font-size:12px; margin-bottom:4px;"></div>
+            <textarea class="lc-input" name="notes" rows="3" id="lcField_notes"></textarea>
+        </div>
 
         <div class="lc-flex lc-gap-sm" style="margin-top:16px;">
             <button class="lc-btn lc-btn--primary" type="submit">Salvar registro</button>
@@ -141,6 +168,34 @@ ob_start();
         </div>
     </form>
 </div>
+
+<script>
+(function(){
+    var materials = <?= json_encode($materials ?? [], JSON_UNESCAPED_UNICODE) ?>;
+    var rowCount = 0;
+
+    window.addMaterialRow = function() {
+        rowCount++;
+        var container = document.getElementById('materialsContainer');
+        var row = document.createElement('div');
+        row.style.cssText = 'display:grid;grid-template-columns:1fr 80px 120px 1fr 32px;gap:8px;align-items:end;margin-bottom:8px;';
+        row.id = 'matRow_' + rowCount;
+
+        var selectHtml = '<option value="">Selecione...</option>';
+        materials.forEach(function(m) {
+            selectHtml += '<option value="' + m.id + '">' + (m.name || '') + (m.unit ? ' (' + m.unit + ')' : '') + '</option>';
+        });
+
+        row.innerHTML = '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Material</label><select class="lc-select" name="material_id[]" style="font-size:12px;">' + selectHtml + '</select></div>'
+            + '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Qtd</label><input class="lc-input" type="number" name="material_qty[]" value="1" min="0.001" step="0.001" style="font-size:12px;" /></div>'
+            + '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Lote</label><input class="lc-input" type="text" name="material_lote[]" placeholder="Opcional" style="font-size:12px;" /></div>'
+            + '<div class="lc-field" style="margin:0;"><label class="lc-label" style="font-size:11px;">Descrição</label><input class="lc-input" type="text" name="material_desc[]" placeholder="Opcional" style="font-size:12px;" /></div>'
+            + '<button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:16px;color:#dc2626;padding:6px;" title="Remover">✕</button>';
+
+        container.appendChild(row);
+    };
+})();
+</script>
 
 <!-- Histórico com "mostrar mais" via JS -->
 <?php if (!empty($records)): ?>

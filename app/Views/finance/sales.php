@@ -67,10 +67,10 @@ ob_start();
 </div>
 
 <!-- Filtros por status -->
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
-    <a class="lc-btn lc-btn--sm <?= $currentBudgetStatus === '' ? 'lc-btn--primary' : 'lc-btn--secondary' ?>" href="/finance/sales<?= $patientId !== null ? '?patient_id='.(int)$patientId : '' ?>">Todos</a>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+    <a class="lc-btn <?= $currentBudgetStatus === '' ? 'lc-btn--primary' : 'lc-btn--secondary' ?>" style="font-size:13px;padding:8px 16px;" href="/finance/sales<?= $patientId !== null ? '?patient_id='.(int)$patientId : '' ?>">Todos</a>
     <?php foreach (['draft'=>'📝 Rascunho','sent'=>'📤 Enviado','standby'=>'⏸️ Em espera','approved'=>'✅ Aprovado','rejected'=>'❌ Recusado','completed'=>'🏁 Concluído'] as $fk => $flbl): ?>
-        <a class="lc-btn lc-btn--sm <?= $currentBudgetStatus === $fk ? 'lc-btn--primary' : 'lc-btn--secondary' ?>" href="/finance/sales?budget_status=<?= $fk ?><?= $patientId !== null ? '&patient_id='.(int)$patientId : '' ?>"><?= $flbl ?></a>
+        <a class="lc-btn <?= $currentBudgetStatus === $fk ? 'lc-btn--primary' : 'lc-btn--secondary' ?>" style="font-size:13px;padding:8px 16px;" href="/finance/sales?budget_status=<?= $fk ?><?= $patientId !== null ? '&patient_id='.(int)$patientId : '' ?>"><?= $flbl ?></a>
     <?php endforeach; ?>
 </div>
 <?php if ($currentBudgetStatus !== ''): ?>

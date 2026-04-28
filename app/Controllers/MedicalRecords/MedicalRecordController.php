@@ -131,6 +131,7 @@ final class MedicalRecordController extends Controller
             'images' => $data['images'] ?? [],
             'image_pairs' => $data['image_pairs'] ?? [],
             'professionals' => $service->listProfessionals(),
+            'materials' => (new \App\Services\Stock\StockService($this->container))->listMaterials(),
             'error' => $error !== '' ? $error : null,
             'success' => $success !== '' ? $success : null,
             'prefill' => [
@@ -192,6 +193,45 @@ final class MedicalRecordController extends Controller
                 'clinical_evolution' => ($clinicalEvolution === '' ? null : $clinicalEvolution),
                 'notes' => ($notes === '' ? null : $notes),
             ], $request->ip(), $request->header('user-agent'));
+
+            // Salvar materiais usados
+            $materialIds = $_POST['material_id'] ?? [];
+            $materialQtys = $_POST['material_qty'] ?? [];
+            $materialLotes = $_POST['material_lote'] ?? [];
+            $materialDescs = $_POST['material_desc'] ?? [];
+            if (is_array($materialIds)) {
+                $auth = new AuthService($this->container);
+                $clinicId = $auth->clinicId();
+                $pdo = $this->container->get(\PDO::class);
+                foreach ($materialIds as $idx => $matId) {
+                    $matId = (int)$matId;
+                    $qty = (float)($materialQtys[$idx] ?? 1);
+                    $lote = trim((string)($materialLotes[$idx] ?? ''));
+                    $desc = trim((string)($materialDescs[$idx] ?? ''));
+                    if ($matId <= 0 || $qty <= 0) continue;
+                    try {
+                        $pdo->prepare("INSERT INTO medical_record_materials (clinic_id, medical_record_id, material_id, quantity, lote, description, created_at) VALUES (:c, :mr, :m, :q, :l, :d, NOW())")
+                            ->execute(['c' => $clinicId, 'mr' => $id, 'm' => $matId, 'q' => $qty, 'l' => $lote !== '' ? $lote : null, 'd' => $desc !== '' ? $desc : null]);
+                    } catch (\Throwable $e) {
+                        error_log('[MedicalRecord] Material save error: ' . $e->getMessage());
+                    }
+                }
+            }
+
+            // Upload de imagem vinculada ao prontuário
+            $imageFile = $_FILES['record_image'] ?? null;
+            if (is_array($imageFile) && ($imageFile['error'] ?? 4) === UPLOAD_ERR_OK && ($imageFile['size'] ?? 0) > 0) {
+                try {
+                    $imgService = new \App\Services\MedicalImages\MedicalImageService($this->container);
+                    $imgService->upload($patientId, [
+                        'kind' => 'photo',
+                        'medical_record_id' => $id,
+                        'professional_id' => ($professionalId > 0 ? $professionalId : null),
+                    ], $imageFile, $request->ip(), $request->header('user-agent'));
+                } catch (\Throwable $e) {
+                    error_log('[MedicalRecord] Image upload error: ' . $e->getMessage());
+                }
+            }
         } catch (\RuntimeException $e) {
             $data = $service->timeline($patientId, $request->ip(), $request->header('user-agent'));
             return $this->view('medical-records/create', [
