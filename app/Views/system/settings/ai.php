@@ -29,9 +29,6 @@ $saPhone   = htmlspecialchars((string)($superadmin_profile['phone'] ?? ''), ENT_
 $saPostal  = htmlspecialchars(preg_replace('/\D+/', '', (string)($superadmin_profile['postal_code'] ?? '')), ENT_QUOTES, 'UTF-8');
 $saAddrNum = htmlspecialchars((string)($superadmin_profile['address_number'] ?? ''), ENT_QUOTES, 'UTF-8');
 
-// Determine active tab from URL fragment (default: wallet)
-$activeTab = 'wallet';
-
 $typeLabels = [
     'debit'          => 'Débito',
     'credit'         => 'Crédito',
@@ -42,172 +39,300 @@ $typeLabels = [
 ob_start();
 ?>
 
-<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
-    <div>
-        <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">IA — Configurações</div>
-        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Escolha como o sistema vai se conectar à inteligência artificial.</div>
-    </div>
+<style>
+.ai-page-header { margin-bottom: 24px; }
+.ai-page-header h1 { font-weight: 850; font-size: 20px; color: rgba(31,41,55,.96); margin: 0 0 4px; }
+.ai-page-header p  { font-size: 13px; color: rgba(31,41,55,.50); margin: 0; }
+
+/* Tab strip */
+.ai-tabs { display: flex; border-bottom: 2px solid rgba(17,24,39,.08); margin-bottom: 28px; gap: 0; }
+.ai-tab-btn {
+    padding: 10px 22px; font-size: 14px; font-weight: 600;
+    border: none; background: none; cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    color: rgba(31,41,55,.5); transition: color .15s;
+}
+.ai-tab-btn.active { border-bottom-color: #6366f1; color: rgba(31,41,55,.95); font-weight: 700; }
+
+/* Two-column layout */
+.ai-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 960px; margin-bottom: 24px; }
+@media (max-width: 720px) { .ai-cols { grid-template-columns: 1fr; } }
+
+/* Panel card */
+.ai-panel {
+    border-radius: 16px;
+    border: 1px solid rgba(17,24,39,.09);
+    background: var(--lc-surface, #fff);
+    box-shadow: 0 2px 12px rgba(17,24,39,.06);
+    overflow: hidden;
+}
+.ai-panel-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(17,24,39,.07);
+}
+.ai-panel-header-title { font-size: 13px; font-weight: 800; color: rgba(31,41,55,.9); margin-bottom: 3px; }
+.ai-panel-header-sub   { font-size: 12px; color: rgba(31,41,55,.5); line-height: 1.5; }
+.ai-panel-body { padding: 18px 20px; }
+
+/* Balance card */
+.ai-balance-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; border-radius: 12px;
+    border: 1px solid rgba(22,163,74,.22);
+    background: linear-gradient(135deg, rgba(22,163,74,.07) 0%, rgba(22,163,74,.03) 100%);
+    margin-bottom: 16px;
+}
+.ai-balance-amount { font-size: 28px; font-weight: 850; color: #16a34a; line-height: 1; }
+.ai-balance-label  { font-size: 11px; color: rgba(31,41,55,.5); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+
+/* Card registered badge */
+.ai-card-badge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; border-radius: 9px;
+    border: 1px solid rgba(99,102,241,.2);
+    background: rgba(99,102,241,.05);
+    font-size: 12px; color: rgba(31,41,55,.7);
+    margin-bottom: 16px;
+}
+.ai-card-badge strong { font-weight: 700; color: rgba(31,41,55,.85); }
+
+/* Form fields */
+.ai-field { margin-bottom: 12px; }
+.ai-label { display: block; font-size: 12px; font-weight: 600; color: rgba(31,41,55,.65); margin-bottom: 5px; }
+.ai-hint  { font-size: 11px; color: rgba(31,41,55,.4); margin-top: 3px; }
+.ai-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ai-grid-2 .span2 { grid-column: 1 / -1; }
+
+/* Divider */
+.ai-divider { border: none; border-top: 1px solid rgba(17,24,39,.07); margin: 16px 0; }
+
+/* Section label */
+.ai-section-label {
+    font-size: 12px; font-weight: 800; color: rgba(31,41,55,.7);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px;
+}
+
+/* Alerts */
+.ai-alert-warn {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 13px; border-radius: 9px;
+    border: 1px solid rgba(234,179,8,.3); background: rgba(253,224,71,.08);
+    font-size: 12px; color: rgba(31,41,55,.75); margin-bottom: 14px; line-height: 1.5;
+}
+.ai-alert-info {
+    padding: 11px 14px; border-radius: 9px;
+    border: 1px solid rgba(238,184,16,.22); background: rgba(253,229,159,.10);
+    font-size: 12px; color: rgba(31,41,55,.65); line-height: 1.5; margin-top: 16px;
+}
+
+/* Transaction table */
+.ai-tx-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ai-tx-table th {
+    padding: 9px 11px; text-align: left; font-weight: 700;
+    color: rgba(31,41,55,.55); border-bottom: 1px solid rgba(17,24,39,.07);
+    background: rgba(17,24,39,.02);
+}
+.ai-tx-table td { padding: 8px 11px; border-bottom: 1px solid rgba(17,24,39,.04); color: rgba(31,41,55,.7); }
+.ai-tx-table tr:last-child td { border-bottom: none; }
+</style>
+
+<!-- Page header -->
+<div class="ai-page-header">
+    <h1>IA — Configurações</h1>
+    <p>Escolha como o sistema vai se conectar à inteligência artificial.</p>
 </div>
 
 <?php if ($success !== ''): ?>
-<div class="lc-alert lc-alert--success" style="margin-bottom:14px;"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div>
+<div class="lc-alert lc-alert--success" style="margin-bottom:16px;max-width:960px;"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
 <?php if ($error !== ''): ?>
-<div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
+<div class="lc-alert lc-alert--danger" style="margin-bottom:16px;max-width:960px;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
 
 <!-- Tab navigation -->
-<div style="display:flex;gap:0;border-bottom:2px solid rgba(17,24,39,.08);margin-bottom:24px;" id="ai-tabs">
-    <button type="button" onclick="switchTab('wallet')" id="tab-btn-wallet"
-        style="padding:10px 20px;font-size:14px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:rgba(31,41,55,.7);">
+<div class="ai-tabs" id="ai-tabs">
+    <button type="button" class="ai-tab-btn active" onclick="switchTab('wallet')" id="tab-btn-wallet">
         ✨ Conexão automática
     </button>
-    <button type="button" onclick="switchTab('ownkey')" id="tab-btn-ownkey"
-        style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:rgba(31,41,55,.5);">
+    <button type="button" class="ai-tab-btn" onclick="switchTab('ownkey')" id="tab-btn-ownkey">
         🔑 Conexão manual
     </button>
 </div>
 
-<!-- ===== TAB: Carteira de IA ===== -->
+<!-- ===== TAB: Conexão automática ===== -->
 <div id="tab-wallet">
 
-    <!-- Apresentação da aba -->
-    <div style="display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:14px;border:1px solid rgba(99,102,241,.18);background:rgba(99,102,241,.04);margin-bottom:20px;max-width:700px;">
-        <span style="font-size:26px;line-height:1;">✨</span>
+    <!-- Two-column layout: left = status/recharge, right = card form -->
+    <div class="ai-cols">
+
+        <!-- LEFT: Saldo + Recarga automática -->
         <div>
-            <div style="font-weight:800;font-size:14px;color:rgba(31,41,55,.9);margin-bottom:4px;">Conexão automática — sem gerenciamento externo</div>
-            <div style="font-size:13px;color:rgba(31,41,55,.6);line-height:1.55;">
-                Seus clientes usam a IA do sistema sem precisar criar conta na OpenAI ou gerenciar chaves individualmente.
-                Basta cadastrar um cartão de crédito e o sistema cuida de tudo: recarrega o saldo automaticamente conforme o uso e cobra apenas o que for consumido.
+            <!-- Balance -->
+            <div class="ai-balance-card">
+                <span style="font-size:30px;">💰</span>
+                <div>
+                    <div class="ai-balance-label">Saldo disponível</div>
+                    <div class="ai-balance-amount">R$ <?= $balance ?></div>
+                </div>
+                <?php if ($hasCard): ?>
+                <form method="post" action="/sys/settings/ai/wallet/recharge" style="margin-left:auto;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit"
+                        onclick="return confirm('Recarregar R$ <?= htmlspecialchars($rechargeAmt, ENT_QUOTES, 'UTF-8') ?> agora?')">
+                        Recarregar agora
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($hasCard): ?>
+            <div class="ai-card-badge">
+                <span>💳</span>
+                <span><strong>Cartão ****<?= htmlspecialchars($cardLast4, ENT_QUOTES, 'UTF-8') ?></strong> registrado</span>
+                <span style="color:rgba(31,41,55,.35);margin-left:4px;">· preencha abaixo para substituir</span>
+            </div>
+            <?php else: ?>
+            <div class="ai-card-badge" style="border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.04);">
+                <span>⚠️</span>
+                <span style="color:rgba(185,28,28,.8);">Nenhum cartão cadastrado — cadastre para ativar a recarga automática.</span>
+            </div>
+            <?php endif; ?>
+
+            <!-- Recarga automática -->
+            <div class="ai-panel">
+                <div class="ai-panel-header">
+                    <div class="ai-panel-header-title">⚡ Recarga automática</div>
+                    <div class="ai-panel-header-sub">O sistema recarrega o saldo sozinho quando cair abaixo do limite configurado.</div>
+                </div>
+                <div class="ai-panel-body">
+                    <form method="post" action="/sys/settings/ai/wallet" id="form-recharge-config">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <!-- Hidden card fields so form submission doesn't clear card -->
+                        <input type="hidden" name="card_number" value="" />
+                        <input type="hidden" name="expiry_month" value="" />
+                        <input type="hidden" name="expiry_year" value="" />
+                        <input type="hidden" name="ccv" value="" />
+
+                        <div class="ai-field">
+                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;font-weight:600;color:rgba(31,41,55,.8);">
+                                <input type="checkbox" name="auto_recharge_enabled" value="1" <?= $autoEnabled ? 'checked' : '' ?> style="width:15px;height:15px;accent-color:#6366f1;" />
+                                Ativar recarga automática
+                            </label>
+                        </div>
+
+                        <div class="ai-grid-2" style="margin-top:10px;">
+                            <div class="ai-field">
+                                <label class="ai-label">Saldo mínimo (R$)</label>
+                                <input class="lc-input" type="number" name="auto_recharge_threshold_brl" value="<?= $threshold ?>" min="1" step="0.01" placeholder="10.00" />
+                                <div class="ai-hint">Recarrega quando cair abaixo deste valor</div>
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">Valor da recarga (R$)</label>
+                                <input class="lc-input" type="number" name="auto_recharge_amount_brl" value="<?= $rechargeAmt ?>" min="1" step="0.01" placeholder="50.00" />
+                                <div class="ai-hint">Cobrado no cartão a cada recarga</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:14px;">
+                            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar configurações</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Balance display -->
-    <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;border:1px solid rgba(22,163,74,.22);background:rgba(22,163,74,.05);margin-bottom:20px;max-width:600px;">
-        <span style="font-size:28px;">💰</span>
+        <!-- RIGHT: Card form -->
         <div>
-            <div style="font-size:12px;color:rgba(31,41,55,.5);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Saldo atual</div>
-            <div style="font-size:26px;font-weight:850;color:#16a34a;">R$ <?= $balance ?></div>
+            <div class="ai-panel">
+                <div class="ai-panel-header">
+                    <div class="ai-panel-header-title"><?= $hasCard ? '🔄 Substituir cartão de crédito' : '💳 Cadastrar cartão de crédito' ?></div>
+                    <div class="ai-panel-header-sub">Os dados são tokenizados com segurança. Nenhuma informação do cartão é armazenada.</div>
+                </div>
+                <div class="ai-panel-body">
+                    <form method="post" action="/sys/settings/ai/wallet">
+                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                        <!-- Preserve recharge config when only updating card -->
+                        <input type="hidden" name="auto_recharge_enabled" value="<?= $autoEnabled ? '1' : '0' ?>" />
+                        <input type="hidden" name="auto_recharge_threshold_brl" value="<?= $threshold ?>" />
+                        <input type="hidden" name="auto_recharge_amount_brl" value="<?= $rechargeAmt ?>" />
+
+                        <div class="ai-section-label">Dados do titular</div>
+                        <div class="ai-grid-2">
+                            <div class="ai-field span2">
+                                <label class="ai-label">Nome no cartão</label>
+                                <input class="lc-input" type="text" name="holder_name" value="<?= $saName ?>" placeholder="Nome completo" autocomplete="cc-name" />
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">E-mail</label>
+                                <input class="lc-input" type="email" name="email" value="<?= $saEmail ?>" placeholder="email@exemplo.com" autocomplete="email" />
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">CPF</label>
+                                <input class="lc-input" type="text" name="cpf" value="<?= $saCpf ?>" placeholder="000.000.000-00" autocomplete="off" />
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">Telefone</label>
+                                <input class="lc-input" type="text" name="phone" value="<?= $saPhone ?>" placeholder="(11) 99999-9999" autocomplete="tel" />
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">CEP</label>
+                                <input class="lc-input" type="text" name="postal_code" value="<?= $saPostal ?>" placeholder="00000-000" maxlength="9" autocomplete="postal-code" />
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">Número do endereço</label>
+                                <input class="lc-input" type="text" name="address_number" value="<?= $saAddrNum ?>" placeholder="123" maxlength="20" />
+                            </div>
+                        </div>
+
+                        <hr class="ai-divider" />
+                        <div class="ai-section-label">Dados do cartão</div>
+
+                        <div class="ai-grid-2">
+                            <div class="ai-field span2">
+                                <label class="ai-label">Número do cartão</label>
+                                <input class="lc-input" type="text" name="card_number" placeholder="0000 0000 0000 0000" autocomplete="cc-number" maxlength="19" />
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">Mês de validade</label>
+                                <input class="lc-input" type="text" name="expiry_month" placeholder="MM" maxlength="2" autocomplete="cc-exp-month" />
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">Ano de validade</label>
+                                <input class="lc-input" type="text" name="expiry_year" placeholder="AAAA" maxlength="4" autocomplete="cc-exp-year" />
+                            </div>
+                            <div class="ai-field">
+                                <label class="ai-label">CVV</label>
+                                <input class="lc-input" type="password" name="ccv" placeholder="000" maxlength="4" autocomplete="cc-csc" />
+                            </div>
+                        </div>
+
+                        <div style="margin-top:16px;">
+                            <button class="lc-btn lc-btn--primary" type="submit"><?= $hasCard ? 'Substituir cartão' : 'Cadastrar cartão' ?></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <?php if ($hasCard): ?>
-        <form method="post" action="/sys/settings/ai/wallet/recharge" style="margin-left:auto;">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit"
-                onclick="return confirm('Recarregar R$ <?= htmlspecialchars($rechargeAmt, ENT_QUOTES, 'UTF-8') ?> agora?')">
-                Recarregar agora
-            </button>
-        </form>
-        <?php endif; ?>
-    </div>
 
-    <?php if ($hasCard): ?>
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(99,102,241,.2);background:rgba(99,102,241,.05);margin-bottom:16px;max-width:600px;">
-        <span>💳</span>
-        <span style="font-size:13px;font-weight:700;color:rgba(31,41,55,.8);">Cartão registrado: ****<?= htmlspecialchars($cardLast4, ENT_QUOTES, 'UTF-8') ?></span>
-        <span style="font-size:12px;color:rgba(31,41,55,.4);margin-left:8px;">Para substituir, preencha os dados abaixo.</span>
-    </div>
-    <?php endif; ?>
-
-    <!-- Card + recharge config form -->
-    <div style="padding:20px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);max-width:600px;margin-bottom:20px;">
-        <form method="post" action="/sys/settings/ai/wallet">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-
-            <div style="font-weight:700;font-size:15px;color:rgba(31,41,55,.9);margin-bottom:14px;">
-                <?= $hasCard ? '🔄 Substituir cartão' : '💳 Registrar cartão de crédito' ?>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="lc-field" style="grid-column:1/-1;">
-                    <label class="lc-label">Nome no cartão</label>
-                    <input class="lc-input" type="text" name="holder_name" value="<?= $saName ?>" placeholder="Nome completo" autocomplete="cc-name" />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">E-mail</label>
-                    <input class="lc-input" type="email" name="email" value="<?= $saEmail ?>" placeholder="email@exemplo.com" autocomplete="email" />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">CPF</label>
-                    <input class="lc-input" type="text" name="cpf" value="<?= $saCpf ?>" placeholder="000.000.000-00" autocomplete="off" />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Telefone</label>
-                    <input class="lc-input" type="text" name="phone" value="<?= $saPhone ?>" placeholder="(11) 99999-9999" autocomplete="tel" />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">CEP</label>
-                    <input class="lc-input" type="text" name="postal_code" value="<?= $saPostal ?>" placeholder="00000-000" maxlength="9" autocomplete="postal-code" />
-                    <div style="font-size:11px;color:rgba(31,41,55,.4);margin-top:3px;">Obrigatório pela Asaas para tokenizar o cartão</div>
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Número do endereço</label>
-                    <input class="lc-input" type="text" name="address_number" value="<?= $saAddrNum ?>" placeholder="123" maxlength="20" />
-                </div>
-                <div class="lc-field" style="grid-column:1/-1;">
-                    <label class="lc-label">Número do cartão</label>
-                    <input class="lc-input" type="text" name="card_number" placeholder="0000 0000 0000 0000" autocomplete="cc-number" maxlength="19" />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Mês de validade</label>
-                    <input class="lc-input" type="text" name="expiry_month" placeholder="MM" maxlength="2" autocomplete="cc-exp-month" />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Ano de validade</label>
-                    <input class="lc-input" type="text" name="expiry_year" placeholder="AAAA" maxlength="4" autocomplete="cc-exp-year" />
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">CVV</label>
-                    <input class="lc-input" type="password" name="ccv" placeholder="000" maxlength="4" autocomplete="cc-csc" />
-                </div>
-            </div>
-
-            <div style="border-top:1px solid rgba(17,24,39,.07);margin:18px 0 14px;"></div>
-            <div style="font-weight:700;font-size:14px;color:rgba(31,41,55,.8);margin-bottom:12px;">⚡ Recarga automática</div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="lc-field" style="grid-column:1/-1;">
-                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-                        <input type="checkbox" name="auto_recharge_enabled" value="1" <?= $autoEnabled ? 'checked' : '' ?> style="width:16px;height:16px;" />
-                        Ativar recarga automática quando o saldo ficar abaixo do limite
-                    </label>
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Saldo mínimo (R$)</label>
-                    <input class="lc-input" type="number" name="auto_recharge_threshold_brl" value="<?= $threshold ?>" min="1" step="0.01" placeholder="10.00" />
-                    <div style="font-size:11px;color:rgba(31,41,55,.4);margin-top:3px;">Recarrega quando o saldo cair abaixo deste valor</div>
-                </div>
-                <div class="lc-field">
-                    <label class="lc-label">Valor da recarga (R$)</label>
-                    <input class="lc-input" type="number" name="auto_recharge_amount_brl" value="<?= $rechargeAmt ?>" min="1" step="0.01" placeholder="50.00" />
-                    <div style="font-size:11px;color:rgba(31,41,55,.4);margin-top:3px;">Valor cobrado no cartão a cada recarga</div>
-                </div>
-            </div>
-
-            <div style="margin-top:16px;">
-                <button class="lc-btn lc-btn--primary" type="submit">Salvar configurações</button>
-            </div>
-        </form>
-    </div>
+    </div><!-- .ai-cols -->
 
     <!-- Transaction history -->
     <?php if (!empty($wallet_transactions)): ?>
-    <div style="max-width:800px;">
-        <div style="font-weight:700;font-size:14px;color:rgba(31,41,55,.8);margin-bottom:10px;">📋 Histórico de transações</div>
+    <div style="max-width:960px;">
+        <div style="font-weight:700;font-size:13px;color:rgba(31,41,55,.7);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;">📋 Histórico de transações</div>
         <div style="overflow-x:auto;border-radius:12px;border:1px solid rgba(17,24,39,.08);">
-            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <table class="ai-tx-table">
                 <thead>
-                    <tr style="background:rgba(17,24,39,.03);">
-                        <th style="padding:10px 12px;text-align:left;font-weight:700;color:rgba(31,41,55,.6);border-bottom:1px solid rgba(17,24,39,.07);">Data</th>
-                        <th style="padding:10px 12px;text-align:left;font-weight:700;color:rgba(31,41,55,.6);border-bottom:1px solid rgba(17,24,39,.07);">Tipo</th>
-                        <th style="padding:10px 12px;text-align:right;font-weight:700;color:rgba(31,41,55,.6);border-bottom:1px solid rgba(17,24,39,.07);">Valor</th>
-                        <th style="padding:10px 12px;text-align:left;font-weight:700;color:rgba(31,41,55,.6);border-bottom:1px solid rgba(17,24,39,.07);">Descrição</th>
-                        <th style="padding:10px 12px;text-align:right;font-weight:700;color:rgba(31,41,55,.6);border-bottom:1px solid rgba(17,24,39,.07);">Saldo após</th>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th style="text-align:right;">Valor</th>
+                        <th>Descrição</th>
+                        <th style="text-align:right;">Saldo após</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($wallet_transactions as $tx): ?>
-                    <?php
+                    <?php foreach ($wallet_transactions as $tx):
                         $txType = (string)($tx['type'] ?? '');
                         $txAmt  = (float)($tx['amount_brl'] ?? 0);
                         $isDebit = $txType === 'debit';
@@ -215,12 +340,12 @@ ob_start();
                         $amtColor = $isDebit ? '#dc2626' : '#16a34a';
                         $typeLabel = $typeLabels[$txType] ?? $txType;
                     ?>
-                    <tr style="border-bottom:1px solid rgba(17,24,39,.05);">
-                        <td style="padding:9px 12px;color:rgba(31,41,55,.6);"><?= htmlspecialchars((string)($tx['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td style="padding:9px 12px;"><?= htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') ?></td>
-                        <td style="padding:9px 12px;text-align:right;font-weight:700;color:<?= $amtColor ?>;"><?= $amtFormatted ?></td>
-                        <td style="padding:9px 12px;color:rgba(31,41,55,.7);"><?= htmlspecialchars((string)($tx['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td style="padding:9px 12px;text-align:right;color:rgba(31,41,55,.6);">R$ <?= number_format((float)($tx['balance_after_brl'] ?? 0), 2, ',', '.') ?></td>
+                    <tr>
+                        <td><?= htmlspecialchars((string)($tx['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') ?></td>
+                        <td style="text-align:right;font-weight:700;color:<?= $amtColor ?>;"><?= $amtFormatted ?></td>
+                        <td><?= htmlspecialchars((string)($tx['description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td style="text-align:right;">R$ <?= number_format((float)($tx['balance_after_brl'] ?? 0), 2, ',', '.') ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -228,63 +353,78 @@ ob_start();
         </div>
     </div>
     <?php else: ?>
-    <div style="font-size:13px;color:rgba(31,41,55,.4);padding:12px 0;">Nenhuma transação registrada ainda.</div>
+    <div style="font-size:13px;color:rgba(31,41,55,.4);padding:8px 0;">Nenhuma transação registrada ainda.</div>
     <?php endif; ?>
 
 </div><!-- #tab-wallet -->
 
-<!-- ===== TAB: Chave própria ===== -->
+<!-- ===== TAB: Conexão manual ===== -->
 <div id="tab-ownkey" style="display:none;">
 
-    <!-- Apresentação da aba -->
-    <div style="display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:14px;border:1px solid rgba(107,114,128,.18);background:rgba(107,114,128,.04);margin-bottom:16px;max-width:700px;">
-        <span style="font-size:26px;line-height:1;">🔑</span>
-        <div>
-            <div style="font-weight:800;font-size:14px;color:rgba(31,41,55,.9);margin-bottom:4px;">Conexão manual — gerenciamento individual com chave API externa</div>
-            <div style="font-size:13px;color:rgba(31,41,55,.6);line-height:1.55;">
-                Configure uma chave da OpenAI diretamente. Requer criação de conta na OpenAI, geração e renovação manual da chave, e acompanhamento de limites e cobranças de forma independente.
-                Recomendado apenas para quem já possui conta ativa na OpenAI e prefere gerenciar o acesso por conta própria.
+    <div class="ai-cols" style="max-width:700px;grid-template-columns:1fr;">
+
+        <!-- Warning banner when manual key is active -->
+        <?php if ($key_set): ?>
+        <div class="ai-alert-warn">
+            <span style="font-size:16px;flex-shrink:0;">⚠️</span>
+            <div>
+                <strong>Chave manual ativa</strong> — a Conexão automática está desativada enquanto esta chave estiver configurada.
+                Remova a chave abaixo para voltar ao modo automático.
             </div>
         </div>
-    </div>
+        <?php endif; ?>
 
-    <?php if ($key_set): ?>
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(234,179,8,.3);background:rgba(253,224,71,.08);font-size:13px;color:rgba(31,41,55,.75);margin-bottom:16px;max-width:600px;">
-        ⚠️ <strong>Chave manual ativa — ela tem prioridade sobre a Conexão automática.</strong>
-        Para voltar a usar a Conexão automática, remova a chave abaixo.
-    </div>
-    <?php endif; ?>
-
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid <?= $key_set ? 'rgba(22,163,74,.22)' : 'rgba(107,114,128,.18)' ?>;background:<?= $key_set ? 'rgba(22,163,74,.06)' : 'rgba(107,114,128,.04)' ?>;margin-bottom:16px;max-width:600px;">
-        <span style="font-size:16px;"><?= $key_set ? '✅' : '⚠️' ?></span>
-        <span style="font-weight:700;font-size:13px;color:<?= $key_set ? '#16a34a' : '#6b7280' ?>;"><?= $key_set ? 'Chave global configurada' : 'Sem chave global' ?></span>
-    </div>
-
-    <div style="padding:20px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);max-width:600px;margin-bottom:16px;">
-        <form method="post" action="/sys/settings/ai">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-
-            <div class="lc-field">
-                <label class="lc-label">Chave da API OpenAI</label>
-                <input class="lc-input" type="password" name="openai_api_key" placeholder="<?= $key_set ? 'Já configurada (deixe vazio para manter)' : 'sk-...' ?>" autocomplete="off" />
-                <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Quando configurada, todas as clínicas usam esta chave. Requer gerenciamento manual de limites e renovação na OpenAI.</div>
+        <div class="ai-panel">
+            <div class="ai-panel-header" style="background:rgba(107,114,128,.03);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:22px;">🔑</span>
+                    <div>
+                        <div class="ai-panel-header-title">Conexão manual — requer gerenciamento individual</div>
+                        <div class="ai-panel-header-sub">
+                            Exige criação e manutenção de uma chave de API externa, controle manual de limites e renovação periódica.
+                            Qualquer interrupção na chave afeta diretamente o funcionamento da IA para todos os usuários.
+                        </div>
+                    </div>
+                </div>
             </div>
+            <div class="ai-panel-body">
 
-            <?php if ($key_set): ?>
-            <div class="lc-field">
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(31,41,55,.55);cursor:pointer;">
-                    <input type="checkbox" name="clear_key" value="1" style="width:16px;height:16px;" />
-                    Remover chave manual (o sistema volta a usar a Conexão automática)
-                </label>
+                <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;border:1px solid <?= $key_set ? 'rgba(22,163,74,.22)' : 'rgba(107,114,128,.18)' ?>;background:<?= $key_set ? 'rgba(22,163,74,.06)' : 'rgba(107,114,128,.04)' ?>;margin-bottom:16px;">
+                    <span><?= $key_set ? '✅' : '⚠️' ?></span>
+                    <span style="font-weight:700;font-size:13px;color:<?= $key_set ? '#16a34a' : '#6b7280' ?>;"><?= $key_set ? 'Chave configurada e ativa' : 'Nenhuma chave configurada' ?></span>
+                </div>
+
+                <form method="post" action="/sys/settings/ai">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+
+                    <div class="ai-field">
+                        <label class="ai-label">Chave de API</label>
+                        <input class="lc-input" type="password" name="openai_api_key"
+                            placeholder="<?= $key_set ? 'Já configurada — deixe vazio para manter' : 'Cole a chave aqui' ?>"
+                            autocomplete="off" />
+                        <div class="ai-hint">Quando configurada, tem prioridade sobre a Conexão automática. Requer gerenciamento manual de limites e renovação.</div>
+                    </div>
+
+                    <?php if ($key_set): ?>
+                    <div class="ai-field">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(31,41,55,.55);cursor:pointer;">
+                            <input type="checkbox" name="clear_key" value="1" style="width:15px;height:15px;" />
+                            Remover chave manual e voltar para a Conexão automática
+                        </label>
+                    </div>
+                    <?php endif; ?>
+
+                    <div style="margin-top:14px;">
+                        <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
+                    </div>
+                </form>
+
+                <div class="ai-alert-info">
+                    💡 A IA é usada para transcrição de áudio nos prontuários. O limite de transcrição por clínica é definido no plano.
+                </div>
             </div>
-            <?php endif; ?>
+        </div>
 
-            <div style="margin-top:14px;"><button class="lc-btn lc-btn--primary" type="submit">Salvar</button></div>
-        </form>
-    </div>
-
-    <div style="padding:14px 16px;border-radius:12px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.10);font-size:13px;color:rgba(31,41,55,.70);line-height:1.5;max-width:600px;">
-        💡 A IA é usada para transcrição de áudio nos prontuários (Whisper). O limite de transcrição por clínica é definido no plano.
     </div>
 
 </div><!-- #tab-ownkey -->
@@ -292,28 +432,14 @@ ob_start();
 <script>
 function switchTab(tab) {
     document.getElementById('tab-wallet').style.display = tab === 'wallet' ? '' : 'none';
-    document.getElementById('tab-ownkey').style.display = tab === 'ownkey' ? '' : 'none';
+    document.getElementById('tab-ownkey').style.display  = tab === 'ownkey'  ? '' : 'none';
 
-    var btnWallet = document.getElementById('tab-btn-wallet');
-    var btnOwnkey = document.getElementById('tab-btn-ownkey');
-
-    if (tab === 'wallet') {
-        btnWallet.style.borderBottomColor = '#6366f1';
-        btnWallet.style.color = 'rgba(31,41,55,.95)';
-        btnOwnkey.style.borderBottomColor = 'transparent';
-        btnOwnkey.style.color = 'rgba(31,41,55,.5)';
-    } else {
-        btnOwnkey.style.borderBottomColor = '#6366f1';
-        btnOwnkey.style.color = 'rgba(31,41,55,.95)';
-        btnWallet.style.borderBottomColor = 'transparent';
-        btnWallet.style.color = 'rgba(31,41,55,.7)';
-    }
+    document.getElementById('tab-btn-wallet').classList.toggle('active', tab === 'wallet');
+    document.getElementById('tab-btn-ownkey').classList.toggle('active', tab === 'ownkey');
 }
 
-// Activate tab based on URL hash
 (function() {
-    var hash = window.location.hash;
-    if (hash === '#ownkey') {
+    if (window.location.hash === '#ownkey') {
         switchTab('ownkey');
     } else {
         switchTab('wallet');
