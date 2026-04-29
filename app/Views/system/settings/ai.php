@@ -45,7 +45,7 @@ ob_start();
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
     <div>
         <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);">IA — Configurações</div>
-        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Gerencie a Carteira de IA ou configure uma chave OpenAI própria.</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;">Escolha como o sistema vai se conectar à inteligência artificial.</div>
     </div>
 </div>
 
@@ -60,16 +60,28 @@ ob_start();
 <div style="display:flex;gap:0;border-bottom:2px solid rgba(17,24,39,.08);margin-bottom:24px;" id="ai-tabs">
     <button type="button" onclick="switchTab('wallet')" id="tab-btn-wallet"
         style="padding:10px 20px;font-size:14px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:rgba(31,41,55,.7);">
-        💳 Carteira de IA
+        ✨ Conexão automática
     </button>
     <button type="button" onclick="switchTab('ownkey')" id="tab-btn-ownkey"
         style="padding:10px 20px;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:rgba(31,41,55,.5);">
-        ⚙️ Chave própria
+        🔑 Conexão manual
     </button>
 </div>
 
 <!-- ===== TAB: Carteira de IA ===== -->
 <div id="tab-wallet">
+
+    <!-- Apresentação da aba -->
+    <div style="display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:14px;border:1px solid rgba(99,102,241,.18);background:rgba(99,102,241,.04);margin-bottom:20px;max-width:700px;">
+        <span style="font-size:26px;line-height:1;">✨</span>
+        <div>
+            <div style="font-weight:800;font-size:14px;color:rgba(31,41,55,.9);margin-bottom:4px;">Conexão automática — sem gerenciamento externo</div>
+            <div style="font-size:13px;color:rgba(31,41,55,.6);line-height:1.55;">
+                Seus clientes usam a IA do sistema sem precisar criar conta na OpenAI ou gerenciar chaves individualmente.
+                Basta cadastrar um cartão de crédito e o sistema cuida de tudo: recarrega o saldo automaticamente conforme o uso e cobra apenas o que for consumido.
+            </div>
+        </div>
+    </div>
 
     <!-- Balance display -->
     <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;border:1px solid rgba(22,163,74,.22);background:rgba(22,163,74,.05);margin-bottom:20px;max-width:600px;">
@@ -224,14 +236,22 @@ ob_start();
 <!-- ===== TAB: Chave própria ===== -->
 <div id="tab-ownkey" style="display:none;">
 
-    <div style="padding:12px 14px;border-radius:10px;border:1px solid rgba(99,102,241,.2);background:rgba(99,102,241,.05);font-size:13px;color:rgba(31,41,55,.65);margin-bottom:16px;max-width:600px;">
-        ⚙️ <strong>Opção avançada</strong> — recomendamos usar a Carteira de IA para uma experiência mais simples.
+    <!-- Apresentação da aba -->
+    <div style="display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:14px;border:1px solid rgba(107,114,128,.18);background:rgba(107,114,128,.04);margin-bottom:16px;max-width:700px;">
+        <span style="font-size:26px;line-height:1;">🔑</span>
+        <div>
+            <div style="font-weight:800;font-size:14px;color:rgba(31,41,55,.9);margin-bottom:4px;">Conexão manual — gerenciamento individual com chave API externa</div>
+            <div style="font-size:13px;color:rgba(31,41,55,.6);line-height:1.55;">
+                Configure uma chave da OpenAI diretamente. Requer criação de conta na OpenAI, geração e renovação manual da chave, e acompanhamento de limites e cobranças de forma independente.
+                Recomendado apenas para quem já possui conta ativa na OpenAI e prefere gerenciar o acesso por conta própria.
+            </div>
+        </div>
     </div>
 
     <?php if ($key_set): ?>
     <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(234,179,8,.3);background:rgba(253,224,71,.08);font-size:13px;color:rgba(31,41,55,.75);margin-bottom:16px;max-width:600px;">
-        ⚠️ <strong>A chave própria está configurada e tem prioridade sobre a Carteira de IA.</strong>
-        Para usar a Carteira de IA, remova a chave própria abaixo.
+        ⚠️ <strong>Chave manual ativa — ela tem prioridade sobre a Conexão automática.</strong>
+        Para voltar a usar a Conexão automática, remova a chave abaixo.
     </div>
     <?php endif; ?>
 
@@ -247,14 +267,14 @@ ob_start();
             <div class="lc-field">
                 <label class="lc-label">Chave da API OpenAI</label>
                 <input class="lc-input" type="password" name="openai_api_key" placeholder="<?= $key_set ? 'Já configurada (deixe vazio para manter)' : 'sk-...' ?>" autocomplete="off" />
-                <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Quando configurada, todas as clínicas usam esta chave automaticamente. As clínicas não precisam configurar a própria.</div>
+                <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Quando configurada, todas as clínicas usam esta chave. Requer gerenciamento manual de limites e renovação na OpenAI.</div>
             </div>
 
             <?php if ($key_set): ?>
             <div class="lc-field">
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(31,41,55,.55);cursor:pointer;">
                     <input type="checkbox" name="clear_key" value="1" style="width:16px;height:16px;" />
-                    Remover chave global (clínicas voltam a usar a própria ou a Carteira de IA)
+                    Remover chave manual (o sistema volta a usar a Conexão automática)
                 </label>
             </div>
             <?php endif; ?>
@@ -264,7 +284,7 @@ ob_start();
     </div>
 
     <div style="padding:14px 16px;border-radius:12px;border:1px solid rgba(238,184,16,.22);background:rgba(253,229,159,.10);font-size:13px;color:rgba(31,41,55,.70);line-height:1.5;max-width:600px;">
-        A IA é usada para: transcrição de áudio no prontuário (Whisper) e geração automática de feriados. O limite de transcrição por clínica é configurado no plano (campo "Limite de transcrição").
+        💡 A IA é usada para transcrição de áudio nos prontuários (Whisper). O limite de transcrição por clínica é definido no plano.
     </div>
 
 </div><!-- #tab-ownkey -->
