@@ -24,6 +24,8 @@ $rechargeAmt = number_format((float)($wallet['auto_recharge_amount_brl'] ?? 50.0
 
 $saName  = htmlspecialchars((string)($superadmin_profile['name'] ?? ''), ENT_QUOTES, 'UTF-8');
 $saEmail = htmlspecialchars((string)($superadmin_profile['email'] ?? ''), ENT_QUOTES, 'UTF-8');
+$saCpf   = htmlspecialchars((string)($superadmin_profile['doc_number'] ?? ''), ENT_QUOTES, 'UTF-8');
+$saPhone = htmlspecialchars((string)($superadmin_profile['phone'] ?? ''), ENT_QUOTES, 'UTF-8');
 
 // Determine active tab from URL fragment (default: wallet)
 $activeTab = 'wallet';
@@ -113,11 +115,11 @@ ob_start();
                 </div>
                 <div class="lc-field">
                     <label class="lc-label">CPF</label>
-                    <input class="lc-input" type="text" name="cpf" placeholder="000.000.000-00" autocomplete="off" />
+                    <input class="lc-input" type="text" name="cpf" value="<?= $saCpf ?>" placeholder="000.000.000-00" autocomplete="off" />
                 </div>
                 <div class="lc-field">
                     <label class="lc-label">Telefone</label>
-                    <input class="lc-input" type="text" name="phone" placeholder="(11) 99999-9999" autocomplete="tel" />
+                    <input class="lc-input" type="text" name="phone" value="<?= $saPhone ?>" placeholder="(11) 99999-9999" autocomplete="tel" />
                 </div>
                 <div class="lc-field" style="grid-column:1/-1;">
                     <label class="lc-label">Número do cartão</label>

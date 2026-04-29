@@ -244,10 +244,10 @@ final class SystemSettingsController extends Controller
         // Load billing settings
         $billingSettings = (new \App\Repositories\AiBillingSettingsRepository($pdo))->getOrCreate();
 
-        // Load superadmin profile (name, email from users table)
+        // Load superadmin profile (name, email, phone, cpf from users table)
         $superadminProfile = [];
         try {
-            $stmt = $pdo->prepare("SELECT name, email FROM users WHERE is_super_admin = 1 LIMIT 1");
+            $stmt = $pdo->prepare("SELECT name, email, phone, doc_number FROM users WHERE is_super_admin = 1 LIMIT 1");
             $stmt->execute();
             $row = $stmt->fetch();
             if (is_array($row)) {
