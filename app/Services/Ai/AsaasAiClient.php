@@ -15,21 +15,21 @@ use App\Services\Security\SystemCryptoService;
  */
 final class AsaasAiClient
 {
-    private const BASE_URL = 'https://api.asaas.com/v3';
-
     public function __construct(private readonly Container $container) {}
 
-    private function apiKey(): string
+    private function resolveKeyAndUrl(): array
     {
         $repo = new AiBillingSettingsRepository($this->container->get(\PDO::class));
-        $settings = $repo->getOrCreate();
-        $encrypted = trim((string)($settings['asaas_api_key_encrypted'] ?? ''));
+        $encrypted = $repo->getActiveAsaasKey();
 
         if ($encrypted === '') {
             throw new \RuntimeException('Chave Asaas do desenvolvedor não configurada. Acesse o portal dev para configurar.');
         }
 
-        return (new SystemCryptoService($this->container))->decrypt($encrypted);
+        $key = (new SystemCryptoService($this->container))->decrypt($encrypted);
+        $url = $repo->getAsaasBaseUrl();
+
+        return [$key, $url];
     }
 
     /**
@@ -38,8 +38,8 @@ final class AsaasAiClient
      */
     private function request(string $method, string $path, array $body = []): array
     {
-        $apiKey = $this->apiKey();
-        $url = self::BASE_URL . $path;
+        [$apiKey, $baseUrl] = $this->resolveKeyAndUrl();
+        $url = $baseUrl . $path;
 
         $http = new HttpClient();
         $resp = $http->request($method, $url, [

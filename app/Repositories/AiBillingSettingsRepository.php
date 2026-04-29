@@ -27,6 +27,36 @@ final class AiBillingSettingsRepository
     }
 
     /**
+     * Returns the active Asaas API key (sandbox or production) based on current mode.
+     */
+    public function getActiveAsaasKey(): string
+    {
+        $settings = $this->getOrCreate();
+        $mode = (string)($settings['asaas_mode'] ?? 'sandbox');
+
+        if ($mode === 'production') {
+            return trim((string)($settings['asaas_api_key_encrypted'] ?? ''));
+        }
+
+        // sandbox mode — prefer sandbox key, fall back to prod key
+        $sandboxKey = trim((string)($settings['asaas_sandbox_key_encrypted'] ?? ''));
+        return $sandboxKey !== '' ? $sandboxKey : trim((string)($settings['asaas_api_key_encrypted'] ?? ''));
+    }
+
+    /**
+     * Returns the active Asaas base URL based on current mode.
+     */
+    public function getAsaasBaseUrl(): string
+    {
+        $settings = $this->getOrCreate();
+        $mode = (string)($settings['asaas_mode'] ?? 'sandbox');
+
+        return $mode === 'production'
+            ? 'https://api.asaas.com/v3'
+            : 'https://sandbox.asaas.com/api/v3';
+    }
+
+    /**
      * Partial update — skips empty-string values to preserve existing encrypted keys.
      * Property 9: Blank key fields do not overwrite existing values.
      *
@@ -38,6 +68,8 @@ final class AiBillingSettingsRepository
 
         $allowed = [
             'asaas_api_key_encrypted',
+            'asaas_sandbox_key_encrypted',
+            'asaas_mode',
             'openai_api_key_encrypted',
             'price_per_minute_brl',
             'cost_per_minute_brl',
@@ -55,7 +87,7 @@ final class AiBillingSettingsRepository
             $val = $fields[$col];
 
             // Skip empty strings for encrypted key fields — preserve existing value
-            if (in_array($col, ['asaas_api_key_encrypted', 'openai_api_key_encrypted'], true)) {
+            if (in_array($col, ['asaas_api_key_encrypted', 'asaas_sandbox_key_encrypted', 'openai_api_key_encrypted'], true)) {
                 if ($val === '' || $val === null) {
                     continue;
                 }

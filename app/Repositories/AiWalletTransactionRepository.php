@@ -6,7 +6,10 @@ namespace App\Repositories;
 
 final class AiWalletTransactionRepository
 {
-    public function __construct(private readonly \PDO $pdo) {}
+    public function __construct(
+        private readonly \PDO $pdo,
+        private readonly string $environment = 'sandbox'
+    ) {}
 
     /**
      * @param array<string,mixed> $data
@@ -15,12 +18,13 @@ final class AiWalletTransactionRepository
     {
         $stmt = $this->pdo->prepare("
             INSERT INTO ai_wallet_transactions
-                (type, amount_brl, balance_after_brl, description, clinic_id, audio_note_id, payment_id, duration_seconds, created_at)
+                (environment, type, amount_brl, balance_after_brl, description, clinic_id, audio_note_id, payment_id, duration_seconds, created_at)
             VALUES
-                (:type, :amount_brl, :balance_after_brl, :description, :clinic_id, :audio_note_id, :payment_id, :duration_seconds, NOW())
+                (:environment, :type, :amount_brl, :balance_after_brl, :description, :clinic_id, :audio_note_id, :payment_id, :duration_seconds, NOW())
         ");
 
         $stmt->execute([
+            'environment'       => $this->environment,
             'type'              => $data['type'],
             'amount_brl'        => $data['amount_brl'],
             'balance_after_brl' => $data['balance_after_brl'],
@@ -34,24 +38,24 @@ final class AiWalletTransactionRepository
         return (int)$this->pdo->lastInsertId();
     }
 
-    /** Idempotency check — returns existing credit transaction for a payment_id */
+    /** Idempotency check — scoped to environment */
     public function findByPaymentId(string $paymentId): ?array
     {
         $stmt = $this->pdo->prepare(
-            "SELECT * FROM ai_wallet_transactions WHERE payment_id = :pid AND type = 'credit' LIMIT 1"
+            "SELECT * FROM ai_wallet_transactions WHERE payment_id = :pid AND type = 'credit' AND environment = :env LIMIT 1"
         );
-        $stmt->execute(['pid' => $paymentId]);
+        $stmt->execute(['pid' => $paymentId, 'env' => $this->environment]);
         $row = $stmt->fetch();
         return $row ?: null;
     }
 
-    /** Auto-recharge dedup — checks if a pending charge already exists */
+    /** Auto-recharge dedup — scoped to environment */
     public function hasPendingCharge(): bool
     {
         $stmt = $this->pdo->prepare(
-            "SELECT 1 FROM ai_wallet_transactions WHERE type = 'charge_pending' LIMIT 1"
+            "SELECT 1 FROM ai_wallet_transactions WHERE type = 'charge_pending' AND environment = :env LIMIT 1"
         );
-        $stmt->execute();
+        $stmt->execute(['env' => $this->environment]);
         return (bool)$stmt->fetchColumn();
     }
 
@@ -59,13 +63,13 @@ final class AiWalletTransactionRepository
     public function list(int $limit = 50, int $offset = 0): array
     {
         $stmt = $this->pdo->prepare(
-            "SELECT * FROM ai_wallet_transactions ORDER BY id DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset
+            "SELECT * FROM ai_wallet_transactions WHERE environment = :env ORDER BY id DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset
         );
-        $stmt->execute();
+        $stmt->execute(['env' => $this->environment]);
         return $stmt->fetchAll();
     }
 
-    /** @return array<string,mixed> Aggregates for a given YYYY-MM period */
+    /** @return array<string,mixed> Aggregates for a given YYYY-MM period, scoped to environment */
     public function statsForPeriod(string $yearMonth): array
     {
         $from = $yearMonth . '-01';
@@ -78,31 +82,25 @@ final class AiWalletTransactionRepository
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN amount_brl ELSE 0 END), 0) AS total_charged_brl,
                 COALESCE(SUM(CASE WHEN type = 'credit' THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
             FROM ai_wallet_transactions
-            WHERE DATE(created_at) BETWEEN :from AND :to
+            WHERE environment = :env AND DATE(created_at) BETWEEN :from AND :to
         ");
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $stmt->execute(['env' => $this->environment, 'from' => $from, 'to' => $to]);
         return $stmt->fetch() ?: [];
     }
 
-    /** @return array<string,mixed> Lifetime aggregates */
+    /** @return array<string,mixed> Lifetime aggregates, scoped to environment */
     public function statsTotal(): array
     {
-        $stmt = $this->pdo->query("
+        $stmt = $this->pdo->prepare("
             SELECT
                 COUNT(*) AS transcription_count,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN duration_seconds ELSE 0 END), 0) AS total_seconds,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN amount_brl ELSE 0 END), 0) AS total_charged_brl,
                 COALESCE(SUM(CASE WHEN type = 'credit' THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
             FROM ai_wallet_transactions
+            WHERE environment = :env
         ");
+        $stmt->execute(['env' => $this->environment]);
         return $stmt->fetch() ?: [];
-    }
-
-    /** Mark a charge_pending as resolved (used when charge fails to avoid orphaned records) */
-    public function deletePendingCharge(string $paymentId): void
-    {
-        $this->pdo->prepare(
-            "DELETE FROM ai_wallet_transactions WHERE type = 'charge_pending' AND payment_id = :pid LIMIT 1"
-        )->execute(['pid' => $paymentId]);
     }
 }

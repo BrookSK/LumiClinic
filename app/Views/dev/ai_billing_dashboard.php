@@ -127,7 +127,15 @@
 <div class="topbar">
     <div>
         <div class="topbar-title">🤖 AI Billing Portal</div>
-        <div class="topbar-sub">LumiClinic — Painel do desenvolvedor</div>
+        <div class="topbar-sub">
+            LumiClinic — Painel do desenvolvedor
+            &nbsp;·&nbsp;
+            <?php if (($asaasMode ?? 'sandbox') === 'sandbox'): ?>
+            <span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">🧪 SANDBOX</span>
+            <?php else: ?>
+            <span style="background:#f0fdf4;color:#166534;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">🚀 PRODUÇÃO</span>
+            <?php endif; ?>
+        </div>
     </div>
     <form method="post" action="/dev/ai-billing/logout" style="display:inline;">
         <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf ?? '', ENT_QUOTES, 'UTF-8') ?>" />
@@ -158,25 +166,57 @@
             <form method="post" action="/dev/ai-billing/settings">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf ?? '', ENT_QUOTES, 'UTF-8') ?>" />
 
+                <!-- Asaas mode toggle -->
+                <div class="field" style="margin-bottom:18px;">
+                    <label style="font-size:13px;font-weight:700;color:#374151;display:block;margin-bottom:8px;">Modo Asaas</label>
+                    <div style="display:flex;gap:0;border:1.5px solid #d1d5db;border-radius:8px;overflow:hidden;width:fit-content;">
+                        <label style="display:flex;align-items:center;gap:6px;padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;background:<?= ($asaasMode ?? 'sandbox') === 'sandbox' ? '#fef9c3' : '#fff' ?>;color:<?= ($asaasMode ?? 'sandbox') === 'sandbox' ? '#92400e' : '#6b7280' ?>;">
+                            <input type="radio" name="asaas_mode" value="sandbox" <?= ($asaasMode ?? 'sandbox') === 'sandbox' ? 'checked' : '' ?> onchange="this.form.submit()" style="display:none;" />
+                            🧪 Sandbox
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;border-left:1.5px solid #d1d5db;background:<?= ($asaasMode ?? 'sandbox') === 'production' ? '#f0fdf4' : '#fff' ?>;color:<?= ($asaasMode ?? 'sandbox') === 'production' ? '#166534' : '#6b7280' ?>;">
+                            <input type="radio" name="asaas_mode" value="production" <?= ($asaasMode ?? 'sandbox') === 'production' ? 'checked' : '' ?> onchange="this.form.submit()" style="display:none;" />
+                            🚀 Produção
+                        </label>
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:5px;">
+                        <?php if (($asaasMode ?? 'sandbox') === 'sandbox'): ?>
+                        ⚠️ Modo sandbox ativo — cobranças não são reais. URL: <code>sandbox.asaas.com</code>
+                        <?php else: ?>
+                        ✅ Modo produção ativo — cobranças reais. URL: <code>api.asaas.com</code>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
                 <div class="grid-2">
                     <div class="field">
-                        <label>Chave Asaas API</label>
+                        <label>Chave Asaas — Sandbox</label>
+                        <input type="password" name="asaas_sandbox_key" placeholder="<?= $asaasSandboxSet ? '••••••••••••' : 'Não configurada' ?>" autocomplete="off" />
+                        <?php if ($asaasSandboxSet): ?>
+                        <div class="key-status">✅ Configurada</div>
+                        <?php else: ?>
+                        <div class="hint">Chave da conta sandbox do Asaas</div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="field">
+                        <label>Chave Asaas — Produção</label>
                         <input type="password" name="asaas_api_key" placeholder="<?= $asaasKeySet ? '••••••••••••' : 'Não configurada' ?>" autocomplete="off" />
                         <?php if ($asaasKeySet): ?>
                         <div class="key-status">✅ Configurada</div>
                         <?php else: ?>
-                        <div class="hint">Não configurada — insira para salvar</div>
+                        <div class="hint">Chave da conta de produção do Asaas</div>
                         <?php endif; ?>
                     </div>
-                    <div class="field">
-                        <label>Chave OpenAI API</label>
-                        <input type="password" name="openai_api_key" placeholder="<?= $openaiKeySet ? '••••••••••••' : 'Não configurada' ?>" autocomplete="off" />
-                        <?php if ($openaiKeySet): ?>
-                        <div class="key-status">✅ Configurada</div>
-                        <?php else: ?>
-                        <div class="hint">Não configurada — insira para salvar</div>
-                        <?php endif; ?>
-                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Chave OpenAI API</label>
+                    <input type="password" name="openai_api_key" placeholder="<?= $openaiKeySet ? '••••••••••••' : 'Não configurada' ?>" autocomplete="off" />
+                    <?php if ($openaiKeySet): ?>
+                    <div class="key-status">✅ Configurada</div>
+                    <?php else: ?>
+                    <div class="hint">Não configurada — insira para salvar</div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="field">
@@ -352,6 +392,21 @@
                 <button class="btn" type="submit">Aplicar crédito</button>
             </form>
         </div>
+
+        <?php if (($asaasMode ?? 'sandbox') === 'sandbox'): ?>
+        <div class="card" style="max-width:480px;border-color:#fca5a5;">
+            <div class="card-title" style="color:#dc2626;">🧹 Zerar ambiente sandbox</div>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">
+                Zera o saldo, remove o cartão tokenizado e apaga todas as transações do ambiente sandbox.
+                Útil para limpar os dados de teste antes de ir para produção.
+            </p>
+            <form method="post" action="/dev/ai-billing/reset-sandbox"
+                  onsubmit="return confirm('Tem certeza? Isso vai zerar o saldo e apagar todas as transações do sandbox.')">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+                <button class="btn btn-danger" type="submit">Zerar sandbox</button>
+            </form>
+        </div>
+        <?php endif; ?>
 
         <!-- Transaction history -->
         <?php if (!empty($transactions)): ?>

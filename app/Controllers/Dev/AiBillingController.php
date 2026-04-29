@@ -113,11 +113,13 @@ final class AiBillingController
             return Response::redirect('/dev/ai-billing?error=' . urlencode('Token CSRF inválido.'));
         }
 
-        $asaasKey  = trim((string)$request->input('asaas_api_key', ''));
-        $openaiKey = trim((string)$request->input('openai_api_key', ''));
-        $priceStr  = trim((string)$request->input('price_per_minute_brl', ''));
-        $costStr   = trim((string)$request->input('cost_per_minute_brl', ''));
-        $newPass   = trim((string)$request->input('new_password', ''));
+        $asaasKey     = trim((string)$request->input('asaas_api_key', ''));
+        $asaasSandbox = trim((string)$request->input('asaas_sandbox_key', ''));
+        $asaasMode    = trim((string)$request->input('asaas_mode', 'sandbox'));
+        $openaiKey    = trim((string)$request->input('openai_api_key', ''));
+        $priceStr     = trim((string)$request->input('price_per_minute_brl', ''));
+        $costStr      = trim((string)$request->input('cost_per_minute_brl', ''));
+        $newPass      = trim((string)$request->input('new_password', ''));
 
         $price = $priceStr !== '' ? (float)$priceStr : null;
         $cost  = $costStr  !== '' ? (float)$costStr  : null;
@@ -134,6 +136,12 @@ final class AiBillingController
 
         if ($asaasKey !== '') {
             $fields['asaas_api_key_encrypted'] = $crypto->encrypt($asaasKey);
+        }
+        if ($asaasSandbox !== '') {
+            $fields['asaas_sandbox_key_encrypted'] = $crypto->encrypt($asaasSandbox);
+        }
+        if (in_array($asaasMode, ['sandbox', 'production'], true)) {
+            $fields['asaas_mode'] = $asaasMode;
         }
         if ($openaiKey !== '') {
             $fields['openai_api_key_encrypted'] = $crypto->encrypt($openaiKey);
@@ -152,6 +160,29 @@ final class AiBillingController
         (new AiBillingSettingsRepository($pdo))->save($fields);
 
         return Response::redirect('/dev/ai-billing?saved=1');
+    }
+
+    /**
+     * POST /dev/ai-billing/reset-sandbox
+     * Resets sandbox wallet: zeroes balance, clears card, deletes all sandbox transactions.
+     */
+    public function resetSandbox(Request $request): Response
+    {
+        $redirect = $this->requireAuth();
+        if ($redirect !== null) return $redirect;
+
+        if (!$this->verifyCsrf($request)) {
+            return Response::redirect('/dev/ai-billing?error=' . urlencode('Token CSRF inválido.'));
+        }
+
+        try {
+            $walletService = new AiWalletService($this->container);
+            $walletService->resetSandbox();
+        } catch (\Throwable $e) {
+            return Response::redirect('/dev/ai-billing?error=' . urlencode($e->getMessage()) . '#wallet');
+        }
+
+        return Response::redirect('/dev/ai-billing?saved=1&msg=' . urlencode('Sandbox zerado com sucesso.') . '#wallet');
     }
 
     /**
@@ -295,8 +326,10 @@ final class AiBillingController
         $domain = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
         $webhookUrl = 'https://' . $domain . '/webhooks/ai-billing/asaas';
 
-        $asaasKeySet   = trim((string)($settings['asaas_api_key_encrypted'] ?? '')) !== '';
-        $openaiKeySet  = trim((string)($settings['openai_api_key_encrypted'] ?? '')) !== '';
+        $asaasKeySet      = trim((string)($settings['asaas_api_key_encrypted'] ?? '')) !== '';
+        $asaasSandboxSet  = trim((string)($settings['asaas_sandbox_key_encrypted'] ?? '')) !== '';
+        $asaasMode        = (string)($settings['asaas_mode'] ?? 'sandbox');
+        $openaiKeySet     = trim((string)($settings['openai_api_key_encrypted'] ?? '')) !== '';
 
         ob_start();
         include dirname(__DIR__, 2) . '/Views/dev/ai_billing_dashboard.php';

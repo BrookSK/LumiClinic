@@ -12,19 +12,33 @@ use App\Repositories\AiWalletTransactionRepository;
 /**
  * All wallet mutations go through this service.
  * Balance updates are always atomic SQL expressions — never read-then-write.
+ * Each instance is scoped to a specific environment (sandbox or production).
  */
 final class AiWalletService
 {
-    public function __construct(private readonly Container $container) {}
+    private string $environment;
+
+    public function __construct(private readonly Container $container)
+    {
+        // Resolve environment from current Asaas mode setting
+        $pdo = $this->container->get(\PDO::class);
+        $settings = (new AiBillingSettingsRepository($pdo))->getOrCreate();
+        $this->environment = (string)($settings['asaas_mode'] ?? 'sandbox');
+    }
+
+    public function getEnvironment(): string
+    {
+        return $this->environment;
+    }
 
     private function walletRepo(): AiWalletRepository
     {
-        return new AiWalletRepository($this->container->get(\PDO::class));
+        return new AiWalletRepository($this->container->get(\PDO::class), $this->environment);
     }
 
     private function txRepo(): AiWalletTransactionRepository
     {
-        return new AiWalletTransactionRepository($this->container->get(\PDO::class));
+        return new AiWalletTransactionRepository($this->container->get(\PDO::class), $this->environment);
     }
 
     private function settingsRepo(): AiBillingSettingsRepository
@@ -51,8 +65,8 @@ final class AiWalletService
         }
 
         $pdo = $this->container->get(\PDO::class);
-        $walletRepo = new AiWalletRepository($pdo);
-        $txRepo = new AiWalletTransactionRepository($pdo);
+        $walletRepo = new AiWalletRepository($pdo, $this->environment);
+        $txRepo = new AiWalletTransactionRepository($pdo, $this->environment);
 
         $pdo->beginTransaction();
         try {
@@ -98,6 +112,21 @@ final class AiWalletService
     }
 
     /**
+     * Resets the sandbox wallet: zeroes balance, clears card token, deletes all sandbox transactions.
+     * Only allowed in sandbox mode.
+     */
+    public function resetSandbox(): void
+    {
+        if ($this->environment !== 'sandbox') {
+            throw new \RuntimeException('Reset só é permitido no ambiente sandbox.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $walletRepo = new AiWalletRepository($pdo, 'sandbox');
+        $walletRepo->resetForEnvironment($pdo);
+    }
+
+    /**
      * Debits the wallet for a transcription.
      * Property 2: amount = ceil(durationSeconds / 60) * pricePerMinute
      * Property 3: Atomic decrement; negative balance allowed.
@@ -132,8 +161,8 @@ final class AiWalletService
         $amount = round($minutes * $pricePerMinute, 4);
 
         $pdo = $this->container->get(\PDO::class);
-        $walletRepo = new AiWalletRepository($pdo);
-        $txRepo = new AiWalletTransactionRepository($pdo);
+        $walletRepo = new AiWalletRepository($pdo, $this->environment);
+        $txRepo = new AiWalletTransactionRepository($pdo, $this->environment);
 
         $pdo->beginTransaction();
         try {
