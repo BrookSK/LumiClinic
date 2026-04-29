@@ -6,6 +6,7 @@ namespace App\Services\Ai;
 
 use App\Core\Container\Container;
 use App\Repositories\AiBillingSettingsRepository;
+use App\Services\Http\HttpClient;
 use App\Services\Security\SystemCryptoService;
 
 /**
@@ -25,14 +26,14 @@ final class AsaasAiClient
         $encrypted = trim((string)($settings['asaas_api_key_encrypted'] ?? ''));
 
         if ($encrypted === '') {
-            throw new \RuntimeException('Chave Asaas do desenvolvedor não configurada.');
+            throw new \RuntimeException('Chave Asaas do desenvolvedor não configurada. Acesse o portal dev para configurar.');
         }
 
         return (new SystemCryptoService($this->container))->decrypt($encrypted);
     }
 
     /**
-     * @param array<string,string|null> $body
+     * @param array<string,mixed> $body
      * @return array<string,mixed>
      */
     private function request(string $method, string $path, array $body = []): array
@@ -40,50 +41,50 @@ final class AsaasAiClient
         $apiKey = $this->apiKey();
         $url = self::BASE_URL . $path;
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'access_token: ' . $apiKey,
-                'User-Agent: LumiClinic/1.0',
-            ],
-        ]);
+        $http = new HttpClient();
+        $resp = $http->request($method, $url, [
+            'access_token' => $apiKey,
+        ], $body, 30);
 
-        if ($method === 'POST') {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE));
-        }
+        if ($resp['status'] < 200 || $resp['status'] >= 300) {
+            $msg = 'Erro Asaas (HTTP ' . $resp['status'] . ').';
 
-        $response = curl_exec($ch);
-        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
+            $jsonResp = $resp['json'];
+            if ($jsonResp === null && !empty($resp['body'])) {
+                $jsonResp = json_decode((string)$resp['body'], true);
+            }
 
-        if ($curlError !== '') {
-            throw new \RuntimeException('Erro de conexão com Asaas: ' . $curlError);
-        }
+            if (is_array($jsonResp) && isset($jsonResp['errors']) && is_array($jsonResp['errors'])) {
+                $parts = [];
+                foreach ($jsonResp['errors'] as $e) {
+                    if (is_array($e)) {
+                        $desc = trim((string)($e['description'] ?? ''));
+                        $code = trim((string)($e['code'] ?? ''));
+                        if ($desc !== '') {
+                            $parts[] = $desc;
+                        } elseif ($code !== '') {
+                            $parts[] = $code;
+                        }
+                    }
+                }
+                if ($parts !== []) {
+                    $msg = implode(' | ', array_slice($parts, 0, 4));
+                }
+            }
 
-        $data = json_decode((string)$response, true);
-        if (!is_array($data)) {
-            throw new \RuntimeException('Resposta inválida da Asaas (HTTP ' . $httpCode . ').');
-        }
-
-        if ($httpCode >= 400) {
-            $errors = $data['errors'] ?? [];
-            $msg = is_array($errors) && !empty($errors)
-                ? (string)($errors[0]['description'] ?? 'Erro desconhecido')
-                : 'Erro Asaas (HTTP ' . $httpCode . ')';
             throw new \RuntimeException($msg);
         }
 
-        return $data;
+        $json = $resp['json'];
+        if (!is_array($json)) {
+            throw new \RuntimeException('Resposta inválida da Asaas.');
+        }
+
+        return $json;
     }
 
     /**
-     * Creates or retrieves a customer in the developer's Asaas account.
+     * Creates a customer in the developer's Asaas account.
      * @return array<string,mixed>
      */
     public function createCustomer(
@@ -92,14 +93,20 @@ final class AsaasAiClient
         ?string $cpfCnpj,
         ?string $phone
     ): array {
-        $body = array_filter([
-            'name'     => $name,
-            'email'    => $email,
-            'cpfCnpj'  => $cpfCnpj ? preg_replace('/\D/', '', $cpfCnpj) : null,
-            'phone'    => $phone ? preg_replace('/\D/', '', $phone) : null,
-        ], fn($v) => $v !== null && $v !== '');
+        $payload = ['name' => $name];
 
-        return $this->request('POST', '/customers', $body);
+        if ($email !== null && trim($email) !== '') {
+            $payload['email'] = $email;
+        }
+        if ($cpfCnpj !== null && trim($cpfCnpj) !== '') {
+            $payload['cpfCnpj'] = preg_replace('/\D+/', '', $cpfCnpj);
+        }
+        if ($phone !== null && trim($phone) !== '') {
+            // Asaas uses mobilePhone for mobile numbers
+            $payload['mobilePhone'] = preg_replace('/\D+/', '', $phone);
+        }
+
+        return $this->request('POST', '/customers', $payload);
     }
 
     /**
@@ -117,18 +124,18 @@ final class AsaasAiClient
             'customer'   => $customerId,
             'creditCard' => [
                 'holderName'  => $card['holderName'] ?? '',
-                'number'      => $card['number'] ?? '',
-                'expiryMonth' => $card['expiryMonth'] ?? '',
-                'expiryYear'  => $card['expiryYear'] ?? '',
-                'ccv'         => $card['ccv'] ?? '',
+                'number'      => preg_replace('/\D+/', '', (string)($card['number'] ?? '')),
+                'expiryMonth' => preg_replace('/\D+/', '', (string)($card['expiryMonth'] ?? '')),
+                'expiryYear'  => preg_replace('/\D+/', '', (string)($card['expiryYear'] ?? '')),
+                'ccv'         => preg_replace('/\D+/', '', (string)($card['ccv'] ?? '')),
             ],
             'creditCardHolderInfo' => [
                 'name'          => $holder['name'] ?? '',
                 'email'         => $holder['email'] ?? '',
-                'cpfCnpj'       => $holder['cpfCnpj'] ?? '',
-                'postalCode'    => $holder['postalCode'] ?? '',
-                'addressNumber' => $holder['addressNumber'] ?? '',
-                'phone'         => $holder['phone'] ?? '',
+                'cpfCnpj'       => preg_replace('/\D+/', '', (string)($holder['cpfCnpj'] ?? '')),
+                'postalCode'    => preg_replace('/\D+/', '', (string)($holder['postalCode'] ?? '00000000')),
+                'addressNumber' => $holder['addressNumber'] !== '' ? $holder['addressNumber'] : 'S/N',
+                'phone'         => preg_replace('/\D+/', '', (string)($holder['phone'] ?? '')),
             ],
             'remoteIp' => $remoteIp,
         ];

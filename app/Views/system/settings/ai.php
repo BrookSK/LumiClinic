@@ -22,10 +22,12 @@ $autoEnabled = (bool)($wallet['auto_recharge_enabled'] ?? false);
 $threshold   = number_format((float)($wallet['auto_recharge_threshold_brl'] ?? 10.00), 2, '.', '');
 $rechargeAmt = number_format((float)($wallet['auto_recharge_amount_brl'] ?? 50.00), 2, '.', '');
 
-$saName  = htmlspecialchars((string)($superadmin_profile['name'] ?? ''), ENT_QUOTES, 'UTF-8');
-$saEmail = htmlspecialchars((string)($superadmin_profile['email'] ?? ''), ENT_QUOTES, 'UTF-8');
-$saCpf   = htmlspecialchars((string)($superadmin_profile['doc_number'] ?? ''), ENT_QUOTES, 'UTF-8');
-$saPhone = htmlspecialchars((string)($superadmin_profile['phone'] ?? ''), ENT_QUOTES, 'UTF-8');
+$saName    = htmlspecialchars((string)($superadmin_profile['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+$saEmail   = htmlspecialchars((string)($superadmin_profile['email'] ?? ''), ENT_QUOTES, 'UTF-8');
+$saCpf     = htmlspecialchars((string)($superadmin_profile['doc_number'] ?? ''), ENT_QUOTES, 'UTF-8');
+$saPhone   = htmlspecialchars((string)($superadmin_profile['phone'] ?? ''), ENT_QUOTES, 'UTF-8');
+$saPostal  = htmlspecialchars(preg_replace('/\D+/', '', (string)($superadmin_profile['postal_code'] ?? '')), ENT_QUOTES, 'UTF-8');
+$saAddrNum = htmlspecialchars((string)($superadmin_profile['address_number'] ?? ''), ENT_QUOTES, 'UTF-8');
 
 // Determine active tab from URL fragment (default: wallet)
 $activeTab = 'wallet';
@@ -120,6 +122,15 @@ ob_start();
                 <div class="lc-field">
                     <label class="lc-label">Telefone</label>
                     <input class="lc-input" type="text" name="phone" value="<?= $saPhone ?>" placeholder="(11) 99999-9999" autocomplete="tel" />
+                </div>
+                <div class="lc-field">
+                    <label class="lc-label">CEP</label>
+                    <input class="lc-input" type="text" name="postal_code" value="<?= $saPostal ?>" placeholder="00000-000" maxlength="9" autocomplete="postal-code" />
+                    <div style="font-size:11px;color:rgba(31,41,55,.4);margin-top:3px;">Obrigatório pela Asaas para tokenizar o cartão</div>
+                </div>
+                <div class="lc-field">
+                    <label class="lc-label">Número do endereço</label>
+                    <input class="lc-input" type="text" name="address_number" value="<?= $saAddrNum ?>" placeholder="123" maxlength="20" />
                 </div>
                 <div class="lc-field" style="grid-column:1/-1;">
                     <label class="lc-label">Número do cartão</label>

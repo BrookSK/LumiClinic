@@ -42,6 +42,8 @@ final class AiWalletController extends Controller
         $email       = trim((string)$request->input('email', ''));
         $cpf         = trim((string)$request->input('cpf', ''));
         $phone       = trim((string)$request->input('phone', ''));
+        $postalCode  = trim((string)$request->input('postal_code', ''));
+        $addressNum  = trim((string)$request->input('address_number', ''));
         $cardNumber  = trim((string)$request->input('card_number', ''));
         $expiryMonth = trim((string)$request->input('expiry_month', ''));
         $expiryYear  = trim((string)$request->input('expiry_year', ''));
@@ -88,8 +90,8 @@ final class AiWalletController extends Controller
                         'name'          => $holderName,
                         'email'         => $email,
                         'cpfCnpj'       => $cpf,
-                        'postalCode'    => '',
-                        'addressNumber' => '',
+                        'postalCode'    => $postalCode,
+                        'addressNumber' => $addressNum !== '' ? $addressNum : 'S/N',
                         'phone'         => $phone,
                     ],
                     $remoteIp
