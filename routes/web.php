@@ -182,6 +182,13 @@ $router->get('/api/v1/appointments/upcoming', [ApiV1Controller::class, 'upcoming
 
 $router->post('/webhooks/asaas', [WebhookController::class, 'asaas']);
 $router->post('/webhooks/mercadopago', [WebhookController::class, 'mercadopago']);
+$router->post('/webhooks/ai-billing/asaas', [\App\Controllers\Dev\AiBillingController::class, 'webhook']);
+
+$router->get('/dev/ai-billing', [\App\Controllers\Dev\AiBillingController::class, 'index']);
+$router->post('/dev/ai-billing/login', [\App\Controllers\Dev\AiBillingController::class, 'login']);
+$router->post('/dev/ai-billing/logout', [\App\Controllers\Dev\AiBillingController::class, 'logout']);
+$router->post('/dev/ai-billing/settings', [\App\Controllers\Dev\AiBillingController::class, 'saveSettings']);
+$router->post('/dev/ai-billing/credit', [\App\Controllers\Dev\AiBillingController::class, 'manualCredit']);
 
 $router->get('/billing/subscription', [ClinicSubscriptionController::class, 'index']);
 $router->post('/billing/subscription/change-plan', [ClinicSubscriptionController::class, 'changePlan']);
@@ -689,6 +696,8 @@ $router->post('/sys/settings/whatsapp', [\App\Controllers\System\SystemSettingsC
 
 $router->get('/sys/settings/ai', [\App\Controllers\System\SystemSettingsController::class, 'ai']);
 $router->post('/sys/settings/ai', [\App\Controllers\System\SystemSettingsController::class, 'aiSubmit']);
+$router->post('/sys/settings/ai/wallet', [\App\Controllers\System\AiWalletController::class, 'saveSettings']);
+$router->post('/sys/settings/ai/wallet/recharge', [\App\Controllers\System\AiWalletController::class, 'manualRecharge']);
 
 $router->get('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverRequirements']);
 $router->post('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverSubmit']);

@@ -8,7 +8,31 @@ use App\Core\Container\Container;
 
 final class OpenAiClient
 {
+    private ?string $overrideKey = null;
+
     public function __construct(private readonly Container $container) {}
+
+    /**
+     * Creates an OpenAiClient that uses the provided API key instead of the configured one.
+     */
+    public static function withKey(Container $container, string $apiKey): self
+    {
+        $instance = new self($container);
+        $instance->overrideKey = $apiKey;
+        return $instance;
+    }
+
+    private function resolveKey(): string
+    {
+        if ($this->overrideKey !== null && trim($this->overrideKey) !== '') {
+            return $this->overrideKey;
+        }
+        $key = (new AiConfigService($this->container))->getOpenAiApiKeyPlain();
+        if ($key === null || trim($key) === '') {
+            throw new \RuntimeException('IA não configurada (OpenAI API key).');
+        }
+        return $key;
+    }
 
     /**
      * @param array<int,array<string,mixed>> $messages
@@ -16,10 +40,7 @@ final class OpenAiClient
      */
     public function chatCompletions(string $model, array $messages, float $temperature = 0.2): array
     {
-        $key = (new AiConfigService($this->container))->getOpenAiApiKeyPlain();
-        if ($key === null || trim($key) === '') {
-            throw new \RuntimeException('IA não configurada (OpenAI API key).');
-        }
+        $key = $this->resolveKey();
 
         $http = new \App\Services\Http\HttpClient();
         $resp = $http->request('POST', 'https://api.openai.com/v1/chat/completions', [
@@ -48,10 +69,7 @@ final class OpenAiClient
      */
     public function audioTranscription(string $filePath, string $filename, string $model = 'whisper-1'): array
     {
-        $key = (new AiConfigService($this->container))->getOpenAiApiKeyPlain();
-        if ($key === null || trim($key) === '') {
-            throw new \RuntimeException('IA não configurada (OpenAI API key).');
-        }
+        $key = $this->resolveKey();
 
         $filePath = trim($filePath);
         if ($filePath === '' || !is_file($filePath)) {

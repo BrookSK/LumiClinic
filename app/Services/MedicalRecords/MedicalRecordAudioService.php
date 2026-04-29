@@ -8,6 +8,8 @@ use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\MedicalRecordAudioNoteRepository;
 use App\Repositories\PatientRepository;
+use App\Services\Ai\AiKeyResolverService;
+use App\Services\Ai\AiWalletService;
 use App\Services\Ai\OpenAiClient;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\PlanEntitlementsService;
@@ -164,13 +166,31 @@ final class MedicalRecordAudioService
             $userAgent
         );
 
+        // Resolve which OpenAI key to use (clinic > superadmin > wallet)
+        $resolved = (new AiKeyResolverService($this->container))->resolve($clinicId);
+
         try {
             $fullPath = PrivateStorage::fullPath($clinicId, $relative);
-            $text = $this->transcribeWithChunking($fullPath, $originalName ?? ('audio.' . $ext), $ext);
+            $text = $this->transcribeWithChunking($fullPath, $originalName ?? ('audio.' . $ext), $ext, $resolved['key']);
             $repo->setTranscript($clinicId, $audioId, 'transcribed', $text);
         } catch (\Throwable $e) {
             $repo->setTranscript($clinicId, $audioId, 'transcription_failed', null);
             throw $e;
+        }
+
+        // Debit wallet if transcription used the wallet key
+        if ($resolved['wallet_mode'] === true) {
+            try {
+                (new AiWalletService($this->container))->debitForTranscription(
+                    $clinicId,
+                    $audioId,
+                    $durationSeconds ?? 0,
+                    $size ?? 0
+                );
+            } catch (\Throwable $e) {
+                error_log('[AiWallet] Debit failed for audio_note_id=' . $audioId . ': ' . $e->getMessage());
+                // Debit failure does not block returning the transcription result
+            }
         }
 
         $row = $repo->findById($clinicId, $audioId);
@@ -186,12 +206,14 @@ final class MedicalRecordAudioService
      * Transcreve áudio, dividindo em chunks de ~10 min se o arquivo for > 24MB.
      * Usa ffmpeg para dividir e concatena os textos transcritos.
      */
-    private function transcribeWithChunking(string $fullPath, string $filename, string $ext): string
+    private function transcribeWithChunking(string $fullPath, string $filename, string $ext, ?string $apiKey = null): string
     {
         $maxBytes = 24 * 1024 * 1024; // 24MB (Whisper limit is 25MB)
         $fileSize = file_exists($fullPath) ? filesize($fullPath) : 0;
 
-        $client = new OpenAiClient($this->container);
+        $client = $apiKey !== null
+            ? OpenAiClient::withKey($this->container, $apiKey)
+            : new OpenAiClient($this->container);
 
         // Arquivo pequeno: transcreve direto
         if ($fileSize <= $maxBytes) {

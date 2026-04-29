@@ -229,13 +229,42 @@ final class SystemSettingsController extends Controller
     {
         $this->ensureSuperAdmin();
 
+        $pdo = $this->container->get(\PDO::class);
         $service = new SystemSettingsService($this->container);
         $keySet = trim((string)($service->getText('ai.openai.global_api_key') ?? '')) !== '';
         $saved = trim((string)$request->input('saved', ''));
+        $error = trim((string)$request->input('error', ''));
+        $msg   = trim((string)$request->input('msg', ''));
+
+        // Load wallet data
+        $walletService = new \App\Services\Ai\AiWalletService($this->container);
+        $wallet = $walletService->getOrCreate();
+        $walletTransactions = $walletService->listTransactions(20);
+
+        // Load billing settings
+        $billingSettings = (new \App\Repositories\AiBillingSettingsRepository($pdo))->getOrCreate();
+
+        // Load superadmin profile (name, email from users table)
+        $superadminProfile = [];
+        try {
+            $stmt = $pdo->prepare("SELECT name, email FROM users WHERE is_super_admin = 1 LIMIT 1");
+            $stmt->execute();
+            $row = $stmt->fetch();
+            if (is_array($row)) {
+                $superadminProfile = $row;
+            }
+        } catch (\Throwable $e) {
+            // Non-critical — profile pre-fill is optional
+        }
 
         return $this->view('system/settings/ai', [
-            'key_set' => $keySet,
-            'success' => $saved !== '' ? 'Salvo com sucesso.' : null,
+            'key_set'             => $keySet,
+            'success'             => $saved !== '' ? ($msg !== '' ? $msg : 'Salvo com sucesso.') : null,
+            'error'               => $error !== '' ? $error : null,
+            'wallet'              => $wallet,
+            'wallet_transactions' => $walletTransactions,
+            'billing_settings'    => $billingSettings,
+            'superadmin_profile'  => $superadminProfile,
         ]);
     }
 

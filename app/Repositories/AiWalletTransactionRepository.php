@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repositories;
+
+final class AiWalletTransactionRepository
+{
+    public function __construct(private readonly \PDO $pdo) {}
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    public function insert(array $data): int
+    {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO ai_wallet_transactions
+                (type, amount_brl, balance_after_brl, description, clinic_id, audio_note_id, payment_id, duration_seconds, created_at)
+            VALUES
+                (:type, :amount_brl, :balance_after_brl, :description, :clinic_id, :audio_note_id, :payment_id, :duration_seconds, NOW())
+        ");
+
+        $stmt->execute([
+            'type'              => $data['type'],
+            'amount_brl'        => $data['amount_brl'],
+            'balance_after_brl' => $data['balance_after_brl'],
+            'description'       => $data['description'] ?? '',
+            'clinic_id'         => $data['clinic_id'] ?? null,
+            'audio_note_id'     => $data['audio_note_id'] ?? null,
+            'payment_id'        => $data['payment_id'] ?? null,
+            'duration_seconds'  => $data['duration_seconds'] ?? null,
+        ]);
+
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    /** Idempotency check — returns existing credit transaction for a payment_id */
+    public function findByPaymentId(string $paymentId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM ai_wallet_transactions WHERE payment_id = :pid AND type = 'credit' LIMIT 1"
+        );
+        $stmt->execute(['pid' => $paymentId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /** Auto-recharge dedup — checks if a pending charge already exists */
+    public function hasPendingCharge(): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT 1 FROM ai_wallet_transactions WHERE type = 'charge_pending' LIMIT 1"
+        );
+        $stmt->execute();
+        return (bool)$stmt->fetchColumn();
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function list(int $limit = 50, int $offset = 0): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM ai_wallet_transactions ORDER BY id DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset
+        );
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /** @return array<string,mixed> Aggregates for a given YYYY-MM period */
+    public function statsForPeriod(string $yearMonth): array
+    {
+        $from = $yearMonth . '-01';
+        $to = date('Y-m-t', strtotime($from));
+
+        $stmt = $this->pdo->prepare("
+            SELECT
+                COUNT(*) AS transcription_count,
+                COALESCE(SUM(CASE WHEN type = 'debit' THEN duration_seconds ELSE 0 END), 0) AS total_seconds,
+                COALESCE(SUM(CASE WHEN type = 'debit' THEN amount_brl ELSE 0 END), 0) AS total_charged_brl,
+                COALESCE(SUM(CASE WHEN type = 'credit' THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
+            FROM ai_wallet_transactions
+            WHERE DATE(created_at) BETWEEN :from AND :to
+        ");
+        $stmt->execute(['from' => $from, 'to' => $to]);
+        return $stmt->fetch() ?: [];
+    }
+
+    /** @return array<string,mixed> Lifetime aggregates */
+    public function statsTotal(): array
+    {
+        $stmt = $this->pdo->query("
+            SELECT
+                COUNT(*) AS transcription_count,
+                COALESCE(SUM(CASE WHEN type = 'debit' THEN duration_seconds ELSE 0 END), 0) AS total_seconds,
+                COALESCE(SUM(CASE WHEN type = 'debit' THEN amount_brl ELSE 0 END), 0) AS total_charged_brl,
+                COALESCE(SUM(CASE WHEN type = 'credit' THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
+            FROM ai_wallet_transactions
+        ");
+        return $stmt->fetch() ?: [];
+    }
+
+    /** Mark a charge_pending as resolved (used when charge fails to avoid orphaned records) */
+    public function deletePendingCharge(string $paymentId): void
+    {
+        $this->pdo->prepare(
+            "DELETE FROM ai_wallet_transactions WHERE type = 'charge_pending' AND payment_id = :pid LIMIT 1"
+        )->execute(['pid' => $paymentId]);
+    }
+}
