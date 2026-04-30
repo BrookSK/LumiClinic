@@ -145,7 +145,7 @@ final class AsaasAiClient
             'remoteIp' => $remoteIp,
         ];
 
-        return $this->request('POST', '/credit_cards/tokenize', $body);
+        return $this->request('POST', '/creditCard/tokenizeCreditCard', $body);
     }
 
     /**
