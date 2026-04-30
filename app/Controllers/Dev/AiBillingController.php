@@ -217,6 +217,14 @@ final class AiBillingController
             $body = (string)file_get_contents('php://input');
 
             $pdo = $this->container->get(\PDO::class);
+
+            // Log raw webhook to DB for debugging
+            try {
+                $pdo->prepare(
+                    "INSERT INTO system_error_logs (type, message, context, created_at) VALUES ('info', 'webhook_received', :ctx, NOW())"
+                )->execute(['ctx' => substr($body, 0, 1000)]);
+            } catch (\Throwable $ignore) {}
+
             $repo = new AiBillingSettingsRepository($pdo);
 
             // Verify webhook secret if configured
