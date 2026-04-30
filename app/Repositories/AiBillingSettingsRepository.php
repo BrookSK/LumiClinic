@@ -68,7 +68,7 @@ final class AiBillingSettingsRepository
 
         return $mode === 'production'
             ? 'https://api.asaas.com/v3'
-            : 'https://sandbox.asaas.com/api/v3';
+            : 'https://api-sandbox.asaas.com/v3';
     }
 
     /**
