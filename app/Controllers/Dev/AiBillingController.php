@@ -326,6 +326,27 @@ final class AiBillingController
             $repo = new AiBillingSettingsRepository($pdo);
             $out[] = $repo->getActiveAsaasKey() !== '' ? '✅ Asaas key: configured' : '❌ Asaas key: NOT configured';
 
+            // Key resolver diagnostic
+            $billingSettings = $repo->getOrCreate();
+            $devKeyEnc = trim((string)($billingSettings['openai_api_key_encrypted'] ?? ''));
+            $asaasMode = (string)($billingSettings['asaas_mode'] ?? 'sandbox');
+            $out[] = $devKeyEnc !== '' ? '✅ OpenAI key in billing_settings: configured' : '❌ OpenAI key in billing_settings: NOT configured';
+            $out[] = '🔍 asaas_mode: ' . $asaasMode;
+
+            $walletRepo = new \App\Repositories\AiWalletRepository($pdo, $asaasMode);
+            $walletRow = $walletRepo->getOrCreate();
+            $out[] = '🔍 Wallet id=' . ($walletRow['id'] ?? '?') . ' environment=' . ($walletRow['environment'] ?? '?') . ' balance=' . ($walletRow['balance_brl'] ?? '?');
+
+            if ($devKeyEnc !== '') {
+                try {
+                    $crypto = new SystemCryptoService($this->container);
+                    $decrypted = $crypto->decrypt($devKeyEnc);
+                    $out[] = '✅ OpenAI key decrypts OK, starts with: ' . substr($decrypted, 0, 8) . '...';
+                } catch (\Throwable $e) {
+                    $out[] = '❌ OpenAI key decrypt FAILED: ' . $e->getMessage();
+                }
+            }
+
             // Pending charges
             $stmt = $pdo->prepare("SELECT id, payment_id, created_at FROM ai_wallet_transactions WHERE type = 'charge_pending' AND environment = :env ORDER BY id DESC LIMIT 10");
             $stmt->execute(['env' => $env]);
