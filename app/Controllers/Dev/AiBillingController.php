@@ -136,36 +136,44 @@ final class AiBillingController
         $crypto = new SystemCryptoService($this->container);
         $fields = [];
 
-        if ($asaasKey !== '') {
-            $fields['asaas_api_key_encrypted'] = $crypto->encrypt($asaasKey);
-        }
-        if ($asaasSandbox !== '') {
-            $fields['asaas_sandbox_key_encrypted'] = $crypto->encrypt($asaasSandbox);
-        }
-        if ($webhookSecretSbx !== '') {
-            $fields['asaas_webhook_secret_sandbox_encrypted'] = $crypto->encrypt($webhookSecretSbx);
-        }
-        if ($webhookSecretProd !== '') {
-            $fields['asaas_webhook_secret_production_encrypted'] = $crypto->encrypt($webhookSecretProd);
-        }
-        if (in_array($asaasMode, ['sandbox', 'production'], true)) {
-            $fields['asaas_mode'] = $asaasMode;
-        }
-        if ($openaiKey !== '') {
-            $fields['openai_api_key_encrypted'] = $crypto->encrypt($openaiKey);
-        }
-        if ($price !== null) {
-            $fields['price_per_minute_brl'] = $price;
-        }
-        if ($cost !== null) {
-            $fields['cost_per_minute_brl'] = $cost;
-        }
-        if ($newPass !== '') {
-            $fields['dev_password_hash'] = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
-        }
+        try {
+            if ($asaasKey !== '') {
+                $fields['asaas_api_key_encrypted'] = $crypto->encrypt($asaasKey);
+            }
+            if ($asaasSandbox !== '') {
+                $fields['asaas_sandbox_key_encrypted'] = $crypto->encrypt($asaasSandbox);
+            }
+            if ($webhookSecretSbx !== '') {
+                $fields['asaas_webhook_secret_sandbox_encrypted'] = $crypto->encrypt($webhookSecretSbx);
+            }
+            if ($webhookSecretProd !== '') {
+                $fields['asaas_webhook_secret_production_encrypted'] = $crypto->encrypt($webhookSecretProd);
+            }
+            if (in_array($asaasMode, ['sandbox', 'production'], true)) {
+                $fields['asaas_mode'] = $asaasMode;
+            }
+            if ($openaiKey !== '') {
+                $fields['openai_api_key_encrypted'] = $crypto->encrypt($openaiKey);
+            }
+            if ($price !== null) {
+                $fields['price_per_minute_brl'] = $price;
+            }
+            if ($cost !== null) {
+                $fields['cost_per_minute_brl'] = $cost;
+            }
+            if ($newPass !== '') {
+                $fields['dev_password_hash'] = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
+            }
 
-        $pdo = $this->container->get(\PDO::class);
-        (new AiBillingSettingsRepository($pdo))->save($fields);
+            $pdo = $this->container->get(\PDO::class);
+            (new AiBillingSettingsRepository($pdo))->save($fields);
+
+        } catch (\Throwable $e) {
+            $detail = get_class($e) . ': ' . $e->getMessage()
+                . ' | ' . basename($e->getFile()) . ':' . $e->getLine();
+            error_log('[AiBilling][saveSettings] ' . $detail . "\n" . $e->getTraceAsString());
+            return Response::redirect('/dev/ai-billing?error=' . urlencode($detail));
+        }
 
         return Response::redirect('/dev/ai-billing?saved=1');
     }

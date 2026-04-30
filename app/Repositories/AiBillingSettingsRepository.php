@@ -126,6 +126,27 @@ final class AiBillingSettingsRepository
 
         $params['updated_at'] = date('Y-m-d H:i:s');
         $sql = "UPDATE ai_billing_settings SET " . implode(', ', $setClauses) . ", updated_at = :updated_at WHERE id = 1";
-        $this->pdo->prepare($sql)->execute($params);
+
+        try {
+            $this->pdo->prepare($sql)->execute($params);
+        } catch (\PDOException $e) {
+            // If a column doesn't exist yet (migration pending), retry without that column
+            if (str_contains($e->getMessage(), 'Unknown column')) {
+                // Extract the unknown column name from error message
+                preg_match("/Unknown column '([^']+)'/", $e->getMessage(), $m);
+                $badCol = $m[1] ?? '';
+                if ($badCol !== '') {
+                    // Remove the bad column and retry
+                    $setClauses2 = array_filter($setClauses, fn($c) => !str_contains($c, "`{$badCol}`"));
+                    unset($params[$badCol]);
+                    if ($setClauses2 !== []) {
+                        $sql2 = "UPDATE ai_billing_settings SET " . implode(', ', $setClauses2) . ", updated_at = :updated_at WHERE id = 1";
+                        $this->pdo->prepare($sql2)->execute($params);
+                    }
+                }
+                return;
+            }
+            throw $e;
+        }
     }
 }
