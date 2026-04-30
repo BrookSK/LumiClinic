@@ -402,18 +402,18 @@ final class AiBillingController
                 return Response::raw('ok', 200);
             }
 
-            // Verify payment status directly with Asaas API
-            $asaas = new AsaasAiClient($this->container);
-            $payment = $asaas->getPayment($paymentId);
-            $status = (string)($payment['status'] ?? '');
-            error_log('[AiBilling][Webhook] Asaas payment status=' . $status . ' value=' . ($payment['value'] ?? 0));
+            // Trust the webhook event — no need to re-verify with Asaas API
+            // The event itself is the confirmation
+            $amount = (float)($data['payment']['value'] ?? 0);
 
-            if (!in_array($status, ['CONFIRMED', 'RECEIVED'], true)) {
-                error_log('[AiBilling][Webhook] Payment not confirmed, status=' . $status);
-                return Response::raw('ok', 200);
+            // Fallback: if value not in webhook payload, fetch from Asaas
+            if ($amount <= 0) {
+                $asaas = new AsaasAiClient($this->container);
+                $payment = $asaas->getPayment($paymentId);
+                $amount = (float)($payment['value'] ?? 0);
+                error_log('[AiBilling][Webhook] Fetched amount from Asaas: ' . $amount);
             }
 
-            $amount = (float)($payment['value'] ?? 0);
             if ($amount <= 0) {
                 error_log('[AiBilling][Webhook] Invalid amount=' . $amount);
                 return Response::raw('ok', 200);
