@@ -41,13 +41,19 @@ final class AsaasAiClient
         [$apiKey, $baseUrl] = $this->resolveKeyAndUrl();
         $url = $baseUrl . $path;
 
+        // Log the request for debugging
+        error_log('[AsaasAiClient] ' . $method . ' ' . $url . ' body=' . json_encode($body));
+
         $http = new HttpClient();
         $resp = $http->request($method, $url, [
             'access_token' => $apiKey,
-        ], $body, 30);
+        ], $method === 'GET' ? null : $body, 30);
+
+        // Log the response for debugging
+        error_log('[AsaasAiClient] HTTP ' . $resp['status'] . ' body=' . substr(json_encode($resp['json'] ?? $resp['body'] ?? ''), 0, 500));
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
-            $msg = 'Erro Asaas (HTTP ' . $resp['status'] . ').';
+            $msg = 'Erro Asaas (HTTP ' . $resp['status'] . ') — ' . $url;
 
             $jsonResp = $resp['json'];
             if ($jsonResp === null && !empty($resp['body'])) {
@@ -60,16 +66,15 @@ final class AsaasAiClient
                     if (is_array($e)) {
                         $desc = trim((string)($e['description'] ?? ''));
                         $code = trim((string)($e['code'] ?? ''));
-                        if ($desc !== '') {
-                            $parts[] = $desc;
-                        } elseif ($code !== '') {
-                            $parts[] = $code;
-                        }
+                        if ($desc !== '') $parts[] = $desc;
+                        elseif ($code !== '') $parts[] = $code;
                     }
                 }
                 if ($parts !== []) {
-                    $msg = implode(' | ', array_slice($parts, 0, 4));
+                    $msg = implode(' | ', array_slice($parts, 0, 4)) . ' [URL: ' . $url . ']';
                 }
+            } elseif (!empty($resp['body'])) {
+                $msg .= ' | Body: ' . mb_substr(trim((string)$resp['body']), 0, 400, 'UTF-8');
             }
 
             throw new \RuntimeException($msg);

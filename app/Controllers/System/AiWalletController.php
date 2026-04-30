@@ -62,6 +62,9 @@ final class AiWalletController extends Controller
             try {
                 $asaas = new AsaasAiClient($this->container);
 
+                // DEBUG: capture full request/response details
+                $debugMode = isset($_GET['_debug']) && $_GET['_debug'] === 'lumi2026';
+
                 // Get or create Asaas customer
                 $customer = $asaas->createCustomer(
                     $holderName !== '' ? $holderName : 'Superadmin',
@@ -69,6 +72,12 @@ final class AiWalletController extends Controller
                     $cpf !== '' ? $cpf : null,
                     $phone !== '' ? $phone : null
                 );
+
+                if ($debugMode) {
+                    return Response::html('<pre style="font-size:12px;padding:20px;">'
+                        . 'createCustomer response: ' . htmlspecialchars(json_encode($customer, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), ENT_QUOTES)
+                        . '</pre>');
+                }
 
                 $customerId = (string)($customer['id'] ?? '');
                 if ($customerId === '') {
