@@ -230,6 +230,13 @@ final class AiBillingController
         return Response::redirect('/dev/ai-billing?saved=1&msg=' . urlencode('Crédito de R$ ' . number_format($amount, 2, ',', '.') . ' aplicado com sucesso.'));
     }
 
+    private function resolveEnvironment(): string
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $settings = (new AiBillingSettingsRepository($pdo))->getOrCreate();
+        return (string)($settings['asaas_mode'] ?? 'sandbox');
+    }
+
     /**
      * POST /webhooks/ai-billing/asaas
      * Asaas webhook receiver — always returns HTTP 200.
@@ -283,7 +290,7 @@ final class AiBillingController
             }
 
             $pdo = $this->container->get(\PDO::class);
-            $txRepo = new AiWalletTransactionRepository($pdo);
+            $txRepo = new AiWalletTransactionRepository($pdo, $this->resolveEnvironment());
 
             // Idempotency check — Property 6
             $existing = $txRepo->findByPaymentId($paymentId);
