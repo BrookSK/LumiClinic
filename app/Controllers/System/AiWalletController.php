@@ -123,6 +123,9 @@ final class AiWalletController extends Controller
         }
 
         // Save recharge configuration
+        if ($rechargeAmt < 25.00) {
+            return $this->redirect('/sys/settings/ai?error=' . urlencode('O valor mínimo de recarga é R$ 25,00.') . '#wallet');
+        }
         $walletService->saveRechargeConfig($autoEnabled, $threshold, $rechargeAmt);
 
         return $this->redirect('/sys/settings/ai?saved=1#wallet');

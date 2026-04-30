@@ -228,8 +228,8 @@ ob_start();
                             </div>
                             <div class="ai-field">
                                 <label class="ai-label">Valor da recarga (R$)</label>
-                                <input class="lc-input" type="number" name="auto_recharge_amount_brl" value="<?= $rechargeAmt ?>" min="1" step="0.01" placeholder="50.00" />
-                                <div class="ai-hint">Cobrado no cartão a cada recarga</div>
+                                <input class="lc-input" type="number" name="auto_recharge_amount_brl" value="<?= $rechargeAmt ?>" min="25" step="0.01" placeholder="25.00" />
+                                <div class="ai-hint">Mínimo R$ 25,00 — cobrado no cartão a cada recarga</div>
                             </div>
                         </div>
 
