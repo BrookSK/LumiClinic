@@ -266,6 +266,7 @@ final class AiBillingController
     {
         try {
             $body = (string)file_get_contents('php://input');
+            error_log('[AiBilling][Webhook] Received body: ' . substr($body, 0, 500));
 
             // Verify webhook secret if configured
             $pdo = $this->container->get(\PDO::class);
@@ -276,60 +277,67 @@ final class AiBillingController
                 $crypto = new SystemCryptoService($this->container);
                 $secret = $crypto->decrypt($encryptedSecret);
 
-                // Asaas sends the token in the Authorization header or as asaasAccessToken in body
                 $authHeader = trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
                 $authHeader = preg_replace('/^Bearer\s+/i', '', $authHeader);
 
                 $data = json_decode($body, true);
                 $bodyToken = is_array($data) ? trim((string)($data['accessToken'] ?? '')) : '';
-
                 $receivedToken = $authHeader !== '' ? $authHeader : $bodyToken;
 
                 if (!hash_equals($secret, $receivedToken)) {
-                    error_log('[AiBilling][Webhook] Invalid webhook secret — request rejected');
-                    return Response::raw('ok', 200); // Always 200 to avoid Asaas retries
+                    error_log('[AiBilling][Webhook] Invalid secret — rejected');
+                    return Response::raw('ok', 200);
                 }
             }
 
             $data = $data ?? json_decode($body, true);
 
             if (!is_array($data)) {
+                error_log('[AiBilling][Webhook] Invalid JSON body');
                 return Response::raw('ok', 200);
             }
 
             $event     = (string)($data['event'] ?? '');
             $paymentId = (string)($data['payment']['id'] ?? '');
 
-            // Only process confirmed payment events
+            error_log('[AiBilling][Webhook] event=' . $event . ' paymentId=' . $paymentId);
+
             $processableEvents = ['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_AUTHORIZED'];
             if (!in_array($event, $processableEvents, true)) {
+                error_log('[AiBilling][Webhook] Ignoring event: ' . $event);
                 return Response::raw('ok', 200);
             }
 
             if ($paymentId === '') {
+                error_log('[AiBilling][Webhook] Empty paymentId');
                 return Response::raw('ok', 200);
             }
 
-            $pdo = $this->container->get(\PDO::class);
-            $txRepo = new AiWalletTransactionRepository($pdo, $this->resolveEnvironment());
+            $env = $this->resolveEnvironment();
+            error_log('[AiBilling][Webhook] environment=' . $env);
 
-            // Idempotency check — Property 6
+            $txRepo = new AiWalletTransactionRepository($pdo, $env);
+
             $existing = $txRepo->findByPaymentId($paymentId);
             if ($existing !== null) {
+                error_log('[AiBilling][Webhook] Already credited paymentId=' . $paymentId);
                 return Response::raw('ok', 200);
             }
 
             // Verify payment status directly with Asaas API
             $asaas = new AsaasAiClient($this->container);
             $payment = $asaas->getPayment($paymentId);
-
             $status = (string)($payment['status'] ?? '');
+            error_log('[AiBilling][Webhook] Asaas payment status=' . $status . ' value=' . ($payment['value'] ?? 0));
+
             if (!in_array($status, ['CONFIRMED', 'RECEIVED'], true)) {
+                error_log('[AiBilling][Webhook] Payment not confirmed, status=' . $status);
                 return Response::raw('ok', 200);
             }
 
             $amount = (float)($payment['value'] ?? 0);
             if ($amount <= 0) {
+                error_log('[AiBilling][Webhook] Invalid amount=' . $amount);
                 return Response::raw('ok', 200);
             }
 
@@ -339,9 +347,11 @@ final class AiBillingController
                 'Recarga via cartão — ' . $paymentId,
                 $paymentId
             );
+
+            error_log('[AiBilling][Webhook] Credited R$' . $amount . ' for paymentId=' . $paymentId);
+
         } catch (\Throwable $e) {
-            error_log('[AiBilling][Webhook] Error: ' . $e->getMessage());
-            // Always return 200 to prevent Asaas retries
+            error_log('[AiBilling][Webhook] Error: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
         }
 
         return Response::raw('ok', 200);
