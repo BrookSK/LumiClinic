@@ -254,6 +254,19 @@ final class AiBillingController
                 }
             }
 
+            // 10. Check actual Asaas payment status for the pending charge
+            $asaas = new AsaasAiClient($this->container);
+            foreach ($pending as $p) {
+                $pid = (string)($p['payment_id'] ?? '');
+                if ($pid === '') continue;
+                try {
+                    $payment = $asaas->getPayment($pid);
+                    $out[] = '🔍 Asaas ' . $pid . ' → status=' . ($payment['status'] ?? 'N/A') . ' value=' . ($payment['value'] ?? 'N/A');
+                } catch (\Throwable $e) {
+                    $out[] = '❌ getPayment(' . $pid . ') error: ' . $e->getMessage();
+                }
+            }
+
         } catch (\Throwable $e) {
             $out[] = '❌ ERROR: ' . $e->getMessage() . ' | ' . basename($e->getFile()) . ':' . $e->getLine();
         }
