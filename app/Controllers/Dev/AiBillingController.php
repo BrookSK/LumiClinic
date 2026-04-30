@@ -224,6 +224,36 @@ final class AiBillingController
                 ? '✅ system.encryption_key: present (' . strlen(trim((string)$row['value_text'])) . ' chars)'
                 : '⚠️ system.encryption_key: NOT in system_settings';
 
+            // 7. Simulate webhook credit with a fake payment_id
+            $fakePaymentId = 'test_' . bin2hex(random_bytes(8));
+            $walletService->credit(0.01, 'credit', 'Webhook simulation test', $fakePaymentId);
+            $wallet3 = $walletService->getOrCreate();
+            $out[] = '✅ Webhook credit simulation OK — balance: R$ ' . number_format((float)($wallet3['balance_brl'] ?? 0), 2, ',', '.');
+
+            // 8. Check existing charge_pending records
+            $stmt2 = $pdo->prepare("SELECT id, payment_id, created_at FROM ai_wallet_transactions WHERE type = 'charge_pending' AND environment = :env ORDER BY id DESC LIMIT 5");
+            $stmt2->execute(['env' => $env]);
+            $pending = $stmt2->fetchAll();
+            if (empty($pending)) {
+                $out[] = '✅ No charge_pending records';
+            } else {
+                foreach ($pending as $p) {
+                    $out[] = '⚠️ charge_pending id=' . $p['id'] . ' payment_id=' . ($p['payment_id'] ?? 'NULL') . ' at=' . $p['created_at'];
+                }
+            }
+
+            // 9. Check existing credit records
+            $stmt3 = $pdo->prepare("SELECT id, payment_id, amount_brl, created_at FROM ai_wallet_transactions WHERE type = 'credit' AND environment = :env ORDER BY id DESC LIMIT 5");
+            $stmt3->execute(['env' => $env]);
+            $credits = $stmt3->fetchAll();
+            if (empty($credits)) {
+                $out[] = '⚠️ No credit records found';
+            } else {
+                foreach ($credits as $c) {
+                    $out[] = '✅ credit id=' . $c['id'] . ' payment_id=' . ($c['payment_id'] ?? 'NULL') . ' amount=R$' . $c['amount_brl'] . ' at=' . $c['created_at'];
+                }
+            }
+
         } catch (\Throwable $e) {
             $out[] = '❌ ERROR: ' . $e->getMessage() . ' | ' . basename($e->getFile()) . ':' . $e->getLine();
         }
