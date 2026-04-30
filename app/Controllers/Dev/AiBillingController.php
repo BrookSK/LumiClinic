@@ -179,6 +179,116 @@ final class AiBillingController
     }
 
     /**
+     * POST /dev/ai-billing/credit
+     * Manually credits the wallet.
+     */
+    public function manualCredit(Request $request): Response
+    {
+        $redirect = $this->requireAuth();
+        if ($redirect !== null) return $redirect;
+
+        if (!$this->verifyCsrf($request)) {
+            return Response::redirect('/dev/ai-billing?error=' . urlencode('Token CSRF inválido.'));
+        }
+
+        $amount      = (float)$request->input('amount', 0);
+        $description = trim((string)$request->input('description', 'Crédito manual'));
+
+        if ($amount <= 0) {
+            return Response::redirect('/dev/ai-billing?error=' . urlencode('O valor deve ser maior que zero.'));
+        }
+
+        try {
+            (new AiWalletService($this->container))->credit($amount, 'manual_credit', $description);
+        } catch (\Throwable $e) {
+            return Response::redirect('/dev/ai-billing?error=' . urlencode($e->getMessage()));
+        }
+
+        return Response::redirect('/dev/ai-billing?saved=1&msg=' . urlencode('Crédito de R$ ' . number_format($amount, 2, ',', '.') . ' aplicado com sucesso.'));
+    }
+
+    /**
+     * POST /webhooks/ai-billing/asaas
+     * Asaas webhook receiver — always returns HTTP 200.
+     */
+    public function webhook(Request $request): Response
+    {
+        try {
+            $body = (string)file_get_contents('php://input');
+
+            $pdo = $this->container->get(\PDO::class);
+            $repo = new AiBillingSettingsRepository($pdo);
+
+            // Verify webhook secret if configured
+            $encryptedSecret = $repo->getActiveWebhookSecret();
+            if ($encryptedSecret !== '') {
+                $crypto = new SystemCryptoService($this->container);
+                $secret = $crypto->decrypt($encryptedSecret);
+                $authHeader = trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
+                $authHeader = (string)preg_replace('/^Bearer\s+/i', '', $authHeader);
+                $data = json_decode($body, true);
+                $bodyToken = is_array($data) ? trim((string)($data['accessToken'] ?? '')) : '';
+                $receivedToken = $authHeader !== '' ? $authHeader : $bodyToken;
+                if (!hash_equals($secret, $receivedToken)) {
+                    error_log('[AiBilling][Webhook] Invalid secret');
+                    return Response::raw('ok', 200);
+                }
+            }
+
+            $data = $data ?? json_decode($body, true);
+            if (!is_array($data)) {
+                return Response::raw('ok', 200);
+            }
+
+            $event     = (string)($data['event'] ?? '');
+            $paymentId = (string)($data['payment']['id'] ?? '');
+
+            error_log('[AiBilling][Webhook] event=' . $event . ' paymentId=' . $paymentId);
+
+            $processableEvents = ['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_AUTHORIZED'];
+            if (!in_array($event, $processableEvents, true) || $paymentId === '') {
+                return Response::raw('ok', 200);
+            }
+
+            $env    = $this->resolveEnvironment();
+            $txRepo = new AiWalletTransactionRepository($pdo, $env);
+
+            // Idempotency check
+            if ($txRepo->findByPaymentId($paymentId) !== null) {
+                error_log('[AiBilling][Webhook] Already credited ' . $paymentId);
+                return Response::raw('ok', 200);
+            }
+
+            // Get amount from webhook payload
+            $amount = (float)($data['payment']['value'] ?? 0);
+            if ($amount <= 0) {
+                // Fallback: fetch from Asaas API
+                $payment = (new AsaasAiClient($this->container))->getPayment($paymentId);
+                $amount  = (float)($payment['value'] ?? 0);
+            }
+
+            if ($amount <= 0) {
+                error_log('[AiBilling][Webhook] Invalid amount for ' . $paymentId);
+                return Response::raw('ok', 200);
+            }
+
+            (new AiWalletService($this->container))->credit(
+                $amount,
+                'credit',
+                'Recarga via cartao - ' . $paymentId,
+                $paymentId
+            );
+
+            error_log('[AiBilling][Webhook] Credited ' . $amount . ' for ' . $paymentId);
+
+        } catch (\Throwable $e) {
+            error_log('[AiBilling][Webhook] Error: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+        }
+
+        return Response::raw('ok', 200);
+    }
+
+    /**
      * GET /dev/ai-billing/webhook-test
      * Diagnostic: checks system health and force-credits any confirmed pending payments.
      */
@@ -192,7 +302,7 @@ final class AiBillingController
 
         try {
             $env = $this->resolveEnvironment();
-            $out[] = "✅ Environment: $env";
+            $out[] = '✅ Environment: ' . $env;
 
             // Crypto check
             $crypto = new SystemCryptoService($this->container);
@@ -219,14 +329,17 @@ final class AiBillingController
                 $out[] = '⚠️ Found ' . count($pending) . ' charge_pending record(s) — checking Asaas status...';
                 foreach ($pending as $p) {
                     $pid = (string)($p['payment_id'] ?? '');
-                    if ($pid === '') { $out[] = '⚠️ charge_pending id=' . $p['id'] . ' has no payment_id'; continue; }
+                    if ($pid === '') {
+                        $out[] = '⚠️ charge_pending id=' . $p['id'] . ' has no payment_id';
+                        continue;
+                    }
 
                     try {
                         $asaasClient = new AsaasAiClient($this->container);
                         $payment = $asaasClient->getPayment($pid);
                         $status = (string)($payment['status'] ?? '');
                         $amount = (float)($payment['value'] ?? 0);
-                        $out[] = '🔍 ' . $pid . ' → status=' . $status . ' value=R$' . $amount;
+                        $out[] = '🔍 ' . $pid . ' → status=' . $status . ' value=R$ ' . number_format($amount, 2, ',', '.');
 
                         if (in_array($status, ['CONFIRMED', 'RECEIVED', 'AUTHORIZED'], true) && $amount > 0) {
                             $txRepo = new AiWalletTransactionRepository($pdo, $env);
@@ -235,7 +348,7 @@ final class AiBillingController
                             } else {
                                 $walletService->credit($amount, 'credit', 'Recarga via cartão — ' . $pid, $pid);
                                 $w = $walletService->getOrCreate();
-                                $out[] = '✅ Credited R$' . $amount . ' — new balance: R$ ' . number_format((float)($w['balance_brl'] ?? 0), 2, ',', '.');
+                                $out[] = '✅ Credited R$ ' . number_format($amount, 2, ',', '.') . ' — new balance: R$ ' . number_format((float)($w['balance_brl'] ?? 0), 2, ',', '.');
                             }
                         }
                     } catch (\Throwable $e) {
@@ -300,139 +413,11 @@ final class AiBillingController
         return Response::redirect('/dev/ai-billing?saved=1&msg=' . urlencode('Sandbox zerado com sucesso.') . '#wallet');
     }
 
-    /**
-     * POST /dev/ai-billing/credit
-     * Manually credits the wallet.
-     */
-    public function manualCredit(Request $request): Response
-    {
-        $redirect = $this->requireAuth();
-        if ($redirect !== null) return $redirect;
-
-        if (!$this->verifyCsrf($request)) {
-            return Response::redirect('/dev/ai-billing?error=' . urlencode('Token CSRF inválido.'));
-        }
-
-        $amount      = (float)$request->input('amount', 0);
-        $description = trim((string)$request->input('description', 'Crédito manual'));
-
-        if ($amount <= 0) {
-            return Response::redirect('/dev/ai-billing?error=' . urlencode('O valor deve ser maior que zero.'));
-        }
-
-        try {
-            (new AiWalletService($this->container))->credit($amount, 'manual_credit', $description);
-        } catch (\Throwable $e) {
-            return Response::redirect('/dev/ai-billing?error=' . urlencode($e->getMessage()));
-        }
-
-        return Response::redirect('/dev/ai-billing?saved=1&msg=' . urlencode('Crédito de R$ ' . number_format($amount, 2, ',', '.') . ' aplicado com sucesso.'));
-    }
-
     private function resolveEnvironment(): string
     {
         $pdo = $this->container->get(\PDO::class);
         $settings = (new AiBillingSettingsRepository($pdo))->getOrCreate();
         return (string)($settings['asaas_mode'] ?? 'sandbox');
-    }
-
-    /**
-     * POST /webhooks/ai-billing/asaas
-     * Asaas webhook receiver — always returns HTTP 200.
-     */
-    public function webhook(Request $request): Response
-    {
-        try {
-            $body = (string)file_get_contents('php://input');
-            error_log('[AiBilling][Webhook] Received body: ' . substr($body, 0, 500));
-
-            // Verify webhook secret if configured
-            $pdo = $this->container->get(\PDO::class);
-            $repo = new AiBillingSettingsRepository($pdo);
-            $encryptedSecret = $repo->getActiveWebhookSecret();
-
-            if ($encryptedSecret !== '') {
-                $crypto = new SystemCryptoService($this->container);
-                $secret = $crypto->decrypt($encryptedSecret);
-
-                $authHeader = trim((string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
-                $authHeader = preg_replace('/^Bearer\s+/i', '', $authHeader);
-
-                $data = json_decode($body, true);
-                $bodyToken = is_array($data) ? trim((string)($data['accessToken'] ?? '')) : '';
-                $receivedToken = $authHeader !== '' ? $authHeader : $bodyToken;
-
-                if (!hash_equals($secret, $receivedToken)) {
-                    error_log('[AiBilling][Webhook] Invalid secret — rejected');
-                    return Response::raw('ok', 200);
-                }
-            }
-
-            $data = $data ?? json_decode($body, true);
-
-            if (!is_array($data)) {
-                error_log('[AiBilling][Webhook] Invalid JSON body');
-                return Response::raw('ok', 200);
-            }
-
-            $event     = (string)($data['event'] ?? '');
-            $paymentId = (string)($data['payment']['id'] ?? '');
-
-            error_log('[AiBilling][Webhook] event=' . $event . ' paymentId=' . $paymentId);
-
-            $processableEvents = ['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_AUTHORIZED'];
-            if (!in_array($event, $processableEvents, true)) {
-                error_log('[AiBilling][Webhook] Ignoring event: ' . $event);
-                return Response::raw('ok', 200);
-            }
-
-            if ($paymentId === '') {
-                error_log('[AiBilling][Webhook] Empty paymentId');
-                return Response::raw('ok', 200);
-            }
-
-            $env = $this->resolveEnvironment();
-            error_log('[AiBilling][Webhook] environment=' . $env);
-
-            $txRepo = new AiWalletTransactionRepository($pdo, $env);
-
-            $existing = $txRepo->findByPaymentId($paymentId);
-            if ($existing !== null) {
-                error_log('[AiBilling][Webhook] Already credited paymentId=' . $paymentId);
-                return Response::raw('ok', 200);
-            }
-
-            // Trust the webhook event — no need to re-verify with Asaas API
-            // The event itself is the confirmation
-            $amount = (float)($data['payment']['value'] ?? 0);
-
-            // Fallback: if value not in webhook payload, fetch from Asaas
-            if ($amount <= 0) {
-                $asaas = new AsaasAiClient($this->container);
-                $payment = $asaas->getPayment($paymentId);
-                $amount = (float)($payment['value'] ?? 0);
-                error_log('[AiBilling][Webhook] Fetched amount from Asaas: ' . $amount);
-            }
-
-            if ($amount <= 0) {
-                error_log('[AiBilling][Webhook] Invalid amount=' . $amount);
-                return Response::raw('ok', 200);
-            }
-
-            (new AiWalletService($this->container))->credit(
-                $amount,
-                'credit',
-                'Recarga via cartão — ' . $paymentId,
-                $paymentId
-            );
-
-            error_log('[AiBilling][Webhook] Credited R$' . $amount . ' for paymentId=' . $paymentId);
-
-        } catch (\Throwable $e) {
-            error_log('[AiBilling][Webhook] Error: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
-        }
-
-        return Response::raw('ok', 200);
     }
 
     // -------------------------------------------------------------------------

@@ -215,11 +215,28 @@ final class AiWalletService
             throw new \RuntimeException('Valor de recarga inválido.');
         }
 
+        $pdo = $this->container->get(\PDO::class);
         $txRepo = $this->txRepo();
 
-        // Property 7: Dedup — abort if pending charge already exists
+        // Clean up stale charge_pending records (older than 2 hours or already confirmed)
+        $pdo->prepare(
+            "DELETE FROM ai_wallet_transactions 
+             WHERE type = 'charge_pending' 
+               AND environment = :env
+               AND (
+                   created_at < DATE_SUB(NOW(), INTERVAL 2 HOUR)
+                   OR payment_id IN (
+                       SELECT payment_id FROM (
+                           SELECT payment_id FROM ai_wallet_transactions 
+                           WHERE type = 'credit' AND environment = :env2
+                       ) AS credited
+                   )
+               )"
+        )->execute(['env' => $this->environment, 'env2' => $this->environment]);
+
+        // Property 7: Dedup — abort if recent pending charge already exists
         if ($txRepo->hasPendingCharge()) {
-            error_log('[AiWallet] Pending charge already exists — skipping auto-recharge');
+            error_log('[AiWallet] Recent pending charge exists — skipping recharge');
             return;
         }
 
