@@ -19,24 +19,7 @@ final class SystemCryptoService
     {
         $pdo = $this->container->get(\PDO::class);
 
-        // Try to get existing key from ai_billing_settings
-        try {
-            $stmt = $pdo->prepare("SELECT crypto_key FROM ai_billing_settings WHERE id = 1 LIMIT 1");
-            $stmt->execute();
-            $row = $stmt->fetch();
-            $keyHex = $row ? trim((string)($row['crypto_key'] ?? '')) : '';
-
-            if ($keyHex !== '') {
-                $raw = @hex2bin($keyHex);
-                if ($raw !== false && strlen($raw) >= 32) {
-                    return substr($raw, 0, 32);
-                }
-            }
-        } catch (\Throwable $e) {
-            // Column may not exist yet — fall through to generate
-        }
-
-        // Try system_settings as secondary source
+        // 1. Try system_settings first (most reliable, always exists)
         try {
             $stmt = $pdo->prepare("SELECT value_text FROM system_settings WHERE `key` = 'system.encryption_key' LIMIT 1");
             $stmt->execute();
@@ -53,23 +36,72 @@ final class SystemCryptoService
             // Fall through
         }
 
-        // Generate a new key and persist it in ai_billing_settings
+        // 2. Try ai_billing_settings.crypto_key (may not exist if migration pending)
+        try {
+            $stmt = $pdo->prepare("SELECT crypto_key FROM ai_billing_settings WHERE id = 1 LIMIT 1");
+            $stmt->execute();
+            $row = $stmt->fetch();
+            $keyHex = $row ? trim((string)($row['crypto_key'] ?? '')) : '';
+
+            if ($keyHex !== '') {
+                $raw = @hex2bin($keyHex);
+                if ($raw !== false && strlen($raw) >= 32) {
+                    return substr($raw, 0, 32);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Column doesn't exist yet — fall through to generate
+        }
+
+        // 3. Generate a new key and persist it in system_settings (always available)
         $newKeyRaw = random_bytes(32);
         $newKeyHex = bin2hex($newKeyRaw);
 
         try {
-            // Ensure row exists
+            $pdo->prepare(
+                "INSERT INTO system_settings (`key`, value_text) VALUES ('system.encryption_key', :k)
+                 ON DUPLICATE KEY UPDATE value_text = :k"
+            )->execute(['k' => $newKeyHex]);
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('Não foi possível armazenar a chave de criptografia: ' . $e->getMessage());
+        }
+
+        // Also try to save in ai_billing_settings if column exists
+        try {
+            $pdo->exec("INSERT IGNORE INTO ai_billing_settings (id, price_per_minute_brl, cost_per_minute_brl) VALUES (1, 0.0910, 0.0350)");
+            $pdo->prepare("UPDATE ai_billing_settings SET crypto_key = :k WHERE id = 1")->execute(['k' => $newKeyHex]);
+        } catch (\Throwable $e) {
+            // Column doesn't exist yet — system_settings is enough
+        }
+
+        return $newKeyRaw;
+    }
+
+        // Generate a new key and persist it in ai_billing_settings
+        $newKeyRaw = random_bytes(32);
+        $newKeyHex = bin2hex($newKeyRaw);
+
+        $saved = false;
+
+        // Try to save in ai_billing_settings.crypto_key first
+        try {
             $pdo->exec("INSERT IGNORE INTO ai_billing_settings (id, price_per_minute_brl, cost_per_minute_brl) VALUES (1, 0.0910, 0.0350)");
             $pdo->prepare("UPDATE ai_billing_settings SET crypto_key = :k WHERE id = 1")
                 ->execute(['k' => $newKeyHex]);
+            $saved = true;
         } catch (\Throwable $e) {
-            // If crypto_key column doesn't exist yet, store in system_settings as fallback
+            // crypto_key column doesn't exist yet — fall through to system_settings
+        }
+
+        // Always also save in system_settings as reliable fallback
+        if (!$saved) {
             try {
-                $pdo->prepare("INSERT INTO system_settings (`key`, value_text) VALUES ('system.encryption_key', :k)
-                    ON DUPLICATE KEY UPDATE value_text = :k")
-                    ->execute(['k' => $newKeyHex]);
+                $pdo->prepare(
+                    "INSERT INTO system_settings (`key`, value_text) VALUES ('system.encryption_key', :k)
+                     ON DUPLICATE KEY UPDATE value_text = :k"
+                )->execute(['k' => $newKeyHex]);
             } catch (\Throwable $e2) {
-                throw new \RuntimeException('Não foi possível gerar ou armazenar a chave de criptografia do sistema.');
+                throw new \RuntimeException('Não foi possível gerar ou armazenar a chave de criptografia do sistema: ' . $e2->getMessage());
             }
         }
 
