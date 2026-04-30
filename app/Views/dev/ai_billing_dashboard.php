@@ -163,7 +163,7 @@
     <div class="tab-panel active" id="tab-config">
         <div class="card">
             <div class="card-title">Configurações do sistema</div>
-            <form method="post" action="/dev/ai-billing/settings?_debug=lumi2026">
+            <form method="post" action="/dev/ai-billing/settings">
                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf ?? '', ENT_QUOTES, 'UTF-8') ?>" />
 
                 <!-- Asaas mode toggle -->

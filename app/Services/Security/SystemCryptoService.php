@@ -8,8 +8,8 @@ use App\Core\Container\Container;
 
 /**
  * System-level encryption service for secrets not scoped to a specific clinic.
- * Uses the same AES-256-GCM algorithm as CryptoService but reads the key from
- * system_settings (key: system.encryption_key) or falls back to APP_KEY env var.
+ * Uses AES-256-GCM. The encryption key is stored in ai_billing_settings.crypto_key
+ * and auto-generated on first use. No external APP_KEY or .env required.
  */
 final class SystemCryptoService
 {
@@ -17,9 +17,27 @@ final class SystemCryptoService
 
     private function systemKey(): string
     {
-        // Try system_settings first
+        $pdo = $this->container->get(\PDO::class);
+
+        // Try to get existing key from ai_billing_settings
         try {
-            $pdo = $this->container->get(\PDO::class);
+            $stmt = $pdo->prepare("SELECT crypto_key FROM ai_billing_settings WHERE id = 1 LIMIT 1");
+            $stmt->execute();
+            $row = $stmt->fetch();
+            $keyHex = $row ? trim((string)($row['crypto_key'] ?? '')) : '';
+
+            if ($keyHex !== '') {
+                $raw = @hex2bin($keyHex);
+                if ($raw !== false && strlen($raw) >= 32) {
+                    return substr($raw, 0, 32);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Column may not exist yet — fall through to generate
+        }
+
+        // Try system_settings as secondary source
+        try {
             $stmt = $pdo->prepare("SELECT value_text FROM system_settings WHERE `key` = 'system.encryption_key' LIMIT 1");
             $stmt->execute();
             $row = $stmt->fetch();
@@ -32,17 +50,30 @@ final class SystemCryptoService
                 }
             }
         } catch (\Throwable $e) {
-            // Fall through to APP_KEY
+            // Fall through
         }
 
-        // Fallback to APP_KEY environment variable
-        $appKey = trim((string)(getenv('APP_KEY') ?: ($_ENV['APP_KEY'] ?? '')));
-        if ($appKey === '') {
-            throw new \RuntimeException('Chave de criptografia do sistema não configurada. Defina APP_KEY ou system.encryption_key.');
+        // Generate a new key and persist it in ai_billing_settings
+        $newKeyRaw = random_bytes(32);
+        $newKeyHex = bin2hex($newKeyRaw);
+
+        try {
+            // Ensure row exists
+            $pdo->exec("INSERT IGNORE INTO ai_billing_settings (id, price_per_minute_brl, cost_per_minute_brl) VALUES (1, 0.0910, 0.0350)");
+            $pdo->prepare("UPDATE ai_billing_settings SET crypto_key = :k WHERE id = 1")
+                ->execute(['k' => $newKeyHex]);
+        } catch (\Throwable $e) {
+            // If crypto_key column doesn't exist yet, store in system_settings as fallback
+            try {
+                $pdo->prepare("INSERT INTO system_settings (`key`, value_text) VALUES ('system.encryption_key', :k)
+                    ON DUPLICATE KEY UPDATE value_text = :k")
+                    ->execute(['k' => $newKeyHex]);
+            } catch (\Throwable $e2) {
+                throw new \RuntimeException('Não foi possível gerar ou armazenar a chave de criptografia do sistema.');
+            }
         }
 
-        // Derive a 32-byte key from APP_KEY using SHA-256
-        return hash('sha256', $appKey, true);
+        return $newKeyRaw;
     }
 
     public function encrypt(string $plaintext): string
