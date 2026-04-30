@@ -81,7 +81,7 @@ final class AiWalletTransactionRepository
 
         $stmt = $this->pdo->prepare("
             SELECT
-                COUNT(*) AS transcription_count,
+                COUNT(CASE WHEN type = 'debit' THEN 1 END) AS transcription_count,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN duration_seconds ELSE 0 END), 0) AS total_seconds,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN amount_brl ELSE 0 END), 0) AS total_charged_brl,
                 COALESCE(SUM(CASE WHEN type = 'credit' THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
@@ -97,7 +97,7 @@ final class AiWalletTransactionRepository
     {
         $stmt = $this->pdo->prepare("
             SELECT
-                COUNT(*) AS transcription_count,
+                COUNT(CASE WHEN type = 'debit' THEN 1 END) AS transcription_count,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN duration_seconds ELSE 0 END), 0) AS total_seconds,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN amount_brl ELSE 0 END), 0) AS total_charged_brl,
                 COALESCE(SUM(CASE WHEN type = 'credit' THEN amount_brl ELSE 0 END), 0) AS total_credited_brl

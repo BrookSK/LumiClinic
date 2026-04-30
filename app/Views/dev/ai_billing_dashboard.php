@@ -286,55 +286,85 @@
     <!-- ===== TAB: Estatísticas ===== -->
     <div class="tab-panel" id="tab-stats">
 
+        <?php
+        // Stats based on CREDITS received (recharges from superadmin)
+        // Total received = what superadmin paid us
+        // Our cost = received × (cost_per_min / price_per_min) = received × (0.035/0.091)
+        // Our profit = received - our cost
+        $ratio = ($pricePerMin ?? 0.0910) > 0 ? ($costPerMin ?? 0.0350) / ($pricePerMin ?? 0.0910) : 0;
+
+        $monthReceived = (float)($statsMonth['total_credited_brl'] ?? 0);
+        $monthOurCost  = round($monthReceived * $ratio, 2);
+        $monthOurProfit = round($monthReceived - $monthOurCost, 2);
+        $monthDebited  = (float)($statsMonth['total_charged_brl'] ?? 0); // already consumed
+        $monthBalance  = round($monthReceived - $monthDebited, 2); // still in wallet
+
+        $totalReceived = (float)($statsTotal['total_credited_brl'] ?? 0);
+        $totalOurCost  = round($totalReceived * $ratio, 2);
+        $totalOurProfit = round($totalReceived - $totalOurCost, 2);
+        $totalDebited  = (float)($statsTotal['total_charged_brl'] ?? 0);
+        $totalBalance  = round($totalReceived - $totalDebited, 2);
+        ?>
+
+        <!-- Info box explaining the logic -->
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;font-size:13px;color:#1e40af;margin-bottom:20px;line-height:1.6;">
+            💡 <strong>Como ler estas estatísticas:</strong>
+            O superadmin recarrega a carteira. Cada real recebido tem um custo proporcional de
+            <strong>R$ <?= number_format($ratio, 4, ',', '.') ?></strong> por real
+            (proporção custo/preço: <?= number_format($costPerMin ?? 0.0350, 4, ',', '.') ?> / <?= number_format($pricePerMin ?? 0.0910, 4, ',', '.') ?>).
+            O restante é lucro.
+        </div>
+
         <div style="font-weight:700;font-size:14px;color:#374151;margin-bottom:12px;">📅 Mês atual (<?= htmlspecialchars($currentMonth ?? date('Y-m'), ENT_QUOTES, 'UTF-8') ?>)</div>
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Total cobrado</div>
-                <div class="stat-value">R$ <?= number_format($monthCharged ?? 0, 2, ',', '.') ?></div>
+                <div class="stat-label">Recebido do superadmin</div>
+                <div class="stat-value">R$ <?= number_format($monthReceived, 2, ',', '.') ?></div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Total de recargas no mês</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Custo real</div>
-                <div class="stat-value">R$ <?= number_format($monthCost ?? 0, 2, ',', '.') ?></div>
+                <div class="stat-label">Nosso custo (OpenAI)</div>
+                <div class="stat-value" style="color:#dc2626;">R$ <?= number_format($monthOurCost, 2, ',', '.') ?></div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Precisa ter na OpenAI</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Lucro</div>
-                <div class="stat-value" style="color:<?= ($monthProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626' ?>;">
-                    R$ <?= number_format($monthProfit ?? 0, 2, ',', '.') ?>
-                </div>
+                <div class="stat-label">Nosso lucro</div>
+                <div class="stat-value" style="color:#16a34a;">R$ <?= number_format($monthOurProfit, 2, ',', '.') ?></div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Margem de <?= number_format((1 - $ratio) * 100, 1, ',', '.') ?>%</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Minutos</div>
-                <div class="stat-value"><?= number_format($monthMinutes ?? 0, 0, ',', '.') ?></div>
+                <div class="stat-label">Já consumido</div>
+                <div class="stat-value">R$ <?= number_format($monthDebited, 2, ',', '.') ?></div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Debitado em transcrições</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Transcrições</div>
-                <div class="stat-value"><?= number_format((int)($statsMonth['transcription_count'] ?? 0), 0, ',', '.') ?></div>
+                <div class="stat-label">Saldo disponível</div>
+                <div class="stat-value" style="color:#6366f1;">R$ <?= number_format($monthBalance, 2, ',', '.') ?></div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Ainda na carteira</div>
             </div>
         </div>
 
-        <div style="font-weight:700;font-size:14px;color:#374151;margin-bottom:12px;margin-top:8px;">🌐 Total acumulado</div>
+        <div style="font-weight:700;font-size:14px;color:#374151;margin-bottom:12px;margin-top:20px;">🌐 Total acumulado</div>
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Total cobrado</div>
-                <div class="stat-value">R$ <?= number_format($totalCharged ?? 0, 2, ',', '.') ?></div>
+                <div class="stat-label">Recebido do superadmin</div>
+                <div class="stat-value">R$ <?= number_format($totalReceived, 2, ',', '.') ?></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Custo real</div>
-                <div class="stat-value">R$ <?= number_format($totalCost ?? 0, 2, ',', '.') ?></div>
+                <div class="stat-label">Nosso custo (OpenAI)</div>
+                <div class="stat-value" style="color:#dc2626;">R$ <?= number_format($totalOurCost, 2, ',', '.') ?></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Lucro</div>
-                <div class="stat-value" style="color:<?= ($totalProfit ?? 0) >= 0 ? '#16a34a' : '#dc2626' ?>;">
-                    R$ <?= number_format($totalProfit ?? 0, 2, ',', '.') ?>
-                </div>
+                <div class="stat-label">Nosso lucro</div>
+                <div class="stat-value" style="color:#16a34a;">R$ <?= number_format($totalOurProfit, 2, ',', '.') ?></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Minutos</div>
-                <div class="stat-value"><?= number_format($totalMinutes ?? 0, 0, ',', '.') ?></div>
+                <div class="stat-label">Já consumido</div>
+                <div class="stat-value">R$ <?= number_format($totalDebited, 2, ',', '.') ?></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Transcrições</div>
-                <div class="stat-value"><?= number_format((int)($statsTotal['transcription_count'] ?? 0), 0, ',', '.') ?></div>
+                <div class="stat-label">Saldo disponível</div>
+                <div class="stat-value" style="color:#6366f1;">R$ <?= number_format($totalBalance, 2, ',', '.') ?></div>
             </div>
         </div>
 
