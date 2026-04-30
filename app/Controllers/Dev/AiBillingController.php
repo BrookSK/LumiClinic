@@ -179,6 +179,27 @@ final class AiBillingController
     }
 
     /**
+     * POST /dev/ai-billing/clear-pending
+     * Removes stale charge_pending transactions so new recharges can be triggered.
+     */
+    public function clearPending(Request $request): Response
+    {
+        $redirect = $this->requireAuth();
+        if ($redirect !== null) return $redirect;
+
+        if (!$this->verifyCsrf($request)) {
+            return Response::redirect('/dev/ai-billing?error=' . urlencode('Token CSRF inválido.'));
+        }
+
+        $env = $this->resolveEnvironment();
+        $pdo = $this->container->get(\PDO::class);
+        $pdo->prepare("DELETE FROM ai_wallet_transactions WHERE type = 'charge_pending' AND environment = :env")
+            ->execute(['env' => $env]);
+
+        return Response::redirect('/dev/ai-billing?saved=1&msg=' . urlencode('Cobranças pendentes removidas.') . '#wallet');
+    }
+
+    /**
      * POST /dev/ai-billing/reset-sandbox
      * Resets sandbox wallet: zeroes balance, clears card, deletes all sandbox transactions.
      */
@@ -280,7 +301,7 @@ final class AiBillingController
             $paymentId = (string)($data['payment']['id'] ?? '');
 
             // Only process confirmed payment events
-            $processableEvents = ['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'];
+            $processableEvents = ['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_AUTHORIZED'];
             if (!in_array($event, $processableEvents, true)) {
                 return Response::raw('ok', 200);
             }

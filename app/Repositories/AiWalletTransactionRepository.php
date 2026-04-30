@@ -49,11 +49,15 @@ final class AiWalletTransactionRepository
         return $row ?: null;
     }
 
-    /** Auto-recharge dedup — scoped to environment */
+    /** Auto-recharge dedup — scoped to environment, ignores stale pending charges older than 1 hour */
     public function hasPendingCharge(): bool
     {
         $stmt = $this->pdo->prepare(
-            "SELECT 1 FROM ai_wallet_transactions WHERE type = 'charge_pending' AND environment = :env LIMIT 1"
+            "SELECT 1 FROM ai_wallet_transactions 
+             WHERE type = 'charge_pending' 
+               AND environment = :env 
+               AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+             LIMIT 1"
         );
         $stmt->execute(['env' => $this->environment]);
         return (bool)$stmt->fetchColumn();

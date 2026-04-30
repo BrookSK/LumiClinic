@@ -438,6 +438,18 @@
         </div>
         <?php endif; ?>
 
+        <div class="card" style="max-width:480px;border-color:#fed7aa;">
+            <div class="card-title" style="color:#c2410c;">⚠️ Limpar cobranças pendentes travadas</div>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">
+                Remove registros <code>charge_pending</code> travados (webhook não chegou).
+                Use se "Recarregar agora" não estiver criando novas cobranças.
+            </p>
+            <form method="post" action="/dev/ai-billing/clear-pending">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+                <button class="btn" style="background:#ea580c;" type="submit">Limpar pendentes</button>
+            </form>
+        </div>
+
         <!-- Transaction history -->
         <?php if (!empty($transactions)): ?>
         <div class="card">
