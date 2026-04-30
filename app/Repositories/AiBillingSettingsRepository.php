@@ -27,6 +27,21 @@ final class AiBillingSettingsRepository
     }
 
     /**
+     * Returns the active webhook secret (encrypted) based on current mode.
+     */
+    public function getActiveWebhookSecret(): string
+    {
+        $settings = $this->getOrCreate();
+        $mode = (string)($settings['asaas_mode'] ?? 'sandbox');
+
+        $col = $mode === 'production'
+            ? 'asaas_webhook_secret_production_encrypted'
+            : 'asaas_webhook_secret_sandbox_encrypted';
+
+        return trim((string)($settings[$col] ?? ''));
+    }
+
+    /**
      * Returns the active Asaas API key (sandbox or production) based on current mode.
      */
     public function getActiveAsaasKey(): string
@@ -69,6 +84,8 @@ final class AiBillingSettingsRepository
         $allowed = [
             'asaas_api_key_encrypted',
             'asaas_sandbox_key_encrypted',
+            'asaas_webhook_secret_sandbox_encrypted',
+            'asaas_webhook_secret_production_encrypted',
             'asaas_mode',
             'openai_api_key_encrypted',
             'price_per_minute_brl',
@@ -87,7 +104,13 @@ final class AiBillingSettingsRepository
             $val = $fields[$col];
 
             // Skip empty strings for encrypted key fields — preserve existing value
-            if (in_array($col, ['asaas_api_key_encrypted', 'asaas_sandbox_key_encrypted', 'openai_api_key_encrypted'], true)) {
+            if (in_array($col, [
+                'asaas_api_key_encrypted',
+                'asaas_sandbox_key_encrypted',
+                'asaas_webhook_secret_sandbox_encrypted',
+                'asaas_webhook_secret_production_encrypted',
+                'openai_api_key_encrypted',
+            ], true)) {
                 if ($val === '' || $val === null) {
                     continue;
                 }

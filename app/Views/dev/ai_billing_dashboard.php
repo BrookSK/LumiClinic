@@ -209,6 +209,36 @@
                     </div>
                 </div>
 
+                <!-- Webhook section -->
+                <div style="background:#f9fafb;border-radius:8px;padding:14px 16px;margin-bottom:14px;border:1px solid #e5e7eb;">
+                    <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">🔗 Webhook</div>
+                    <div class="field">
+                        <label>URL do Webhook (somente leitura)</label>
+                        <input type="text" class="readonly-input" readonly value="<?= htmlspecialchars($webhookUrl ?? '', ENT_QUOTES, 'UTF-8') ?>" onclick="this.select()" />
+                        <div class="hint">Configure na Asaas os eventos: <strong>PAYMENT_CONFIRMED</strong>, <strong>PAYMENT_RECEIVED</strong></div>
+                    </div>
+                    <div class="grid-2" style="margin-top:10px;">
+                        <div class="field">
+                            <label>Webhook Secret — Sandbox</label>
+                            <input type="password" name="webhook_secret_sandbox" placeholder="<?= $webhookSecretSbxSet ? '••••••••••••' : 'Não configurado' ?>" autocomplete="off" />
+                            <?php if ($webhookSecretSbxSet): ?>
+                            <div class="key-status">✅ Configurado</div>
+                            <?php else: ?>
+                            <div class="hint">Token configurado no webhook do Asaas sandbox</div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="field">
+                            <label>Webhook Secret — Produção</label>
+                            <input type="password" name="webhook_secret_production" placeholder="<?= $webhookSecretProdSet ? '••••••••••••' : 'Não configurado' ?>" autocomplete="off" />
+                            <?php if ($webhookSecretProdSet): ?>
+                            <div class="key-status">✅ Configurado</div>
+                            <?php else: ?>
+                            <div class="hint">Token configurado no webhook do Asaas produção</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="field">
                     <label>Chave OpenAI API</label>
                     <input type="password" name="openai_api_key" placeholder="<?= $openaiKeySet ? '••••••••••••' : 'Não configurada' ?>" autocomplete="off" />
