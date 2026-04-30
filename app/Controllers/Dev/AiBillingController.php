@@ -179,6 +179,64 @@ final class AiBillingController
     }
 
     /**
+     * GET /dev/ai-billing/webhook-test
+     * Diagnostic: simulates a PAYMENT_CONFIRMED webhook to test the full flow.
+     */
+    public function webhookTest(Request $request): Response
+    {
+        $redirect = $this->requireAuth();
+        if ($redirect !== null) return $redirect;
+
+        $out = [];
+        $pdo = $this->container->get(\PDO::class);
+
+        try {
+            // 1. Check environment
+            $env = $this->resolveEnvironment();
+            $out[] = "✅ Environment: $env";
+
+            // 2. Check crypto key
+            $crypto = new SystemCryptoService($this->container);
+            $testEnc = $crypto->encrypt('test');
+            $testDec = $crypto->decrypt($testEnc);
+            $out[] = $testDec === 'test' ? '✅ Crypto: OK' : '❌ Crypto: FAILED';
+
+            // 3. Check wallet row
+            $walletService = new AiWalletService($this->container);
+            $wallet = $walletService->getOrCreate();
+            $out[] = '✅ Wallet balance: R$ ' . number_format((float)($wallet['balance_brl'] ?? 0), 2, ',', '.');
+            $out[] = '✅ Wallet environment: ' . ($wallet['environment'] ?? 'N/A');
+
+            // 4. Try a manual credit of R$ 0.01
+            $walletService->credit(0.01, 'manual_credit', 'Webhook test credit', null);
+            $wallet2 = $walletService->getOrCreate();
+            $out[] = '✅ Credit test OK — new balance: R$ ' . number_format((float)($wallet2['balance_brl'] ?? 0), 2, ',', '.');
+
+            // 5. Check Asaas key
+            $repo = new AiBillingSettingsRepository($pdo);
+            $encKey = $repo->getActiveAsaasKey();
+            $out[] = $encKey !== '' ? '✅ Asaas key: configured' : '❌ Asaas key: NOT configured';
+
+            // 6. Check system_settings for crypto key
+            $stmt = $pdo->query("SELECT value_text FROM system_settings WHERE `key` = 'system.encryption_key' LIMIT 1");
+            $row = $stmt ? $stmt->fetch() : null;
+            $out[] = ($row && trim((string)($row['value_text'] ?? '')) !== '')
+                ? '✅ system.encryption_key: present (' . strlen(trim((string)$row['value_text'])) . ' chars)'
+                : '⚠️ system.encryption_key: NOT in system_settings';
+
+        } catch (\Throwable $e) {
+            $out[] = '❌ ERROR: ' . $e->getMessage() . ' | ' . basename($e->getFile()) . ':' . $e->getLine();
+        }
+
+        $html = '<pre style="font-family:monospace;font-size:13px;padding:20px;background:#f9fafb;line-height:1.8;">';
+        $html .= '<strong>🔍 Webhook Diagnostic</strong>' . "\n\n";
+        $html .= implode("\n", $out);
+        $html .= '</pre>';
+
+        return Response::html($html);
+    }
+
+    /**
      * POST /dev/ai-billing/clear-pending
      * Removes stale charge_pending transactions so new recharges can be triggered.
      */

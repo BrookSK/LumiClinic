@@ -191,6 +191,7 @@ $router->post('/dev/ai-billing/settings', [\App\Controllers\Dev\AiBillingControl
 $router->post('/dev/ai-billing/credit', [\App\Controllers\Dev\AiBillingController::class, 'manualCredit']);
 $router->post('/dev/ai-billing/reset-sandbox', [\App\Controllers\Dev\AiBillingController::class, 'resetSandbox']);
 $router->post('/dev/ai-billing/clear-pending', [\App\Controllers\Dev\AiBillingController::class, 'clearPending']);
+$router->get('/dev/ai-billing/webhook-test', [\App\Controllers\Dev\AiBillingController::class, 'webhookTest']);
 
 $router->get('/billing/subscription', [ClinicSubscriptionController::class, 'index']);
 $router->post('/billing/subscription/change-plan', [ClinicSubscriptionController::class, 'changePlan']);
