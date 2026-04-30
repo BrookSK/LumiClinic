@@ -63,7 +63,9 @@ final class SystemPlanAdminController extends Controller
         }
 
         $transcriptionMinutes = (int)$request->input('limit_transcription_minutes', 0);
-        if ($transcriptionMinutes > 0) {
+        $transcriptionEnabled = (string)$request->input('transcription_enabled', '1');
+        $limits['transcription_enabled'] = ($transcriptionEnabled === '1');
+        if ($transcriptionMinutes > 0 && $limits['transcription_enabled']) {
             $limits['transcription_minutes'] = $transcriptionMinutes;
         }
 
@@ -121,7 +123,9 @@ final class SystemPlanAdminController extends Controller
         }
 
         $transcriptionMinutes = (int)$request->input('limit_transcription_minutes', 0);
-        if ($transcriptionMinutes > 0) {
+        $transcriptionEnabled = (string)$request->input('transcription_enabled', '1');
+        $limits['transcription_enabled'] = ($transcriptionEnabled === '1');
+        if ($transcriptionMinutes > 0 && $limits['transcription_enabled']) {
             $limits['transcription_minutes'] = $transcriptionMinutes;
         }
 

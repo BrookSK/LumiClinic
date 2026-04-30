@@ -33,11 +33,12 @@ $subStatus = (string)($subscription['status'] ?? '');
 $stLbl = $statusLabel[$subStatus] ?? $subStatus;
 $stClr = $statusColor[$subStatus] ?? '#6b7280';
 
-$transcription = $transcription ?? ['limit'=>null,'used'=>0,'remaining'=>null,'blocked'=>false];
+$transcription = $transcription ?? ['limit'=>null,'used'=>0,'remaining'=>null,'blocked'=>false,'disabled'=>false];
 $tLimit = $transcription['limit_seconds'] ?? ($transcription['limit'] !== null ? $transcription['limit'] * 60 : null);
 $tUsed = (int)($transcription['used_seconds'] ?? ($transcription['used'] * 60));
 $tRemaining = $transcription['remaining_seconds'] ?? ($transcription['remaining'] !== null ? $transcription['remaining'] * 60 : null);
 $tBlocked = (bool)$transcription['blocked'];
+$tDisabled = (bool)($transcription['disabled'] ?? false);
 
 // Formatar segundos como "Xh Ymin Zs" ou "Ymin Zs"
 $fmtSec = function (int $s): string {
@@ -126,9 +127,12 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
             <div style="font-size:12px;color:rgba(31,41,55,.45);margin-top:2px;">Até <?= htmlspecialchars($fmt($periodEnd), ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>
     </div>
-    <div style="padding:18px;border-radius:14px;border:1px solid <?= $tBlocked ? 'rgba(185,28,28,.22)' : 'rgba(17,24,39,.08)' ?>;background:<?= $tBlocked ? 'rgba(185,28,28,.04)' : 'var(--lc-surface)' ?>;box-shadow:0 4px 16px rgba(17,24,39,.06);">
+    <div style="padding:18px;border-radius:14px;border:1px solid <?= $tDisabled ? 'rgba(107,114,128,.18)' : ($tBlocked ? 'rgba(185,28,28,.22)' : 'rgba(17,24,39,.08)') ?>;background:<?= $tDisabled ? 'rgba(107,114,128,.04)' : ($tBlocked ? 'rgba(185,28,28,.04)' : 'var(--lc-surface)') ?>;box-shadow:0 4px 16px rgba(17,24,39,.06);">
         <div style="font-size:12px;color:rgba(31,41,55,.45);font-weight:600;">Transcrição de áudio</div>
-        <?php if ($tLimit === null): ?>
+        <?php if ($tDisabled): ?>
+            <div style="font-weight:800;font-size:18px;margin-top:4px;color:rgba(107,114,128,.70);">Não incluso</div>
+            <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Não disponível no seu plano atual.</div>
+        <?php elseif ($tLimit === null): ?>
             <div style="font-weight:800;font-size:18px;margin-top:4px;">Ilimitado</div>
         <?php else: ?>
             <?php $tLimitMin = (int)($transcription['limit'] ?? 0); ?>
@@ -163,13 +167,14 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
             $pCents = isset($p['price_cents']) ? (int)$p['price_cents'] : null;
             $limits = $decodeLimits($p['limits_json'] ?? null);
             $isCurrent = ((int)($subscription['plan_id'] ?? 0) === $pid);
+            $tEnabled = array_key_exists('transcription_enabled', $limits) ? (bool)$limits['transcription_enabled'] : true;
             $tMin = (int)($limits['transcription_minutes'] ?? 0);
             ?>
             <div style="padding:16px;border-radius:14px;border:<?= $isCurrent ? '2px solid rgba(238,184,16,.40)' : '1px solid rgba(17,24,39,.08)' ?>;background:<?= $isCurrent ? 'rgba(253,229,159,.06)' : 'rgba(0,0,0,.01)' ?>;">
                 <div style="font-weight:800;font-size:15px;color:rgba(31,41,55,.96);"><?= htmlspecialchars($pName, ENT_QUOTES, 'UTF-8') ?></div>
                 <div style="font-size:20px;font-weight:900;color:rgba(129,89,1,1);margin-top:6px;"><?= $fmtMoney($pCents) ?><span style="font-size:12px;font-weight:600;color:rgba(31,41,55,.40);">/mês</span></div>
                 <div style="font-size:12px;color:rgba(31,41,55,.50);margin-top:8px;line-height:1.6;">
-                    Transcrição: <?= $tMin > 0 ? $tMin . ' min/mês' : 'Ilimitado' ?><br>
+                    Transcrição: <?= !$tEnabled ? 'Não incluso' : ($tMin > 0 ? $tMin . ' min/mês' : 'Ilimitado') ?><br>
                     Usuários: <?= (int)($limits['users'] ?? 0) > 0 ? (int)$limits['users'] : 'Ilimitado' ?><br>
                     Pacientes: <?= (int)($limits['patients'] ?? 0) > 0 ? (int)$limits['patients'] : 'Ilimitado' ?>
                 </div>

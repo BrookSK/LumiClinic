@@ -64,7 +64,10 @@ final class MedicalRecordAudioService
         // Verificar limite de transcrição
         $transcriptionStatus = $ent->transcriptionStatus($clinicId);
         if ($transcriptionStatus['blocked']) {
-            throw new \RuntimeException('Limite de transcrição do plano atingido. Entre em contato com o suporte para fazer upgrade.');
+            $msg = !empty($transcriptionStatus['disabled'])
+                ? 'Transcrição de áudio não está disponível no seu plano. Faça upgrade para acessar este recurso.'
+                : 'Limite de transcrição do plano atingido. Entre em contato com o suporte para fazer upgrade.';
+            throw new \RuntimeException($msg);
         }
 
         $finfo = new \finfo(FILEINFO_MIME_TYPE);

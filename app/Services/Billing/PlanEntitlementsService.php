@@ -78,6 +78,19 @@ final class PlanEntitlementsService
         return $mb * 1024 * 1024;
     }
 
+    /**
+     * Retorna false quando o plano tem transcription_enabled = false explicitamente.
+     * Quando a chave não existe (planos antigos), assume habilitado (true).
+     */
+    public function isTranscriptionEnabled(int $clinicId): bool
+    {
+        $limits = $this->limitsForClinic($clinicId);
+        if (!array_key_exists('transcription_enabled', $limits)) {
+            return true; // compatibilidade com planos antigos
+        }
+        return (bool)$limits['transcription_enabled'];
+    }
+
     /** Limite de transcrição em minutos/mês. null = ilimitado. */
     public function transcriptionLimitMinutes(int $clinicId): ?int
     {
@@ -133,9 +146,23 @@ final class PlanEntitlementsService
         }
     }
 
-    /** @return array{limit_seconds:?int,used_seconds:int,remaining_seconds:?int,blocked:bool} */
+    /** @return array{limit_seconds:?int,used_seconds:int,remaining_seconds:?int,blocked:bool,disabled:bool} */
     public function transcriptionStatus(int $clinicId): array
     {
+        // Plano com transcrição explicitamente desabilitada
+        if (!$this->isTranscriptionEnabled($clinicId)) {
+            return [
+                'limit_seconds'    => 0,
+                'used_seconds'     => 0,
+                'remaining_seconds'=> 0,
+                'blocked'          => true,
+                'disabled'         => true,
+                'limit'            => 0,
+                'used'             => 0,
+                'remaining'        => 0,
+            ];
+        }
+
         $limitMinutes = $this->transcriptionLimitMinutes($clinicId);
         $limitSeconds = $limitMinutes !== null ? $limitMinutes * 60 : null;
         $usedSeconds = $this->transcriptionUsedSeconds($clinicId);
@@ -143,14 +170,15 @@ final class PlanEntitlementsService
         $blocked = $limitSeconds !== null && $remainingSeconds !== null && $remainingSeconds <= 0;
 
         return [
-            'limit_seconds' => $limitSeconds,
-            'used_seconds' => $usedSeconds,
-            'remaining_seconds' => $remainingSeconds,
-            'blocked' => $blocked,
+            'limit_seconds'    => $limitSeconds,
+            'used_seconds'     => $usedSeconds,
+            'remaining_seconds'=> $remainingSeconds,
+            'blocked'          => $blocked,
+            'disabled'         => false,
             // Compat: manter campos em minutos para views que usam
-            'limit' => $limitMinutes,
-            'used' => (int)floor($usedSeconds / 60),
-            'remaining' => $remainingSeconds !== null ? (int)floor($remainingSeconds / 60) : null,
+            'limit'    => $limitMinutes,
+            'used'     => (int)floor($usedSeconds / 60),
+            'remaining'=> $remainingSeconds !== null ? (int)floor($remainingSeconds / 60) : null,
         ];
     }
 }
