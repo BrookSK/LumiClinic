@@ -254,16 +254,27 @@ final class AiBillingController
                 }
             }
 
-            // 10. Check actual Asaas payment status for the pending charge
-            $asaas = new AsaasAiClient($this->container);
+            // 11. Force-credit the confirmed pending payment
             foreach ($pending as $p) {
                 $pid = (string)($p['payment_id'] ?? '');
                 if ($pid === '') continue;
                 try {
                     $payment = $asaas->getPayment($pid);
-                    $out[] = '🔍 Asaas ' . $pid . ' → status=' . ($payment['status'] ?? 'N/A') . ' value=' . ($payment['value'] ?? 'N/A');
+                    $status = (string)($payment['status'] ?? '');
+                    $amount = (float)($payment['value'] ?? 0);
+                    if (in_array($status, ['CONFIRMED', 'RECEIVED', 'AUTHORIZED'], true) && $amount > 0) {
+                        // Check idempotency
+                        $txRepo2 = new AiWalletTransactionRepository($pdo, $env);
+                        $existing = $txRepo2->findByPaymentId($pid);
+                        if ($existing !== null) {
+                            $out[] = '⚠️ ' . $pid . ' already credited — skipping';
+                        } else {
+                            $walletService->credit($amount, 'credit', 'Recarga via cartão — ' . $pid, $pid);
+                            $out[] = '✅ Force-credited R$' . $amount . ' for ' . $pid;
+                        }
+                    }
                 } catch (\Throwable $e) {
-                    $out[] = '❌ getPayment(' . $pid . ') error: ' . $e->getMessage();
+                    $out[] = '❌ Force-credit error: ' . $e->getMessage();
                 }
             }
 
