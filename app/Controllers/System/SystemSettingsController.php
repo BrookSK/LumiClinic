@@ -238,6 +238,45 @@ final class SystemSettingsController extends Controller
 
         // Load wallet data
         $walletService = new \App\Services\Ai\AiWalletService($this->container);
+
+        // Auto-reconcile: check if any charge_pending was confirmed in Asaas
+        try {
+            $env = $walletService->getEnvironment();
+            $txRepo = new \App\Repositories\AiWalletTransactionRepository($pdo, $env);
+            $stmt = $pdo->prepare(
+                "SELECT payment_id FROM ai_wallet_transactions 
+                 WHERE type = 'charge_pending' AND environment = :env 
+                   AND payment_id IS NOT NULL 
+                   AND payment_id NOT IN (
+                       SELECT COALESCE(payment_id,'') FROM ai_wallet_transactions 
+                       WHERE type = 'credit' AND environment = :env2
+                   )
+                 ORDER BY id DESC LIMIT 5"
+            );
+            $stmt->execute(['env' => $env, 'env2' => $env]);
+            $pendingPids = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+            foreach ($pendingPids as $pid) {
+                $pid = (string)$pid;
+                if ($pid === '') continue;
+                try {
+                    $asaas = new \App\Services\Ai\AsaasAiClient($this->container);
+                    $payment = $asaas->getPayment($pid);
+                    $status = (string)($payment['status'] ?? '');
+                    $amount = (float)($payment['value'] ?? 0);
+                    if (in_array($status, ['CONFIRMED', 'RECEIVED', 'AUTHORIZED'], true) && $amount > 0) {
+                        if ($txRepo->findByPaymentId($pid) === null) {
+                            $walletService->credit($amount, 'credit', 'Recarga via cartao - ' . $pid, $pid);
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Non-critical — skip silently
+                }
+            }
+        } catch (\Throwable $e) {
+            // Non-critical — skip silently
+        }
+
         $wallet = $walletService->getOrCreate();
         $walletTransactions = $walletService->listTransactions(20);
 
