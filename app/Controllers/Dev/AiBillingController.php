@@ -180,7 +180,7 @@ final class AiBillingController
 
     /**
      * GET /dev/ai-billing/webhook-test
-     * Diagnostic: simulates a PAYMENT_CONFIRMED webhook to test the full flow.
+     * Diagnostic: checks system health and force-credits any confirmed pending payments.
      */
     public function webhookTest(Request $request): Response
     {
@@ -191,92 +191,56 @@ final class AiBillingController
         $pdo = $this->container->get(\PDO::class);
 
         try {
-            // 1. Check environment
             $env = $this->resolveEnvironment();
             $out[] = "✅ Environment: $env";
 
-            // 2. Check crypto key
+            // Crypto check
             $crypto = new SystemCryptoService($this->container);
             $testEnc = $crypto->encrypt('test');
-            $testDec = $crypto->decrypt($testEnc);
-            $out[] = $testDec === 'test' ? '✅ Crypto: OK' : '❌ Crypto: FAILED';
+            $out[] = $crypto->decrypt($testEnc) === 'test' ? '✅ Crypto: OK' : '❌ Crypto: FAILED';
 
-            // 3. Check wallet row
+            // Wallet
             $walletService = new AiWalletService($this->container);
             $wallet = $walletService->getOrCreate();
             $out[] = '✅ Wallet balance: R$ ' . number_format((float)($wallet['balance_brl'] ?? 0), 2, ',', '.');
-            $out[] = '✅ Wallet environment: ' . ($wallet['environment'] ?? 'N/A');
 
-            // 4. Try a manual credit of R$ 0.01
-            $walletService->credit(0.01, 'manual_credit', 'Webhook test credit', null);
-            $wallet2 = $walletService->getOrCreate();
-            $out[] = '✅ Credit test OK — new balance: R$ ' . number_format((float)($wallet2['balance_brl'] ?? 0), 2, ',', '.');
-
-            // 5. Check Asaas key
+            // Asaas key
             $repo = new AiBillingSettingsRepository($pdo);
-            $encKey = $repo->getActiveAsaasKey();
-            $out[] = $encKey !== '' ? '✅ Asaas key: configured' : '❌ Asaas key: NOT configured';
+            $out[] = $repo->getActiveAsaasKey() !== '' ? '✅ Asaas key: configured' : '❌ Asaas key: NOT configured';
 
-            // 6. Check system_settings for crypto key
-            $stmt = $pdo->query("SELECT value_text FROM system_settings WHERE `key` = 'system.encryption_key' LIMIT 1");
-            $row = $stmt ? $stmt->fetch() : null;
-            $out[] = ($row && trim((string)($row['value_text'] ?? '')) !== '')
-                ? '✅ system.encryption_key: present (' . strlen(trim((string)$row['value_text'])) . ' chars)'
-                : '⚠️ system.encryption_key: NOT in system_settings';
+            // Pending charges
+            $stmt = $pdo->prepare("SELECT id, payment_id, created_at FROM ai_wallet_transactions WHERE type = 'charge_pending' AND environment = :env ORDER BY id DESC LIMIT 10");
+            $stmt->execute(['env' => $env]);
+            $pending = $stmt->fetchAll();
 
-            // 7. Simulate webhook credit with a fake payment_id
-            $fakePaymentId = 'test_' . bin2hex(random_bytes(8));
-            $walletService->credit(0.01, 'credit', 'Webhook simulation test', $fakePaymentId);
-            $wallet3 = $walletService->getOrCreate();
-            $out[] = '✅ Webhook credit simulation OK — balance: R$ ' . number_format((float)($wallet3['balance_brl'] ?? 0), 2, ',', '.');
-
-            // 8. Check existing charge_pending records
-            $stmt2 = $pdo->prepare("SELECT id, payment_id, created_at FROM ai_wallet_transactions WHERE type = 'charge_pending' AND environment = :env ORDER BY id DESC LIMIT 5");
-            $stmt2->execute(['env' => $env]);
-            $pending = $stmt2->fetchAll();
             if (empty($pending)) {
                 $out[] = '✅ No charge_pending records';
             } else {
+                $out[] = '⚠️ Found ' . count($pending) . ' charge_pending record(s) — checking Asaas status...';
                 foreach ($pending as $p) {
-                    $out[] = '⚠️ charge_pending id=' . $p['id'] . ' payment_id=' . ($p['payment_id'] ?? 'NULL') . ' at=' . $p['created_at'];
-                }
-            }
+                    $pid = (string)($p['payment_id'] ?? '');
+                    if ($pid === '') { $out[] = '⚠️ charge_pending id=' . $p['id'] . ' has no payment_id'; continue; }
 
-            // 9. Check existing credit records
-            $stmt3 = $pdo->prepare("SELECT id, payment_id, amount_brl, created_at FROM ai_wallet_transactions WHERE type = 'credit' AND environment = :env ORDER BY id DESC LIMIT 5");
-            $stmt3->execute(['env' => $env]);
-            $credits = $stmt3->fetchAll();
-            if (empty($credits)) {
-                $out[] = '⚠️ No credit records found';
-            } else {
-                foreach ($credits as $c) {
-                    $out[] = '✅ credit id=' . $c['id'] . ' payment_id=' . ($c['payment_id'] ?? 'NULL') . ' amount=R$' . $c['amount_brl'] . ' at=' . $c['created_at'];
-                }
-            }
+                    try {
+                        $asaasClient = new AsaasAiClient($this->container);
+                        $payment = $asaasClient->getPayment($pid);
+                        $status = (string)($payment['status'] ?? '');
+                        $amount = (float)($payment['value'] ?? 0);
+                        $out[] = '🔍 ' . $pid . ' → status=' . $status . ' value=R$' . $amount;
 
-            // 11. Force-credit the confirmed pending payment
-            foreach ($pending as $p) {
-                $pid = (string)($p['payment_id'] ?? '');
-                if ($pid === '') continue;
-                try {
-                    $asaasClient = new AsaasAiClient($this->container);
-                    $payment = $asaasClient->getPayment($pid);
-                    $status = (string)($payment['status'] ?? '');
-                    $amount = (float)($payment['value'] ?? 0);
-                    $out[] = '🔍 Asaas ' . $pid . ' → status=' . $status . ' value=' . $amount;
-                    if (in_array($status, ['CONFIRMED', 'RECEIVED', 'AUTHORIZED'], true) && $amount > 0) {
-                        $txRepo2 = new AiWalletTransactionRepository($pdo, $env);
-                        $existing = $txRepo2->findByPaymentId($pid);
-                        if ($existing !== null) {
-                            $out[] = '⚠️ ' . $pid . ' already credited — skipping';
-                        } else {
-                            $walletService->credit($amount, 'credit', 'Recarga via cartão — ' . $pid, $pid);
-                            $wallet4 = $walletService->getOrCreate();
-                            $out[] = '✅ Force-credited R$' . $amount . ' — new balance: R$ ' . number_format((float)($wallet4['balance_brl'] ?? 0), 2, ',', '.');
+                        if (in_array($status, ['CONFIRMED', 'RECEIVED', 'AUTHORIZED'], true) && $amount > 0) {
+                            $txRepo = new AiWalletTransactionRepository($pdo, $env);
+                            if ($txRepo->findByPaymentId($pid) !== null) {
+                                $out[] = '⚠️ ' . $pid . ' already credited';
+                            } else {
+                                $walletService->credit($amount, 'credit', 'Recarga via cartão — ' . $pid, $pid);
+                                $w = $walletService->getOrCreate();
+                                $out[] = '✅ Credited R$' . $amount . ' — new balance: R$ ' . number_format((float)($w['balance_brl'] ?? 0), 2, ',', '.');
+                            }
                         }
+                    } catch (\Throwable $e) {
+                        $out[] = '❌ Error for ' . $pid . ': ' . $e->getMessage();
                     }
-                } catch (\Throwable $e) {
-                    $out[] = '❌ Force-credit error: ' . $e->getMessage();
                 }
             }
 
