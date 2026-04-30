@@ -63,7 +63,8 @@ final class AiKeyResolverService
         $devKeyEnc = trim((string)($billingSettings['openai_api_key_encrypted'] ?? ''));
 
         if ($devKeyEnc !== '') {
-            $wallet = (new AiWalletRepository($pdo))->getOrCreate();
+            $env = (string)($billingSettings['asaas_mode'] ?? 'sandbox');
+            $wallet = (new AiWalletRepository($pdo, $env))->getOrCreate();
             $balance = (float)($wallet['balance_brl'] ?? 0);
 
             if ($balance > 0) {

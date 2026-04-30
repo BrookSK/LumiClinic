@@ -84,7 +84,7 @@ final class AiWalletTransactionRepository
                 COUNT(CASE WHEN type = 'debit' THEN 1 END) AS transcription_count,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN duration_seconds ELSE 0 END), 0) AS total_seconds,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN amount_brl ELSE 0 END), 0) AS total_charged_brl,
-                COALESCE(SUM(CASE WHEN type = 'credit' THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
+                COALESCE(SUM(CASE WHEN type IN ('credit','manual_credit') THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
             FROM ai_wallet_transactions
             WHERE environment = :env AND DATE(created_at) BETWEEN :from AND :to
         ");
@@ -100,7 +100,7 @@ final class AiWalletTransactionRepository
                 COUNT(CASE WHEN type = 'debit' THEN 1 END) AS transcription_count,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN duration_seconds ELSE 0 END), 0) AS total_seconds,
                 COALESCE(SUM(CASE WHEN type = 'debit' THEN amount_brl ELSE 0 END), 0) AS total_charged_brl,
-                COALESCE(SUM(CASE WHEN type = 'credit' THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
+                COALESCE(SUM(CASE WHEN type IN ('credit','manual_credit') THEN amount_brl ELSE 0 END), 0) AS total_credited_brl
             FROM ai_wallet_transactions
             WHERE environment = :env
         ");
