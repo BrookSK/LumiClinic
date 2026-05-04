@@ -222,10 +222,10 @@ ob_start();
                     $checkedIn = (string)($it['checked_in_at'] ?? '') !== '';
                     $started = (string)($it['started_at'] ?? '') !== '';
                     $canCheckIn = in_array($st, ['scheduled', 'confirmed'], true) && !$checkedIn;
-                    $canStart = in_array($st, ['scheduled', 'confirmed'], true) && !$started;
-                    $canBeginService = in_array($st, ['scheduled', 'confirmed'], true);
+                    $canStart = $checkedIn && in_array($st, ['scheduled', 'confirmed'], true);
+                    $canBeginService = $checkedIn && in_array($st, ['scheduled', 'confirmed'], true);
                     $canComplete = $st === 'in_progress';
-                    $canNoShow = in_array($st, ['scheduled', 'confirmed'], true);
+                    $canNoShow = in_array($st, ['scheduled', 'confirmed'], true) && !$checkedIn;
                     $patientName = trim((string)($it['patient_name'] ?? ''));
                     ?>
                     <tr id="row-appt-<?= $apptId ?>" style="<?= in_array($st, ['cancelled', 'no_show'], true) ? 'opacity:.5;' : '' ?>">
