@@ -61,56 +61,46 @@ final class ServiceMaterialDefaultRepository
     {
         $qty = (float)str_replace(',', '.', trim($qtyStr));
         if ($qty <= 0) {
-            throw new \RuntimeException('Quantidade inválida.');
+            throw new \RuntimeException('Quantidade invalida.');
         }
 
-        $sqlFind = "
-            SELECT id
-            FROM service_material_defaults
-            WHERE clinic_id = :clinic_id
-              AND service_id = :service_id
-              AND material_id = :material_id
-              AND deleted_at IS NULL
-            LIMIT 1
-        ";
+        $fmtQty = number_format($qty, 3, '.', '');
 
-        $stmt = $this->pdo->prepare($sqlFind);
-        $stmt->execute([
-            'clinic_id' => $clinicId,
-            'service_id' => $serviceId,
-            'material_id' => $materialId,
-        ]);
-
+        // First try: find active record
+        $stmt = $this->pdo->prepare(
+            "SELECT id FROM service_material_defaults
+             WHERE clinic_id = :c AND service_id = :s AND material_id = :m AND deleted_at IS NULL LIMIT 1"
+        );
+        $stmt->execute(['c' => $clinicId, 's' => $serviceId, 'm' => $materialId]);
         $existingId = (int)($stmt->fetchColumn() ?: 0);
 
         if ($existingId > 0) {
-            $sqlUpdate = "
-                UPDATE service_material_defaults
-                   SET quantity_per_session = :qty,
-                       updated_at = NOW()
-                 WHERE id = :id
-                   AND clinic_id = :clinic_id
-                   AND deleted_at IS NULL
-            ";
-            $u = $this->pdo->prepare($sqlUpdate);
-            $u->execute(['qty' => number_format($qty, 3, '.', ''), 'id' => $existingId, 'clinic_id' => $clinicId]);
+            $this->pdo->prepare(
+                "UPDATE service_material_defaults SET quantity_per_session = :qty, updated_at = NOW() WHERE id = :id"
+            )->execute(['qty' => $fmtQty, 'id' => $existingId]);
             return $existingId;
         }
 
-        $sqlInsert = "
-            INSERT INTO service_material_defaults
-                (clinic_id, service_id, material_id, quantity_per_session, created_at)
-            VALUES
-                (:clinic_id, :service_id, :material_id, :qty, NOW())
-        ";
+        // Second try: find soft-deleted record and restore it
+        $stmt2 = $this->pdo->prepare(
+            "SELECT id FROM service_material_defaults
+             WHERE clinic_id = :c AND service_id = :s AND material_id = :m AND deleted_at IS NOT NULL LIMIT 1"
+        );
+        $stmt2->execute(['c' => $clinicId, 's' => $serviceId, 'm' => $materialId]);
+        $deletedId = (int)($stmt2->fetchColumn() ?: 0);
 
-        $i = $this->pdo->prepare($sqlInsert);
-        $i->execute([
-            'clinic_id' => $clinicId,
-            'service_id' => $serviceId,
-            'material_id' => $materialId,
-            'qty' => number_format($qty, 3, '.', ''),
-        ]);
+        if ($deletedId > 0) {
+            $this->pdo->prepare(
+                "UPDATE service_material_defaults SET quantity_per_session = :qty, deleted_at = NULL, updated_at = NOW() WHERE id = :id"
+            )->execute(['qty' => $fmtQty, 'id' => $deletedId]);
+            return $deletedId;
+        }
+
+        // Third: insert new
+        $this->pdo->prepare(
+            "INSERT INTO service_material_defaults (clinic_id, service_id, material_id, quantity_per_session, created_at)
+             VALUES (:c, :s, :m, :qty, NOW())"
+        )->execute(['c' => $clinicId, 's' => $serviceId, 'm' => $materialId, 'qty' => $fmtQty]);
 
         return (int)$this->pdo->lastInsertId();
     }
