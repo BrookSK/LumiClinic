@@ -53,6 +53,9 @@ ob_start();
         <a href="/sys/billing/view?clinic_id=<?= $cid ?>" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 2px 8px rgba(17,24,39,.04);text-decoration:none;color:inherit;flex-wrap:wrap;transition:all 160ms ease;">
             <div style="display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap;">
                 <span style="font-weight:750;font-size:14px;color:rgba(31,41,55,.96);"><?= htmlspecialchars((string)($it['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                <?php $ownerEmail = trim((string)($it['owner_email'] ?? '')); if ($ownerEmail !== ''): ?>
+                <span style="font-size:12px;color:rgba(31,41,55,.50);">📧 <?= htmlspecialchars($ownerEmail, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php endif; ?>
                 <span style="display:inline-flex;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;background:<?= $stClr ?>18;color:<?= $stClr ?>;border:1px solid <?= $stClr ?>30"><?= htmlspecialchars($stLbl, ENT_QUOTES, 'UTF-8') ?></span>
                 <span style="font-size:12px;color:rgba(31,41,55,.45);"><?= htmlspecialchars($pLbl, ENT_QUOTES, 'UTF-8') ?></span>
             </div>

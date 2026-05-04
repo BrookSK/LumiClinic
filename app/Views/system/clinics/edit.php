@@ -25,6 +25,8 @@ $ownerState = $g('owner_state');
 $status = $g('status');
 $createdAt = $g('created_at');
 
+$ownerEmail = $g('owner_email');
+
 $stLbl = $status === 'active' ? 'Ativo' : ($status === 'inactive' ? 'Inativo' : $status);
 $stClr = $status === 'active' ? '#16a34a' : '#b91c1c';
 $createdFmt = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '—';
@@ -62,6 +64,9 @@ ob_start();
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);"><?= $e($name) ?></div>
+        <?php if ($ownerEmail !== ''): ?>
+        <span style="font-size:12px;color:rgba(31,41,55,.50);">📧 <?= $e($ownerEmail) ?></span>
+        <?php endif; ?>
         <span style="display:inline-flex;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;background:<?= $stClr ?>18;color:<?= $stClr ?>;border:1px solid <?= $stClr ?>30"><?= $e($stLbl) ?></span>
         <span style="font-size:12px;color:rgba(31,41,55,.35);">ID #<?= $clinicId ?> · Criada em <?= $e($createdFmt) ?></span>
     </div>

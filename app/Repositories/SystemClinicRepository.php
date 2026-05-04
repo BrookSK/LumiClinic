@@ -20,33 +20,48 @@ final class SystemClinicRepository
         $like = '%' . $q . '%';
         $sql = "
             SELECT
-                id, name, tenant_key, status, created_at,
+                c.id, c.name, c.tenant_key, c.status, c.created_at,
                 (
                     SELECT d.domain
                     FROM clinic_domains d
-                    WHERE d.clinic_id = clinics.id
+                    WHERE d.clinic_id = c.id
                       AND d.is_primary = 1
                     ORDER BY d.id DESC
                     LIMIT 1
-                ) AS primary_domain
-            FROM clinics
-            WHERE deleted_at IS NULL
+                ) AS primary_domain,
+                (
+                    SELECT u.email
+                    FROM users u
+                    JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+                    JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+                    WHERE u.clinic_id = c.id AND u.deleted_at IS NULL
+                    ORDER BY u.id LIMIT 1
+                ) AS owner_email
+            FROM clinics c
+            WHERE c.deleted_at IS NULL
               AND (
-                  name LIKE :like
-                  OR tenant_key LIKE :like
+                  c.name LIKE :like1
+                  OR c.tenant_key LIKE :like2
                   OR EXISTS (
                       SELECT 1
                       FROM clinic_domains d
-                      WHERE d.clinic_id = clinics.id
-                        AND d.domain LIKE :like
+                      WHERE d.clinic_id = c.id
+                        AND d.domain LIKE :like3
+                  )
+                  OR EXISTS (
+                      SELECT 1
+                      FROM users u
+                      JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+                      JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+                      WHERE u.clinic_id = c.id AND u.deleted_at IS NULL AND u.email LIKE :like4
                   )
               )
-            ORDER BY id DESC
+            ORDER BY c.id DESC
             LIMIT {$limit}
         ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(['like' => $like]);
+        $stmt->execute(['like1' => $like, 'like2' => $like, 'like3' => $like, 'like4' => $like]);
 
         /** @var list<array<string, mixed>> */
         return $stmt->fetchAll();
@@ -57,26 +72,34 @@ final class SystemClinicRepository
     {
         $sql = "
             SELECT
-                id, name, cnpj, owner_name, owner_phone, owner_doc_type,
-                owner_postal_code, owner_street, owner_number, owner_complement,
-                owner_neighborhood, owner_city, owner_state,
-                tenant_key, contact_email, contact_phone,
-                contact_whatsapp, contact_address,
-                address_street, address_number, address_complement,
-                address_neighborhood, address_city, address_state, address_zip,
-                contact_website, contact_instagram, contact_facebook,
-                status, created_at,
+                c.id, c.name, c.cnpj, c.owner_name, c.owner_phone, c.owner_doc_type,
+                c.owner_postal_code, c.owner_street, c.owner_number, c.owner_complement,
+                c.owner_neighborhood, c.owner_city, c.owner_state,
+                c.tenant_key, c.contact_email, c.contact_phone,
+                c.contact_whatsapp, c.contact_address,
+                c.address_street, c.address_number, c.address_complement,
+                c.address_neighborhood, c.address_city, c.address_state, c.address_zip,
+                c.contact_website, c.contact_instagram, c.contact_facebook,
+                c.status, c.created_at,
                 (
                     SELECT d.domain
                     FROM clinic_domains d
-                    WHERE d.clinic_id = clinics.id
+                    WHERE d.clinic_id = c.id
                       AND d.is_primary = 1
                     ORDER BY d.id DESC
                     LIMIT 1
-                ) AS primary_domain
-            FROM clinics
-            WHERE id = :id
-              AND deleted_at IS NULL
+                ) AS primary_domain,
+                (
+                    SELECT u.email
+                    FROM users u
+                    JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+                    JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+                    WHERE u.clinic_id = c.id AND u.deleted_at IS NULL
+                    ORDER BY u.id LIMIT 1
+                ) AS owner_email
+            FROM clinics c
+            WHERE c.id = :id
+              AND c.deleted_at IS NULL
             LIMIT 1
         ";
 
@@ -92,18 +115,26 @@ final class SystemClinicRepository
     {
         $sql = "
             SELECT
-                id, name, tenant_key, status, created_at,
+                c.id, c.name, c.tenant_key, c.status, c.created_at,
                 (
                     SELECT d.domain
                     FROM clinic_domains d
-                    WHERE d.clinic_id = clinics.id
+                    WHERE d.clinic_id = c.id
                       AND d.is_primary = 1
                     ORDER BY d.id DESC
                     LIMIT 1
-                ) AS primary_domain
-            FROM clinics
-            WHERE deleted_at IS NULL
-            ORDER BY id DESC
+                ) AS primary_domain,
+                (
+                    SELECT u.email
+                    FROM users u
+                    JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+                    JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+                    WHERE u.clinic_id = c.id AND u.deleted_at IS NULL
+                    ORDER BY u.id LIMIT 1
+                ) AS owner_email
+            FROM clinics c
+            WHERE c.deleted_at IS NULL
+            ORDER BY c.id DESC
         ";
 
         $stmt = $this->pdo->query($sql);

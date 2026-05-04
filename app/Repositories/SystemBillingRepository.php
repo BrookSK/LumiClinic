@@ -26,6 +26,14 @@ final class SystemBillingRepository
                     ORDER BY d.id DESC
                     LIMIT 1
                 ) AS primary_domain,
+                (
+                    SELECT u.email
+                    FROM users u
+                    JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+                    JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+                    WHERE u.clinic_id = c.id AND u.deleted_at IS NULL
+                    ORDER BY u.id LIMIT 1
+                ) AS owner_email,
 
                 cs.id AS subscription_id,
                 cs.plan_id,
@@ -79,6 +87,14 @@ final class SystemBillingRepository
                     ORDER BY d.id DESC
                     LIMIT 1
                 ) AS primary_domain,
+                (
+                    SELECT u.email
+                    FROM users u
+                    JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+                    JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+                    WHERE u.clinic_id = c.id AND u.deleted_at IS NULL
+                    ORDER BY u.id LIMIT 1
+                ) AS owner_email,
 
                 cs.id AS subscription_id,
                 cs.plan_id,

@@ -21,7 +21,7 @@ ob_start();
 <!-- Busca -->
 <div style="padding:14px 16px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);margin-bottom:16px;">
     <form method="get" action="/sys/clinics" style="display:flex;gap:10px;align-items:center;">
-        <input class="lc-input" style="flex:1;max-width:400px;" type="text" name="q" value="<?= htmlspecialchars((string)$q, ENT_QUOTES, 'UTF-8') ?>" placeholder="Buscar por nome, identificação ou domínio..." />
+        <input class="lc-input" style="flex:1;max-width:400px;" type="text" name="q" value="<?= htmlspecialchars((string)$q, ENT_QUOTES, 'UTF-8') ?>" placeholder="Buscar por nome, e-mail do dono, identificação ou domínio..." />
         <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Buscar</button>
         <?php if (trim((string)$q) !== ''): ?>
             <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/clinics">Limpar</a>
@@ -49,6 +49,9 @@ ob_start();
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 2px 8px rgba(17,24,39,.04);flex-wrap:wrap;">
             <div style="display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap;">
                 <a href="/sys/clinics/edit?id=<?= $id ?>" style="font-weight:750;font-size:14px;color:rgba(129,89,1,1);text-decoration:none;"><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></a>
+                <?php $ownerEmail = trim((string)($it['owner_email'] ?? '')); if ($ownerEmail !== ''): ?>
+                <span style="font-size:12px;color:rgba(31,41,55,.50);">📧 <?= htmlspecialchars($ownerEmail, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php endif; ?>
                 <span style="font-size:12px;color:rgba(31,41,55,.40);font-family:monospace;"><?= htmlspecialchars((string)($it['tenant_key'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                 <span style="display:inline-flex;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;background:<?= $stClr ?>18;color:<?= $stClr ?>;border:1px solid <?= $stClr ?>30"><?= htmlspecialchars($stLbl, ENT_QUOTES, 'UTF-8') ?></span>
                 <span style="font-size:11px;color:rgba(31,41,55,.35);">Criada em <?= htmlspecialchars($createdFmt, ENT_QUOTES, 'UTF-8') ?></span>

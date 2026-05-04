@@ -54,6 +54,9 @@ ob_start();
 <!-- Header -->
 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
     <div style="font-weight:850;font-size:20px;color:rgba(31,41,55,.96);"><?= htmlspecialchars((string)($row['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+    <?php $ownerEmail = trim((string)($row['owner_email'] ?? '')); if ($ownerEmail !== ''): ?>
+    <span style="font-size:12px;color:rgba(31,41,55,.50);">📧 <?= htmlspecialchars($ownerEmail, ENT_QUOTES, 'UTF-8') ?></span>
+    <?php endif; ?>
     <span style="display:inline-flex;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;background:<?= $stClr ?>18;color:<?= $stClr ?>;border:1px solid <?= $stClr ?>30"><?= htmlspecialchars($stLbl, ENT_QUOTES, 'UTF-8') ?></span>
 </div>
 
