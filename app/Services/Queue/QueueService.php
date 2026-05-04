@@ -399,6 +399,17 @@ final class QueueService
 
             error_log('[PostTreatment][WA] clinicId=' . $clinicId . ' instance=' . ($instance !== '' ? 'SET' : 'EMPTY') . ' apikey=' . ($apikeyEnc !== '' ? 'SET' : 'EMPTY') . ' phone=' . $phone);
 
+            // Also log to DB for visibility in /sys/error-logs
+            $logToDb = function(string $msg) use ($pdo, $clinicId, $appointmentId) {
+                try {
+                    $pdo->prepare(
+                        "INSERT INTO system_error_logs (clinic_id, type, message, context, created_at) VALUES (:c, 'info', :m, :ctx, NOW())"
+                    )->execute(['c' => $clinicId, 'm' => 'post_treatment_wa', 'ctx' => $msg]);
+                } catch (\Throwable $ignore) {}
+            };
+
+            $logToDb('instance=' . ($instance !== '' ? 'SET' : 'EMPTY') . ' apikey=' . ($apikeyEnc !== '' ? 'SET' : 'EMPTY') . ' phone=' . $phone);
+
             if ($instance !== '' && $apikeyEnc !== '') {
                 $apikey = (new \App\Services\Security\CryptoService($this->container))->decrypt($clinicId, $apikeyEnc);
 
@@ -421,9 +432,11 @@ final class QueueService
                 }
 
                 error_log('[PostTreatment][WA] baseUrl=' . ($baseUrl !== '' ? $baseUrl : 'EMPTY'));
+                $logToDb('baseUrl=' . ($baseUrl !== '' ? $baseUrl : 'EMPTY'));
 
                 if ($baseUrl === '') {
                     error_log('[PostTreatment][WA] No base URL configured - skipping WhatsApp');
+                    $logToDb('SKIP: No base URL');
                 } else {
                     $phoneDigits = preg_replace('/\D+/', '', $phone);
                     if (strlen($phoneDigits) <= 11 && !str_starts_with($phoneDigits, '55')) {
@@ -434,6 +447,7 @@ final class QueueService
                     $http = new \App\Services\Http\HttpClient();
 
                     error_log('[PostTreatment][WA] Sending to ' . $phoneDigits . ' via ' . $url);
+                    $logToDb('Sending to ' . $phoneDigits . ' via ' . $url);
 
                     $resp = $http->request('POST', $url, ['apikey' => $apikey], [
                         'number' => $phoneDigits,
@@ -448,6 +462,7 @@ final class QueueService
                     }
 
                     error_log('[PostTreatment][WA] Response HTTP ' . $resp['status']);
+                    $logToDb('Response HTTP ' . $resp['status']);
 
                     if ($resp['status'] >= 200 && $resp['status'] < 300) {
                         try {
@@ -460,13 +475,16 @@ final class QueueService
                         }
                     } else {
                         error_log('[PostTreatment][WA] Failed HTTP ' . $resp['status'] . ' body=' . substr((string)($resp['body'] ?? ''), 0, 300));
+                        $logToDb('FAILED HTTP ' . $resp['status'] . ' body=' . substr((string)($resp['body'] ?? ''), 0, 300));
                     }
                 }
             } else {
                 error_log('[PostTreatment][WA] Skipped - instance or apikey not configured');
+                $logToDb('SKIP: instance or apikey not configured');
             }
         } catch (\Throwable $e) {
             error_log('[PostTreatment][WA] Exception: ' . $e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine());
+            $logToDb('EXCEPTION: ' . $e->getMessage());
         }
 
         // Send via email
