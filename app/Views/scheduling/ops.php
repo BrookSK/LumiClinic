@@ -223,7 +223,9 @@ ob_start();
                     $started = (string)($it['started_at'] ?? '') !== '';
                     $canCheckIn = in_array($st, ['scheduled', 'confirmed'], true) && !$checkedIn;
                     $canStart = in_array($st, ['scheduled', 'confirmed'], true) && !$started;
-                    $canNoShow = in_array($st, ['scheduled', 'confirmed', 'in_progress'], true);
+                    $canBeginService = in_array($st, ['scheduled', 'confirmed'], true);
+                    $canComplete = $st === 'in_progress';
+                    $canNoShow = in_array($st, ['scheduled', 'confirmed'], true);
                     $patientName = trim((string)($it['patient_name'] ?? ''));
                     ?>
                     <tr id="row-appt-<?= $apptId ?>" style="<?= in_array($st, ['cancelled', 'no_show'], true) ? 'opacity:.5;' : '' ?>">
@@ -253,6 +255,28 @@ ob_start();
                                         <input type="hidden" name="return_ops" value="1" />
                                         <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
                                         <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">✓ Chegou</button>
+                                    </form>
+                                <?php endif; ?>
+
+                                <?php if ($canBeginService && $can('scheduling.finalize')): ?>
+                                    <form method="post" action="/schedule/status">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="id" value="<?= $apptId ?>" />
+                                        <input type="hidden" name="status" value="in_progress" />
+                                        <input type="hidden" name="return_ops" value="1" />
+                                        <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="background:#16a34a;color:#fff;border-color:#16a34a;">▶ Iniciar</button>
+                                    </form>
+                                <?php endif; ?>
+
+                                <?php if ($canComplete && $can('scheduling.finalize')): ?>
+                                    <form method="post" action="/schedule/status">
+                                        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <input type="hidden" name="id" value="<?= $apptId ?>" />
+                                        <input type="hidden" name="status" value="completed" />
+                                        <input type="hidden" name="return_ops" value="1" />
+                                        <input type="hidden" name="date" value="<?= htmlspecialchars($date, ENT_QUOTES, 'UTF-8') ?>" />
+                                        <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">✓ Concluir</button>
                                     </form>
                                 <?php endif; ?>
 
