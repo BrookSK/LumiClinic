@@ -403,8 +403,13 @@ final class QueueService
             $logToDb = function(string $msg) use ($pdo, $clinicId, $appointmentId) {
                 try {
                     $pdo->prepare(
-                        "INSERT INTO system_error_logs (clinic_id, type, message, context, created_at) VALUES (:c, 'info', :m, :ctx, NOW())"
-                    )->execute(['c' => $clinicId, 'm' => 'post_treatment_wa', 'ctx' => $msg]);
+                        "INSERT INTO system_error_logs (status_code, error_type, message, method, path, clinic_id, created_at)
+                         VALUES (0, 'info', :m, 'QUEUE', :p, :c, NOW())"
+                    )->execute([
+                        'm' => '[PostTreatment][WA] ' . $msg,
+                        'p' => 'appointment.send_post_treatment#' . $appointmentId,
+                        'c' => $clinicId,
+                    ]);
                 } catch (\Throwable $ignore) {}
             };
 
