@@ -91,7 +91,12 @@ ob_start();
                         $mid = (int)$d['material_id'];
                         $rawQty = (float)$d['quantity_per_session'];
                         $displayQty = ($rawQty == (int)$rawQty) ? (string)(int)$rawQty : number_format($rawQty, 2, ',', '.');
-                        $inputVal = isset($used_qty[$mid]) ? (string)$used_qty[$mid] : (string)(($rawQty == (int)$rawQty) ? (int)$rawQty : $rawQty);
+                        if (isset($used_qty[$mid])) {
+                            $uq = (float)$used_qty[$mid];
+                            $inputVal = ($uq == (int)$uq) ? (string)(int)$uq : (string)$uq;
+                        } else {
+                            $inputVal = ($rawQty == (int)$rawQty) ? (string)(int)$rawQty : (string)$rawQty;
+                        }
                         ?>
                         <div class="cm-mat-row">
                             <div>

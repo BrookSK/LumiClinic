@@ -187,7 +187,12 @@ final class ScheduleController extends Controller
             );
 
             $result = ['movement_ids' => [], 'total_cost' => 0.0];
-            $result = $stock->reconcileForAppointment($id, (int)$appointment['service_id'], $qtyMap, $note, $request->ip());
+            try {
+                $result = $stock->reconcileForAppointment($id, (int)$appointment['service_id'], $qtyMap, $note, $request->ip());
+            } catch (\RuntimeException $stockErr) {
+                // Stock insufficient — log warning but don't block completion
+                error_log('[CompleteMaterials] Stock warning for appointment #' . $id . ': ' . $stockErr->getMessage());
+            }
 
             $createdFinancialEntryId = null;
 
