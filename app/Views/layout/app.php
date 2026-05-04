@@ -763,23 +763,8 @@ $ico = [
 </script>
 
 <?php
-// Floating support button — reads WhatsApp number from system_settings
-$_supportWa = '';
-try {
-    $_supportSvc = new \App\Services\System\SystemSettingsService($container ?? $this->container ?? null);
-    $_supportWa = trim((string)($_supportSvc->getText('support.whatsapp_number') ?? ''));
-} catch (\Throwable $_ignore) {
-    // Try direct DB query as fallback
-    try {
-        $_pdo2 = isset($container) ? $container->get(\PDO::class) : null;
-        if ($_pdo2) {
-            $_stmt2 = $_pdo2->prepare("SELECT value_text FROM system_settings WHERE `key` = 'support.whatsapp_number' LIMIT 1");
-            $_stmt2->execute();
-            $_row2 = $_stmt2->fetch();
-            $_supportWa = $_row2 ? trim((string)($_row2['value_text'] ?? '')) : '';
-        }
-    } catch (\Throwable $_ignore2) {}
-}
+// Floating support button
+$_supportWa = trim((string)($support_settings['support_whatsapp_number'] ?? ''));
 if ($_supportWa !== ''):
     $_waClean = preg_replace('/\D+/', '', $_supportWa);
     $_waUrl = 'https://wa.me/' . $_waClean . '?text=' . urlencode('Ola! Preciso de ajuda com o sistema.');

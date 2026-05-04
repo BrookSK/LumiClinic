@@ -396,22 +396,70 @@ final class QueueService
             $clinicSettings = (new \App\Repositories\ClinicSettingsRepository($pdo))->findByClinicId($clinicId);
             $instance = trim((string)($clinicSettings['evolution_instance'] ?? ''));
 
-            if ($instance === '') {
-                return; // WhatsApp not configured
+            if ($instance !== '') {
+                $client = new \App\Services\Whatsapp\EvolutionClient($this->container, $clinicId);
+                $client->sendText($phone, $message);
+
+                // Log the message
+                try {
+                    $pdo->prepare(
+                        "INSERT INTO whatsapp_message_logs (clinic_id, appointment_id, patient_id, template_code, phone, message_body, status, created_at)
+                         VALUES (:c, :a, :p, 'post_treatment', :ph, :msg, 'sent', NOW())"
+                    )->execute(['c' => $clinicId, 'a' => $appointmentId, 'p' => $patientId, 'ph' => $phone, 'msg' => substr($message, 0, 500)]);
+                } catch (\Throwable $ignore) {}
             }
-
-            $client = new \App\Services\Whatsapp\EvolutionClient($this->container, $clinicId);
-            $client->sendText($phone, $message);
-
-            // Log the message
-            try {
-                $pdo->prepare(
-                    "INSERT INTO whatsapp_message_logs (clinic_id, appointment_id, patient_id, template_code, phone, message_body, status, created_at)
-                     VALUES (:c, :a, :p, 'post_treatment', :ph, :msg, 'sent', NOW())"
-                )->execute(['c' => $clinicId, 'a' => $appointmentId, 'p' => $patientId, 'ph' => $phone, 'msg' => substr($message, 0, 500)]);
-            } catch (\Throwable $ignore) {}
         } catch (\Throwable $e) {
-            error_log('[PostTreatment] Failed to send for appointment #' . $appointmentId . ': ' . $e->getMessage());
+            error_log('[PostTreatment] WhatsApp failed for appointment #' . $appointmentId . ': ' . $e->getMessage());
+        }
+
+        // Send via email
+        try {
+            $patEmail = '';
+            $patEmailStmt = $pdo->prepare("SELECT email FROM patients WHERE id = :pid AND clinic_id = :c AND deleted_at IS NULL LIMIT 1");
+            $patEmailStmt->execute(['pid' => $patientId, 'c' => $clinicId]);
+            $patEmailRow = $patEmailStmt->fetch();
+            $patEmail = trim((string)($patEmailRow['email'] ?? ''));
+
+            if ($patEmail !== '' && filter_var($patEmail, FILTER_VALIDATE_EMAIL)) {
+                $clinicName = '';
+                try {
+                    $cnStmt = $pdo->prepare("SELECT name FROM clinics WHERE id = :c AND deleted_at IS NULL LIMIT 1");
+                    $cnStmt->execute(['c' => $clinicId]);
+                    $cnRow = $cnStmt->fetch();
+                    $clinicName = trim((string)($cnRow['name'] ?? ''));
+                } catch (\Throwable $ignore) {}
+
+                $subject = 'Cuidados pos-procedimento - ' . $procName;
+                $htmlBody = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">';
+                $htmlBody .= '<h2 style="color:#815901;">Cuidados pos-procedimento</h2>';
+                $htmlBody .= '<p>Ola <strong>' . htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') . '</strong>,</p>';
+                $htmlBody .= '<p>Seu atendimento de <strong>' . htmlspecialchars($procName, ENT_QUOTES, 'UTF-8') . '</strong> foi concluido.</p>';
+
+                if ($postGuidelines !== '') {
+                    $htmlBody .= '<h3 style="color:#4f46e5;">Cuidados pos-procedimento</h3>';
+                    $htmlBody .= '<div style="background:#f0f4ff;border-radius:8px;padding:14px;margin-bottom:16px;">' . nl2br(htmlspecialchars($postGuidelines, ENT_QUOTES, 'UTF-8')) . '</div>';
+                }
+
+                if ($contraindications !== '') {
+                    $htmlBody .= '<h3 style="color:#dc2626;">Contraindicacoes</h3>';
+                    $htmlBody .= '<div style="background:#fef2f2;border-radius:8px;padding:14px;margin-bottom:16px;">' . nl2br(htmlspecialchars($contraindications, ENT_QUOTES, 'UTF-8')) . '</div>';
+                }
+
+                $htmlBody .= '<p style="color:#6b7280;font-size:13px;">Qualquer duvida, entre em contato conosco.</p>';
+                if ($clinicName !== '') {
+                    $htmlBody .= '<p style="color:#9ca3af;font-size:12px;">— ' . htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') . '</p>';
+                }
+                $htmlBody .= '</div>';
+
+                (new \App\Services\Mail\MailerService($this->container))->send(
+                    $patEmail,
+                    $patientName,
+                    $subject,
+                    $htmlBody
+                );
+            }
+        } catch (\Throwable $e) {
+            error_log('[PostTreatment] Email failed for appointment #' . $appointmentId . ': ' . $e->getMessage());
         }
     }
 }
