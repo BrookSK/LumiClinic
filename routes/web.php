@@ -489,6 +489,7 @@ $router->post('/services/categories/delete', [ServiceCategoryController::class, 
 
 $router->get('/services/materials', [ServiceMaterialsController::class, 'index']);
 $router->post('/services/materials/create', [ServiceMaterialsController::class, 'create']);
+$router->post('/services/materials/update', [ServiceMaterialsController::class, 'create']);
 $router->post('/services/materials/delete', [ServiceMaterialsController::class, 'delete']);
 
 $router->get('/professionals', [ProfessionalController::class, 'index']);
