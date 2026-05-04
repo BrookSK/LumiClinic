@@ -327,6 +327,30 @@ final class AppointmentService
 
         $repo->updateStatus($clinicId, $appointmentId, $status);
 
+        // Auto-send post-treatment care when appointment is completed
+        if ($status === 'completed') {
+            try {
+                $patientId = (int)($current['patient_id'] ?? 0);
+                $serviceId = (int)($current['service_id'] ?? 0);
+                if ($patientId > 0 && $serviceId > 0) {
+                    (new QueueService($this->container))->enqueue(
+                        'appointment.send_post_treatment',
+                        [
+                            'appointment_id' => $appointmentId,
+                            'patient_id' => $patientId,
+                            'service_id' => $serviceId,
+                        ],
+                        $clinicId,
+                        'notifications',
+                        (new \DateTimeImmutable('now'))->modify('+5 minutes')->format('Y-m-d H:i:s'),
+                        5
+                    );
+                }
+            } catch (\Throwable $e) {
+                error_log('[AppointmentService] Failed to enqueue post-treatment: ' . $e->getMessage());
+            }
+        }
+
         (new AppointmentLogRepository($pdo))->log(
             $clinicId,
             $appointmentId,

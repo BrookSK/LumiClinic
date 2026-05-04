@@ -426,6 +426,52 @@ final class SalesService
 
         $this->recalcTotalsAndStatus($clinicId, $saleId, $actorId, $ip);
 
+        // Create cashflow entry for paid payments
+        if ($status === 'paid') {
+            try {
+                $finRepo = new \App\Repositories\FinancialEntryRepository($pdo);
+                // Check if entry already exists for this payment to avoid duplicates
+                $existingCheck = $pdo->prepare(
+                    "SELECT id FROM financial_entries WHERE clinic_id = :c AND payment_id = :p AND deleted_at IS NULL LIMIT 1"
+                );
+                $existingCheck->execute(['c' => $clinicId, 'p' => $firstPaymentId]);
+                if (!$existingCheck->fetch()) {
+                    $patientName = '';
+                    try {
+                        $patStmt = $pdo->prepare(
+                            "SELECT p.name FROM patients p JOIN sales s ON s.patient_id = p.id WHERE s.id = :sid AND s.clinic_id = :c LIMIT 1"
+                        );
+                        $patStmt->execute(['sid' => $saleId, 'c' => $clinicId]);
+                        $patRow = $patStmt->fetch();
+                        $patientName = $patRow ? trim((string)($patRow['name'] ?? '')) : '';
+                    } catch (\Throwable $ignore) {}
+
+                    $desc = 'Pagamento de orcamento #' . $saleId;
+                    if ($patientName !== '') {
+                        $desc .= ' - ' . $patientName;
+                    }
+
+                    $occurredOn = $paidAtDate !== null && trim($paidAtDate) !== '' ? trim($paidAtDate) : date('Y-m-d');
+
+                    $finRepo->create(
+                        $clinicId,
+                        'in',
+                        $occurredOn,
+                        number_format($totalAmount, 2, '.', ''),
+                        $method,
+                        'posted',
+                        null,
+                        $saleId,
+                        $firstPaymentId,
+                        $desc,
+                        $actorId
+                    );
+                }
+            } catch (\Throwable $e) {
+                error_log('[SalesService] Failed to create cashflow entry for payment #' . $firstPaymentId . ': ' . $e->getMessage());
+            }
+        }
+
         return $firstPaymentId;
     }
 

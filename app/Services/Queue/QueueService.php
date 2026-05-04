@@ -213,6 +213,23 @@ final class QueueService
             return;
         }
 
+        if ($jobType === 'appointment.send_post_treatment') {
+            if ($clinicId === null) {
+                throw new \RuntimeException('clinic_id obrigatório para appointment.send_post_treatment.');
+            }
+
+            $appointmentId = (int)($payload['appointment_id'] ?? 0);
+            $patientId = (int)($payload['patient_id'] ?? 0);
+            $serviceId = (int)($payload['service_id'] ?? 0);
+
+            if ($appointmentId <= 0 || $patientId <= 0 || $serviceId <= 0) {
+                throw new \RuntimeException('Payload inválido para appointment.send_post_treatment.');
+            }
+
+            $this->sendPostTreatmentCare($clinicId, $appointmentId, $patientId, $serviceId);
+            return;
+        }
+
         if ($jobType === 'bi.refresh_executive') {
             if ($clinicId === null) {
                 throw new \RuntimeException('clinic_id obrigatório para bi.refresh_executive.');
@@ -311,5 +328,90 @@ final class QueueService
         }
 
         throw new \RuntimeException('Job handler não registrado: ' . $jobType);
+    }
+
+    /**
+     * Sends post-treatment care (contraindications + post-guidelines) to the patient via WhatsApp after appointment completion.
+     */
+    private function sendPostTreatmentCare(int $clinicId, int $appointmentId, int $patientId, int $serviceId): void
+    {
+        $pdo = $this->container->get(\PDO::class);
+
+        // Get the procedure linked to the service
+        $stmt = $pdo->prepare("
+            SELECT p.name, p.contraindications, p.post_guidelines
+            FROM procedures p
+            JOIN services s ON s.procedure_id = p.id
+            WHERE s.id = :sid AND s.clinic_id = :c AND p.deleted_at IS NULL
+            LIMIT 1
+        ");
+        $stmt->execute(['sid' => $serviceId, 'c' => $clinicId]);
+        $proc = $stmt->fetch();
+
+        if (!$proc) {
+            return; // No procedure linked to this service
+        }
+
+        $contraindications = trim((string)($proc['contraindications'] ?? ''));
+        $postGuidelines = trim((string)($proc['post_guidelines'] ?? ''));
+
+        if ($contraindications === '' && $postGuidelines === '') {
+            return; // Nothing to send
+        }
+
+        // Get patient info
+        $stmt2 = $pdo->prepare("SELECT name, phone, whatsapp_opt_in FROM patients WHERE id = :pid AND clinic_id = :c AND deleted_at IS NULL LIMIT 1");
+        $stmt2->execute(['pid' => $patientId, 'c' => $clinicId]);
+        $patient = $stmt2->fetch();
+
+        if (!$patient) {
+            return;
+        }
+
+        $phone = trim((string)($patient['phone'] ?? ''));
+        $waOptIn = (int)($patient['whatsapp_opt_in'] ?? 1);
+
+        if ($phone === '' || $waOptIn !== 1) {
+            return; // No phone or no opt-in
+        }
+
+        // Build message
+        $procName = trim((string)($proc['name'] ?? ''));
+        $patientName = trim((string)($patient['name'] ?? ''));
+
+        $message = "Ola " . $patientName . "! Seu atendimento de *" . $procName . "* foi concluido.\n\n";
+
+        if ($postGuidelines !== '') {
+            $message .= "*Cuidados pos-procedimento:*\n" . $postGuidelines . "\n\n";
+        }
+
+        if ($contraindications !== '') {
+            $message .= "*Contraindicacoes:*\n" . $contraindications . "\n\n";
+        }
+
+        $message .= "Qualquer duvida, entre em contato conosco.";
+
+        // Send via WhatsApp (Evolution API)
+        try {
+            $clinicSettings = (new \App\Repositories\ClinicSettingsRepository($pdo))->findByClinicId($clinicId);
+            $instance = trim((string)($clinicSettings['evolution_instance'] ?? ''));
+
+            if ($instance === '') {
+                return; // WhatsApp not configured
+            }
+
+            $client = new \App\Services\Whatsapp\EvolutionClient($this->container, $clinicId);
+            $client->sendText($phone, $message);
+
+            // Log the message
+            try {
+                $pdo->prepare(
+                    "INSERT INTO whatsapp_message_logs (clinic_id, appointment_id, patient_id, template_code, phone, message_body, status, created_at)
+                     VALUES (:c, :a, :p, 'post_treatment', :ph, :msg, 'sent', NOW())"
+                )->execute(['c' => $clinicId, 'a' => $appointmentId, 'p' => $patientId, 'ph' => $phone, 'msg' => substr($message, 0, 500)]);
+            } catch (\Throwable $ignore) {}
+        } catch (\Throwable $e) {
+            error_log('[PostTreatment] Failed to send for appointment #' . $appointmentId . ': ' . $e->getMessage());
+        }
     }
 }
