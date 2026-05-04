@@ -3,6 +3,7 @@ $title = 'Admin - Fila de Tarefas';
 $items = $items ?? [];
 $status = $status ?? null;
 $csrf = $_SESSION['_csrf'] ?? '';
+$selectedOrigin = isset($_GET['origin']) ? trim((string)$_GET['origin']) : '';
 
 $allowed = [''=>'Todos','pending'=>'Pendente','processing'=>'Processando','done'=>'Concluído','dead'=>'Falhou'];
 $statusColor = ['pending'=>'#eeb810','processing'=>'#6b7280','done'=>'#16a34a','dead'=>'#b91c1c'];
@@ -38,7 +39,7 @@ ob_start();
 <!-- Filtro + Testes -->
 <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px;">
     <form method="get" action="/sys/queue-jobs" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
-        <div class="lc-field" style="min-width:180px;">
+        <div class="lc-field" style="min-width:160px;">
             <label class="lc-label">Status</label>
             <select class="lc-select" name="status">
                 <?php foreach ($allowed as $k=>$v): ?>
@@ -46,9 +47,29 @@ ob_start();
                 <?php endforeach; ?>
             </select>
         </div>
+        <div class="lc-field" style="min-width:160px;">
+            <label class="lc-label">Origem</label>
+            <select class="lc-select" name="origin">
+                <option value="">Todas</option>
+                <option value="system" <?= ($selectedOrigin ?? '') === 'system' ? 'selected' : '' ?>>Sistema / Superadmin</option>
+                <?php
+                $clinicsSeen = [];
+                foreach ($items as $_it) {
+                    $cid = (int)($_it['clinic_id'] ?? 0);
+                    $cname = trim((string)($_it['clinic_name'] ?? ''));
+                    if ($cid > 0 && !isset($clinicsSeen[$cid])) {
+                        $clinicsSeen[$cid] = $cname !== '' ? $cname : 'Clinica #' . $cid;
+                    }
+                }
+                ksort($clinicsSeen);
+                foreach ($clinicsSeen as $_cid => $_cname): ?>
+                    <option value="<?= $_cid ?>" <?= ($selectedOrigin ?? '') === (string)$_cid ? 'selected' : '' ?>><?= htmlspecialchars($_cname, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <div style="display:flex;gap:6px;padding-bottom:1px;">
             <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Filtrar</button>
-            <?php if ($selected !== ''): ?><a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/queue-jobs">Limpar</a><?php endif; ?>
+            <?php if ($selected !== '' || ($selectedOrigin ?? '') !== ''): ?><a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/queue-jobs">Limpar</a><?php endif; ?>
         </div>
     </form>
 
@@ -76,7 +97,7 @@ ob_start();
 <div style="border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);overflow:hidden;">
     <div class="lc-table-wrap">
         <table class="lc-table">
-            <thead><tr><th>Tarefa</th><th>Fila</th><th>Status</th><th>Tentativas</th><th>Executar em</th><th></th></tr></thead>
+            <thead><tr><th>Tarefa</th><th>Origem</th><th>Fila</th><th>Status</th><th>Tentativas</th><th>Executar em</th><th></th></tr></thead>
             <tbody>
             <?php foreach ($items as $it): ?>
                 <?php
@@ -93,13 +114,26 @@ ob_start();
                 elseif ($jobCode === 'test.noop') $jobHuman = 'Teste (sucesso)';
                 elseif ($jobCode === 'test.throw') $jobHuman = 'Teste (erro)';
                 $queueCode = (string)($it['queue'] ?? 'default');
+                $clinicIdJob = (int)($it['clinic_id'] ?? 0);
+                $clinicNameJob = trim((string)($it['clinic_name'] ?? ''));
+                $originLabel = $clinicIdJob > 0 ? ($clinicNameJob !== '' ? $clinicNameJob : 'Clinica #' . $clinicIdJob) : 'Sistema';
+                $originBg = $clinicIdJob > 0 ? 'rgba(99,102,241,.08)' : 'rgba(238,184,16,.12)';
+                $originClr = $clinicIdJob > 0 ? '#6366f1' : '#92400e';
                 $runAt = (string)($it['run_at'] ?? '');
                 $runFmt = $runAt !== '' ? date('d/m H:i', strtotime($runAt)) : '—';
+
+                // Origin filter
+                $selectedOrigin = isset($selectedOrigin) ? $selectedOrigin : '';
+                if ($selectedOrigin === 'system' && $clinicIdJob > 0) continue;
+                if ($selectedOrigin !== '' && $selectedOrigin !== 'system' && $clinicIdJob !== (int)$selectedOrigin) continue;
                 ?>
                 <tr>
                     <td>
                         <div style="font-weight:700;font-size:13px;"><?= htmlspecialchars($jobHuman, ENT_QUOTES, 'UTF-8') ?></div>
                         <div style="font-size:11px;color:rgba(31,41,55,.35);font-family:monospace;"><?= htmlspecialchars($jobCode, ENT_QUOTES, 'UTF-8') ?></div>
+                    </td>
+                    <td>
+                        <span style="display:inline-flex;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;background:<?= $originBg ?>;color:<?= $originClr ?>;"><?= htmlspecialchars($originLabel, ENT_QUOTES, 'UTF-8') ?></span>
                     </td>
                     <td style="font-size:12px;"><?= htmlspecialchars($queueCode, ENT_QUOTES, 'UTF-8') ?></td>
                     <td><span style="display:inline-flex;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;background:<?= $stClr ?>18;color:<?= $stClr ?>;border:1px solid <?= $stClr ?>30"><?= htmlspecialchars($stLbl, ENT_QUOTES, 'UTF-8') ?></span></td>
