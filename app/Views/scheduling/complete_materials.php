@@ -89,14 +89,16 @@ ob_start();
                     <?php foreach ($defaults as $d): ?>
                         <?php
                         $mid = (int)$d['material_id'];
-                        $val = isset($used_qty[$mid]) ? (string)$used_qty[$mid] : number_format((float)$d['quantity_per_session'], 3, '.', '');
+                        $rawQty = (float)$d['quantity_per_session'];
+                        $displayQty = ($rawQty == (int)$rawQty) ? (string)(int)$rawQty : number_format($rawQty, 2, ',', '.');
+                        $inputVal = isset($used_qty[$mid]) ? (string)$used_qty[$mid] : (string)(($rawQty == (int)$rawQty) ? (int)$rawQty : $rawQty);
                         ?>
                         <div class="cm-mat-row">
                             <div>
                                 <div class="cm-mat-name"><?= htmlspecialchars((string)$d['material_name'], ENT_QUOTES, 'UTF-8') ?></div>
-                                <div class="cm-mat-unit"><?= htmlspecialchars((string)$d['material_unit'], ENT_QUOTES, 'UTF-8') ?> &middot; padrao: <?= number_format((float)$d['quantity_per_session'], 3, ',', '.') ?></div>
+                                <div class="cm-mat-unit"><?= htmlspecialchars((string)$d['material_unit'], ENT_QUOTES, 'UTF-8') ?> &middot; padrao: <?= $displayQty ?></div>
                             </div>
-                            <input class="lc-input" type="text" name="qty[<?= $mid ?>]" value="<?= htmlspecialchars($val, ENT_QUOTES, 'UTF-8') ?>" style="text-align:center;" />
+                            <input class="lc-input" type="text" name="qty[<?= $mid ?>]" value="<?= htmlspecialchars($inputVal, ENT_QUOTES, 'UTF-8') ?>" style="text-align:center;" />
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>

@@ -110,7 +110,7 @@ ob_start();
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid rgba(17,24,39,.06);background:rgba(0,0,0,.01);">
             <div style="display:flex;align-items:center;gap:12px;">
                 <span style="font-weight:700;font-size:13px;color:rgba(31,41,55,.90);"><?= htmlspecialchars((string)$d['material_name'], ENT_QUOTES, 'UTF-8') ?></span>
-                <span style="font-size:12px;color:rgba(31,41,55,.50);"><?= number_format((float)$d['quantity_per_session'], 3, ',', '.') ?> <?= htmlspecialchars((string)$d['material_unit'], ENT_QUOTES, 'UTF-8') ?> por sessão</span>
+                <span style="font-size:12px;color:rgba(31,41,55,.50);"><?php $q=(float)$d['quantity_per_session']; echo ($q==(int)$q) ? (int)$q : number_format($q,2,',','.'); ?> <?= htmlspecialchars((string)$d['material_unit'], ENT_QUOTES, 'UTF-8') ?> por sessão</span>
             </div>
             <?php if ($can('services.manage')): ?>
                 <form method="post" action="/services/materials/delete" style="margin:0;" onsubmit="return confirm('Remover?');">
