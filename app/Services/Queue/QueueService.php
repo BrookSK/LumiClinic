@@ -391,105 +391,43 @@ final class QueueService
 
         $message .= "Qualquer duvida, entre em contato conosco.";
 
+        // Log helper for DB visibility
+        $logToDb = function(string $msg) use ($pdo, $clinicId, $appointmentId) {
+            try {
+                $pdo->prepare(
+                    "INSERT INTO system_error_logs (status_code, error_type, message, method, path, clinic_id, created_at)
+                     VALUES (0, 'info', :m, 'QUEUE', :p, :c, NOW())"
+                )->execute([
+                    'm' => '[PostTreatment] ' . $msg,
+                    'p' => 'appointment.send_post_treatment#' . $appointmentId,
+                    'c' => $clinicId,
+                ]);
+            } catch (\Throwable $ignore) {}
+        };
+
         // Send via WhatsApp (Evolution API)
         try {
-            $clinicSettings = (new \App\Repositories\ClinicSettingsRepository($pdo))->findByClinicId($clinicId);
-            $instance = trim((string)($clinicSettings['evolution_instance'] ?? ''));
-            $apikeyEnc = trim((string)($clinicSettings['evolution_apikey_encrypted'] ?? ''));
+            // Set clinic context for EvolutionClient (which uses AuthService internally)
+            $_SESSION['clinic_id'] = $clinicId;
 
-            error_log('[PostTreatment][WA] clinicId=' . $clinicId . ' instance=' . ($instance !== '' ? 'SET' : 'EMPTY') . ' apikey=' . ($apikeyEnc !== '' ? 'SET' : 'EMPTY') . ' phone=' . $phone);
+            $client = new \App\Services\Whatsapp\EvolutionClient($this->container);
+            $client->sendText($phone, $message);
 
-            // Also log to DB for visibility in /sys/error-logs
-            $logToDb = function(string $msg) use ($pdo, $clinicId, $appointmentId) {
-                try {
-                    $pdo->prepare(
-                        "INSERT INTO system_error_logs (status_code, error_type, message, method, path, clinic_id, created_at)
-                         VALUES (0, 'info', :m, 'QUEUE', :p, :c, NOW())"
-                    )->execute([
-                        'm' => '[PostTreatment][WA] ' . $msg,
-                        'p' => 'appointment.send_post_treatment#' . $appointmentId,
-                        'c' => $clinicId,
-                    ]);
-                } catch (\Throwable $ignore) {}
-            };
+            $logToDb('WhatsApp sent OK');
 
-            $logToDb('instance=' . ($instance !== '' ? 'SET' : 'EMPTY') . ' apikey=' . ($apikeyEnc !== '' ? 'SET' : 'EMPTY') . ' phone=' . $phone);
-
-            if ($instance !== '' && $apikeyEnc !== '') {
-                $apikey = (new \App\Services\Security\CryptoService($this->container))->decrypt($clinicId, $apikeyEnc);
-
-                // Read base URL from system settings
-                $baseUrl = '';
-                try {
-                    $buStmt = $pdo->prepare("SELECT value_text FROM system_settings WHERE `key` = 'whatsapp.evolution.base_url' LIMIT 1");
-                    $buStmt->execute();
-                    $buRow = $buStmt->fetch();
-                    $baseUrl = trim((string)($buRow['value_text'] ?? ''));
-                } catch (\Throwable $ignore) {}
-                if ($baseUrl === '') {
-                    // Try config fallback
-                    try {
-                        $cfg = $this->container->has('config') ? $this->container->get('config') : null;
-                        if (is_array($cfg) && isset($cfg['whatsapp']['evolution']['base_url'])) {
-                            $baseUrl = trim((string)$cfg['whatsapp']['evolution']['base_url']);
-                        }
-                    } catch (\Throwable $ignore) {}
-                }
-
-                error_log('[PostTreatment][WA] baseUrl=' . ($baseUrl !== '' ? $baseUrl : 'EMPTY'));
-                $logToDb('baseUrl=' . ($baseUrl !== '' ? $baseUrl : 'EMPTY'));
-
-                if ($baseUrl === '') {
-                    error_log('[PostTreatment][WA] No base URL configured - skipping WhatsApp');
-                    $logToDb('SKIP: No base URL');
-                } else {
-                    $phoneDigits = preg_replace('/\D+/', '', $phone);
-                    if (strlen($phoneDigits) <= 11 && !str_starts_with($phoneDigits, '55')) {
-                        $phoneDigits = '55' . $phoneDigits;
-                    }
-
-                    $url = rtrim($baseUrl, '/') . '/message/sendText/' . rawurlencode($instance);
-                    $http = new \App\Services\Http\HttpClient();
-
-                    error_log('[PostTreatment][WA] Sending to ' . $phoneDigits . ' via ' . $url);
-                    $logToDb('Sending to ' . $phoneDigits . ' via ' . $url);
-
-                    $resp = $http->request('POST', $url, ['apikey' => $apikey], [
-                        'number' => $phoneDigits,
-                        'text' => $message,
-                    ], 30);
-
-                    if ($resp['status'] === 400) {
-                        $resp = $http->request('POST', $url, ['apikey' => $apikey], [
-                            'number' => $phoneDigits,
-                            'textMessage' => ['text' => $message],
-                        ], 30);
-                    }
-
-                    error_log('[PostTreatment][WA] Response HTTP ' . $resp['status']);
-                    $logToDb('Response HTTP ' . $resp['status']);
-
-                    if ($resp['status'] >= 200 && $resp['status'] < 300) {
-                        try {
-                            $pdo->prepare(
-                                "INSERT INTO whatsapp_message_logs (clinic_id, appointment_id, patient_id, template_code, phone, message_body, status, created_at)
-                                 VALUES (:c, :a, :p, 'post_treatment', :ph, :msg, 'sent', NOW())"
-                            )->execute(['c' => $clinicId, 'a' => $appointmentId, 'p' => $patientId, 'ph' => $phoneDigits, 'msg' => substr($message, 0, 500)]);
-                        } catch (\Throwable $logErr) {
-                            error_log('[PostTreatment][WA] Log insert failed: ' . $logErr->getMessage());
-                        }
-                    } else {
-                        error_log('[PostTreatment][WA] Failed HTTP ' . $resp['status'] . ' body=' . substr((string)($resp['body'] ?? ''), 0, 300));
-                        $logToDb('FAILED HTTP ' . $resp['status'] . ' body=' . substr((string)($resp['body'] ?? ''), 0, 300));
-                    }
-                }
-            } else {
-                error_log('[PostTreatment][WA] Skipped - instance or apikey not configured');
-                $logToDb('SKIP: instance or apikey not configured');
+            try {
+                $pdo->prepare(
+                    "INSERT INTO whatsapp_message_logs (clinic_id, appointment_id, patient_id, template_code, phone, message_body, status, created_at)
+                     VALUES (:c, :a, :p, 'post_treatment', :ph, :msg, 'sent', NOW())"
+                )->execute(['c' => $clinicId, 'a' => $appointmentId, 'p' => $patientId, 'ph' => $phone, 'msg' => substr($message, 0, 500)]);
+            } catch (\Throwable $logErr) {
+                $logToDb('Log insert failed: ' . $logErr->getMessage());
             }
         } catch (\Throwable $e) {
-            error_log('[PostTreatment][WA] Exception: ' . $e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine());
-            $logToDb('EXCEPTION: ' . $e->getMessage());
+            $logToDb('WA Exception: ' . $e->getMessage());
+        } finally {
+            // Clean up session
+            unset($_SESSION['clinic_id']);
         }
 
         // Send via email
