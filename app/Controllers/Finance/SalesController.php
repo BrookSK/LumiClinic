@@ -472,6 +472,53 @@ final class SalesController extends Controller
         }
     }
 
+    public function delete(Request $request)
+    {
+        $this->authorize('finance.sales.cancel');
+
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $saleId = (int)$request->input('sale_id', 0);
+        if ($saleId <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        $auth = new \App\Services\Auth\AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto invalido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $sale = (new \App\Repositories\SaleRepository($pdo))->findById($clinicId, $saleId);
+        if ($sale === null) {
+            return $this->redirect('/finance/sales');
+        }
+
+        // Only allow deletion of cancelled sales
+        if ((string)$sale['status'] !== 'cancelled') {
+            return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode('Apenas orcamentos cancelados podem ser excluidos.'));
+        }
+
+        // Soft delete
+        $pdo->prepare("UPDATE sales SET deleted_at = NOW() WHERE id = :id AND clinic_id = :c LIMIT 1")
+            ->execute(['id' => $saleId, 'c' => $clinicId]);
+
+        $patientId = (int)($sale['patient_id'] ?? 0);
+        if ($patientId > 0) {
+            return $this->redirect('/finance/sales?patient_id=' . $patientId);
+        }
+
+        return $this->redirect('/finance/sales');
+    }
+
     public function setBudgetStatus(Request $request)
     {
         $this->authorize('finance.sales.update');

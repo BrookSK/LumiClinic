@@ -504,6 +504,19 @@ ob_start();
         </div>
         <?php endif; ?>
 
+        <!-- Excluir orçamento cancelado -->
+        <?php if (!$isProfessional && $can('finance.sales.cancel') && $isCancelled): ?>
+        <div class="lc-card" style="margin:0;border-color:rgba(239,68,68,.2);">
+            <div class="lc-card__body">
+                <form method="post" action="/finance/sales/delete" onsubmit="return confirm('Excluir permanentemente este orçamento? Esta ação não pode ser desfeita.');">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                    <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit" style="width:100%;">🗑 Excluir orçamento</button>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
+
     </div>
 </div>
 
