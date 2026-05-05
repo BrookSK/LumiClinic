@@ -63,6 +63,17 @@ ob_start();
 </div>
 <?php endif; ?>
 
+<!-- Filtro -->
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+    <?php $showAll = isset($show_all) && $show_all; ?>
+    <a href="/procedures<?= $showAll ? '' : '?show_all=1' ?>" class="lc-btn lc-btn--secondary lc-btn--sm">
+        <?= $showAll ? 'Mostrar apenas ativos' : 'Mostrar desativados' ?>
+    </a>
+    <?php if ($showAll): ?>
+    <span style="font-size:12px;color:rgba(31,41,55,.45);">Exibindo todos (incluindo desativados)</span>
+    <?php endif; ?>
+</div>
+
 <!-- Lista -->
 <?php if ($items === []): ?>
     <div style="text-align:center;padding:40px 20px;color:rgba(31,41,55,.45);">
@@ -75,16 +86,27 @@ ob_start();
         <?php
         $id = (int)$it['id'];
         $avg = $avg_duration_by_procedure[(string)$id] ?? null;
+        $isDisabled = (string)($it['status'] ?? '') === 'disabled';
         ?>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-radius:12px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 2px 8px rgba(17,24,39,.04);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-radius:12px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 2px 8px rgba(17,24,39,.04);<?= $isDisabled ? 'opacity:.6;' : '' ?>">
             <div style="display:flex;align-items:center;gap:12px;">
                 <span style="font-weight:700;font-size:14px;color:rgba(31,41,55,.96);"><?= htmlspecialchars((string)$it['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                <?php if ($isDisabled): ?>
+                    <span style="display:inline-flex;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(107,114,128,.12);color:#6b7280;">Desativado</span>
+                <?php endif; ?>
                 <?php if ($avg !== null): ?>
-                    <span style="font-size:12px;color:rgba(31,41,55,.45);">Duração média: <?= (int)$avg ?> min</span>
+                    <span style="font-size:12px;color:rgba(31,41,55,.45);">Duracao media: <?= (int)$avg ?> min</span>
                 <?php endif; ?>
             </div>
             <?php if ($can('procedures.manage')): ?>
+            <div style="display:flex;gap:6px;">
                 <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/procedures/edit?id=<?= $id ?>">Editar</a>
+                <form method="post" action="/procedures/delete" style="margin:0;" onsubmit="return confirm('Excluir este procedimento permanentemente?');">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" value="<?= $id ?>" />
+                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" style="color:#dc2626;">Excluir</button>
+                </form>
+            </div>
             <?php endif; ?>
         </div>
     <?php endforeach; ?>

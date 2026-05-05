@@ -12,24 +12,35 @@ final class ProcedureRepository
     public function listActiveByClinic(int $clinicId): array
     {
         $sql = "
-            SELECT
-                id, clinic_id,
-                name,
-                contraindications, pre_guidelines, post_guidelines,
-                status,
-                created_at, updated_at
+            SELECT id, clinic_id, name, contraindications, pre_guidelines, post_guidelines, status, created_at, updated_at
             FROM procedures
-            WHERE clinic_id = :clinic_id
-              AND deleted_at IS NULL
-              AND status = 'active'
+            WHERE clinic_id = :clinic_id AND deleted_at IS NULL AND status = 'active'
             ORDER BY name ASC
         ";
-
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['clinic_id' => $clinicId]);
-
-        /** @var list<array<string,mixed>> */
         return $stmt->fetchAll();
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function listAllByClinic(int $clinicId): array
+    {
+        $sql = "
+            SELECT id, clinic_id, name, contraindications, pre_guidelines, post_guidelines, status, created_at, updated_at
+            FROM procedures
+            WHERE clinic_id = :clinic_id AND deleted_at IS NULL
+            ORDER BY status ASC, name ASC
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId]);
+        return $stmt->fetchAll();
+    }
+
+    public function softDelete(int $clinicId, int $id): void
+    {
+        $this->pdo->prepare(
+            "UPDATE procedures SET deleted_at = NOW(), updated_at = NOW() WHERE id = :id AND clinic_id = :c AND deleted_at IS NULL LIMIT 1"
+        )->execute(['id' => $id, 'c' => $clinicId]);
     }
 
     /** @return array<string,mixed>|null */

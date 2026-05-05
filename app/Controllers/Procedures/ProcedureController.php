@@ -46,13 +46,15 @@ final class ProcedureController extends Controller
         $pdo = $this->container->get(\PDO::class);
 
         $repo = new ProcedureRepository($pdo);
-        $rows = $repo->listActiveByClinic($clinicId);
+        $showAll = trim((string)$request->input('show_all', '')) === '1';
+        $rows = $showAll ? $repo->listAllByClinic($clinicId) : $repo->listActiveByClinic($clinicId);
 
         $avgByProcedure = $repo->avgRealDurationMinutesByProcedure($clinicId, array_map(static fn ($r) => (int)$r['id'], $rows));
 
         return $this->view('procedures/index', [
             'items' => $rows,
             'avg_duration_by_procedure' => $avgByProcedure,
+            'show_all' => $showAll,
             'error' => trim((string)$request->input('error', '')),
             'success' => trim((string)$request->input('success', '')),
         ]);
@@ -92,6 +94,30 @@ final class ProcedureController extends Controller
         );
 
         return $this->redirect('/procedures/edit?id=' . $id . '&success=' . urlencode('Criado.'));
+    }
+
+    public function delete(Request $request)
+    {
+        $this->authorize('procedures.manage');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) return $redirect;
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/procedures');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto invalido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        (new ProcedureRepository($pdo))->softDelete($clinicId, $id);
+
+        return $this->redirect('/procedures?success=' . urlencode('Procedimento excluido.'));
     }
 
     public function edit(Request $request)

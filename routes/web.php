@@ -509,6 +509,7 @@ $router->post('/schedule-rules/delete-day', [ProfessionalScheduleController::cla
 
 $router->get('/procedures', [ProcedureController::class, 'index']);
 $router->post('/procedures/create', [ProcedureController::class, 'create']);
+$router->post('/procedures/delete', [ProcedureController::class, 'delete']);
 $router->get('/procedures/edit', [ProcedureController::class, 'edit']);
 $router->post('/procedures/edit', [ProcedureController::class, 'update']);
 
