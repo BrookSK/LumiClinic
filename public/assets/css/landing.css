@@ -105,7 +105,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-hero-img img { width: 100%; max-width: 580px; }
 
 /* ===== PAIN POINTS ===== */
-.lp-pain { padding: 100px 0; position: relative; background: #1A1A1A; }
+.lp-pain { padding: 100px 0; position: relative; background: #0A0A0A; }
 .lp-pain::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -133,7 +133,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 /* ===== PLATFORM ===== */
-.lp-platform { padding: 100px 0; position: relative; }
+.lp-platform { padding: 100px 0; position: relative; background: #100E0A; }
 .lp-platform::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -190,7 +190,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-platform-benefit { font-size: 14px; color: var(--gold); font-style: italic; }
 
 /* ===== FOUNDER ===== */
-.lp-founder { padding: 100px 0; position: relative; background: #0A0A0A; }
+.lp-founder { padding: 100px 0; position: relative; background: #100E0A; }
 .lp-founder::before {
     content: ''; position: absolute; top: 50%; left: 30%; transform: translate(-50%, -50%);
     width: 800px; height: 800px;
@@ -237,7 +237,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-founder-quote cite { font-style: normal; font-size: 12px; color: var(--text-muted); }
 
 /* ===== DIFFERENTIALS ===== */
-.lp-differentials { padding: 80px 0; position: relative; }
+.lp-differentials { padding: 80px 0; position: relative; background: #100E0A; }
 .lp-differentials::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -275,7 +275,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-testimonial-card .role { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
 /* ===== FOR YOU ===== */
-.lp-foryou { padding: 100px 0; position: relative; }
+.lp-foryou { padding: 100px 0; position: relative; background: #100E0A; }
 .lp-foryou::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -351,7 +351,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-pricing-footer { text-align: center; margin-top: 36px; font-size: 12px; color: var(--text-muted); }
 
 /* ===== FAQ ===== */
-.lp-faq { padding: 100px 0; position: relative; background: #0A0A0A; }
+.lp-faq { padding: 100px 0; position: relative; background: #100E0A; }
 .lp-faq::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -379,7 +379,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-faq-answer p { padding-bottom: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
 
 /* ===== CTA ===== */
-.lp-cta { padding: 120px 0; text-align: center; position: relative; }
+.lp-cta { padding: 120px 0; text-align: center; position: relative; background: #100E0A; }
 .lp-cta::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -397,7 +397,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-cta-note { font-size: 11px; color: var(--text-muted); }
 
 /* ===== FOOTER ===== */
-.lp-footer { padding: 72px 0 36px; border-top: 1px solid var(--border); }
+.lp-footer { padding: 72px 0 36px; border-top: 1px solid var(--border); background: #0A0806; }
 .lp-footer-grid {
     display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 48px;
     margin-bottom: 48px;
