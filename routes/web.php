@@ -94,8 +94,10 @@ use App\Controllers\Account\MeController;
 use App\Controllers\Auth\AccessChoiceController;
 use App\Controllers\Public\AppointmentConfirmController;
 use App\Controllers\Public\ClinicSignupController;
+use App\Controllers\Public\LandingController;
 
-$router->get('/', [DashboardController::class, 'index']);
+$router->get('/', [LandingController::class, 'index']);
+$router->get('/dashboard', [DashboardController::class, 'index']);
 
 $router->get('/login', [LoginController::class, 'show']);
 $router->post('/login', [LoginController::class, 'login']);

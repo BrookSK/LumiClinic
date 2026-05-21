@@ -57,7 +57,7 @@ final class AccessChoiceController extends Controller
                 if ($next !== '' && str_starts_with($next, '/') && !str_starts_with($next, '/login') && !str_starts_with($next, '/logout')) {
                     return $this->redirect($next);
                 }
-                return $this->redirect('/');
+                return $this->redirect('/dashboard');
             } catch (\RuntimeException $e) {
                 return $this->redirect('/login?error=' . urlencode($e->getMessage()));
             }

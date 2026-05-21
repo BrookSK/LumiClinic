@@ -123,7 +123,7 @@ final class LoginController extends Controller
                 if ($next !== '' && str_starts_with($next, '/') && !str_starts_with($next, '/login') && !str_starts_with($next, '/logout')) {
                     return $this->redirect($next);
                 }
-                return $this->redirect('/');
+                return $this->redirect('/dashboard');
             }
 
             (new PatientAuthService($this->container))->loginPatientUserByIdForSession((int)$opt['id'], $request->ip(), $request->header('user-agent'));

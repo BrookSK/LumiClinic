@@ -48,6 +48,7 @@ final class AuthMiddleware implements MiddlewareInterface
         }
 
         $public = [
+            '/',
             '/login',
             '/forgot',
             '/reset',
