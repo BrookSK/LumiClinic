@@ -105,7 +105,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-hero-img img { width: 100%; max-width: 580px; }
 
 /* ===== PAIN POINTS ===== */
-.lp-pain { padding: 100px 0; position: relative; background: #111111; }
+.lp-pain { padding: 100px 0; position: relative; background: #1A1A1A; }
 .lp-pain::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -190,7 +190,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-platform-benefit { font-size: 14px; color: var(--gold); font-style: italic; }
 
 /* ===== FOUNDER ===== */
-.lp-founder { padding: 100px 0; position: relative; background: #111111; }
+.lp-founder { padding: 100px 0; position: relative; background: #0A0A0A; }
 .lp-founder::before {
     content: ''; position: absolute; top: 50%; left: 30%; transform: translate(-50%, -50%);
     width: 800px; height: 800px;
@@ -249,7 +249,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-differential p { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
 
 /* ===== TESTIMONIALS ===== */
-.lp-testimonials { padding: 100px 0; position: relative; background: #111111; }
+.lp-testimonials { padding: 100px 0; position: relative; background: #0A0A0A; }
 .lp-testimonials::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -301,7 +301,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 /* ===== PRICING ===== */
-.lp-pricing { padding: 100px 0; position: relative; background: #111111; }
+.lp-pricing { padding: 100px 0; position: relative; background: #0A0A0A; }
 .lp-pricing::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
@@ -351,7 +351,7 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-pricing-footer { text-align: center; margin-top: 36px; font-size: 12px; color: var(--text-muted); }
 
 /* ===== FAQ ===== */
-.lp-faq { padding: 100px 0; position: relative; background: #111111; }
+.lp-faq { padding: 100px 0; position: relative; background: #0A0A0A; }
 .lp-faq::before {
     content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 120%; height: 100%;
