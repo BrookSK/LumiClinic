@@ -65,7 +65,13 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* ===== HERO ===== */
 .lp-hero { padding: 160px 0 100px; position: relative; }
-.lp-hero .container { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.lp-hero::before {
+    content: ''; position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 600px;
+    background: radial-gradient(ellipse at center, rgba(201,168,76,0.06) 0%, transparent 70%);
+    pointer-events: none;
+}
+.lp-hero .container { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; position: relative; }
 .lp-hero-tag {
     display: inline-flex; align-items: center; gap: 14px;
     font-size: 10px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase;
@@ -92,7 +98,13 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-hero-img img { width: 100%; max-width: 580px; }
 
 /* ===== PAIN POINTS ===== */
-.lp-pain { padding: 100px 0; }
+.lp-pain { padding: 100px 0; position: relative; }
+.lp-pain::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; height: 100%;
+    background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.04) 0%, transparent 50%);
+    pointer-events: none;
+}
 .lp-pain h2 {
     font-family: 'Playfair Display', serif;
     font-size: clamp(30px, 4vw, 44px); font-weight: 700;
@@ -114,7 +126,13 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 /* ===== PLATFORM ===== */
-.lp-platform { padding: 100px 0; }
+.lp-platform { padding: 100px 0; position: relative; }
+.lp-platform::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; height: 100%;
+    background: radial-gradient(ellipse at 50% 30%, rgba(201,168,76,0.035) 0%, transparent 55%);
+    pointer-events: none;
+}
 .lp-platform-tag {
     display: inline-flex; align-items: center; gap: 14px;
     font-size: 10px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase;
@@ -165,7 +183,13 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-platform-benefit { font-size: 14px; color: var(--gold); font-style: italic; }
 
 /* ===== FOUNDER ===== */
-.lp-founder { padding: 100px 0; }
+.lp-founder { padding: 100px 0; position: relative; }
+.lp-founder::before {
+    content: ''; position: absolute; top: 50%; left: 30%; transform: translate(-50%, -50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(ellipse at center, rgba(201,168,76,0.04) 0%, transparent 60%);
+    pointer-events: none;
+}
 .lp-founder > .container > h2 {
     font-family: 'Playfair Display', serif;
     font-size: clamp(28px, 4vw, 40px); font-weight: 700;
@@ -212,7 +236,13 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-differential p { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
 
 /* ===== TESTIMONIALS ===== */
-.lp-testimonials { padding: 100px 0; }
+.lp-testimonials { padding: 100px 0; position: relative; }
+.lp-testimonials::before {
+    content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; height: 60%;
+    background: radial-gradient(ellipse at 50% 100%, rgba(201,168,76,0.03) 0%, transparent 50%);
+    pointer-events: none;
+}
 .lp-testimonials h2 {
     font-family: 'Playfair Display', serif;
     font-size: clamp(28px, 4vw, 40px); font-weight: 700; margin-bottom: 56px;
@@ -252,7 +282,13 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 /* ===== PRICING ===== */
-.lp-pricing { padding: 100px 0; }
+.lp-pricing { padding: 100px 0; position: relative; }
+.lp-pricing::before {
+    content: ''; position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+    width: 100%; height: 80%;
+    background: radial-gradient(ellipse at 50% 40%, rgba(201,168,76,0.04) 0%, transparent 55%);
+    pointer-events: none;
+}
 .lp-pricing-header { text-align: center; margin-bottom: 56px; }
 .lp-pricing-header h2 {
     font-family: 'Playfair Display', serif;
@@ -318,7 +354,13 @@ img { max-width: 100%; height: auto; display: block; }
 .lp-faq-answer p { padding-bottom: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
 
 /* ===== CTA ===== */
-.lp-cta { padding: 120px 0; text-align: center; }
+.lp-cta { padding: 120px 0; text-align: center; position: relative; }
+.lp-cta::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; height: 100%;
+    background: radial-gradient(ellipse at 50% 50%, rgba(201,168,76,0.05) 0%, transparent 50%);
+    pointer-events: none;
+}
 .lp-cta h2 {
     font-family: 'Playfair Display', serif;
     font-size: clamp(28px, 4vw, 42px); font-weight: 700; margin-bottom: 18px; line-height: 1.3;
