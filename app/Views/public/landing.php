@@ -298,8 +298,9 @@ foreach ($plans as $p) {
         </div>
         <div class="lp-pricing-grid">
             <?php
-            // Filtrar planos ativos (excluir trial)
-            $displayPlans = array_filter($plans, fn($p) => ($p['code'] ?? '') !== 'trial');
+            // Filtrar planos ativos (excluir planos gratuitos/trial com preço 0)
+            $displayPlans = array_filter($plans, fn($p) => (int)($p['price_cents'] ?? 0) > 0);
+            $displayPlans = array_values($displayPlans);
             $index = 0;
             $totalPlans = count($displayPlans);
             foreach ($displayPlans as $plan):
