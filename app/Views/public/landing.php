@@ -313,7 +313,7 @@ foreach ($plans as $p) {
                 $users = $limits['users'] ?? 0;
                 $patients = $limits['patients'] ?? 0;
                 $storageMb = $limits['storage_mb'] ?? 0;
-                $storageGb = $storageMb >= 1024 ? intval($storageMb / 1024) : 0;
+                $storageGb = $storageMb >= 1000 ? round($storageMb / 1000) : 0;
                 $portal = $limits['portal'] ?? false;
                 $transcriptionMinutes = $limits['transcription_minutes'] ?? 0;
                 $isFeatured = $index === 1; // segundo plano é o destaque
