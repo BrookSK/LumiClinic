@@ -297,73 +297,83 @@ foreach ($plans as $p) {
             <p>Escolha o plano ideal para o momento da sua clínica. Todos com suporte humano e acesso completo à plataforma.</p>
         </div>
         <div class="lp-pricing-grid">
-            <!-- Essencial -->
-            <div class="lp-pricing-card">
-                <h3>Essencial</h3>
-                <div class="lp-pricing-price">
-                    <span class="currency">R$</span>
-                    <span class="amount">97</span>
-                    <span class="period">/mês</span>
-                </div>
-                <div class="lp-pricing-trial">7 dias grátis</div>
-                <ul class="lp-pricing-features">
-                    <li>Até 3 usuários</li>
-                    <li>Até 500 pacientes</li>
-                    <li>1 GB de armazenamento</li>
-                    <li>Portal da paciente</li>
-                    <li>Financeiro completo</li>
-                    <li>Marketing automatizado</li>
-                    <li>Suporte humano</li>
-                </ul>
-                <a href="/criar-conta" class="lp-btn-outline">Começar agora</a>
-            </div>
-
-            <!-- Profissional -->
-            <div class="lp-pricing-card featured">
+            <?php
+            // Filtrar planos ativos (excluir trial)
+            $displayPlans = array_filter($plans, fn($p) => ($p['code'] ?? '') !== 'trial');
+            $index = 0;
+            $totalPlans = count($displayPlans);
+            foreach ($displayPlans as $plan):
+                $code = $plan['code'] ?? '';
+                $name = $plan['name'] ?? $code;
+                $priceCents = (int)($plan['price_cents'] ?? 0);
+                $priceReais = intval($priceCents / 100);
+                $trialDays = (int)($plan['trial_days'] ?? 0);
+                $limits = json_decode($plan['limits_json'] ?? '{}', true) ?: [];
+                $users = $limits['users'] ?? 0;
+                $patients = $limits['patients'] ?? 0;
+                $storageMb = $limits['storage_mb'] ?? 0;
+                $storageGb = $storageMb >= 1024 ? intval($storageMb / 1024) : 0;
+                $portal = $limits['portal'] ?? false;
+                $transcriptionMinutes = $limits['transcription_minutes'] ?? 0;
+                $isFeatured = $index === 1; // segundo plano é o destaque
+                $index++;
+            ?>
+            <div class="lp-pricing-card<?= $isFeatured ? ' featured' : '' ?>">
+                <?php if ($isFeatured): ?>
                 <div class="lp-pricing-badge">Mais popular</div>
-                <h3>Profissional</h3>
+                <?php endif; ?>
+                <h3><?= $e($name) ?></h3>
                 <div class="lp-pricing-price">
                     <span class="currency">R$</span>
-                    <span class="amount">197</span>
+                    <span class="amount"><?= $priceReais ?></span>
                     <span class="period">/mês</span>
                 </div>
-                <div class="lp-pricing-trial">14 dias grátis</div>
+                <?php if ($trialDays > 0): ?>
+                <div class="lp-pricing-trial"><?= $trialDays ?> dias grátis</div>
+                <?php endif; ?>
                 <ul class="lp-pricing-features">
-                    <li>Até 10 usuários</li>
-                    <li>Até 3.000 pacientes</li>
-                    <li>5 GB de armazenamento</li>
-                    <li>Transcrição com IA — 60 min/mês</li>
-                    <li>Portal da paciente</li>
-                    <li>Financeiro completo</li>
-                    <li>Marketing automatizado</li>
-                    <li>Suporte humano</li>
-                    <li>Migração de dados inclusa</li>
-                </ul>
-                <a href="/criar-conta" class="lp-btn-gold">Começar agora</a>
-            </div>
-
-            <!-- Clínica Plus -->
-            <div class="lp-pricing-card">
-                <h3>Clínica Plus</h3>
-                <div class="lp-pricing-price">
-                    <span class="currency">R$</span>
-                    <span class="amount">297</span>
-                    <span class="period">/mês</span>
-                </div>
-                <div class="lp-pricing-trial">14 dias grátis</div>
-                <ul class="lp-pricing-features">
+                    <?php if ($users > 0): ?>
+                    <li>Até <?= number_format($users, 0, ',', '.') ?> usuários</li>
+                    <?php else: ?>
                     <li>Usuários <strong>ilimitados</strong></li>
+                    <?php endif; ?>
+                    <?php if ($patients > 0): ?>
+                    <li>Até <?= number_format($patients, 0, ',', '.') ?> pacientes</li>
+                    <?php else: ?>
                     <li>Pacientes <strong>ilimitados</strong></li>
-                    <li>10 GB de armazenamento</li>
-                    <li>Transcrição com IA — 300 min/mês</li>
+                    <?php endif; ?>
+                    <?php if ($storageGb > 0): ?>
+                    <li><?= $storageGb ?> GB de armazenamento</li>
+                    <?php elseif ($storageMb > 0): ?>
+                    <li><?= $storageMb ?> MB de armazenamento</li>
+                    <?php endif; ?>
+                    <?php if ($transcriptionMinutes > 0): ?>
+                    <li>Transcrição com IA — <?= $transcriptionMinutes ?> min/mês</li>
+                    <?php endif; ?>
+                    <?php if ($portal): ?>
                     <li>Portal da paciente</li>
+                    <?php endif; ?>
                     <li>Financeiro completo</li>
                     <li>Marketing automatizado</li>
+                    <?php if ($index === $totalPlans): ?>
                     <li>Suporte humano prioritário</li>
                     <li>Migração de dados inclusa</li>
+                    <?php elseif ($isFeatured): ?>
+                    <li>Suporte humano</li>
+                    <li>Migração de dados inclusa</li>
+                    <?php else: ?>
+                    <li>Suporte humano</li>
+                    <?php endif; ?>
                 </ul>
+                <?php if ($isFeatured): ?>
+                <a href="/criar-conta" class="lp-btn-gold">Começar agora</a>
+                <?php elseif ($index === $totalPlans): ?>
                 <a href="#" class="lp-btn-outline">Falar com consultor</a>
+                <?php else: ?>
+                <a href="/criar-conta" class="lp-btn-outline">Começar agora</a>
+                <?php endif; ?>
             </div>
+            <?php endforeach; ?>
         </div>
         <p class="lp-pricing-footer">Todos os planos incluem agenda, prontuário, estoque, financeiro e portal da paciente. Sem contrato de fidelidade. Cancele quando quiser.</p>
     </div>
