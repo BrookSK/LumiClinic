@@ -722,6 +722,14 @@ tailwind.config = {
           Criada por quem conhece <span class="text-gold-gradient">cada dor</span> que você sente
         </h2>
 
+        <p style="color:#9b9b9b;font-size:15px;line-height:1.8;margin-bottom:16px;">A maioria dos softwares de gestão foi construída por engenheiros que nunca pisaram em uma clínica estética. A LumiClinic foi diferente.</p>
+
+        <p style="color:#9b9b9b;font-size:15px;line-height:1.8;margin-bottom:16px;">A Dra. Letícia Brito passou nove anos na gestão real de clínicas estéticas — das noites resolvendo conflitos de agenda, dos meses tentando entender o financeiro em planilhas, das horas perdidas digitando prontuários enquanto pacientes esperavam.</p>
+
+        <p style="color:#9b9b9b;font-size:15px;line-height:1.8;margin-bottom:16px;">Quando não encontrou a ferramenta que precisava, decidiu construir. Cada funcionalidade da LumiClinic responde a uma dor que ela própria viveu. Cada decisão de produto passou pelo filtro de quem conhece o problema por dentro.</p>
+
+        <p style="color:#9b9b9b;font-size:15px;line-height:1.8;margin-bottom:32px;">Concorrentes podem copiar features. Não podem copiar nove anos de experiência.</p>
+
         <!-- Quote -->
         <div style="border-left:2px solid var(--gold);padding-left:20px;margin-bottom:36px;">
           <p style="color:#f5f5f5;font-size:15px;line-height:1.8;font-style:italic;margin-bottom:8px;">"Eu não queria mais um software de gestão. Queria o software que eu precisava ter tido e que nenhum sistema me ofereceu. Então construí."</p>
@@ -956,9 +964,9 @@ $allFeatures = ['Agenda inteligente', 'Prontuário eletrônico', 'Confirmação 
       <div class="accordion-item" style="border-bottom:1px solid var(--border-gold);">
         <button class="accordion-trigger w-full text-left py-5 flex items-center justify-between gap-4" onclick="toggleAccordion(this)">
           <span style="font-family:'Sora',sans-serif;font-size:15px;font-weight:500;color:#f5f5f5;">Preciso instalar alguma coisa?</span>
-          <span class="accordion-icon text-2xl flex-shrink-0" style="color:var(--gold);width:20px;height:20px;display:flex;align-items:center;justify-content:center;">+</span>
+          <span class="accordion-icon open text-2xl flex-shrink-0" style="color:var(--gold);width:20px;height:20px;display:flex;align-items:center;justify-content:center;">+</span>
         </button>
-        <div class="accordion-content">
+        <div class="accordion-content open">
           <p style="color:#9b9b9b;font-size:14px;line-height:1.8;padding-bottom:20px;">Não. A LumiClinic funciona 100% na nuvem, direto no navegador. Basta acessar de qualquer computador, tablet ou celular — sem downloads, sem instalações e sem atualizações manuais.</p>
         </div>
       </div>
@@ -1060,46 +1068,41 @@ $allFeatures = ['Agenda inteligente', 'Prontuário eletrônico', 'Confirmação 
         <div class="flex items-center gap-2 mb-5">
           <img src="/Principal_1.png" alt="LumiClinic" style="height:36px;" />
         </div>
-        <p style="color:#9b9b9b;font-size:14px;line-height:1.8;max-width:280px;margin-bottom:20px;">
-          A plataforma de gestão clínica premium para profissionais de saúde que levam a sério o que fazem.
+        <p style="color:#9b9b9b;font-size:14px;line-height:1.8;max-width:280px;">
+          Plataforma de gestão clínica com inteligência artificial nativa para clínicas de estética e harmonização facial.
         </p>
-        <div class="flex gap-3">
-          <a href="#" style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border-gold);display:flex;align-items:center;justify-content:center;color:#9b9b9b;transition:all 0.3s;" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border-gold)';this.style.color='#9b9b9b'">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M24 4.56v14.91A4.56 4.56 0 0 1 19.44 24H4.56A4.56 4.56 0 0 1 0 19.44V4.56A4.56 4.56 0 0 1 4.56 0h14.88A4.56 4.56 0 0 1 24 4.56zM8 19V9H5v10h3zM6.5 7.5a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5zM19 19v-5.5c0-2.5-1.5-3.5-3-3.5a2.9 2.9 0 0 0-2.5 1.4V9H11v10h2.5v-5.5c0-1.1.9-2 2-2s2 .9 2 2V19H19z"/></svg>
-          </a>
-          <a href="#" style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border-gold);display:flex;align-items:center;justify-content:center;color:#9b9b9b;transition:all 0.3s;" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border-gold)';this.style.color='#9b9b9b'">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
-          </a>
-        </div>
       </div>
 
-      <!-- Col 2 -->
+      <!-- Produto -->
       <div>
         <h4 style="font-family:'Sora',sans-serif;font-size:12px;font-weight:600;color:#f5f5f5;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">Produto</h4>
         <ul class="flex flex-col gap-3">
           <li><a href="#features" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Funcionalidades</a></li>
-          <li><a href="#pricing" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Preços</a></li>
-          <li><a href="/criar-conta" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Começar grátis</a></li>
-          <li><a href="/login" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Entrar</a></li>
+          <li><a href="#pricing" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Planos e preços</a></li>
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Novidades</a></li>
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Migração de dados</a></li>
         </ul>
       </div>
 
-      <!-- Col 3 -->
+      <!-- Empresa -->
       <div>
-        <h4 style="font-family:'Sora',sans-serif;font-size:12px;font-weight:600;color:#f5f5f5;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">Legal</h4>
+        <h4 style="font-family:'Sora',sans-serif;font-size:12px;font-weight:600;color:#f5f5f5;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">Empresa</h4>
         <ul class="flex flex-col gap-3">
-          <li><a href="/settings/lgpd" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Política de privacidade</a></li>
-          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Termos de uso</a></li>
-          <li><a href="/portal/lgpd" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">LGPD</a></li>
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Sobre a LumiClinic</a></li>
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Blog</a></li>
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Fale conosco</a></li>
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Trabalhe conosco</a></li>
         </ul>
       </div>
 
-      <!-- Col 4 -->
+      <!-- Suporte -->
       <div>
         <h4 style="font-family:'Sora',sans-serif;font-size:12px;font-weight:600;color:#f5f5f5;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">Suporte</h4>
         <ul class="flex flex-col gap-3">
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Central de ajuda</a></li>
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Documentação</a></li>
+          <li><a href="#" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Status do sistema</a></li>
           <li><a href="<?= $_waUrl ?>" target="_blank" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Suporte via WhatsApp</a></li>
-          <li><a href="#faq" style="color:#9b9b9b;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">FAQ</a></li>
         </ul>
       </div>
     </div>
@@ -1109,9 +1112,9 @@ $allFeatures = ['Agenda inteligente', 'Prontuário eletrônico', 'Confirmação 
     <div class="flex flex-col md:flex-row items-center justify-between gap-4">
       <p style="color:#9b9b9b;font-size:13px;">© 2026 LumiClinic. Todos os direitos reservados.</p>
       <div class="flex gap-6">
-        <a href="/settings/lgpd" style="color:#9b9b9b;font-size:13px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Política de Privacidade</a>
+        <a href="#" style="color:#9b9b9b;font-size:13px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Política de Privacidade</a>
         <a href="#" style="color:#9b9b9b;font-size:13px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">Termos de Uso</a>
-        <a href="/portal/lgpd" style="color:#9b9b9b;font-size:13px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">LGPD</a>
+        <a href="#" style="color:#9b9b9b;font-size:13px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='#9b9b9b'">LGPD</a>
       </div>
     </div>
   </div>
