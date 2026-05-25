@@ -903,11 +903,12 @@ $allFeatures = ['Agenda inteligente', 'Prontuário eletrônico', 'Confirmação 
   $priceCents = (int)($plan['price_cents'] ?? 0);
   $priceReais = intval($priceCents / 100);
   $name = $e($plan['name'] ?? 'Plano');
-  $maxUsers = (int)($plan['max_users'] ?? 1);
-  $maxPatients = (int)($plan['max_patients'] ?? 0);
-  $storageMb = (int)($plan['storage_mb'] ?? 0);
-  $storageGb = round($storageMb / 1000);
-  $transcriptionMin = (int)($plan['transcription_minutes'] ?? 0);
+  $limits = json_decode($plan['limits_json'] ?? '{}', true) ?: [];
+  $maxUsers = (int)($limits['users'] ?? 0);
+  $maxPatients = (int)($limits['patients'] ?? 0);
+  $storageMb = (int)($limits['storage_mb'] ?? 0);
+  $storageGb = $storageMb >= 1000 ? round($storageMb / 1000) : 0;
+  $transcriptionMin = (int)($limits['transcription_minutes'] ?? 0);
   $trialDays = (int)($plan['trial_days'] ?? 14);
   $myFeatures = $planFeatures[$i] ?? $planFeatures[0];
   $delayClass = $i === 0 ? '' : ($i === 1 ? ' reveal-delay-2' : ' reveal-delay-4');
@@ -926,7 +927,7 @@ $allFeatures = ['Agenda inteligente', 'Prontuário eletrônico', 'Confirmação 
             <span style="font-family:'Sora',sans-serif;font-size:48px;font-weight:700;line-height:1;<?= $isPopular ? '' : 'color:#f5f5f5;' ?>" <?= $isPopular ? 'class="text-gold-gradient"' : '' ?>><?= $priceReais ?></span>
             <span style="font-family:'Sora',sans-serif;font-size:14px;color:#9b9b9b;">/mês</span>
           </div>
-          <p style="color:#9b9b9b;font-size:13px;margin-top:6px;"><?= $maxUsers ?> usuário<?= $maxUsers > 1 ? 's' : '' ?> · <?= number_format($maxPatients) ?> pacientes · <?= $storageGb ?>GB · <?= $transcriptionMin ?>min transcrição</p>
+          <p style="color:#9b9b9b;font-size:13px;margin-top:6px;"><?= $maxUsers > 0 ? $maxUsers . ' usuário' . ($maxUsers > 1 ? 's' : '') : 'Usuários ilimitados' ?> · <?= $maxPatients > 0 ? number_format($maxPatients, 0, ',', '.') . ' pacientes' : 'Pacientes ilimitados' ?><?= $storageGb > 0 ? ' · ' . $storageGb . 'GB' : '' ?><?= $transcriptionMin > 0 ? ' · ' . $transcriptionMin . 'min IA' : '' ?></p>
         </div>
 
         <ul class="flex flex-col gap-3 mb-8 flex-1">
