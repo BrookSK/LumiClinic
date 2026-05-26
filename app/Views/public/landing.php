@@ -554,36 +554,29 @@ tailwind.config = {
             <div class="card-premium p-6 glow-gold" style="height:420px;display:flex;flex-direction:column;gap:12px;">
               <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:#f5f5f5;">Prontuário — João Silveira</div>
               <div class="flex gap-3 flex-1">
-                <div class="flex flex-col gap-2 flex-shrink-0 w-32">
-                  <div style="background:#111;border:1px solid var(--border-gold);border-radius:8px;padding:8px;">
-                    <div class="h-2 skeleton rounded mb-1"></div>
-                    <div class="h-1.5 w-3/4 skeleton rounded"></div>
+                <div class="flex flex-col gap-2 flex-shrink-0 w-36">
+                  <div style="background:#111;border:1px solid var(--border-gold);border-radius:8px;padding:10px;">
+                    <div style="font-size:11px;color:#9b9b9b;">Consulta anterior</div>
+                    <div style="font-size:10px;color:#666;margin-top:2px;">12/03/2025</div>
                   </div>
-                  <div style="background:#111;border:1px solid var(--border-gold);border-radius:8px;padding:8px;">
-                    <div class="h-2 skeleton rounded mb-1"></div>
-                    <div class="h-1.5 w-3/4 skeleton rounded"></div>
+                  <div style="background:#111;border:1px solid var(--border-gold);border-radius:8px;padding:10px;">
+                    <div style="font-size:11px;color:#9b9b9b;">Procedimentos</div>
+                    <div style="font-size:10px;color:#666;margin-top:2px;">Harmonização</div>
                   </div>
-                  <div style="background:rgba(212,162,76,0.08);border:1px solid var(--border-gold-strong);border-radius:8px;padding:8px;">
-                    <div class="h-2 rounded mb-1" style="background:rgba(212,162,76,0.3);"></div>
-                    <div class="h-1.5 w-3/4 rounded" style="background:rgba(212,162,76,0.2);"></div>
+                  <div style="background:rgba(212,162,76,0.08);border:1px solid var(--border-gold-strong);border-radius:8px;padding:10px;">
+                    <div style="font-size:11px;color:var(--gold);">Consulta atual</div>
+                    <div style="font-size:10px;color:rgba(212,162,76,0.6);margin-top:2px;">26/05/2025</div>
                   </div>
                 </div>
                 <div class="flex-1 flex flex-col gap-2">
                   <div style="background:#111;border:1px solid var(--border-gold);border-radius:8px;padding:12px;flex:1;">
-                    <div class="h-2 skeleton rounded mb-2 w-1/2"></div>
-                    <div class="h-1.5 skeleton rounded mb-1"></div>
-                    <div class="h-1.5 skeleton rounded mb-1 w-5/6"></div>
-                    <div class="h-1.5 skeleton rounded mb-1 w-4/5"></div>
-                    <div class="h-1.5 skeleton rounded mb-1 w-full"></div>
-                    <div class="h-1.5 skeleton rounded w-3/4"></div>
+                    <div style="font-size:12px;color:#f5f5f5;font-weight:500;margin-bottom:6px;">Evolução clínica</div>
+                    <div style="font-size:11px;color:#9b9b9b;line-height:1.6;">Paciente retorna para avaliação pós-procedimento. Relata melhora significativa na região tratada. Sem intercorrências...</div>
+                    <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.6;">Conduta: manutenção em 30 dias. Orientações de cuidados pós.</div>
                   </div>
                   <div class="flex gap-2">
-                    <div class="flex-1 h-8 btn-gold rounded-lg flex items-center justify-center">
-                      <div class="h-2 w-16 rounded" style="background:rgba(5,5,5,0.3);"></div>
-                    </div>
-                    <div class="flex-1 h-8 btn-outline rounded-lg flex items-center justify-center">
-                      <div class="h-2 w-16 rounded" style="background:rgba(245,245,245,0.1);"></div>
-                    </div>
+                    <div class="flex-1 btn-gold rounded-lg flex items-center justify-center" style="height:32px;font-size:11px;">Salvar</div>
+                    <div class="flex-1 btn-outline rounded-lg flex items-center justify-center" style="height:32px;font-size:11px;">Assinar</div>
                   </div>
                 </div>
               </div>
@@ -628,25 +621,25 @@ tailwind.config = {
           <div class="tab-panel" id="panel-pacientes">
             <div class="card-premium p-6 glow-gold" style="height:420px;display:flex;flex-direction:column;gap:8px;">
               <div style="font-family:'Sora',sans-serif;font-size:13px;font-weight:600;color:#f5f5f5;margin-bottom:4px;">CRM de Pacientes</div>
-              <div style="background:#111;border:1px solid var(--border-gold);border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
-                <div class="w-8 h-8 rounded-full skeleton flex-shrink-0"></div>
-                <div class="flex-1"><div class="h-2 skeleton rounded mb-1 w-2/3"></div><div class="h-1.5 skeleton rounded w-1/2"></div></div>
-                <div style="font-size:10px;color:#4ade80;background:rgba(74,222,128,0.1);padding:2px 8px;border-radius:100px;">Ativo</div>
+              <div style="background:#111;border:1px solid var(--border-gold);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+                <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style="background:rgba(74,222,128,0.1);color:#4ade80;font-size:11px;font-weight:600;">MR</div>
+                <div class="flex-1"><div style="font-size:12px;color:#f5f5f5;">Maria Rodrigues</div><div style="font-size:10px;color:#9b9b9b;">Última consulta: 20/05/2025</div></div>
+                <div style="font-size:10px;color:#4ade80;background:rgba(74,222,128,0.1);padding:3px 8px;border-radius:100px;">Ativo</div>
               </div>
-              <div style="background:#111;border:1px solid var(--border-gold);border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
-                <div class="w-8 h-8 rounded-full skeleton flex-shrink-0"></div>
-                <div class="flex-1"><div class="h-2 skeleton rounded mb-1 w-3/4"></div><div class="h-1.5 skeleton rounded w-2/5"></div></div>
-                <div style="font-size:10px;color:var(--gold);background:rgba(212,162,76,0.1);padding:2px 8px;border-radius:100px;">Retorno</div>
+              <div style="background:#111;border:1px solid var(--border-gold);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+                <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style="background:rgba(212,162,76,0.1);color:var(--gold);font-size:11px;font-weight:600;">CS</div>
+                <div class="flex-1"><div style="font-size:12px;color:#f5f5f5;">Camila Santos</div><div style="font-size:10px;color:#9b9b9b;">Retorno agendado: 02/06/2025</div></div>
+                <div style="font-size:10px;color:var(--gold);background:rgba(212,162,76,0.1);padding:3px 8px;border-radius:100px;">Retorno</div>
               </div>
-              <div style="background:#111;border:1px solid var(--border-gold);border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
-                <div class="w-8 h-8 rounded-full skeleton flex-shrink-0"></div>
-                <div class="flex-1"><div class="h-2 skeleton rounded mb-1 w-1/2"></div><div class="h-1.5 skeleton rounded w-1/3"></div></div>
-                <div style="font-size:10px;color:#9b9b9b;background:rgba(155,155,155,0.1);padding:2px 8px;border-radius:100px;">Inativo</div>
+              <div style="background:#111;border:1px solid var(--border-gold);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
+                <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style="background:rgba(155,155,155,0.1);color:#9b9b9b;font-size:11px;font-weight:600;">PL</div>
+                <div class="flex-1"><div style="font-size:12px;color:#f5f5f5;">Patricia Lima</div><div style="font-size:10px;color:#9b9b9b;">Sem consulta há 90 dias</div></div>
+                <div style="font-size:10px;color:#9b9b9b;background:rgba(155,155,155,0.1);padding:3px 8px;border-radius:100px;">Inativo</div>
               </div>
               <div class="flex-1"></div>
-              <div style="background:rgba(212,162,76,0.05);border:1px solid var(--border-gold);border-radius:10px;padding:10px;">
-                <div style="font-size:11px;color:var(--gold);font-family:'Sora',sans-serif;margin-bottom:4px;">💬 Campanha agendada</div>
-                <div class="h-1.5 skeleton rounded"></div>
+              <div style="background:rgba(212,162,76,0.05);border:1px solid var(--border-gold);border-radius:10px;padding:12px;">
+                <div style="font-size:11px;color:var(--gold);font-family:'Sora',sans-serif;margin-bottom:4px;">💬 Campanha de reativação</div>
+                <div style="font-size:10px;color:#9b9b9b;">Enviando para 12 pacientes inativos · WhatsApp automático</div>
               </div>
             </div>
             <div class="mt-4 p-5 card-premium">
