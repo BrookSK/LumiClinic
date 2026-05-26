@@ -290,7 +290,7 @@ tailwind.config = {
   <div class="max-w-7xl mx-auto px-6 lg:px-8">
     <nav class="flex items-center justify-between h-16">
       <a href="/" class="flex items-center gap-2">
-        <img src="/Principal_1.png" alt="LumiClinic" style="height:42px;" />
+        <img src="/Principal_1.png" alt="LumiClinic" style="height:62px;" />
       </a>
 
       <ul class="hidden md:flex items-center gap-8">
@@ -378,7 +378,7 @@ tailwind.config = {
       <!-- RIGHT — Mockup -->
       <div class="relative reveal reveal-delay-2">
         <div class="absolute inset-0" style="background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(212,162,76,0.12) 0%, transparent 70%); filter:blur(20px);"></div>
-        <img src="/Imagem L com os mockups inicial - site lumiclinic.zip.png" alt="LumiClinic" style="position:relative;z-index:10;width:100%;max-width:580px;" />
+        <img src="/foto hero2.png" alt="LumiClinic" style="position:relative;z-index:10;width:100%;max-width:580px;" />
       </div>
     </div>
   </div>
@@ -1081,7 +1081,7 @@ $allFeatures = ['Agenda inteligente', 'Prontuário eletrônico', 'Confirmação 
       <!-- Brand -->
       <div class="col-span-2 lg:col-span-2">
         <div class="flex items-center gap-2 mb-5">
-          <img src="/Principal_1.png" alt="LumiClinic" style="height:36px;" />
+          <img src="/Principal_1.png" alt="LumiClinic" style="height:56px;" />
         </div>
         <p style="color:#9b9b9b;font-size:14px;line-height:1.8;max-width:280px;">
           Plataforma de gestão clínica com inteligência artificial nativa para clínicas de estética e harmonização facial.

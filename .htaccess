@@ -13,6 +13,7 @@ RewriteRule ^Principal_1\.png$ public/Principal_1.png [L]
 RewriteRule ^icone_1\.png$ public/icone_1.png [L]
 RewriteRule ^Imagem\ da\ mulher\ -\ site\ lumiclinic\.png$ "public/Imagem da mulher - site lumiclinic.png" [L]
 RewriteRule ^Imagem\ L\ com\ os\ mockups\ inicial\ -\ site\ lumiclinic\.zip\.png$ "public/Imagem L com os mockups inicial - site lumiclinic.zip.png" [L]
+RewriteRule ^foto\ hero2\.png$ "public/foto hero2.png" [L]
 RewriteRule ^cron-queue\.php$ public/cron-queue.php [L,QSA]
 
 # Se o arquivo ou diretório existir na raiz, entrega direto
