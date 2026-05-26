@@ -267,6 +267,17 @@ tailwind.config = {
 
   @media (max-width: 768px) {
     .pricing-popular { transform: scale(1); }
+    .card-premium:hover { transform: none; }
+    section { padding-top: 60px !important; padding-bottom: 60px !important; }
+    section .pt-16 { padding-top: 0 !important; }
+    .tab-panel .card-premium[style*="height:420px"],
+    .tab-panel .card-premium[style*="height:320px"],
+    .tab-panel div[style*="height:420px"] { height: auto !important; min-height: 200px; }
+    .floating-card { position: static !important; margin-top: 12px; }
+    .grid.lg\:grid-cols-2 { gap: 24px !important; }
+    .grid.md\:grid-cols-3 { grid-template-columns: 1fr !important; }
+    .grid.md\:grid-cols-2 { grid-template-columns: 1fr !important; }
+    .min-h-screen { min-height: auto; padding-top: 100px !important; padding-bottom: 60px !important; }
   }
 </style>
 </head>
