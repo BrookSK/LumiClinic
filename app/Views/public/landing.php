@@ -278,8 +278,8 @@ tailwind.config = {
     .grid.md\:grid-cols-3 { grid-template-columns: 1fr !important; }
     .grid.md\:grid-cols-2 { grid-template-columns: 1fr !important; }
     .min-h-screen { min-height: auto; padding-top: 80px !important; padding-bottom: 40px !important; }
-    header img { height: 36px !important; }
-    footer img { height: 32px !important; }
+    header img { height: 56px !important; }
+    footer img { height: 46px !important; }
   }
 </style>
 </head>
@@ -762,7 +762,7 @@ tailwind.config = {
           </div>
           <div class="text-center p-4 card-premium">
             <div style="font-family:'Sora',sans-serif;font-size:26px;font-weight:700;color:var(--gold);">3h</div>
-            <div style="color:#9b9b9b;font-size:12px;margin-top:4px;">Economizadas/sem</div>
+            <div style="color:#9b9b9b;font-size:12px;margin-top:4px;">Economizadas /sem</div>
           </div>
         </div>
       </div>
