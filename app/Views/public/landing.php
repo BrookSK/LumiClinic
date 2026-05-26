@@ -268,7 +268,7 @@ tailwind.config = {
   @media (max-width: 768px) {
     .pricing-popular { transform: scale(1); }
     .card-premium:hover { transform: none; }
-    section { padding-top: 60px !important; padding-bottom: 60px !important; }
+    section { padding-top: 40px !important; padding-bottom: 40px !important; }
     section .pt-16 { padding-top: 0 !important; }
     .tab-panel .card-premium[style*="height:420px"],
     .tab-panel .card-premium[style*="height:320px"],
@@ -277,7 +277,9 @@ tailwind.config = {
     .grid.lg\:grid-cols-2 { gap: 24px !important; }
     .grid.md\:grid-cols-3 { grid-template-columns: 1fr !important; }
     .grid.md\:grid-cols-2 { grid-template-columns: 1fr !important; }
-    .min-h-screen { min-height: auto; padding-top: 100px !important; padding-bottom: 60px !important; }
+    .min-h-screen { min-height: auto; padding-top: 80px !important; padding-bottom: 40px !important; }
+    header img { height: 36px !important; }
+    footer img { height: 32px !important; }
   }
 </style>
 </head>
@@ -315,7 +317,8 @@ tailwind.config = {
     <a href="#features" class="block py-3 text-sm" style="color:#9b9b9b; border-bottom:1px solid var(--border-gold);">Funcionalidades</a>
     <a href="#platform" class="block py-3 text-sm" style="color:#9b9b9b; border-bottom:1px solid var(--border-gold);">Plataforma</a>
     <a href="#pricing" class="block py-3 text-sm" style="color:#9b9b9b; border-bottom:1px solid var(--border-gold);">Preços</a>
-    <a href="#faq" class="block py-3 text-sm" style="color:#9b9b9b;">FAQ</a>
+    <a href="#faq" class="block py-3 text-sm" style="color:#9b9b9b; border-bottom:1px solid var(--border-gold);">FAQ</a>
+    <a href="/login" class="block py-3 text-sm" style="color:#f5f5f5; border-bottom:1px solid var(--border-gold);">Entrar</a>
     <a href="/criar-conta" class="btn-gold block text-center px-5 py-2.5 text-sm mt-3">Começar grátis</a>
   </div>
 </header>
