@@ -29,7 +29,28 @@ ob_start();
 
 <!-- Dados atuais -->
 <div style="padding:18px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);margin-bottom:16px;">
-    <div style="font-weight:750;font-size:14px;color:rgba(31,41,55,.90);margin-bottom:12px;">Seus dados</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <?php
+        $hasPhoto = !empty($patient['photo_path']);
+        $nameParts = explode(' ', trim((string)($patient['name'] ?? '')));
+        $portalInitials = strtoupper(mb_substr($nameParts[0] ?? '', 0, 1) . mb_substr(end($nameParts) ?: '', 0, 1));
+        ?>
+        <?php if ($hasPhoto): ?>
+            <img src="/portal/perfil/photo?t=<?= time() ?>" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(16,185,129,.3);" />
+        <?php else: ?>
+            <span style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.08));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#059669;flex-shrink:0;"><?= htmlspecialchars($portalInitials, ENT_QUOTES, 'UTF-8') ?></span>
+        <?php endif; ?>
+        <div>
+            <div style="font-weight:750;font-size:14px;color:rgba(31,41,55,.90);">Seus dados</div>
+            <form method="post" action="/portal/perfil/photo" enctype="multipart/form-data" style="margin-top:4px;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <label style="font-size:12px;color:rgba(99,102,241,.8);cursor:pointer;font-weight:600;">
+                    📷 <?= $hasPhoto ? 'Trocar foto' : 'Adicionar foto' ?>
+                    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.closest('form').submit();" />
+                </label>
+            </form>
+        </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Nome</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div></div>
         <div><span style="font-size:12px;color:rgba(31,41,55,.45);">E-mail</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div></div>

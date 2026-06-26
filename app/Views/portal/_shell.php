@@ -95,8 +95,8 @@ $portalTitle = $patientName !== '' ? ('Olá, ' . $patientName) : 'Portal do Paci
                         <?= $ico['bell'] ?>
                     </a>
                     <details class="lc-actions__more">
-                        <summary class="lc-topbar__icon" aria-label="Menu do usuário">
-                            <?= $ico['user'] ?>
+                        <summary class="lc-topbar__icon" aria-label="Menu do usuário" style="display:flex;align-items:center;">
+                            <img src="/portal/perfil/photo?t=<?= (int)(time()/3600) ?>" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';" /><span style="display:none;"><?= $ico['user'] ?></span>
                         </summary>
                         <div class="lc-actions__menu">
                             <a class="lc-btn lc-btn--secondary" href="/portal/perfil">Perfil</a>
