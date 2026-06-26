@@ -77,6 +77,10 @@ ob_start();
             <?php
             $birthDate = (string)($p['birth_date'] ?? '');
             $day = $birthDate !== '' && strlen($birthDate) >= 10 ? substr($birthDate, 8, 2) . '/' . substr($birthDate, 5, 2) : '';
+            $bdAge = '';
+            if ($birthDate !== '' && strlen($birthDate) >= 10) {
+                $bdAge = (string)(new \DateTime($birthDate))->diff(new \DateTime())->y;
+            }
             $phone = trim((string)($p['phone'] ?? ''));
             $waOptIn = (int)($p['whatsapp_opt_in'] ?? 0);
             ?>
@@ -87,7 +91,7 @@ ob_start();
                         <div style="min-width:0;">
                             <div style="font-weight:700; font-size:14px;"><?= htmlspecialchars((string)($p['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
                             <div class="lc-muted" style="font-size:12px;">
-                                <?= htmlspecialchars($day, ENT_QUOTES, 'UTF-8') ?>
+                                <?= htmlspecialchars($day, ENT_QUOTES, 'UTF-8') ?><?php if ($bdAge !== ''): ?> <span style="color:#6b7280;">(<?= $bdAge ?> anos)</span><?php endif; ?>
                                 <?php if ($phone !== ''): ?> · <?= htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ?><?php endif; ?>
                             </div>
                         </div>

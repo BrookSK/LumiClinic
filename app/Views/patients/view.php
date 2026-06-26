@@ -142,7 +142,7 @@ ob_start();
                     <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required /></div>
                     <div class="lc-field"><label class="lc-label">E-mail</label><input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
                     <div class="lc-field"><label class="lc-label">Telefone</label><input class="lc-input" type="text" name="phone" value="<?= htmlspecialchars((string)($patient['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
-                    <div class="lc-field"><label class="lc-label">Data de nascimento</label><input class="lc-input" type="date" name="birth_date" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
+                    <div class="lc-field"><label class="lc-label">Data de nascimento</label><input class="lc-input" type="date" name="birth_date" id="inlineBirthDate" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onchange="calcAge(this)" /><span id="inlineBirthDateAge" style="font-size:12px;color:#6b7280;margin-top:4px;display:inline-block;"><?php $ibd = trim((string)($patient['birth_date'] ?? '')); if ($ibd !== '') { echo (new \DateTime($ibd))->diff(new \DateTime())->y . ' anos'; } ?></span></div>
                     <div class="lc-field"><label class="lc-label">Sexo</label><select class="lc-select" name="sex"><option value="">—</option><option value="M" <?= ($patient['sex'] ?? '') === 'M' ? 'selected' : '' ?>>Masculino</option><option value="F" <?= ($patient['sex'] ?? '') === 'F' ? 'selected' : '' ?>>Feminino</option></select></div>
                     <div class="lc-field"><label class="lc-label">CPF</label><input class="lc-input" type="text" name="cpf" value="<?= htmlspecialchars((string)($patient['cpf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
                     <div class="lc-field"><label class="lc-label">Origem</label>
@@ -181,6 +181,18 @@ function togglePatientEdit() {
     rv.style.display = editing ? 'block' : 'none';
     ev.style.display = editing ? 'none' : 'block';
     if (btn) btn.textContent = editing ? '✏️ Editar dados' : '✕ Cancelar';
+}
+function calcAge(input) {
+    var span = input.parentElement.querySelector('span[id$="Age"]');
+    if (!span) return;
+    var val = input.value;
+    if (!val) { span.textContent = ''; return; }
+    var bd = new Date(val + 'T00:00:00');
+    var today = new Date();
+    var age = today.getFullYear() - bd.getFullYear();
+    var m = today.getMonth() - bd.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+    span.textContent = age >= 0 ? age + ' anos' : '';
 }
 </script>
 

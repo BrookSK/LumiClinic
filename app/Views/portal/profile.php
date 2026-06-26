@@ -34,7 +34,7 @@ ob_start();
         <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Nome</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div></div>
         <div><span style="font-size:12px;color:rgba(31,41,55,.45);">E-mail</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div></div>
         <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Telefone</span><div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars((string)($patient['phone'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
-        <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Nascimento</span><div style="font-weight:700;margin-top:2px;"><?php $bd = trim((string)($patient['birth_date'] ?? '')); echo $bd !== '' ? htmlspecialchars(date('d/m/Y', strtotime($bd)), ENT_QUOTES, 'UTF-8') : '—'; ?></div></div>
+        <div><span style="font-size:12px;color:rgba(31,41,55,.45);">Nascimento</span><div style="font-weight:700;margin-top:2px;"><?php $bd = trim((string)($patient['birth_date'] ?? '')); if ($bd !== '') { $bdDate = new \DateTime($bd); $age = $bdDate->diff(new \DateTime())->y; echo htmlspecialchars(date('d/m/Y', strtotime($bd)), ENT_QUOTES, 'UTF-8') . ' <span style="font-weight:400;color:rgba(31,41,55,.5);font-size:12px;">(' . $age . ' anos)</span>'; } else { echo '—'; } ?></div></div>
     </div>
 
     <?php if (!empty($pending)): ?>

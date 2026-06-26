@@ -69,7 +69,8 @@ ob_start();
         <div class="lc-grid">
             <div>
                 <label class="lc-label">Data de nascimento</label>
-                <input class="lc-input" type="date" name="birth_date" />
+                <input class="lc-input" type="date" name="birth_date" id="createBirthDate" onchange="calcAge(this)" />
+                <span id="createBirthDateAge" style="font-size:12px;color:#6b7280;margin-top:4px;display:inline-block;"></span>
             </div>
             <div>
                 <label class="lc-label">Sexo</label>
@@ -161,6 +162,20 @@ ob_start();
         </div>
     <?php endif; ?>
 </div>
+<script>
+function calcAge(input) {
+    var span = input.parentElement.querySelector('span[id$="Age"]');
+    if (!span) return;
+    var val = input.value;
+    if (!val) { span.textContent = ''; return; }
+    var bd = new Date(val + 'T00:00:00');
+    var today = new Date();
+    var age = today.getFullYear() - bd.getFullYear();
+    var m = today.getMonth() - bd.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+    span.textContent = age >= 0 ? age + ' anos' : '';
+}
+</script>
 <?php
 $content = (string)ob_get_clean();
 require dirname(__DIR__) . '/layout/app.php';
