@@ -121,7 +121,7 @@ ob_start();
             <div class="lc-grid lc-grid--2 lc-gap-grid">
                 <div><div class="lc-label">E-mail</div><div><?= htmlspecialchars((string)($patient['email'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">Telefone</div><div><?= htmlspecialchars((string)($patient['phone'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
-                <div><div class="lc-label">Data de nascimento</div><div><?php $bd = trim((string)($patient['birth_date'] ?? '')); echo $bd !== '' ? htmlspecialchars(date('d/m/Y', strtotime($bd)), ENT_QUOTES, 'UTF-8') : '—'; ?></div></div>
+                <div><div class="lc-label">Data de nascimento</div><div><?php $bd = trim((string)($patient['birth_date'] ?? '')); if ($bd !== '') { $bdDate = new \DateTime($bd); $age = $bdDate->diff(new \DateTime())->y; echo htmlspecialchars(date('d/m/Y', strtotime($bd)), ENT_QUOTES, 'UTF-8') . ' <span style="color:#6b7280;font-size:13px;">(' . $age . ' anos)</span>'; } else { echo '—'; } ?></div></div>
                 <div><div class="lc-label">Sexo</div><div><?= htmlspecialchars((string)($patient['sex'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">CPF</div><div><?php if (isset($patient['cpf']) && (string)$patient['cpf'] !== ''): ?><?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?><?php else: ?><?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '—' ?><?php endif; ?></div></div>
                 <div><div class="lc-label">Origem</div><div style="<?= $originId > 0 ? '' : 'color:#9ca3af;' ?>"><?= htmlspecialchars($originName, ENT_QUOTES, 'UTF-8') ?></div></div>
