@@ -102,7 +102,19 @@ ob_start();
             <?php foreach ($patients as $p): ?>
                 <tr>
                     <td><?= (int)$p['id'] ?></td>
-                    <td><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td style="display:flex;align-items:center;gap:8px;">
+                        <?php
+                        $hasPhoto = !empty($p['photo_path']);
+                        $nameParts = explode(' ', trim((string)$p['name']));
+                        $initials = strtoupper(mb_substr($nameParts[0] ?? '', 0, 1) . mb_substr(end($nameParts) ?: '', 0, 1));
+                        ?>
+                        <?php if ($hasPhoto): ?>
+                            <img src="/patients/photo?id=<?= (int)$p['id'] ?>" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;" />
+                        <?php else: ?>
+                            <span style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.08));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#059669;flex-shrink:0;"><?= htmlspecialchars($initials, ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php endif; ?>
+                        <span><?= htmlspecialchars((string)$p['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                    </td>
                     <td><?= htmlspecialchars((string)($p['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($p['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= htmlspecialchars((string)($p['origin_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>

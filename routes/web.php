@@ -539,6 +539,8 @@ $router->post('/patients/edit', [PatientController::class, 'update']);
 $router->get('/patients/search-json', [PatientController::class, 'searchJson']);
 $router->get('/patients/packages-json', [PatientController::class, 'packagesJson']);
 $router->get('/patients/export.csv', [PatientController::class, 'exportCsv']);
+$router->post('/patients/photo/upload', [PatientController::class, 'uploadPhoto']);
+$router->get('/patients/photo', [PatientController::class, 'servePhoto']);
 
 $router->get('/patients/appointments', [\App\Controllers\Patients\PatientAppointmentsController::class, 'index']);
 
