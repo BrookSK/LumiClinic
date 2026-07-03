@@ -16,7 +16,7 @@ $primary = [
 ];
 
 $fallback = [
-    'dsn' => 'mysql:host=localhost;port=3306;dbname=bd_lumini_prod;charset=utf8mb4',
+    'dsn' => 'mysql:host=127.0.0.1;port=3306;dbname=db_9_bd_lumini_prod;charset=utf8mb4',
     'username' => 'bd_lumini_prod',
     'password' => 'bd_lumini_prod124536',
 ];
