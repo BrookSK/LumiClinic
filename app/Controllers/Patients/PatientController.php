@@ -474,4 +474,106 @@ final class PatientController extends Controller
 
         return Response::json(['items' => $items]);
     }
+
+    public function uploadPhoto(Request $request)
+    {
+        $this->authorize('patients.update');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('patient_id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/patients');
+        }
+
+        $file = $_FILES['photo'] ?? null;
+        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return $this->redirect('/patients/view?id=' . $id);
+        }
+
+        $tmp = (string)($file['tmp_name'] ?? '');
+        $mime = (string)($file['type'] ?? '');
+        $allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!in_array($mime, $allowedMimes, true)) {
+            return $this->redirect('/patients/view?id=' . $id);
+        }
+
+        $bytes = file_get_contents($tmp);
+        if ($bytes === false || $bytes === '') {
+            return $this->redirect('/patients/view?id=' . $id);
+        }
+
+        // Limitar tamanho a 5MB
+        if (strlen($bytes) > 5 * 1024 * 1024) {
+            return $this->redirect('/patients/view?id=' . $id);
+        }
+
+        $ext = match ($mime) {
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => 'jpg',
+        };
+
+        $relative = 'patient_photos/patient_' . $id . '.' . $ext;
+        \App\Services\Storage\PrivateStorage::put($clinicId, $relative, $bytes);
+
+        // Salvar path no banco
+        $pdo = $this->container->get(\PDO::class);
+        $stmt = $pdo->prepare('UPDATE patients SET photo_path = :photo WHERE id = :id AND clinic_id = :clinic');
+        $stmt->execute(['photo' => $relative, 'id' => $id, 'clinic' => $clinicId]);
+
+        return $this->redirect('/patients/view?id=' . $id);
+    }
+
+    public function servePhoto(Request $request): Response
+    {
+        $this->authorize('patients.read');
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return Response::html('', 404);
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return Response::html('', 404);
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $stmt = $pdo->prepare('SELECT photo_path FROM patients WHERE id = :id AND clinic_id = :clinic AND deleted_at IS NULL LIMIT 1');
+        $stmt->execute(['id' => $id, 'clinic' => $clinicId]);
+        $row = $stmt->fetch();
+
+        $photoPath = trim((string)($row['photo_path'] ?? ''));
+        if ($photoPath === '') {
+            return Response::html('', 404);
+        }
+
+        $fullPath = \App\Services\Storage\PrivateStorage::fullPath($clinicId, $photoPath);
+        if (!is_file($fullPath)) {
+            return Response::html('', 404);
+        }
+
+        $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        $mime = match ($ext) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            default => 'image/jpeg',
+        };
+
+        return Response::raw((string)file_get_contents($fullPath), 200, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
 }

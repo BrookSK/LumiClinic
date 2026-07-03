@@ -120,7 +120,7 @@ final class PatientRepository
             $params['origin_id'] = $originId;
         }
         $sql = "
-            SELECT p.id, p.name, p.email, p.phone, p.whatsapp_opt_in, p.status, p.patient_origin_id,
+            SELECT p.id, p.name, p.email, p.phone, p.whatsapp_opt_in, p.status, p.patient_origin_id, p.photo_path,
                    po.name AS origin_name
             FROM patients p
             LEFT JOIN clinic_patient_origins po ON po.id = p.patient_origin_id
@@ -205,7 +205,7 @@ final class PatientRepository
             SELECT
                 id, clinic_id, name, email, phone, whatsapp_opt_in, whatsapp_opt_in_updated_at, status,
                 birth_date, sex, cpf, cpf_last4,
-                address, notes, reference_professional_id,
+                address, notes, photo_path, reference_professional_id,
                 patient_origin_id
             FROM patients
             WHERE id = :id

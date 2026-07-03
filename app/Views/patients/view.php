@@ -79,10 +79,32 @@ ob_start();
 
 <div class="lc-card">
     <div class="lc-card__title" style="display:flex;align-items:center;justify-content:space-between;">
-        <span id="patNameDisplay"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-        <?php if ($can('patients.update')): ?>
-            <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="togglePatientEdit()" id="btnEditPatient" style="font-size:11px;">✏️ Editar dados</button>
-        <?php endif; ?>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <?php
+            $hasPhoto = !empty($patient['photo_path']);
+            $nameParts = explode(' ', trim((string)($patient['name'] ?? '')));
+            $patInitials = strtoupper(mb_substr($nameParts[0] ?? '', 0, 1) . mb_substr(end($nameParts) ?: '', 0, 1));
+            ?>
+            <?php if ($hasPhoto): ?>
+                <img src="/patients/photo?id=<?= (int)($patient['id'] ?? 0) ?>&t=<?= time() ?>" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(16,185,129,.3);" />
+            <?php else: ?>
+                <span style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.08));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#059669;flex-shrink:0;"><?= htmlspecialchars($patInitials, ENT_QUOTES, 'UTF-8') ?></span>
+            <?php endif; ?>
+            <span id="patNameDisplay"><?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <?php if ($can('patients.update')): ?>
+                <form method="post" action="/patients/photo/upload" enctype="multipart/form-data" style="display:inline-flex;align-items:center;gap:6px;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['_csrf'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="patient_id" value="<?= (int)($patient['id'] ?? 0) ?>" />
+                    <label class="lc-btn lc-btn--secondary lc-btn--sm" style="font-size:11px;cursor:pointer;" title="Enviar foto">
+                        📷 Foto
+                        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.closest('form').submit();" />
+                    </label>
+                </form>
+                <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="togglePatientEdit()" id="btnEditPatient" style="font-size:11px;">✏️ Editar dados</button>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="lc-card__body">
@@ -99,7 +121,7 @@ ob_start();
             <div class="lc-grid lc-grid--2 lc-gap-grid">
                 <div><div class="lc-label">E-mail</div><div><?= htmlspecialchars((string)($patient['email'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">Telefone</div><div><?= htmlspecialchars((string)($patient['phone'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
-                <div><div class="lc-label">Data de nascimento</div><div><?= htmlspecialchars((string)($patient['birth_date'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
+                <div><div class="lc-label">Data de nascimento</div><div><?php $bd = trim((string)($patient['birth_date'] ?? '')); if ($bd !== '') { $bdDate = new \DateTime($bd); $age = $bdDate->diff(new \DateTime())->y; echo htmlspecialchars(date('d/m/Y', strtotime($bd)), ENT_QUOTES, 'UTF-8') . ' <span style="color:#6b7280;font-size:13px;">(' . $age . ' anos)</span>'; } else { echo '—'; } ?></div></div>
                 <div><div class="lc-label">Sexo</div><div><?= htmlspecialchars((string)($patient['sex'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></div></div>
                 <div><div class="lc-label">CPF</div><div><?php if (isset($patient['cpf']) && (string)$patient['cpf'] !== ''): ?><?= htmlspecialchars((string)$patient['cpf'], ENT_QUOTES, 'UTF-8') ?><?php else: ?><?= isset($patient['cpf_last4']) && $patient['cpf_last4'] ? '***.' . htmlspecialchars((string)$patient['cpf_last4'], ENT_QUOTES, 'UTF-8') : '—' ?><?php endif; ?></div></div>
                 <div><div class="lc-label">Origem</div><div style="<?= $originId > 0 ? '' : 'color:#9ca3af;' ?>"><?= htmlspecialchars($originName, ENT_QUOTES, 'UTF-8') ?></div></div>
@@ -120,7 +142,7 @@ ob_start();
                     <div class="lc-field"><label class="lc-label">Nome</label><input class="lc-input" type="text" name="name" value="<?= htmlspecialchars((string)($patient['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" required /></div>
                     <div class="lc-field"><label class="lc-label">E-mail</label><input class="lc-input" type="email" name="email" value="<?= htmlspecialchars((string)($patient['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
                     <div class="lc-field"><label class="lc-label">Telefone</label><input class="lc-input" type="text" name="phone" value="<?= htmlspecialchars((string)($patient['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
-                    <div class="lc-field"><label class="lc-label">Data de nascimento</label><input class="lc-input" type="date" name="birth_date" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
+                    <div class="lc-field"><label class="lc-label">Data de nascimento</label><input class="lc-input" type="date" name="birth_date" id="inlineBirthDate" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" onchange="calcAge(this)" /><span id="inlineBirthDateAge" style="font-size:12px;color:#6b7280;margin-top:4px;display:inline-block;"><?php $ibd = trim((string)($patient['birth_date'] ?? '')); if ($ibd !== '') { echo (new \DateTime($ibd))->diff(new \DateTime())->y . ' anos'; } ?></span></div>
                     <div class="lc-field"><label class="lc-label">Sexo</label><select class="lc-select" name="sex"><option value="">—</option><option value="M" <?= ($patient['sex'] ?? '') === 'M' ? 'selected' : '' ?>>Masculino</option><option value="F" <?= ($patient['sex'] ?? '') === 'F' ? 'selected' : '' ?>>Feminino</option></select></div>
                     <div class="lc-field"><label class="lc-label">CPF</label><input class="lc-input" type="text" name="cpf" value="<?= htmlspecialchars((string)($patient['cpf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" /></div>
                     <div class="lc-field"><label class="lc-label">Origem</label>
@@ -159,6 +181,18 @@ function togglePatientEdit() {
     rv.style.display = editing ? 'block' : 'none';
     ev.style.display = editing ? 'none' : 'block';
     if (btn) btn.textContent = editing ? '✏️ Editar dados' : '✕ Cancelar';
+}
+function calcAge(input) {
+    var span = input.parentElement.querySelector('span[id$="Age"]');
+    if (!span) return;
+    var val = input.value;
+    if (!val) { span.textContent = ''; return; }
+    var bd = new Date(val + 'T00:00:00');
+    var today = new Date();
+    var age = today.getFullYear() - bd.getFullYear();
+    var m = today.getMonth() - bd.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+    span.textContent = age >= 0 ? age + ' anos' : '';
 }
 </script>
 

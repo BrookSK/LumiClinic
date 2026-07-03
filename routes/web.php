@@ -162,6 +162,8 @@ $router->post('/portal/push/test', [PortalPushController::class, 'test']);
 $router->get('/portal/perfil', [PortalProfileController::class, 'index']);
 $router->post('/portal/perfil/request-change', [PortalProfileController::class, 'requestChange']);
 $router->post('/portal/perfil/change-password', [PortalProfileController::class, 'changePassword']);
+$router->post('/portal/perfil/photo', [PortalProfileController::class, 'uploadPhoto']);
+$router->get('/portal/perfil/photo', [PortalProfileController::class, 'servePhoto']);
 $router->get('/portal/required-consents', [PortalLegalDocumentsController::class, 'required']);
 $router->get('/portal/legal/read', [PortalLegalDocumentsController::class, 'read']);
 $router->post('/portal/legal/accept', [PortalLegalDocumentsController::class, 'accept']);
@@ -539,6 +541,8 @@ $router->post('/patients/edit', [PatientController::class, 'update']);
 $router->get('/patients/search-json', [PatientController::class, 'searchJson']);
 $router->get('/patients/packages-json', [PatientController::class, 'packagesJson']);
 $router->get('/patients/export.csv', [PatientController::class, 'exportCsv']);
+$router->post('/patients/photo/upload', [PatientController::class, 'uploadPhoto']);
+$router->get('/patients/photo', [PatientController::class, 'servePhoto']);
 
 $router->get('/patients/appointments', [\App\Controllers\Patients\PatientAppointmentsController::class, 'index']);
 

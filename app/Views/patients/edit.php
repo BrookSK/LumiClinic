@@ -109,7 +109,8 @@ ob_start();
         <div class="lc-grid">
             <div>
                 <label class="lc-label">Data de nascimento</label>
-                <input class="lc-input" type="date" name="birth_date" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> />
+                <input class="lc-input" type="date" name="birth_date" id="editBirthDate" value="<?= htmlspecialchars((string)($patient['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $ro ?> onchange="calcAge(this)" />
+                <span id="editBirthDateAge" style="font-size:12px;color:#6b7280;margin-top:4px;display:inline-block;"><?php $ebd = trim((string)($patient['birth_date'] ?? '')); if ($ebd !== '') { echo (new \DateTime($ebd))->diff(new \DateTime())->y . ' anos'; } ?></span>
             </div>
             <div>
                 <label class="lc-label">Sexo</label>
@@ -204,6 +205,20 @@ ob_start();
         </div>
     </form>
 </div>
+<script>
+function calcAge(input) {
+    var span = input.parentElement.querySelector('span[id$="Age"]');
+    if (!span) return;
+    var val = input.value;
+    if (!val) { span.textContent = ''; return; }
+    var bd = new Date(val + 'T00:00:00');
+    var today = new Date();
+    var age = today.getFullYear() - bd.getFullYear();
+    var m = today.getMonth() - bd.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+    span.textContent = age >= 0 ? age + ' anos' : '';
+}
+</script>
 <?php
 $content = (string)ob_get_clean();
 require dirname(__DIR__) . '/layout/app.php';
