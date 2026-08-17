@@ -97,46 +97,46 @@ ob_start();
 }
 .dash-kpi__link:hover { opacity: .7; }
 
-/* Variantes de cor */
+/* Variantes de cor — paleta profissional neutra */
 .dash-kpi--agenda {
-    background: linear-gradient(135deg, rgba(99,102,241,.06), rgba(99,102,241,.02));
-    border-color: rgba(99,102,241,.12);
+    background: linear-gradient(135deg, rgba(51,65,85,.05), rgba(51,65,85,.02));
+    border-color: rgba(51,65,85,.10);
 }
-.dash-kpi--agenda .dash-kpi__icon { background: rgba(99,102,241,.12); }
-.dash-kpi--agenda .dash-kpi__icon svg { color: #6366f1; }
-.dash-kpi--agenda .dash-kpi__value { color: #4338ca; }
-.dash-kpi--agenda .dash-kpi__label { color: rgba(99,102,241,.7); }
-.dash-kpi--agenda .dash-kpi__link { color: #6366f1; }
+.dash-kpi--agenda .dash-kpi__icon { background: rgba(51,65,85,.08); }
+.dash-kpi--agenda .dash-kpi__icon svg { color: #475569; }
+.dash-kpi--agenda .dash-kpi__value { color: #1e293b; }
+.dash-kpi--agenda .dash-kpi__label { color: rgba(51,65,85,.6); }
+.dash-kpi--agenda .dash-kpi__link { color: #475569; }
 
 .dash-kpi--patients {
-    background: linear-gradient(135deg, rgba(16,185,129,.06), rgba(16,185,129,.02));
-    border-color: rgba(16,185,129,.12);
+    background: linear-gradient(135deg, rgba(71,85,105,.04), rgba(71,85,105,.01));
+    border-color: rgba(71,85,105,.10);
 }
-.dash-kpi--patients .dash-kpi__icon { background: rgba(16,185,129,.12); }
-.dash-kpi--patients .dash-kpi__icon svg { color: #10b981; }
-.dash-kpi--patients .dash-kpi__value { color: #059669; }
-.dash-kpi--patients .dash-kpi__label { color: rgba(16,185,129,.7); }
-.dash-kpi--patients .dash-kpi__link { color: #10b981; }
+.dash-kpi--patients .dash-kpi__icon { background: rgba(71,85,105,.08); }
+.dash-kpi--patients .dash-kpi__icon svg { color: #64748b; }
+.dash-kpi--patients .dash-kpi__value { color: #1e293b; }
+.dash-kpi--patients .dash-kpi__label { color: rgba(71,85,105,.6); }
+.dash-kpi--patients .dash-kpi__link { color: #64748b; }
 
 .dash-kpi--finance {
-    background: linear-gradient(135deg, rgba(238,184,16,.08), rgba(238,184,16,.02));
-    border-color: rgba(238,184,16,.15);
+    background: linear-gradient(135deg, rgba(30,41,59,.04), rgba(30,41,59,.01));
+    border-color: rgba(30,41,59,.10);
 }
-.dash-kpi--finance .dash-kpi__icon { background: rgba(238,184,16,.14); }
-.dash-kpi--finance .dash-kpi__icon svg { color: #b5841e; }
-.dash-kpi--finance .dash-kpi__value { color: #815901; }
-.dash-kpi--finance .dash-kpi__label { color: rgba(129,89,1,.6); }
-.dash-kpi--finance .dash-kpi__link { color: #b5841e; }
+.dash-kpi--finance .dash-kpi__icon { background: rgba(30,41,59,.08); }
+.dash-kpi--finance .dash-kpi__icon svg { color: #334155; }
+.dash-kpi--finance .dash-kpi__value { color: #0f172a; }
+.dash-kpi--finance .dash-kpi__label { color: rgba(30,41,59,.55); }
+.dash-kpi--finance .dash-kpi__link { color: #334155; }
 
 .dash-kpi--stock {
-    background: linear-gradient(135deg, rgba(244,63,94,.06), rgba(244,63,94,.02));
-    border-color: rgba(244,63,94,.12);
+    background: linear-gradient(135deg, rgba(120,113,108,.05), rgba(120,113,108,.02));
+    border-color: rgba(120,113,108,.10);
 }
-.dash-kpi--stock .dash-kpi__icon { background: rgba(244,63,94,.12); }
-.dash-kpi--stock .dash-kpi__icon svg { color: #f43f5e; }
-.dash-kpi--stock .dash-kpi__value { color: #e11d48; }
-.dash-kpi--stock .dash-kpi__label { color: rgba(244,63,94,.7); }
-.dash-kpi--stock .dash-kpi__link { color: #f43f5e; }
+.dash-kpi--stock .dash-kpi__icon { background: rgba(120,113,108,.08); }
+.dash-kpi--stock .dash-kpi__icon svg { color: #78716c; }
+.dash-kpi--stock .dash-kpi__value { color: #292524; }
+.dash-kpi--stock .dash-kpi__label { color: rgba(120,113,108,.6); }
+.dash-kpi--stock .dash-kpi__link { color: #78716c; }
 
 /* Status badges inline */
 .dash-statuses {
@@ -154,9 +154,9 @@ ob_start();
     font-size: 11px;
     font-weight: 700;
 }
-.dash-status--confirmed { background: rgba(99,102,241,.10); color: #4338ca; }
-.dash-status--progress  { background: rgba(245,158,11,.12); color: #92400e; }
-.dash-status--done      { background: rgba(16,185,129,.10); color: #065f46; }
+.dash-status--confirmed { background: rgba(51,65,85,.08); color: #334155; }
+.dash-status--progress  { background: rgba(120,113,108,.10); color: #57534e; }
+.dash-status--done      { background: rgba(100,116,139,.08); color: #475569; }
 
 /* Sections */
 .dash-sections {
@@ -203,7 +203,7 @@ ob_start();
     border-radius: 10px;
     transition: background .12s;
 }
-.dash-appt:hover { background: rgba(99,102,241,.04); }
+.dash-appt:hover { background: rgba(51,65,85,.04); }
 .dash-appt + .dash-appt { border-top: 1px solid rgba(17,24,39,.04); }
 .dash-appt__time {
     font-size: 13px;
@@ -247,19 +247,19 @@ ob_start();
     border-radius: 10px;
     transition: background .12s;
 }
-.dash-patient:hover { background: rgba(16,185,129,.04); }
+.dash-patient:hover { background: rgba(71,85,105,.04); }
 .dash-patient + .dash-patient { border-top: 1px solid rgba(17,24,39,.04); }
 .dash-patient__avatar {
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: linear-gradient(135deg, rgba(16,185,129,.15), rgba(16,185,129,.08));
+    background: linear-gradient(135deg, rgba(71,85,105,.12), rgba(71,85,105,.06));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 13px;
     font-weight: 800;
-    color: #059669;
+    color: #475569;
     flex-shrink: 0;
 }
 .dash-patient__info { flex: 1; min-width: 0; }
@@ -302,18 +302,18 @@ ob_start();
     font-size: 11px;
     font-weight: 600;
 }
-.dash-stock-item--low { background: rgba(245,158,11,.08); }
-.dash-stock-item--low .dash-stock-item__value { color: #92400e; }
-.dash-stock-item--low .dash-stock-item__label { color: rgba(245,158,11,.7); }
-.dash-stock-item--out { background: rgba(239,68,68,.08); }
-.dash-stock-item--out .dash-stock-item__value { color: #dc2626; }
-.dash-stock-item--out .dash-stock-item__label { color: rgba(239,68,68,.7); }
-.dash-stock-item--expiring { background: rgba(99,102,241,.06); }
-.dash-stock-item--expiring .dash-stock-item__value { color: #4338ca; }
-.dash-stock-item--expiring .dash-stock-item__label { color: rgba(99,102,241,.7); }
-.dash-stock-item--expired { background: rgba(107,114,128,.08); }
+.dash-stock-item--low { background: rgba(71,85,105,.06); }
+.dash-stock-item--low .dash-stock-item__value { color: #334155; }
+.dash-stock-item--low .dash-stock-item__label { color: rgba(71,85,105,.6); }
+.dash-stock-item--out { background: rgba(120,113,108,.07); }
+.dash-stock-item--out .dash-stock-item__value { color: #292524; }
+.dash-stock-item--out .dash-stock-item__label { color: rgba(120,113,108,.6); }
+.dash-stock-item--expiring { background: rgba(100,116,139,.06); }
+.dash-stock-item--expiring .dash-stock-item__value { color: #1e293b; }
+.dash-stock-item--expiring .dash-stock-item__label { color: rgba(100,116,139,.6); }
+.dash-stock-item--expired { background: rgba(107,114,128,.06); }
 .dash-stock-item--expired .dash-stock-item__value { color: #374151; }
-.dash-stock-item--expired .dash-stock-item__label { color: rgba(107,114,128,.7); }
+.dash-stock-item--expired .dash-stock-item__label { color: rgba(107,114,128,.6); }
 
 .dash-empty {
     text-align: center;
@@ -416,11 +416,11 @@ ob_start();
                     default => ucfirst($status),
                 };
                 $statusStyle = match($status) {
-                    'confirmed' => 'background:rgba(99,102,241,.10);color:#4338ca;',
-                    'in_progress' => 'background:rgba(245,158,11,.12);color:#92400e;',
-                    'completed' => 'background:rgba(16,185,129,.10);color:#065f46;',
-                    'pending' => 'background:rgba(107,114,128,.10);color:#374151;',
-                    default => 'background:rgba(107,114,128,.08);color:#6b7280;',
+                    'confirmed' => 'background:rgba(51,65,85,.08);color:#334155;',
+                    'in_progress' => 'background:rgba(120,113,108,.10);color:#57534e;',
+                    'completed' => 'background:rgba(100,116,139,.08);color:#475569;',
+                    'pending' => 'background:rgba(107,114,128,.08);color:#374151;',
+                    default => 'background:rgba(107,114,128,.06);color:#6b7280;',
                 };
             ?>
             <div class="dash-appt">
@@ -497,7 +497,7 @@ ob_start();
             </div>
         </div>
         <div style="text-align:center;margin-top:14px;">
-            <a class="dash-kpi__link" href="/stock/alerts" style="color:#f43f5e;">Ver todos os alertas →</a>
+            <a class="dash-kpi__link" href="/stock/alerts" style="color:#78716c;">Ver todos os alertas →</a>
         </div>
     </div>
     <?php endif; ?>
