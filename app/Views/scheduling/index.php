@@ -214,6 +214,9 @@ ob_start();
                             <?php if ($can('scheduling.update')): ?>
                                 <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/reschedule?id=<?= (int)$it['id'] ?>">Reagendar</a>
                             <?php endif; ?>
+                            <?php if ($can('scheduling.logs')): ?>
+                                <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/logs?appointment_id=<?= (int)$it['id'] ?>">Logs</a>
+                            <?php endif; ?>
 
                             <details class="lc-actions__more">
                                 <summary class="lc-btn lc-btn--secondary lc-btn--sm">Ações</summary>

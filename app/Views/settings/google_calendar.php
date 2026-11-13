@@ -111,10 +111,8 @@ ob_start();
     <?php else: ?>
     <!-- Não conectado: mostrar formulário de conexão -->
     <div id="gcal-connect-form">
-        <div class="lc-field" style="max-width:400px;">
-            <label class="lc-label">Calendar ID</label>
-            <input class="lc-input" type="text" id="gcal_calendar_id" value="<?= htmlspecialchars($calendarId, ENT_QUOTES, 'UTF-8') ?>" placeholder="primary" autocomplete="off" />
-            <div style="font-size:11px;color:rgba(31,41,55,.40);margin-top:4px;">Deixe "primary" para o calendário principal. Só mude se souber o que está fazendo.</div>
+        <div style="font-size:13px;color:rgba(31,41,55,.60);max-width:480px;line-height:1.5;">
+            Os agendamentos serão sincronizados com a <strong>agenda principal</strong> da conta Google que você conectar.
         </div>
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
             <button class="lc-btn lc-btn--primary" type="button" id="gcal-connect-btn" <?= (!$clientReady || !$libReady) ? 'disabled' : '' ?> onclick="connectGcal()">Conectar Google Calendar</button>
@@ -123,9 +121,7 @@ ob_start();
     </div>
     <script>
     function connectGcal() {
-        var calId = document.getElementById('gcal_calendar_id');
-        var val = calId ? calId.value.trim() : 'primary';
-        if (!val) val = 'primary';
+        var val = 'primary';
         var btn = document.getElementById('gcal-connect-btn');
         if (btn) { btn.disabled = true; btn.textContent = 'Conectando...'; }
         var xhr = new XMLHttpRequest();

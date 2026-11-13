@@ -44,10 +44,9 @@ final class GoogleCalendarSyncService
         }
 
         $tokenId = (int)$token['id'];
-        $calendarId = trim((string)($token['calendar_id'] ?? ''));
-        if ($calendarId === '') {
-            $calendarId = 'primary';
-        }
+        // Regra atual: sempre usar a agenda principal (primary) da conta Google conectada,
+        // ignorando qualquer calendar_id customizado salvo anteriormente.
+        $calendarId = 'primary';
 
         if (!$this->isAvailable()) {
             $this->log($clinicId, $userId, $tokenId, $appointmentId, 'sync', 'failed', 'Dependência google/apiclient ausente.', null);

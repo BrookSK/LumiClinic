@@ -52,7 +52,12 @@ final class OpenAiClient
         ], 60);
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
-            throw new \RuntimeException('Falha ao chamar OpenAI.');
+            $detail = '';
+            if (is_array($resp['json'] ?? null) && isset($resp['json']['error']['message'])) {
+                $detail = ' ' . trim((string)$resp['json']['error']['message']);
+            }
+            error_log('[OpenAiClient] chat/completions HTTP ' . (int)$resp['status'] . $detail);
+            throw new \RuntimeException('Falha ao chamar OpenAI (HTTP ' . (int)$resp['status'] . ').' . $detail);
         }
 
         $json = $resp['json'];

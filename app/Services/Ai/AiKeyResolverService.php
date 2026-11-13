@@ -81,7 +81,7 @@ final class AiKeyResolverService
         }
 
         throw new \RuntimeException(
-            'Transcrição indisponível: configure uma chave OpenAI ou recarregue a Carteira de IA.'
+            'IA indisponível: configure uma chave OpenAI ou recarregue a Carteira de IA.'
         );
     }
 }

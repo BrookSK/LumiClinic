@@ -9,6 +9,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\ClinicClosedDaysRepository;
 use App\Repositories\ClinicRepository;
 use App\Repositories\ClinicWorkingHoursRepository;
+use App\Services\Ai\AiKeyResolverService;
 use App\Services\Ai\OpenAiClient;
 use App\Services\Auth\AuthService;
 
@@ -305,7 +306,11 @@ final class ClinicService
             ['role' => 'user', 'content' => 'Gere feriados nacionais do Brasil para o ano ' . $year . '. Para cada item: {"date":"YYYY-MM-DD","name":"...","is_open":0|1}. Inclua: Confraternização Universal, Carnaval (segunda e terça), Quarta-feira de Cinzas, Sexta-feira Santa, Tiradentes, Dia do Trabalho, Corpus Christi, Independência, Nossa Senhora Aparecida, Finados, Proclamação da República, Natal. Sugira is_open=0 (fechado) por padrão e is_open=1 apenas se fizer sentido para uma clínica.'],
         ];
 
-        $resp = (new OpenAiClient($this->container))->chatCompletions('gpt-4o-mini', $messages, 0.2);
+        // Usa o mesmo resolvedor de chave da transcrição (clínica > superadmin > carteira do dev).
+        // O OpenAiClient padrão só conhecia chave global/clínica e ignorava a chave do portal /dev/ai-billing.
+        $resolved = (new AiKeyResolverService($this->container))->resolve($clinicId);
+
+        $resp = OpenAiClient::withKey($this->container, $resolved['key'])->chatCompletions('gpt-4o-mini', $messages, 0.2);
         $content = '';
         if (isset($resp['choices'][0]['message']['content'])) {
             $content = (string)$resp['choices'][0]['message']['content'];

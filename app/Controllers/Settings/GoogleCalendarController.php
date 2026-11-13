@@ -31,7 +31,7 @@ final class GoogleCalendarController extends Controller
 
         return $this->view('settings/google_calendar', [
             'connected' => $token !== null,
-            'calendar_id' => $token !== null ? (string)($token['calendar_id'] ?? 'primary') : 'primary',
+            'calendar_id' => 'primary',
             'client_ready' => (new \App\Services\Google\GoogleOAuthConfigService($this->container))->getClientId() !== null,
             'lib_ready' => class_exists('Google\\Client'),
             'error' => trim((string)$request->input('error', '')),
@@ -50,10 +50,8 @@ final class GoogleCalendarController extends Controller
             throw new \RuntimeException('Contexto inválido.');
         }
 
-        $calendarId = trim((string)$request->input('calendar_id', 'primary'));
-        if ($calendarId === '') {
-            $calendarId = 'primary';
-        }
+        // Sempre a agenda principal da conta Google (não aceita mais ID customizado).
+        $calendarId = 'primary';
 
         $state = bin2hex(random_bytes(16));
         $_SESSION['gcal_oauth_state'] = $state;
@@ -111,8 +109,7 @@ final class GoogleCalendarController extends Controller
             return $this->redirect('/settings/google-calendar?error=' . urlencode('Código OAuth ausente.'));
         }
 
-        $calendarId = isset($_SESSION['gcal_oauth_calendar_id']) ? (string)$_SESSION['gcal_oauth_calendar_id'] : 'primary';
-        $calendarId = trim($calendarId) === '' ? 'primary' : trim($calendarId);
+        $calendarId = 'primary';
 
         $redirectUri = $this->baseUrl($request) . '/settings/google-calendar/callback';
 
