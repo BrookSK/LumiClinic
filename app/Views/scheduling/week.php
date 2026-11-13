@@ -316,7 +316,8 @@ ob_start();
                             <?php endif; ?>
 
                             <?php if (is_array($dayItems) && $dayItems !== []): ?>
-                                <?php foreach ($dayItems as $it): ?>
+                                <?php $dayLayout = \App\Services\Scheduling\AppointmentOverlapLayout::compute($dayItems); ?>
+                                <?php foreach ($dayItems as $itKey => $it): ?>
                                     <?php
                                         $st = (string)($it['start_at'] ?? '');
                                         $en = (string)($it['end_at'] ?? '');
@@ -345,7 +346,7 @@ ob_start();
                                     <?php $weekSvcColor = isset($svcMap[(int)($it['service_id'] ?? 0)]['color']) ? (string)$svcMap[(int)($it['service_id'] ?? 0)]['color'] : ''; ?>
                                     <button type="button"
                                         class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
-                                        style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; cursor:pointer; overflow:hidden; border:0; z-index:5;<?= $weekSvcColor !== '' ? ' border-left:4px solid ' . htmlspecialchars($weekSvcColor, ENT_QUOTES, 'UTF-8') . ';' : '' ?>"
+                                        style="position:absolute; <?= \App\Services\Scheduling\AppointmentOverlapLayout::horizontalStyle($dayLayout[$itKey] ?? null) ?> top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; text-align:left; cursor:pointer; overflow:hidden; border:0; z-index:5; box-sizing:border-box;<?= $weekSvcColor !== '' ? ' border-left:4px solid ' . htmlspecialchars($weekSvcColor, ENT_QUOTES, 'UTF-8') . ';' : '' ?>"
                                         data-open-appointment="1"
                                         data-appt-id="<?= (int)$it['id'] ?>"
                                         data-appt-patient="<?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"

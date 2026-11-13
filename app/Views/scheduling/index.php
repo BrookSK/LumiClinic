@@ -449,7 +449,8 @@ ob_start();
                                 <?php endif; ?>
 
                                 <?php if (is_array($items) && $items !== []): ?>
-                                    <?php foreach ($items as $it): ?>
+                                    <?php $dayLayout = \App\Services\Scheduling\AppointmentOverlapLayout::compute($items); ?>
+                                    <?php foreach ($items as $itKey => $it): ?>
                                         <?php
                                             $st = (string)($it['start_at'] ?? '');
                                             $en = (string)($it['end_at'] ?? '');
@@ -480,7 +481,7 @@ ob_start();
                                         <button type="button"
                                              class="lc-statusbar lc-statusbar--<?= htmlspecialchars($statusClass, ENT_QUOTES, 'UTF-8') ?>"
                                              data-appointment-id="<?= (int)($it['id'] ?? 0) ?>"
-                                             style="position:absolute; left:6px; right:6px; top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; width:auto; text-align:left; overflow:hidden; border:0; z-index:5; cursor:pointer;<?= $slotSvcColor !== '' ? ' border-left:4px solid ' . htmlspecialchars($slotSvcColor, ENT_QUOTES, 'UTF-8') . ';' : '' ?>">
+                                             style="position:absolute; <?= \App\Services\Scheduling\AppointmentOverlapLayout::horizontalStyle($dayLayout[$itKey] ?? null) ?> top: <?= (int)$top ?>px; height: <?= (int)$height ?>px; padding:8px 10px; margin:0; text-align:left; overflow:hidden; border:0; z-index:5; cursor:pointer; box-sizing:border-box;<?= $slotSvcColor !== '' ? ' border-left:4px solid ' . htmlspecialchars($slotSvcColor, ENT_QUOTES, 'UTF-8') . ';' : '' ?>">
                                             <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Agendamento #<?= (int)($it['id'] ?? 0) ?></div>
                                             <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                                 <?= htmlspecialchars(substr($st, 11, 5), ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(substr($en, 11, 5), ENT_QUOTES, 'UTF-8') ?>

@@ -58,8 +58,8 @@ final class AppointmentLogRepository
                    l.ip_address, l.created_at
             FROM appointment_logs l
             LEFT JOIN users u ON u.id = l.user_id
-            WHERE clinic_id = :clinic_id
-              AND appointment_id = :appointment_id
+            WHERE l.clinic_id = :clinic_id
+              AND l.appointment_id = :appointment_id
             ORDER BY l.id DESC
             LIMIT " . (int)$limit . "
         ";
