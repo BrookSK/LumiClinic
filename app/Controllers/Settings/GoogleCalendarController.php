@@ -191,10 +191,22 @@ final class GoogleCalendarController extends Controller
 
     private function baseUrl(Request $request): string
     {
-        $baseUrl = getenv('APP_BASE_URL') ?: (
-            (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
-            . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-        );
-        return rtrim((string)$baseUrl, '/');
+        $envUrl = getenv('APP_BASE_URL');
+        if ($envUrl) {
+            return rtrim((string)$envUrl, '/');
+        }
+
+        // Força https em domínios reais (o Google só aceita http para localhost).
+        // Também respeita o cabeçalho de proxy/Cloudflare X-Forwarded-Proto.
+        $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
+        $hostOnly = strtolower((string)preg_replace('/:\d+$/', '', $host));
+        $isLocal = $hostOnly === 'localhost' || $hostOnly === '127.0.0.1' || str_ends_with($hostOnly, '.local');
+
+        $forwardedProto = strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || $forwardedProto === 'https'
+            || !$isLocal;
+
+        return ($isHttps ? 'https' : 'http') . '://' . $host;
     }
 }

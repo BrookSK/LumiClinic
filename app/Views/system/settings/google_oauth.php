@@ -7,10 +7,18 @@ $error = isset($_GET['error']) ? (string)$_GET['error'] : '';
 $clientId = isset($google_oauth_client_id) ? (string)$google_oauth_client_id : '';
 $clientSecretSet = isset($google_oauth_client_secret_set) ? (bool)$google_oauth_client_secret_set : false;
 
-$baseUrl = getenv('APP_BASE_URL') ?: (
-    (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
-    . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-);
+$baseUrl = getenv('APP_BASE_URL');
+if (!$baseUrl) {
+    // Mesma regra do GoogleCalendarController::baseUrl(): https em domínios reais.
+    $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
+    $hostOnly = strtolower((string)preg_replace('/:\d+$/', '', $host));
+    $isLocal = $hostOnly === 'localhost' || $hostOnly === '127.0.0.1' || str_ends_with($hostOnly, '.local');
+    $forwardedProto = strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || $forwardedProto === 'https'
+        || !$isLocal;
+    $baseUrl = ($isHttps ? 'https' : 'http') . '://' . $host;
+}
 $baseUrl = rtrim((string)$baseUrl, '/');
 $redirectUri = $baseUrl . '/settings/google-calendar/callback';
 
