@@ -24,65 +24,77 @@ ob_start();
     <div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
 
-<?php $logoPath = $g('logo_path'); $logoError = trim((string)($_GET['logo_error'] ?? '')); ?>
-<div class="cl-section">
-    <div class="cl-section__title">Logo</div>
-    <?php if ($logoError !== ''): ?>
-        <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;"><?= htmlspecialchars($logoError, ENT_QUOTES, 'UTF-8') ?></div>
-    <?php endif; ?>
-    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-        <div style="width:96px;height:96px;border-radius:14px;border:1px dashed rgba(17,24,39,.20);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;">
-            <?php if ($logoPath !== ''): ?>
-                <img id="clLogoPreview" src="/clinic/logo?v=<?= dechex(crc32($logoPath)) ?>" alt="Logo da clínica" style="max-width:100%;max-height:100%;object-fit:contain;" />
-            <?php else: ?>
-                <img id="clLogoPreview" src="" alt="" style="display:none;max-width:100%;max-height:100%;object-fit:contain;" />
-                <span id="clLogoEmpty" style="font-size:11px;color:rgba(31,41,55,.55);text-align:center;padding:6px;">Sem logo</span>
-            <?php endif; ?>
-        </div>
-        <div style="flex:1;min-width:240px;">
-            <form method="post" action="/clinic/logo" enctype="multipart/form-data" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0;">
-                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                <input class="lc-input" type="file" name="logo" id="clLogoFile" accept="image/png,image/jpeg,image/webp" required style="max-width:320px;" />
-                <button class="lc-btn lc-btn--secondary" type="submit">Enviar logo</button>
-            </form>
-            <div style="font-size:12px;color:rgba(31,41,55,.60);margin-top:6px;">PNG, JPG ou WEBP, até 2 MB. Aparece no cabeçalho dos orçamentos. Sem logo, é usado o ícone padrão do sistema.</div>
-            <?php if ($logoPath !== ''): ?>
-                <form method="post" action="/clinic/logo/remove" style="margin:8px 0 0;" onsubmit="return confirm('Remover a logo da clínica?');">
-                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Remover logo</button>
-                </form>
-            <?php endif; ?>
-        </div>
-    </div>
-</div>
-<script>
-(function(){
-  var f = document.getElementById('clLogoFile');
-  if (!f) return;
-  f.addEventListener('change', function(){
-    var file = f.files && f.files[0];
-    if (!file) return;
-    var img = document.getElementById('clLogoPreview');
-    var empty = document.getElementById('clLogoEmpty');
-    img.src = URL.createObjectURL(file);
-    img.style.display = '';
-    if (empty) empty.style.display = 'none';
-  });
-})();
-</script>
-
-<form method="post" class="lc-form" action="/clinic">
+<form method="post" class="lc-form" action="/clinic" enctype="multipart/form-data">
     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 
-    <!-- Nome -->
-    <div class="cl-section">
-        <div class="cl-section__title">Identificação</div>
-        <div class="lc-field">
-            <label class="lc-label">Nome da clínica</label>
-            <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars($g('name'), ENT_QUOTES, 'UTF-8') ?>" required />
+    <!-- Logo + Nome -->
+    <?php $logoPath = $g('logo_path'); $logoError = trim((string)($_GET['logo_error'] ?? '')); ?>
+    <style>
+    .cl-top{display:grid;grid-template-columns:minmax(300px,5fr) 7fr;gap:16px;margin-bottom:16px;align-items:stretch}
+    .cl-top .cl-section{margin-bottom:0}
+    @media(max-width:860px){.cl-top{grid-template-columns:1fr}}
+    .cl-logo{display:flex;gap:14px;align-items:center}
+    .cl-logo__box{width:88px;height:88px;flex-shrink:0;border-radius:14px;border:1px dashed rgba(17,24,39,.22);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
+    .cl-logo__box img{max-width:100%;max-height:100%;object-fit:contain}
+    .cl-logo__empty{font-size:11px;color:rgba(31,41,55,.55);text-align:center;padding:6px}
+    .cl-logo__body{flex:1;min-width:0}
+    .cl-logo__row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .cl-logo__name{font-size:12px;color:rgba(31,41,55,.60);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+    .cl-logo__hint{font-size:11px;color:rgba(31,41,55,.60);margin-top:6px;line-height:1.4}
+    .cl-logo__remove{background:none;border:0;padding:0;margin-top:6px;cursor:pointer;font-size:12px;font-weight:600;color:#9a3412}
+    </style>
+    <div class="cl-top">
+        <div class="cl-section">
+            <div class="cl-section__title">Logo</div>
+            <?php if ($logoError !== ''): ?>
+                <div class="lc-alert lc-alert--danger" style="margin-bottom:10px;"><?= htmlspecialchars($logoError, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php endif; ?>
+            <div class="cl-logo">
+                <div class="cl-logo__box">
+                    <?php if ($logoPath !== ''): ?>
+                        <img id="clLogoPreview" src="/clinic/logo?v=<?= dechex(crc32($logoPath)) ?>" alt="Logo" />
+                    <?php else: ?>
+                        <img id="clLogoPreview" src="" alt="" style="display:none;" />
+                        <span id="clLogoEmpty" class="cl-logo__empty">Sem logo</span>
+                    <?php endif; ?>
+                </div>
+                <div class="cl-logo__body">
+                    <div class="cl-logo__row">
+                        <label class="lc-btn lc-btn--secondary lc-btn--sm" for="clLogoFile" style="cursor:pointer;margin:0;">Escolher imagem</label>
+                        <span id="clLogoName" class="cl-logo__name">Nenhum arquivo</span>
+                        <input type="file" name="logo" id="clLogoFile" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+                    </div>
+                    <div class="cl-logo__hint">PNG, JPG ou WEBP, at&eacute; 2 MB. Aparece no cabe&ccedil;alho dos or&ccedil;amentos. Clique em Salvar para aplicar.</div>
+                    <?php if ($logoPath !== ''): ?>
+                        <button type="submit" form="clLogoRemoveForm" class="cl-logo__remove" onclick="return confirm('Remover a logo da cl\u00ednica?');">Remover logo</button>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <div class="cl-section">
+            <div class="cl-section__title">Identifica&ccedil;&atilde;o</div>
+            <div class="lc-field">
+                <label class="lc-label">Nome da cl&iacute;nica</label>
+                <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars($g('name'), ENT_QUOTES, 'UTF-8') ?>" required />
+            </div>
         </div>
     </div>
-
+    <script>
+    (function(){
+      var f = document.getElementById('clLogoFile');
+      if (!f) return;
+      f.addEventListener('change', function(){
+        var file = f.files && f.files[0];
+        if (!file) return;
+        document.getElementById('clLogoName').textContent = file.name;
+        var img = document.getElementById('clLogoPreview');
+        var empty = document.getElementById('clLogoEmpty');
+        img.src = URL.createObjectURL(file);
+        img.style.display = '';
+        if (empty) empty.style.display = 'none';
+      });
+    })();
+    </script>
     <!-- Contato -->
     <div class="cl-section">
         <div class="cl-section__title">Contato</div>
@@ -141,6 +153,9 @@ ob_start();
         <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>
         <a class="lc-btn lc-btn--secondary" href="/">Voltar</a>
     </div>
+</form>
+<form id="clLogoRemoveForm" method="post" action="/clinic/logo/remove" style="display:none;">
+    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 </form>
 
 <script>

@@ -132,6 +132,17 @@ final class ClinicController extends Controller
             ], $request->ip());
         }
 
+        $logoFile = $_FILES['logo'] ?? null;
+        if (is_array($logoFile) && ($logoFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $clinicIdForLogo = (new AuthService($this->container))->clinicId();
+            if ($clinicIdForLogo !== null) {
+                $logoError = $this->saveLogoFile($clinicIdForLogo, $logoFile, $request->ip());
+                if ($logoError !== null) {
+                    return $this->redirect('/clinic?logo_error=' . urlencode($logoError));
+                }
+            }
+        }
+
         return $this->redirect('/clinic');
     }
 
@@ -150,16 +161,35 @@ final class ClinicController extends Controller
         }
 
         $file = $_FILES['logo'] ?? null;
-        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file((string)($file['tmp_name'] ?? ''))) {
-            return $this->redirect('/clinic?logo_error=' . urlencode('Selecione uma imagem valida.'));
+        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return $this->redirect('/clinic?logo_error=' . urlencode('Selecione uma imagem.'));
+        }
+
+        $error = $this->saveLogoFile($clinicId, $file, $request->ip());
+        if ($error !== null) {
+            return $this->redirect('/clinic?logo_error=' . urlencode($error));
+        }
+
+        return $this->redirect('/clinic');
+    }
+
+    /**
+     * Valida e grava a logo. Retorna mensagem de erro, ou null em caso de sucesso.
+     *
+     * @param array<string, mixed> $file
+     */
+    private function saveLogoFile(int $clinicId, array $file, string $ip): ?string
+    {
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file((string)($file['tmp_name'] ?? ''))) {
+            return 'Selecione uma imagem valida.';
         }
 
         $bytes = file_get_contents((string)$file['tmp_name']);
         if ($bytes === false || $bytes === '') {
-            return $this->redirect('/clinic?logo_error=' . urlencode('Arquivo vazio.'));
+            return 'Arquivo vazio.';
         }
         if (strlen($bytes) > 2 * 1024 * 1024) {
-            return $this->redirect('/clinic?logo_error=' . urlencode('A logo deve ter no maximo 2 MB.'));
+            return 'A logo deve ter no maximo 2 MB.';
         }
 
         // Tipo validado pelo conteudo real do arquivo (nao pelo valor enviado pelo cliente). SVG nao e aceito.
@@ -172,7 +202,7 @@ final class ClinicController extends Controller
             default => '',
         };
         if ($ext === '') {
-            return $this->redirect('/clinic?logo_error=' . urlencode('Formato invalido. Use PNG, JPG ou WEBP.'));
+            return 'Formato invalido. Use PNG, JPG ou WEBP.';
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -182,7 +212,7 @@ final class ClinicController extends Controller
 
         $relative = 'clinic_logo/logo_' . bin2hex(random_bytes(6)) . '.' . $ext;
         if (\App\Services\Storage\PrivateStorage::put($clinicId, $relative, $bytes) === false) {
-            return $this->redirect('/clinic?logo_error=' . urlencode('Nao foi possivel salvar a logo.'));
+            return 'Nao foi possivel salvar a logo.';
         }
         $repo->updateLogoPath($clinicId, $relative);
 
@@ -193,14 +223,13 @@ final class ClinicController extends Controller
             }
         }
 
-        $userId = $auth->userId();
+        $userId = (new AuthService($this->container))->userId();
         if ($userId !== null) {
-            (new \App\Repositories\AuditLogRepository($pdo))->log($userId, $clinicId, 'clinics.update', ['fields' => ['logo_path']], $request->ip());
+            (new \App\Repositories\AuditLogRepository($pdo))->log($userId, $clinicId, 'clinics.update', ['fields' => ['logo_path']], $ip);
         }
 
-        return $this->redirect('/clinic');
+        return null;
     }
-
     public function removeLogo(Request $request)
     {
         $this->authorize('clinics.update');
