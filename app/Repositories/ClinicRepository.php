@@ -20,6 +20,7 @@ final class ClinicRepository
                    address_street, address_number, address_complement,
                    address_neighborhood, address_city, address_state, address_zip,
                    contact_website, contact_instagram, contact_facebook,
+                   logo_path,
                    status, created_at, updated_at
             FROM clinics
             WHERE id = :id
@@ -32,6 +33,12 @@ final class ClinicRepository
         $row = $stmt->fetch();
 
         return $row ?: null;
+    }
+
+    public function updateLogoPath(int $clinicId, ?string $logoPath): void
+    {
+        $stmt = $this->pdo->prepare("UPDATE clinics SET logo_path = :logo_path, updated_at = NOW() WHERE id = :id AND deleted_at IS NULL");
+        $stmt->execute(['id' => $clinicId, 'logo_path' => $logoPath]);
     }
 
     public function updateName(int $clinicId, string $name): void

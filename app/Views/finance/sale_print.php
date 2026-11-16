@@ -81,11 +81,34 @@ try { $dateFmt = (new \DateTimeImmutable($createdAt))->format('d/m/Y'); } catch 
 $budgetStatusLabel = ['draft'=>'Rascunho','sent'=>'Enviado','approved'=>'Aprovado','standby'=>'Em espera','rejected'=>'Recusado'];
 $bs = (string)($sale['budget_status'] ?? 'draft');
 $isPaid = (string)$sale['status'] === 'paid';
+
+// Logo da clinica embutida (data URI): funciona na impressao e no link publico, sem expor o storage privado.
+$logoSrc = '/icone_1.png';
+$logoRel = is_array($clinic) ? trim((string)($clinic['logo_path'] ?? '')) : '';
+$logoClinicId = is_array($clinic) ? (int)($clinic['id'] ?? 0) : 0;
+if ($logoRel !== '' && $logoClinicId > 0) {
+    $logoFull = \App\Services\Storage\PrivateStorage::fullPath($logoClinicId, $logoRel);
+    if (is_file($logoFull) && filesize($logoFull) <= 2 * 1024 * 1024) {
+        $logoMime = match (strtolower(pathinfo($logoFull, PATHINFO_EXTENSION))) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            default => 'image/jpeg',
+        };
+        $logoSrc = 'data:' . $logoMime . ';base64,' . base64_encode((string)file_get_contents($logoFull));
+    }
+}
+
+// Formas de pagamento: NULL = nunca alterado (todas); '' = nenhuma.
+$ppmLabels = ['pix' => 'PIX', 'card' => 'Cartão', 'boleto' => 'Boleto', 'cash' => 'Dinheiro'];
+$ppmRaw = $sale['print_payment_methods'] ?? null;
+$ppmShow = $ppmRaw === null
+    ? array_keys($ppmLabels)
+    : array_values(array_filter(explode(',', (string)$ppmRaw), static fn($m) => isset($ppmLabels[$m])));
 ?>
 
 <div class="page">
     <div class="header">
-        <img src="/icone_1.png" alt="<?= htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') ?>" class="header-logo" />
+        <img src="<?= htmlspecialchars($logoSrc, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') ?>" class="header-logo" />
         <div class="header-info">
             <div class="header-clinic-name"><?= htmlspecialchars($clinicName, ENT_QUOTES, 'UTF-8') ?></div>
         </div>
@@ -137,6 +160,15 @@ $isPaid = (string)$sale['status'] === 'paid';
             <tr class="total-row"><td colspan="4" class="text-right">Total</td><td class="text-right">R$ <?= number_format((float)$sale['total_liquido'], 2, ',', '.') ?></td></tr>
             </tbody>
         </table>
+
+        <?php if (!empty($ppmShow)): ?>
+        <div style="margin-top:24px;">
+            <div class="section-title">Formas de pagamento</div>
+            <div style="font-size:13px;line-height:1.7;">
+                <?= htmlspecialchars(implode(' · ', array_map(static fn($m) => $ppmLabels[$m], $ppmShow)), ENT_QUOTES, 'UTF-8') ?>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <?php if (!empty($payments)): ?>
         <div style="margin-top:24px;">

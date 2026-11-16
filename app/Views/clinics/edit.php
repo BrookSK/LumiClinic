@@ -24,6 +24,53 @@ ob_start();
     <div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= htmlspecialchars((string)$error, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endif; ?>
 
+<?php $logoPath = $g('logo_path'); $logoError = trim((string)($_GET['logo_error'] ?? '')); ?>
+<div class="cl-section">
+    <div class="cl-section__title">Logo</div>
+    <?php if ($logoError !== ''): ?>
+        <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;"><?= htmlspecialchars($logoError, ENT_QUOTES, 'UTF-8') ?></div>
+    <?php endif; ?>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        <div style="width:96px;height:96px;border-radius:14px;border:1px dashed rgba(17,24,39,.20);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;">
+            <?php if ($logoPath !== ''): ?>
+                <img id="clLogoPreview" src="/clinic/logo?v=<?= dechex(crc32($logoPath)) ?>" alt="Logo da clínica" style="max-width:100%;max-height:100%;object-fit:contain;" />
+            <?php else: ?>
+                <img id="clLogoPreview" src="" alt="" style="display:none;max-width:100%;max-height:100%;object-fit:contain;" />
+                <span id="clLogoEmpty" style="font-size:11px;color:rgba(31,41,55,.55);text-align:center;padding:6px;">Sem logo</span>
+            <?php endif; ?>
+        </div>
+        <div style="flex:1;min-width:240px;">
+            <form method="post" action="/clinic/logo" enctype="multipart/form-data" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <input class="lc-input" type="file" name="logo" id="clLogoFile" accept="image/png,image/jpeg,image/webp" required style="max-width:320px;" />
+                <button class="lc-btn lc-btn--secondary" type="submit">Enviar logo</button>
+            </form>
+            <div style="font-size:12px;color:rgba(31,41,55,.60);margin-top:6px;">PNG, JPG ou WEBP, até 2 MB. Aparece no cabeçalho dos orçamentos. Sem logo, é usado o ícone padrão do sistema.</div>
+            <?php if ($logoPath !== ''): ?>
+                <form method="post" action="/clinic/logo/remove" style="margin:8px 0 0;" onsubmit="return confirm('Remover a logo da clínica?');">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Remover logo</button>
+                </form>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<script>
+(function(){
+  var f = document.getElementById('clLogoFile');
+  if (!f) return;
+  f.addEventListener('change', function(){
+    var file = f.files && f.files[0];
+    if (!file) return;
+    var img = document.getElementById('clLogoPreview');
+    var empty = document.getElementById('clLogoEmpty');
+    img.src = URL.createObjectURL(file);
+    img.style.display = '';
+    if (empty) empty.style.display = 'none';
+  });
+})();
+</script>
+
 <form method="post" class="lc-form" action="/clinic">
     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
 

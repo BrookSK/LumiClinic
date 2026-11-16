@@ -486,6 +486,56 @@ ob_start();
             </div>
         </div>
 
+        <!-- Formas de pagamento no orçamento impresso -->
+        <?php if (!$isProfessional && $can('finance.sales.update')): ?>
+        <?php
+            $ppmAll = ['pix' => 'PIX', 'card' => 'Cartão', 'boleto' => 'Boleto', 'cash' => 'Dinheiro'];
+            $ppmRaw = $sale['print_payment_methods'] ?? null;
+            $ppmSelected = $ppmRaw === null ? array_keys($ppmAll) : array_values(array_filter(explode(',', (string)$ppmRaw), 'strlen'));
+        ?>
+        <div class="lc-card" style="margin:0;">
+            <div class="lc-card__body">
+                <div style="font-weight:700;margin-bottom:4px;">Formas de pagamento no orçamento</div>
+                <div class="lc-muted" style="font-size:12px;margin-bottom:10px;">Definem o que aparece ao imprimir ou enviar o orçamento. Sem alteração, todas são exibidas.</div>
+                <form method="post" action="/finance/sales/print-payment-methods" class="lc-form" style="margin:0;">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="sale_id" value="<?= (int)$sale['id'] ?>" />
+                    <div class="ppm" style="position:relative;">
+                        <button type="button" class="lc-input ppm-toggle" style="width:100%;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+                            <span class="ppm-label"></span><span aria-hidden="true">▾</span>
+                        </button>
+                        <div class="ppm-menu" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;background:#fff;border:1px solid rgba(17,24,39,.15);border-radius:10px;box-shadow:0 8px 24px rgba(17,24,39,.12);padding:8px;">
+                            <?php foreach ($ppmAll as $k => $label): ?>
+                                <label style="display:flex;gap:8px;align-items:center;padding:6px 8px;cursor:pointer;">
+                                    <input type="checkbox" name="methods[]" value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>" <?= in_array($k, $ppmSelected, true) ? 'checked' : '' ?> />
+                                    <span><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;"><button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Salvar</button></div>
+                </form>
+            </div>
+        </div>
+        <script>
+        (function(){
+          var root = document.currentScript.previousElementSibling.querySelector('.ppm');
+          if (!root) return;
+          var toggle = root.querySelector('.ppm-toggle'), menu = root.querySelector('.ppm-menu'), label = root.querySelector('.ppm-label');
+          var boxes = root.querySelectorAll('input[type=checkbox]');
+          function refresh(){
+            var names = [];
+            boxes.forEach(function(b){ if (b.checked) names.push(b.nextElementSibling.textContent.trim()); });
+            label.textContent = names.length === 0 ? 'Nenhuma (não exibir)' : (names.length === boxes.length ? 'Todas' : names.join(', '));
+          }
+          toggle.addEventListener('click', function(){ menu.style.display = menu.style.display === 'none' ? 'block' : 'none'; });
+          document.addEventListener('click', function(e){ if (!root.contains(e.target)) menu.style.display = 'none'; });
+          boxes.forEach(function(b){ b.addEventListener('change', refresh); });
+          refresh();
+        })();
+        </script>
+        <?php endif; ?>
+
         <!-- Cancelar orçamento -->
         <?php if (!$isProfessional && $can('finance.sales.cancel') && !$isLocked): ?>
         <div class="lc-card" style="margin:0;">

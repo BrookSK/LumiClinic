@@ -135,6 +135,141 @@ final class ClinicController extends Controller
         return $this->redirect('/clinic');
     }
 
+    public function uploadLogo(Request $request)
+    {
+        $this->authorize('clinics.update');
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/clinic');
+        }
+
+        $file = $_FILES['logo'] ?? null;
+        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file((string)($file['tmp_name'] ?? ''))) {
+            return $this->redirect('/clinic?logo_error=' . urlencode('Selecione uma imagem valida.'));
+        }
+
+        $bytes = file_get_contents((string)$file['tmp_name']);
+        if ($bytes === false || $bytes === '') {
+            return $this->redirect('/clinic?logo_error=' . urlencode('Arquivo vazio.'));
+        }
+        if (strlen($bytes) > 2 * 1024 * 1024) {
+            return $this->redirect('/clinic?logo_error=' . urlencode('A logo deve ter no maximo 2 MB.'));
+        }
+
+        // Tipo validado pelo conteudo real do arquivo (nao pelo valor enviado pelo cliente). SVG nao e aceito.
+        $info = @getimagesizefromstring($bytes);
+        $mime = is_array($info) ? (string)($info['mime'] ?? '') : '';
+        $ext = match ($mime) {
+            'image/png' => 'png',
+            'image/jpeg' => 'jpg',
+            'image/webp' => 'webp',
+            default => '',
+        };
+        if ($ext === '') {
+            return $this->redirect('/clinic?logo_error=' . urlencode('Formato invalido. Use PNG, JPG ou WEBP.'));
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new \App\Repositories\ClinicRepository($pdo);
+        $clinic = $repo->findById($clinicId);
+        $old = trim((string)($clinic['logo_path'] ?? ''));
+
+        $relative = 'clinic_logo/logo_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        if (\App\Services\Storage\PrivateStorage::put($clinicId, $relative, $bytes) === false) {
+            return $this->redirect('/clinic?logo_error=' . urlencode('Nao foi possivel salvar a logo.'));
+        }
+        $repo->updateLogoPath($clinicId, $relative);
+
+        if ($old !== '' && $old !== $relative) {
+            $oldFull = \App\Services\Storage\PrivateStorage::fullPath($clinicId, $old);
+            if (is_file($oldFull)) {
+                @unlink($oldFull);
+            }
+        }
+
+        $userId = $auth->userId();
+        if ($userId !== null) {
+            (new \App\Repositories\AuditLogRepository($pdo))->log($userId, $clinicId, 'clinics.update', ['fields' => ['logo_path']], $request->ip());
+        }
+
+        return $this->redirect('/clinic');
+    }
+
+    public function removeLogo(Request $request)
+    {
+        $this->authorize('clinics.update');
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/clinic');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new \App\Repositories\ClinicRepository($pdo);
+        $clinic = $repo->findById($clinicId);
+        $old = trim((string)($clinic['logo_path'] ?? ''));
+        $repo->updateLogoPath($clinicId, null);
+
+        if ($old !== '') {
+            $oldFull = \App\Services\Storage\PrivateStorage::fullPath($clinicId, $old);
+            if (is_file($oldFull)) {
+                @unlink($oldFull);
+            }
+        }
+
+        $userId = $auth->userId();
+        if ($userId !== null) {
+            (new \App\Repositories\AuditLogRepository($pdo))->log($userId, $clinicId, 'clinics.update', ['fields' => ['logo_path']], $request->ip());
+        }
+
+        return $this->redirect('/clinic');
+    }
+
+    public function serveLogo(Request $request)
+    {
+        $this->authorize('clinics.read');
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return \App\Core\Http\Response::html('', 404);
+        }
+
+        $clinic = (new \App\Repositories\ClinicRepository($this->container->get(\PDO::class)))->findById($clinicId);
+        $logoPath = trim((string)($clinic['logo_path'] ?? ''));
+        if ($logoPath === '') {
+            return \App\Core\Http\Response::html('', 404);
+        }
+
+        $fullPath = \App\Services\Storage\PrivateStorage::fullPath($clinicId, $logoPath);
+        if (!is_file($fullPath)) {
+            return \App\Core\Http\Response::html('', 404);
+        }
+
+        $mime = match (strtolower(pathinfo($fullPath, PATHINFO_EXTENSION))) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            default => 'image/jpeg',
+        };
+
+        return \App\Core\Http\Response::raw((string)file_get_contents($fullPath), 200, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function workingHours(Request $request)
     {
         $this->authorize('clinics.read');

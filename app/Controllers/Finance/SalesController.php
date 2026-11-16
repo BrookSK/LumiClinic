@@ -519,6 +519,35 @@ final class SalesController extends Controller
         return $this->redirect('/finance/sales');
     }
 
+    public function setPrintPaymentMethods(Request $request)
+    {
+        $this->authorize('finance.sales.update');
+        if ($this->isProfessionalRole()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $saleId = (int)$request->input('sale_id', 0);
+        if ($saleId <= 0) {
+            return $this->redirect('/finance/sales');
+        }
+
+        $raw = $_POST['methods'] ?? [];
+        $methods = is_array($raw) ? array_values(array_filter($raw, 'is_string')) : [];
+
+        try {
+            $service = new SalesService($this->container);
+            $service->setPrintPaymentMethods($saleId, $methods, $request->ip(), $request->header('user-agent'));
+            return $this->redirect('/finance/sales/view?id=' . $saleId);
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/sales/view?id=' . $saleId . '&error=' . urlencode($e->getMessage()));
+        }
+    }
+
     public function setBudgetStatus(Request $request)
     {
         $this->authorize('finance.sales.update');

@@ -269,6 +269,9 @@ $router->post('/me/change-password', [MeController::class, 'changePassword']);
 
 $router->get('/clinic', [ClinicController::class, 'edit']);
 $router->post('/clinic', [ClinicController::class, 'update']);
+$router->post('/clinic/logo', [ClinicController::class, 'uploadLogo']);
+$router->post('/clinic/logo/remove', [ClinicController::class, 'removeLogo']);
+$router->get('/clinic/logo', [ClinicController::class, 'serveLogo']);
 $router->get('/clinic/legal-documents', [ClinicLegalDocumentsController::class, 'index']);
 $router->get('/clinic/legal-documents/edit', [ClinicLegalDocumentsController::class, 'edit']);
 $router->post('/clinic/legal-documents/save', [ClinicLegalDocumentsController::class, 'save']);
@@ -429,6 +432,7 @@ $router->get('/finance/sales/patients/search-json', [SalesController::class, 'pa
 $router->post('/finance/sales/items/add', [SalesController::class, 'addItem']);
 $router->post('/finance/sales/items/remove', [SalesController::class, 'removeItem']);
 $router->post('/finance/sales/budget-status', [SalesController::class, 'setBudgetStatus']);
+$router->post('/finance/sales/print-payment-methods', [SalesController::class, 'setPrintPaymentMethods']);
 $router->post('/finance/sales/generate-appointments', [SalesController::class, 'generateAppointments']);
 $router->post('/finance/sales/cancel', [SalesController::class, 'cancel']);
 $router->post('/finance/sales/delete', [SalesController::class, 'delete']);

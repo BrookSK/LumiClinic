@@ -710,6 +710,47 @@ final class SalesService
         (new SaleLogRepository($pdo))->log($clinicId, $saleId, 'sales.discount', ['desconto' => $desconto], $actorId, $ip);
     }
 
+    /**
+     * Define as formas de pagamento exibidas no orcamento impresso.
+     * Lista vazia = nenhuma forma exibida.
+     *
+     * @param list<string> $methods
+     */
+    public function setPrintPaymentMethods(int $saleId, array $methods, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto invalido.');
+        }
+
+        $allowed = ['pix', 'card', 'boleto', 'cash'];
+        $clean = [];
+        foreach ($allowed as $m) {
+            if (in_array($m, $methods, true)) {
+                $clean[] = $m;
+            }
+        }
+        $value = implode(',', $clean);
+
+        $pdo = $this->container->get(\PDO::class);
+        $saleRepo = new SaleRepository($pdo);
+        $sale = $saleRepo->findById($clinicId, $saleId);
+        if ($sale === null) {
+            throw new \RuntimeException('Venda invalida.');
+        }
+
+        $saleRepo->updatePrintPaymentMethods($clinicId, $saleId, $value);
+
+        $saleLog = new SaleLogRepository($pdo);
+        $saleLog->log($clinicId, $saleId, 'sales.print_payment_methods', ['to' => $clean], $actorId, $ip);
+
+        $audit = new AuditLogRepository($pdo);
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        $audit->log($actorId, $clinicId, 'finance.sales.update', ['sale_id' => $saleId, 'print_payment_methods' => $clean], $ip, $roleCodes, 'sale', $saleId, $userAgent);
+    }
+
     public function setBudgetStatus(int $saleId, string $budgetStatus, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);

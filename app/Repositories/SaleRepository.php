@@ -86,6 +86,7 @@ final class SaleRepository
             SELECT id, clinic_id, patient_id,
                    total_bruto, desconto, total_liquido,
                    status, budget_status, origin, notes,
+                   print_payment_methods,
                    created_by_user_id,
                    created_at, updated_at
             FROM sales
@@ -100,6 +101,12 @@ final class SaleRepository
         $row = $stmt->fetch();
 
         return $row ?: null;
+    }
+
+    public function updatePrintPaymentMethods(int $clinicId, int $saleId, string $methods): void
+    {
+        $stmt = $this->pdo->prepare("UPDATE sales SET print_payment_methods = :methods, updated_at = NOW() WHERE id = :id AND clinic_id = :clinic_id AND deleted_at IS NULL LIMIT 1");
+        $stmt->execute(['id' => $saleId, 'clinic_id' => $clinicId, 'methods' => $methods]);
     }
 
     public function updateBudgetStatus(int $clinicId, int $saleId, string $budgetStatus): void
