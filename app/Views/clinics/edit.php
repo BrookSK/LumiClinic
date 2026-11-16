@@ -30,7 +30,7 @@ ob_start();
     <!-- Logo + Nome -->
     <?php $logoPath = $g('logo_path'); $logoError = trim((string)($_GET['logo_error'] ?? '')); ?>
     <style>
-    .cl-top{display:grid;grid-template-columns:minmax(300px,5fr) 7fr;gap:16px;margin-bottom:16px;align-items:stretch}
+    .cl-top{display:grid;grid-template-columns:7fr minmax(300px,5fr);gap:16px;margin-bottom:16px;align-items:stretch}
     .cl-top .cl-section{margin-bottom:0}
     @media(max-width:860px){.cl-top{grid-template-columns:1fr}}
     .cl-logo{display:flex;gap:14px;align-items:center}
@@ -41,9 +41,16 @@ ob_start();
     .cl-logo__row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .cl-logo__name{font-size:12px;color:rgba(31,41,55,.60);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
     .cl-logo__hint{font-size:11px;color:rgba(31,41,55,.60);margin-top:6px;line-height:1.4}
-    .cl-logo__remove{background:none;border:0;padding:0;margin-top:6px;cursor:pointer;font-size:12px;font-weight:600;color:#9a3412}
+    .cl-logo__remove{background:none;border:0;padding:0;margin-top:6px;cursor:pointer;font-size:12px;font-weight:500;color:rgba(31,41,55,.50)}
     </style>
     <div class="cl-top">
+        <div class="cl-section">
+            <div class="cl-section__title">Identifica&ccedil;&atilde;o</div>
+            <div class="lc-field">
+                <label class="lc-label">Nome da cl&iacute;nica</label>
+                <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars($g('name'), ENT_QUOTES, 'UTF-8') ?>" required />
+            </div>
+        </div>
         <div class="cl-section">
             <div class="cl-section__title">Logo</div>
             <?php if ($logoError !== ''): ?>
@@ -69,13 +76,6 @@ ob_start();
                         <button type="submit" form="clLogoRemoveForm" class="cl-logo__remove" onclick="return confirm('Remover a logo da cl\u00ednica?');">Remover logo</button>
                     <?php endif; ?>
                 </div>
-            </div>
-        </div>
-        <div class="cl-section">
-            <div class="cl-section__title">Identifica&ccedil;&atilde;o</div>
-            <div class="lc-field">
-                <label class="lc-label">Nome da cl&iacute;nica</label>
-                <input class="lc-input" type="text" name="name" value="<?= htmlspecialchars($g('name'), ENT_QUOTES, 'UTF-8') ?>" required />
             </div>
         </div>
     </div>
