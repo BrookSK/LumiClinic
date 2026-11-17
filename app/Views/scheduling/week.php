@@ -361,6 +361,7 @@ ob_start();
                                     >
                                         <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                             <?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>
+                                            <?php if ($status === 'no_show'): ?><span class="lc-noshow-tag">Faltou</span><?php endif; ?>
                                         </div>
                                         <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                             <?= htmlspecialchars(substr((string)($it['start_at'] ?? ''), 11, 5), ENT_QUOTES, 'UTF-8') ?>
@@ -832,7 +833,16 @@ ob_start();
       if (elProf) elProf.textContent = professional || '-';
       if (elStart) elStart.textContent = start;
       if (elEnd) elEnd.textContent = end;
-      if (elStatus) elStatus.textContent = statusLabels[status] || status;
+      if (elStatus) {
+        elStatus.textContent = statusLabels[status] || status;
+        if (status === 'no_show') {
+          elStatus.textContent = '';
+          const tag = document.createElement('span');
+          tag.className = 'lc-noshow-tag lc-noshow-tag--lg';
+          tag.textContent = statusLabels[status];
+          elStatus.appendChild(tag);
+        }
+      }
       if (elSubtitle) elSubtitle.textContent = `${start.slice(0,10)} ${start.slice(11,16)} - ${end.slice(11,16)}`;
 
       const linkRes = document.getElementById('appt_reschedule');
