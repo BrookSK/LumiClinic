@@ -146,7 +146,8 @@ $ico = [
     <?php if ($seoOgImageUrl !== ''): ?>
         <meta name="twitter:image" content="<?= htmlspecialchars($seoOgImageUrl, ENT_QUOTES, 'UTF-8') ?>" />
     <?php endif; ?>
-    <link rel="stylesheet" href="/assets/css/design-system.css" />
+    <?php $dsCssMtime = @filemtime(dirname(__DIR__, 3) . '/public/assets/css/design-system.css'); ?>
+    <link rel="stylesheet" href="/assets/css/design-system.css<?= $dsCssMtime ? ('?v=' . (int)$dsCssMtime) : '' ?>" />
 </head>
 <body class="lc-body">
 <div class="lc-shell">

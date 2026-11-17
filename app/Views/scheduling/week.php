@@ -359,9 +359,9 @@ ob_start();
                                         data-appt-status="<?= htmlspecialchars((string)($it['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                         data-appt-origin="<?= htmlspecialchars((string)($it['origin'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                     >
+                                        <?php if ($status === 'no_show'): ?><span class="lc-noshow-tag lc-noshow-tag--card">Faltou</span><?php endif; ?>
                                         <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                             <?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>
-                                            <?php if ($status === 'no_show'): ?><span class="lc-noshow-tag">Faltou</span><?php endif; ?>
                                         </div>
                                         <div class="lc-muted" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                             <?= htmlspecialchars(substr((string)($it['start_at'] ?? ''), 11, 5), ENT_QUOTES, 'UTF-8') ?>
