@@ -359,7 +359,8 @@ ob_start();
                                         data-appt-status="<?= htmlspecialchars((string)($it['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                         data-appt-origin="<?= htmlspecialchars((string)($it['origin'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                     >
-                                        <?php if ($status === 'no_show'): ?><span class="lc-noshow-tag lc-noshow-tag--card">Faltou</span><?php endif; ?>
+                                        <?php $cardTagLabel = ['confirmed' => 'Confirmado', 'in_progress' => 'Atendendo', 'completed' => 'Concluído', 'no_show' => 'Faltou', 'cancelled' => 'Cancelado'][$status] ?? ''; ?>
+                                        <?php if ($cardTagLabel !== ''): ?><span class="lc-status-tag lc-status-tag--card lc-status-tag--<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>"><?= $cardTagLabel ?></span><?php endif; ?>
                                         <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                             <?= htmlspecialchars($patientName !== '' ? $patientName : ('Paciente #' . (int)($it['patient_id'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>
                                         </div>
@@ -835,10 +836,10 @@ ob_start();
       if (elEnd) elEnd.textContent = end;
       if (elStatus) {
         elStatus.textContent = statusLabels[status] || status;
-        if (status === 'no_show') {
+        if (status !== '' && status !== 'scheduled' && statusLabels[status]) {
           elStatus.textContent = '';
           const tag = document.createElement('span');
-          tag.className = 'lc-noshow-tag lc-noshow-tag--lg';
+          tag.className = 'lc-status-tag lc-status-tag--lg lc-status-tag--' + status;
           tag.textContent = statusLabels[status];
           elStatus.appendChild(tag);
         }

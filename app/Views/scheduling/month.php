@@ -211,7 +211,8 @@ ob_start();
                                                     <?php else: ?>
                                                         <span class="lc-muted">• <?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></span>
                                                     <?php endif; ?>
-                                                    <?php if ($status === 'no_show'): ?><span class="lc-noshow-tag">Faltou</span><?php endif; ?>
+                                                    <?php $cardTagLabel = ['confirmed' => 'Confirmado', 'in_progress' => 'Atendendo', 'completed' => 'Concluído', 'no_show' => 'Faltou', 'cancelled' => 'Cancelado'][$status] ?? ''; ?>
+                                                    <?php if ($cardTagLabel !== ''): ?><span class="lc-status-tag lc-status-tag--<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>"><?= $cardTagLabel ?></span><?php endif; ?>
                                                 </div>
                                             </button>
                                         <?php endforeach; ?>
@@ -582,8 +583,8 @@ ob_start();
                     row('Profissional', it.professional_name || '—'),
                     row('Data', startDate),
                     row('Horário', startTime + (endTime ? ' – ' + endTime : '')),
-                    it.status === 'no_show'
-                        ? '<div style="margin-bottom:10px;"><div style="font-size:12px; color:#6b7280; margin-bottom:2px;">Status</div><div><span class="lc-noshow-tag lc-noshow-tag--lg">' + escHtml(statusLabel) + '</span></div></div>'
+                    ['confirmed','in_progress','completed','no_show','cancelled'].indexOf(it.status) !== -1
+                        ? '<div style="margin-bottom:10px;"><div style="font-size:12px; color:#6b7280; margin-bottom:2px;">Status</div><div><span class="lc-status-tag lc-status-tag--lg lc-status-tag--' + it.status + '">' + escHtml(statusLabel) + '</span></div></div>'
                         : row('Status', statusLabel),
                     it.notes ? row('Observações', it.notes) : '',
                 ].join('');
