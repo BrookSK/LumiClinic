@@ -564,8 +564,6 @@ button.lc-statusbar .lc-muted{color: rgba(31,41,55,0.72)}
 .lc-statusbar--cancelled{border-left-color: var(--lc-status-gray)}
 .lc-statusbar--no_show{border-left-color: var(--lc-status-red)}
 /* Agenda: destaque para agendamentos com status "Faltou" (apenas cartoes de agendamento, nao alertas) */
-button.lc-statusbar.lc-statusbar--no_show{background: #fdf0ef; border-color: #f3d4d1}
-button.lc-statusbar.lc-statusbar--no_show:hover{background: #fbe6e4}
 .lc-noshow-tag{display:inline-block; flex-shrink:0; margin-left:6px; padding:1px 8px; border-radius:999px; font-size:10px; font-weight:600; line-height:1.5; color:#a4524b; background:#f9dedb; border:1px solid #f0c9c5; vertical-align:middle}
 .lc-noshow-tag--lg{font-size:12px; padding:2px 10px; margin-left:0}
 .lc-noshow-tag--card{position:absolute; top:6px; right:6px; margin-left:0; z-index:1}
