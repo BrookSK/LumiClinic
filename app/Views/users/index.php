@@ -4,6 +4,8 @@ $users = $users ?? [];
 $page = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 50;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
+$error = isset($error) ? trim((string)$error) : '';
+$csrf = $_SESSION['_csrf'] ?? '';
 
 $can = function (string $pc): bool {
     if (isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1) return true;
@@ -31,6 +33,10 @@ ob_start();
         <a class="lc-btn lc-btn--primary lc-btn--sm" href="/users/create">+ Novo usuário</a>
     <?php endif; ?>
 </div>
+
+<?php if ($error !== ''): ?>
+    <div style="margin-bottom:12px;padding:10px 12px;border-radius:12px;border:1px solid rgba(185,28,28,.25);background:rgba(185,28,28,.06);color:rgba(185,28,28,.95);font-size:13px;"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
+<?php endif; ?>
 
 <?php if ($users === []): ?>
     <div style="text-align:center;padding:40px 20px;color:rgba(31,41,55,.45);">
@@ -66,10 +72,32 @@ ob_start();
                         <span style="display:inline-flex;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:<?= $stClr ?>18;color:<?= $stClr ?>;border:1px solid <?= $stClr ?>30"><?= htmlspecialchars($stLbl, ENT_QUOTES, 'UTF-8') ?></span>
                     </td>
                     <td style="font-size:12px;color:rgba(31,41,55,.50);"><?= htmlspecialchars($createdFmt, ENT_QUOTES, 'UTF-8') ?></td>
-                    <td style="text-align:right;">
+                    <td style="text-align:right;white-space:nowrap;">
+                        <div style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end;">
                         <?php if ($can('users.update')): ?>
                             <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/users/edit?id=<?= (int)$u['id'] ?>">Editar</a>
                         <?php endif; ?>
+                        <?php if ($can('users.delete')): ?>
+                            <?php if ($st === 'active'): ?>
+                                <form method="post" action="/users/disable" style="margin:0;">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="id" value="<?= (int)$u['id'] ?>" />
+                                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" onclick="return confirm('Arquivar este usuário? Ele perderá o acesso, mas poderá ser reativado depois.');">Arquivar</button>
+                                </form>
+                            <?php else: ?>
+                                <form method="post" action="/users/reactivate" style="margin:0;">
+                                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                    <input type="hidden" name="id" value="<?= (int)$u['id'] ?>" />
+                                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit" onclick="return confirm('Reativar este usuário?');">Reativar</button>
+                                </form>
+                            <?php endif; ?>
+                            <form method="post" action="/users/delete" style="margin:0;">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <input type="hidden" name="id" value="<?= (int)$u['id'] ?>" />
+                                <button class="lc-btn lc-btn--danger lc-btn--sm" type="submit" onclick="return confirm('Excluir este usuário? Ele deixará de aparecer na lista e não poderá mais entrar no sistema.');">Excluir</button>
+                            </form>
+                        <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>

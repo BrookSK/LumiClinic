@@ -134,6 +134,23 @@ final class UserAdminService
         }
     }
 
+    private function assertCanRemoveAccess(int $clinicId, int $actorId, int $userId, string $action): void
+    {
+        $users = new AdminUserRepository($this->container->get(\PDO::class));
+
+        if ($users->findById($clinicId, $userId) === null) {
+            throw new \RuntimeException('Usuário não encontrado.');
+        }
+
+        if ($actorId === $userId) {
+            throw new \RuntimeException('Você não pode ' . $action . ' o seu próprio usuário.');
+        }
+
+        if ($users->isOwner($clinicId, $userId) && $users->countActiveOwnersExcluding($clinicId, $userId) === 0) {
+            throw new \RuntimeException('Não é possível ' . $action . ' o último proprietário da clínica.');
+        }
+    }
+
     public function disableUser(int $userId, string $ip): void
     {
         $auth = new AuthService($this->container);
@@ -144,10 +161,52 @@ final class UserAdminService
             throw new \RuntimeException('Contexto inválido.');
         }
 
+        $this->assertCanRemoveAccess($clinicId, $actorId, $userId, 'arquivar');
+
         $users = new AdminUserRepository($this->container->get(\PDO::class));
         $users->disable($clinicId, $userId);
 
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
         $audit->log($actorId, $clinicId, 'users.disable', ['target_user_id' => $userId], $ip);
+    }
+
+    public function reactivateUser(int $userId, string $ip): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $users = new AdminUserRepository($this->container->get(\PDO::class));
+        if ($users->findById($clinicId, $userId) === null) {
+            throw new \RuntimeException('Usuário não encontrado.');
+        }
+
+        $users->reactivate($clinicId, $userId);
+
+        $audit = new AuditLogRepository($this->container->get(\PDO::class));
+        $audit->log($actorId, $clinicId, 'users.reactivate', ['target_user_id' => $userId], $ip);
+    }
+
+    public function deleteUser(int $userId, string $ip): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $this->assertCanRemoveAccess($clinicId, $actorId, $userId, 'excluir');
+
+        $users = new AdminUserRepository($this->container->get(\PDO::class));
+        $users->softDelete($clinicId, $userId);
+
+        $audit = new AuditLogRepository($this->container->get(\PDO::class));
+        $audit->log($actorId, $clinicId, 'users.delete', ['target_user_id' => $userId], $ip);
     }
 }

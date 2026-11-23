@@ -8,6 +8,7 @@ use App\Core\Container\Container;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Middleware\MiddlewareInterface;
+use App\Repositories\UserRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Legal\LegalDocumentService;
 
@@ -75,6 +76,17 @@ final class AuthMiddleware implements MiddlewareInterface
                 && !str_contains($uri, '-json') && !str_contains($uri, '.json')
                 && !str_starts_with($uri, '/api/')) {
                 $_SESSION['auth_next'] = $uri;
+            }
+            return Response::redirect('/login');
+        }
+
+        // Usuario arquivado/excluido perde a sessao imediatamente
+        $sessionUserId = (int)$auth->userId();
+        if (!(new UserRepository($this->container->get(\PDO::class)))->isActiveById($sessionUserId)) {
+            unset($_SESSION['user_id'], $_SESSION['active_clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
+            unset($_SESSION['role_codes'], $_SESSION['pending_access'], $_SESSION['impersonator']);
+            if (!isset($_SESSION['patient_user_id']) || (int)$_SESSION['patient_user_id'] <= 0) {
+                unset($_SESSION['clinic_id']);
             }
             return Response::redirect('/login');
         }

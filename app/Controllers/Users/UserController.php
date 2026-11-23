@@ -53,6 +53,7 @@ final class UserController extends Controller
             'page' => $page,
             'per_page' => $perPage,
             'has_next' => $hasNext,
+            'error' => trim((string)$request->input('error', '')),
         ]);
     }
 
@@ -188,6 +189,21 @@ final class UserController extends Controller
 
     public function disable(Request $request)
     {
+        return $this->changeUserState($request, 'disableUser');
+    }
+
+    public function reactivate(Request $request)
+    {
+        return $this->changeUserState($request, 'reactivateUser');
+    }
+
+    public function delete(Request $request)
+    {
+        return $this->changeUserState($request, 'deleteUser');
+    }
+
+    private function changeUserState(Request $request, string $method)
+    {
         $this->authorize('users.delete');
 
         $redirect = $this->redirectSuperAdminWithoutClinicContext();
@@ -201,7 +217,11 @@ final class UserController extends Controller
         }
 
         $service = new UserAdminService($this->container);
-        $service->disableUser($id, $request->ip());
+        try {
+            $service->{$method}($id, $request->ip());
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/users?error=' . urlencode($e->getMessage()));
+        }
 
         return $this->redirect('/users');
     }

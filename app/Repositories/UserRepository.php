@@ -16,6 +16,7 @@ final class UserRepository
             FROM users
             WHERE email = :email
               AND deleted_at IS NULL
+              AND status = 'active'
             ORDER BY id DESC
             LIMIT 1
         ";
@@ -40,6 +41,7 @@ final class UserRepository
             LEFT JOIN clinics c ON c.id = u.clinic_id
             WHERE u.email = :email
               AND u.deleted_at IS NULL
+              AND u.status = 'active'
             ORDER BY u.id DESC
             LIMIT {$limit}
         ";
@@ -70,6 +72,22 @@ final class UserRepository
         $row = $stmt->fetch();
 
         return $row ?: null;
+    }
+
+    /** True se o usuario existe, nao foi excluido e esta com status active. */
+    public function isActiveById(int $userId): bool
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT 1
+            FROM users
+            WHERE id = :id
+              AND status = 'active'
+              AND deleted_at IS NULL
+            LIMIT 1
+        ");
+        $stmt->execute(['id' => $userId]);
+
+        return $stmt->fetchColumn() !== false;
     }
 
     public function updatePasswordById(int $userId, string $passwordHash): void
