@@ -5,7 +5,10 @@
 /** @var list<array<string,mixed>> $accounts */
 /** @var array{revenue:float,costs:float,result:float} $result */
 /** @var list<array<string,mixed>> $by_payment_account */
-/** @var array{result_count:int,result_total:float,financial_count:int,financial_total:float} $unclassified */
+/** @var array{result_count:int,result_total:float,financial_count:int,financial_total:float,financial_default_count:int,financial_default_total:float} $unclassified */
+/** @var list<array{kind:string,label:string,count:int,total:float}> $skipped */
+/** @var bool $truncated */
+/** @var int $row_limit */
 /** @var array{in:float,out:float,net:float,count:int} $totals */
 /** @var string $error */
 
@@ -16,7 +19,10 @@ $to = (string)($to ?? date('Y-m-d'));
 $accounts = $accounts ?? [];
 $by_payment_account = $by_payment_account ?? [];
 $result = $result ?? ['revenue' => 0.0, 'costs' => 0.0, 'result' => 0.0];
-$unclassified = $unclassified ?? ['result_count' => 0, 'result_total' => 0.0, 'financial_count' => 0, 'financial_total' => 0.0];
+$unclassified = ($unclassified ?? []) + ['result_count' => 0, 'result_total' => 0.0, 'financial_count' => 0, 'financial_total' => 0.0, 'financial_default_count' => 0, 'financial_default_total' => 0.0];
+$skipped = $skipped ?? [];
+$truncated = (bool)($truncated ?? false);
+$row_limit = (int)($row_limit ?? 0);
 $totals = $totals ?? ['in' => 0.0, 'out' => 0.0, 'net' => 0.0, 'count' => 0];
 $error = (string)($error ?? '');
 
@@ -38,6 +44,7 @@ $resultRows = array_values(array_filter($accounts, static function (array $a): b
 $resultColor = (float)$result['result'] >= 0 ? '#16a34a' : '#b91c1c';
 $unclassifiedCount = (int)$unclassified['result_count'];
 $unclassifiedFinancial = (int)$unclassified['financial_count'];
+$defaultFinancialCount = (int)$unclassified['financial_default_count'];
 
 ob_start();
 ?>
@@ -88,6 +95,24 @@ ob_start();
     </div>
 </div>
 
+<?php if ($truncated): ?>
+    <div class="lc-alert lc-alert--danger" style="margin-bottom:14px; line-height:1.6;">
+        O período tem mais de <?= number_format($row_limit, 0, ',', '.') ?> lançamentos e o relatório considerou apenas os
+        <?= number_format($row_limit, 0, ',', '.') ?> primeiros (por data). Os totais e as exportações estão incompletos: reduza o intervalo de datas.
+    </div>
+<?php endif; ?>
+
+<?php if ($skipped !== []): ?>
+    <div class="lc-alert" style="margin-bottom:14px; line-height:1.6; border-color:rgba(217,119,6,.55); background:rgba(254,243,199,.6);">
+        <?php foreach ($skipped as $sk): ?>
+            <div>
+                <?= (int)$sk['count'] ?> lançamento(s) do tipo "<?= $h($sk['label']) ?>" (<?= $h($money($sk['total'])) ?>) não entram neste relatório
+                nem no fluxo de caixa, pois não estão registrados como entrada ou saída.
+            </div>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
 <?php if (!$has_chart): ?>
     <div class="lc-card">
         <div class="lc-card__header">A clínica ainda não tem plano de contas</div>
@@ -127,7 +152,7 @@ ob_start();
         </div>
     </div>
 
-    <?php if ($unclassifiedCount > 0 || $unclassifiedFinancial > 0): ?>
+    <?php if ($unclassifiedCount > 0 || $unclassifiedFinancial > 0 || $defaultFinancialCount > 0): ?>
         <div class="lc-alert" style="margin-bottom:16px; line-height:1.6; border-color:rgba(217,119,6,.55); background:rgba(254,243,199,.6);">
             <?php if ($unclassifiedCount > 0): ?>
                 <div>
@@ -139,7 +164,14 @@ ob_start();
             <?php if ($unclassifiedFinancial > 0): ?>
                 <div>
                     <?= $unclassifiedFinancial ?> lançamentos (<?= $h($money($unclassified['financial_total'])) ?>) sem conta financeira.
-                    Vincule cada forma de pagamento a uma conta analítica do Ativo no <a href="/finance/chart-of-accounts">Plano de Contas</a>.
+                    Vincule cada forma de pagamento a uma conta analítica do Ativo no <a href="/finance/chart-of-accounts">Plano de Contas</a>
+                    ou defina uma conta financeira padrão (ex: Conta Banco).
+                </div>
+            <?php endif; ?>
+            <?php if ($defaultFinancialCount > 0): ?>
+                <div>
+                    <?= $defaultFinancialCount ?> lançamentos (<?= $h($money($unclassified['financial_default_total'])) ?>) sem forma de pagamento vinculada
+                    foram lançados na conta financeira padrão. Informe a forma de pagamento ao lançar no fluxo de caixa e ao pagar contas a pagar.
                 </div>
             <?php endif; ?>
         </div>

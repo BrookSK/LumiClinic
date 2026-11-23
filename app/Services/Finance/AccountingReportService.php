@@ -17,7 +17,10 @@ use App\Services\Auth\AuthService;
  *   se não houver, a conta padrão (default_for) 'revenue' para entradas ou 'expense' para saídas;
  *   se ainda não houver, "Não classificado".
  * - Conta financeira (contrapartida): a conta analítica ativa vinculada à forma de pagamento do lançamento;
- *   se não houver (ou o lançamento não tiver forma de pagamento), "Não classificado".
+ *   se não houver (ou o lançamento não tiver forma de pagamento), a conta padrão (default_for) 'financial';
+ *   se ainda não houver, "Não classificado".
+ * - Lançamentos com tipo diferente de entrada/saída (ex: 'income' gravado por importações antigas) ficam fora,
+ *   como no fluxo de caixa, mas são contados em 'skipped' para o aviso na tela.
  * - Partidas: entrada => Débito = conta financeira, Crédito = conta de resultado;
  *             saída   => Débito = conta de resultado, Crédito = conta financeira.
  */
@@ -25,9 +28,11 @@ final class AccountingReportService
 {
     public const UNCLASSIFIED = 'Não classificado';
 
-    /** Códigos antigos de forma de pagamento que não têm conta própria no plano. */
-    private const EXTRA_METHOD_LABELS = [
-        'card' => 'Cartão',
+    /** Máximo de lançamentos por relatório; acima disso o relatório avisa que está incompleto. */
+    public const ROW_LIMIT = 100000;
+
+    private const KIND_LABELS = [
+        'income' => 'Recebimento importado',
     ];
 
     public function __construct(private readonly Container $container) {}
@@ -79,7 +84,7 @@ final class AccountingReportService
         if ($method === '') {
             return '';
         }
-        return ChartOfAccountsService::PAYMENT_METHODS[$method] ?? (self::EXTRA_METHOD_LABELS[$method] ?? $method);
+        return ChartOfAccountsService::PAYMENT_METHODS[$method] ?? $method;
     }
 
     /**
@@ -106,7 +111,10 @@ final class AccountingReportService
      *   accounts:list<array<string,mixed>>,
      *   result:array{revenue:float,costs:float,result:float},
      *   by_payment_account:list<array<string,mixed>>,
-     *   unclassified:array{result_count:int,result_total:float,financial_count:int,financial_total:float},
+     *   unclassified:array{result_count:int,result_total:float,financial_count:int,financial_total:float,financial_default_count:int,financial_default_total:float},
+     *   skipped:list<array{kind:string,label:string,count:int,total:float}>,
+     *   truncated:bool,
+     *   row_limit:int,
      *   totals:array{in:float,out:float,net:float,count:int}
      * }
      */
@@ -123,6 +131,7 @@ final class AccountingReportService
         $paymentAccounts = [];
         $defaultRevenue = null;
         $defaultExpense = null;
+        $defaultFinancial = null;
         foreach ($accounts as $a) {
             $id = (int)$a['id'];
             $byId[$id] = $a;
@@ -142,25 +151,43 @@ final class AccountingReportService
                 $defaultRevenue = $a;
             } elseif ($def === 'expense' && $defaultExpense === null) {
                 $defaultExpense = $a;
+            } elseif ($def === 'financial' && $defaultFinancial === null && (string)($a['nature'] ?? '') === 'asset') {
+                $defaultFinancial = $a;
             }
         }
 
-        $rawEntries = (new FinancialEntryRepository($pdo))->listForAccounting($clinicId, $from, $to);
+        $rawEntries = (new FinancialEntryRepository($pdo))->listForAccounting($clinicId, $from, $to, self::ROW_LIMIT + 1);
+        $truncated = count($rawEntries) > self::ROW_LIMIT;
+        if ($truncated) {
+            $rawEntries = array_slice($rawEntries, 0, self::ROW_LIMIT);
+        }
 
         $entries = [];
         $own = [];
         $payment = [];
         $totals = ['in' => 0.0, 'out' => 0.0, 'net' => 0.0, 'count' => 0];
-        $unclassified = ['result_count' => 0, 'result_total' => 0.0, 'financial_count' => 0, 'financial_total' => 0.0];
+        $unclassified = [
+            'result_count' => 0, 'result_total' => 0.0,
+            'financial_count' => 0, 'financial_total' => 0.0,
+            'financial_default_count' => 0, 'financial_default_total' => 0.0,
+        ];
+        $skipped = [];
+        $rolled = [];
         $revenue = 0.0;
         $costs = 0.0;
 
         foreach ($rawEntries as $e) {
             $kind = (string)($e['kind'] ?? '');
-            if ($kind !== 'in' && $kind !== 'out') {
-                continue; // fora do fluxo de caixa (summarizeTotalsByClinicRange também ignora)
-            }
             $amount = (float)($e['amount'] ?? 0);
+            if ($kind !== 'in' && $kind !== 'out') {
+                // Fora do fluxo de caixa (summarizeTotalsByClinicRange também ignora); contado para o aviso.
+                if (!isset($skipped[$kind])) {
+                    $skipped[$kind] = ['kind' => $kind, 'label' => self::KIND_LABELS[$kind] ?? ($kind === '' ? '(sem tipo)' : $kind), 'count' => 0, 'total' => 0.0];
+                }
+                $skipped[$kind]['count']++;
+                $skipped[$kind]['total'] += $amount;
+                continue;
+            }
             $method = trim((string)($e['method'] ?? ''));
 
             // Conta de resultado
@@ -175,6 +202,11 @@ final class AccountingReportService
 
             // Conta financeira (contrapartida)
             $financialAccount = ($method !== '' && isset($paymentAccounts[$method])) ? $paymentAccounts[$method] : null;
+            $financialIsDefault = false;
+            if ($financialAccount === null && $defaultFinancial !== null) {
+                $financialAccount = $defaultFinancial;
+                $financialIsDefault = true;
+            }
 
             $resultParty = self::party($resultAccount);
             $financialParty = self::party($financialAccount);
@@ -194,6 +226,7 @@ final class AccountingReportService
                 'cost_center_name' => (string)($e['cost_center_name'] ?? ''),
                 'result_account' => $resultParty,
                 'financial_account' => $financialParty,
+                'financial_is_default' => $financialIsDefault,
                 'debit' => $kind === 'in' ? $financialParty : $resultParty,
                 'credit' => $kind === 'in' ? $resultParty : $financialParty,
             ];
@@ -208,6 +241,9 @@ final class AccountingReportService
             if ($financialAccount === null) {
                 $unclassified['financial_count']++;
                 $unclassified['financial_total'] += $amount;
+            } elseif ($financialIsDefault) {
+                $unclassified['financial_default_count']++;
+                $unclassified['financial_default_total'] += $amount;
             }
 
             // Movimento próprio de cada conta envolvida (uma vez por conta).
@@ -224,6 +260,26 @@ final class AccountingReportService
                 }
                 $own[$aid][$kind] += $amount;
                 $own[$aid]['count']++;
+            }
+
+            // Totais acumulados: cada conta envolvida e seus ancestrais recebem o lançamento uma única vez,
+            // mesmo que as duas partidas fiquem abaixo do mesmo grupo.
+            $chain = [];
+            foreach (array_keys($touched) as $aid) {
+                $cursor = $aid;
+                $guard = 0;
+                while ($cursor !== null && isset($byId[$cursor]) && $guard < 30) {
+                    $chain[$cursor] = true;
+                    $cursor = $parentById[$cursor] ?? null;
+                    $guard++;
+                }
+            }
+            foreach (array_keys($chain) as $aid) {
+                if (!isset($rolled[$aid])) {
+                    $rolled[$aid] = ['in' => 0.0, 'out' => 0.0, 'count' => 0];
+                }
+                $rolled[$aid][$kind] += $amount;
+                $rolled[$aid]['count']++;
             }
 
             // Resultado do período, com sinal pelo tipo do lançamento (entrada = +, saída = -):
@@ -258,23 +314,6 @@ final class AccountingReportService
             $payment[$pid]['count']++;
         }
         $totals['net'] = $totals['in'] - $totals['out'];
-
-        // Totais acumulados: cada conta soma o próprio movimento e o de todas as descendentes.
-        $rolled = [];
-        foreach ($own as $aid => $mov) {
-            $cursor = $aid;
-            $guard = 0;
-            while ($cursor !== null && isset($byId[$cursor]) && $guard < 30) {
-                if (!isset($rolled[$cursor])) {
-                    $rolled[$cursor] = ['in' => 0.0, 'out' => 0.0, 'count' => 0];
-                }
-                $rolled[$cursor]['in'] += $mov['in'];
-                $rolled[$cursor]['out'] += $mov['out'];
-                $rolled[$cursor]['count'] += $mov['count'];
-                $cursor = $parentById[$cursor] ?? null;
-                $guard++;
-            }
-        }
 
         $accountRows = [];
         foreach ($accounts as $a) {
@@ -312,6 +351,9 @@ final class AccountingReportService
             'result' => ['revenue' => $revenue, 'costs' => $costs, 'result' => $revenue - $costs],
             'by_payment_account' => $byPayment,
             'unclassified' => $unclassified,
+            'skipped' => array_values($skipped),
+            'truncated' => $truncated,
+            'row_limit' => self::ROW_LIMIT,
             'totals' => $totals,
         ];
     }

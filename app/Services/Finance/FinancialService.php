@@ -78,6 +78,9 @@ final class FinancialService
             if ((string)($account['account_type'] ?? '') !== 'analytic') {
                 throw new \RuntimeException('Selecione uma conta analítica (que recebe lançamentos), não uma conta de grupo.');
             }
+            if (!in_array((string)($account['nature'] ?? ''), ChartOfAccountsService::COST_CENTER_NATURES, true)) {
+                throw new \RuntimeException('Vincule o centro de custo a uma conta de Receita, Custo / Despesa ou Passivo. Contas do Ativo são definidas pela forma de pagamento.');
+            }
             $keepsCurrent = $currentChartAccountId !== null && $currentChartAccountId === $chartAccountId;
             if (!$keepsCurrent && (string)($account['status'] ?? '') !== 'active') {
                 throw new \RuntimeException('A conta contábil selecionada está inativa.');
@@ -344,6 +347,14 @@ final class FinancialService
         $amount = $this->parseMoney($amountStr);
         if ($amount <= 0) {
             throw new \RuntimeException('Valor inválido.');
+        }
+
+        $method = $method === null ? null : trim($method);
+        if ($method === '') {
+            $method = null;
+        }
+        if ($method !== null && !array_key_exists($method, ChartOfAccountsService::PAYMENT_METHODS)) {
+            throw new \RuntimeException('Forma de pagamento inválida.');
         }
 
         $pdo = $this->container->get(\PDO::class);

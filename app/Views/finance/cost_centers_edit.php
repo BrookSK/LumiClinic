@@ -95,7 +95,7 @@ ob_start();
                             <option value="0">Não vinculada</option>
                             <?php if ($currentChartAccount !== null && !$selectedInList): ?>
                                 <option value="<?= (int)$currentChartAccount['id'] ?>" selected>
-                                    <?= htmlspecialchars((string)$currentChartAccount['code'] . ' - ' . (string)$currentChartAccount['name'], ENT_QUOTES, 'UTF-8') ?> (inativa)
+                                    <?= htmlspecialchars((string)$currentChartAccount['code'] . ' - ' . (string)$currentChartAccount['name'], ENT_QUOTES, 'UTF-8') ?> (<?= (string)($currentChartAccount['status'] ?? '') === 'active' ? 'natureza não permitida, escolha outra' : 'inativa' ?>)
                                 </option>
                             <?php endif; ?>
                             <?php foreach ($natureLabels as $natureKey => $natureLabel): ?>

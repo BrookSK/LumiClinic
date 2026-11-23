@@ -154,7 +154,7 @@ final class FinancialController extends Controller
         $svc = new FinancialService($this->container);
         return $this->view('finance/cost_centers', [
             'rows' => $svc->listAllCostCenters(),
-            'chart_accounts' => (new ChartOfAccountsService($this->container))->listActiveAnalyticAccounts(),
+            'chart_accounts' => (new ChartOfAccountsService($this->container))->listCostCenterAccounts(),
             'error' => trim((string)$request->input('error', '')),
             'success' => trim((string)$request->input('success', '')),
         ]);
@@ -218,7 +218,7 @@ final class FinancialController extends Controller
 
         return $this->view('finance/cost_centers_edit', [
             'row' => $row,
-            'chart_accounts' => (new ChartOfAccountsService($this->container))->listActiveAnalyticAccounts(),
+            'chart_accounts' => (new ChartOfAccountsService($this->container))->listCostCenterAccounts(),
             'current_chart_account' => isset($row['chart_account_id']) && $row['chart_account_id'] !== null
                 ? (new ChartOfAccountsService($this->container))->getAccount((int)$row['chart_account_id'])
                 : null,

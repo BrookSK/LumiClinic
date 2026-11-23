@@ -6,6 +6,7 @@ $to      = $to ?? date('Y-m-t');
 $entries = $entries ?? [];
 $totals  = $totals ?? ['in' => 0, 'out' => 0, 'balance' => 0];
 $cost_centers = $cost_centers ?? [];
+$paymentMethods = \App\Services\Finance\ChartOfAccountsService::PAYMENT_METHODS;
 $page    = isset($page) ? (int)$page : 1;
 $perPage = isset($per_page) ? (int)$per_page : 100;
 $hasNext = isset($has_next) ? (bool)$has_next : false;
@@ -122,14 +123,26 @@ ob_start();
                         <input class="lc-input" type="date" name="occurred_on" value="<?= date('Y-m-d') ?>" />
                     </div>
                 </div>
-                <div class="lc-field" style="margin-top:8px;">
-                    <label class="lc-label">Centro de custo (opcional)</label>
-                    <select class="lc-select" name="cost_center_id" style="max-width:300px;">
-                        <option value="0">Nenhum</option>
-                        <?php foreach ($cost_centers as $c): ?>
-                            <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars((string)$c['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:8px;">
+                    <div class="lc-field">
+                        <label class="lc-label">Centro de custo (opcional)</label>
+                        <select class="lc-select" name="cost_center_id" style="max-width:300px;">
+                            <option value="0">Nenhum</option>
+                            <?php foreach ($cost_centers as $c): ?>
+                                <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars((string)$c['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="lc-field">
+                        <label class="lc-label">Forma de pagamento (opcional)</label>
+                        <select class="lc-select" name="method" style="max-width:240px;">
+                            <option value="">Não informada</option>
+                            <?php foreach ($paymentMethods as $k => $label): ?>
+                                <?php if ($k === 'card') continue; ?>
+                                <option value="<?= htmlspecialchars($k, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="lc-flex lc-gap-sm" style="margin-top:12px;">
                     <button class="lc-btn lc-btn--primary" type="submit">Salvar</button>

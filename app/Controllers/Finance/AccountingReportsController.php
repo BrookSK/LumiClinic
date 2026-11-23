@@ -208,6 +208,13 @@ final class AccountingReportsController extends Controller
         $csv .= self::csvLine(['Resultado do período', '', '', '', '', '', '', self::csvMoney((float)$data['result']['result'])]);
         $csv .= self::csvLine(['Lançamentos sem conta de resultado', (int)$un['result_count'] . ' lançamento(s)', '', '', '', '', '', self::csvMoney((float)$un['result_total'])]);
         $csv .= self::csvLine(['Lançamentos sem conta financeira', (int)$un['financial_count'] . ' lançamento(s)', '', '', '', '', '', self::csvMoney((float)$un['financial_total'])]);
+        $csv .= self::csvLine(['Lançamentos na conta financeira padrão', (int)$un['financial_default_count'] . ' lançamento(s)', '', '', '', '', '', self::csvMoney((float)$un['financial_default_total'])]);
+        foreach ($data['skipped'] as $sk) {
+            $csv .= self::csvLine(['Fora do relatório: ' . self::csvText((string)$sk['label']), (int)$sk['count'] . ' lançamento(s)', '', '', '', '', '', self::csvMoney((float)$sk['total'])]);
+        }
+        if ($data['truncated']) {
+            $csv .= self::csvLine(['Atenção: relatório limitado aos ' . (int)$data['row_limit'] . ' primeiros lançamentos do período (incompleto)', '', '', '', '', '', '', '']);
+        }
 
         (new DataExportService($this->container))->record(
             'finance.accounting.export_summary', null, null, 'csv', null,

@@ -77,6 +77,7 @@ final class FinancialEntryRepository
     /**
      * Lançamentos do período para os relatórios contábeis, com o centro de custo e a conta contábil vinculada.
      * Mesmo filtro de summarizeTotalsByClinicRange, para que os totais batam com o fluxo de caixa.
+     * Retorna no máximo $limit linhas (entre 1 e 200000); quem chama detecta o corte pedindo uma linha a mais.
      *
      * @return list<array<string,mixed>>
      */
@@ -100,7 +101,7 @@ final class FinancialEntryRepository
               AND e.deleted_at IS NULL
               AND e.occurred_on BETWEEN :from_date AND :to_date
             ORDER BY e.occurred_on ASC, e.id ASC
-            LIMIT " . max(50000, $limit) . "
+            LIMIT " . max(1, min(200000, $limit)) . "
         ";
 
         $stmt = $this->pdo->prepare($sql);

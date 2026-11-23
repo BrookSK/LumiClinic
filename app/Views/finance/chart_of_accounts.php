@@ -144,10 +144,10 @@ ob_start();
             </div>
 
             <div class="lc-muted" style="font-size:12px; margin-top:8px; line-height:1.5;">
-                Contas sintéticas agrupam outras contas; analíticas recebem lançamentos e podem ser vinculadas a centros de custo.
+                Contas sintéticas agrupam outras contas; analíticas recebem lançamentos. Centros de custo podem ser vinculados a contas analíticas de Receita, Custo / Despesa ou Passivo.
                 O código de uma conta filha começa com o código da conta pai seguido de ponto (ex: 1.1.2 &rarr; 1.1.2.09).
                 A forma de pagamento só vale para contas analíticas do Ativo (ex: Caixa Geral, Pix, Cartão) e indica a conta de entrada/saída do dinheiro.
-                A conta padrão recebe os lançamentos sem centro de custo vinculado a uma conta.
+                A conta padrão de receitas/despesas recebe os lançamentos sem centro de custo vinculado a uma conta; a conta financeira padrão (Ativo) recebe os lançamentos sem forma de pagamento vinculada.
             </div>
 
             <div class="lc-flex lc-gap-sm" style="margin-top:12px;">

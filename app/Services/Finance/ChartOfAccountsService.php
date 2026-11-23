@@ -31,6 +31,7 @@ final class ChartOfAccountsService
         'pix' => 'Pix',
         'credit_card' => 'Cartão de crédito',
         'debit_card' => 'Cartão de débito',
+        'card' => 'Cartão (não especificado)',
         'boleto' => 'Boleto',
         'transfer' => 'Transferência',
         'check' => 'Cheque',
@@ -40,6 +41,17 @@ final class ChartOfAccountsService
     public const DEFAULT_FOR = [
         'revenue' => 'Receitas sem classificação',
         'expense' => 'Despesas sem classificação',
+        'financial' => 'Conta financeira de lançamentos sem forma de pagamento',
+    ];
+
+    /** Naturezas que podem ser vinculadas a centros de custo (conta de resultado do lançamento). */
+    public const COST_CENTER_NATURES = ['revenue', 'expense', 'liability'];
+
+    /** Natureza exigida para cada opção de conta padrão. */
+    private const DEFAULT_FOR_NATURE = [
+        'revenue' => 'revenue',
+        'expense' => 'expense',
+        'financial' => 'asset',
     ];
 
     /** Natureza pelo primeiro segmento do código no modelo padrão. */
@@ -67,7 +79,8 @@ final class ChartOfAccountsService
         ['1.1.2.02', 'Cartão de Crédito', 'A', 'credit_card', null],
         ['1.1.2.03', 'Cartão de Débito', 'A', 'debit_card', null],
         ['1.1.2.04', 'Cheque', 'A', 'check', null],
-        ['1.1.2.05', 'Conta Banco', 'A', 'other', null],
+        ['1.1.2.05', 'Conta Banco', 'A', 'other', 'financial'],
+        ['1.1.2.06', 'Cartão (não especificado)', 'A', 'card', null],
         ['1.1.2.07', 'Transferência', 'A', 'transfer', null],
         ['1.1.2.08', 'Pix', 'A', 'pix', null],
         ['1.1.3', 'Contas a Receber', 'S', null, null],
@@ -201,6 +214,20 @@ final class ChartOfAccountsService
         return (new ChartAccountRepository($this->container->get(\PDO::class)))->listActiveAnalytic($clinicId);
     }
 
+    /**
+     * Contas ativas e analíticas que podem ser vinculadas a centros de custo (Receita, Custo / Despesa, Passivo).
+     * Contas do Ativo ficam de fora: elas são a contrapartida financeira (forma de pagamento) do lançamento.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function listCostCenterAccounts(): array
+    {
+        return array_values(array_filter(
+            $this->listActiveAnalyticAccounts(),
+            static fn (array $a): bool => in_array((string)($a['nature'] ?? ''), self::COST_CENTER_NATURES, true)
+        ));
+    }
+
     /** @return array<string,mixed>|null */
     public function getAccount(int $id): ?array
     {
@@ -324,12 +351,12 @@ final class ChartOfAccountsService
             if (!array_key_exists($defaultFor, self::DEFAULT_FOR)) {
                 throw new \RuntimeException('Opção de conta padrão inválida.');
             }
-            if ($type !== 'analytic' || $nature !== $defaultFor) {
-                throw new \RuntimeException(
-                    $defaultFor === 'revenue'
-                        ? 'Somente contas analíticas de Receita podem ser a conta padrão para receitas sem classificação.'
-                        : 'Somente contas analíticas de Custo / Despesa podem ser a conta padrão para despesas sem classificação.'
-                );
+            if ($type !== 'analytic' || $nature !== self::DEFAULT_FOR_NATURE[$defaultFor]) {
+                throw new \RuntimeException(match ($defaultFor) {
+                    'revenue' => 'Somente contas analíticas de Receita podem ser a conta padrão para receitas sem classificação.',
+                    'expense' => 'Somente contas analíticas de Custo / Despesa podem ser a conta padrão para despesas sem classificação.',
+                    default => 'Somente contas analíticas do Ativo (ex: Conta Banco, Caixa Geral) podem ser a conta financeira padrão.',
+                });
             }
         }
 
@@ -350,6 +377,12 @@ final class ChartOfAccountsService
                 $linked = $repo->countLinkedCostCenters($clinicId, (int)$current['id']);
                 if ($linked > 0) {
                     throw new \RuntimeException('Não é possível tornar a conta sintética: há ' . $linked . ' centro(s) de custo vinculado(s) a ela.');
+                }
+            }
+            if ($nature !== (string)$current['nature'] && !in_array($nature, self::COST_CENTER_NATURES, true)) {
+                $linked = $repo->countLinkedCostCenters($clinicId, (int)$current['id']);
+                if ($linked > 0) {
+                    throw new \RuntimeException('Não é possível mudar a natureza para ' . self::NATURES[$nature] . ': há ' . $linked . ' centro(s) de custo vinculado(s) a esta conta.');
                 }
             }
         }
@@ -538,7 +571,8 @@ final class ChartOfAccountsService
 
     /**
      * Cria o plano de contas padrão (DEFAULT_TEMPLATE) e vincula centros de custo sem conta
-     * cujo nome coincide (sem diferenciar maiúsculas) com uma conta analítica do modelo.
+     * cujo nome coincide (sem diferenciar maiúsculas) com uma conta analítica do modelo
+     * de Receita, Custo / Despesa ou Passivo.
      *
      * @return array{accounts_created:int,cost_centers_linked:int}
      */
@@ -597,7 +631,7 @@ final class ChartOfAccountsService
                     $repo->clearDefaultFor($clinicId, $defaultFor, $id);
                 }
 
-                if ($data['account_type'] === 'analytic') {
+                if ($data['account_type'] === 'analytic' && in_array($data['nature'], self::COST_CENTER_NATURES, true)) {
                     $key = mb_strtolower(trim($name), 'UTF-8');
                     if (!isset($analyticByName[$key])) {
                         $analyticByName[$key] = $id;

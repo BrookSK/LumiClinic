@@ -144,7 +144,8 @@ ob_start();
 
             <div class="lc-muted" style="font-size:12px; margin-top:8px; line-height:1.5;">
                 Centros de custo vinculados a esta conta: <strong><?= $linked ?></strong>.
-                A forma de pagamento só vale para contas analíticas do Ativo. Contas com contas filhas não podem mudar de código, natureza ou tipo.
+                A forma de pagamento e a conta financeira padrão só valem para contas analíticas do Ativo. Centros de custo só podem ser vinculados a contas de Receita, Custo / Despesa ou Passivo.
+                Contas com contas filhas não podem mudar de código, natureza ou tipo.
             </div>
 
             <div class="lc-flex lc-gap-sm lc-flex--wrap" style="margin-top:14px;">

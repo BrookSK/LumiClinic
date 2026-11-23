@@ -162,6 +162,11 @@ final class AccountsPayableService
             $paidOn = date('Y-m-d');
         }
 
+        $method = $method === null ? '' : trim($method);
+        if ($method !== '' && !array_key_exists($method, ChartOfAccountsService::PAYMENT_METHODS)) {
+            throw new \RuntimeException('Forma de pagamento inválida.');
+        }
+
         $pdo = $this->container->get(\PDO::class);
         $instRepo = new AccountsPayableInstallmentRepository($pdo);
         $inst = $instRepo->findById((int)$clinicId, $installmentId);
