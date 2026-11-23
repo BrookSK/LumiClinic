@@ -16,6 +16,7 @@ final class UserRepository
             FROM users
             WHERE email = :email
               AND deleted_at IS NULL
+              AND status = 'active'
             ORDER BY id DESC
             LIMIT 1
         ";
@@ -40,6 +41,7 @@ final class UserRepository
             LEFT JOIN clinics c ON c.id = u.clinic_id
             WHERE u.email = :email
               AND u.deleted_at IS NULL
+              AND u.status = 'active'
             ORDER BY u.id DESC
             LIMIT {$limit}
         ";

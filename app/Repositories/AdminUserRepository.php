@@ -138,13 +138,79 @@ final class AdminUserRepository
         $sql = "
             UPDATE users
                SET status = 'disabled',
-                   deleted_at = NULL,
                    updated_at = NOW()
              WHERE id = :id
                AND clinic_id = :clinic_id
+               AND deleted_at IS NULL
         ";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $userId, 'clinic_id' => $clinicId]);
+    }
+
+    public function reactivate(int $clinicId, int $userId): void
+    {
+        $sql = "
+            UPDATE users
+               SET status = 'active',
+                   updated_at = NOW()
+             WHERE id = :id
+               AND clinic_id = :clinic_id
+               AND deleted_at IS NULL
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $userId, 'clinic_id' => $clinicId]);
+    }
+
+    public function softDelete(int $clinicId, int $userId): void
+    {
+        $sql = "
+            UPDATE users
+               SET deleted_at = NOW(),
+                   updated_at = NOW()
+             WHERE id = :id
+               AND clinic_id = :clinic_id
+               AND deleted_at IS NULL
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $userId, 'clinic_id' => $clinicId]);
+    }
+
+    /** Conta donos (role owner) ativos da clinica, ignorando um usuario. */
+    public function countActiveOwnersExcluding(int $clinicId, int $excludeUserId): int
+    {
+        $sql = "
+            SELECT COUNT(DISTINCT u.id) AS c
+            FROM users u
+            JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+            JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner' AND r.deleted_at IS NULL
+            WHERE u.clinic_id = :clinic_id
+              AND u.id <> :exclude_id
+              AND u.deleted_at IS NULL
+              AND u.status = 'active'
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'exclude_id' => $excludeUserId]);
+        $row = $stmt->fetch();
+        return (int)($row['c'] ?? 0);
+    }
+
+    public function isOwner(int $clinicId, int $userId): bool
+    {
+        $sql = "
+            SELECT 1
+            FROM user_roles ur
+            JOIN roles r ON r.id = ur.role_id AND r.clinic_id = ur.clinic_id AND r.code = 'owner' AND r.deleted_at IS NULL
+            WHERE ur.clinic_id = :clinic_id
+              AND ur.user_id = :user_id
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'user_id' => $userId]);
+        return $stmt->fetch() !== false;
     }
 }

@@ -297,6 +297,8 @@ $router->post('/users/create', [UserController::class, 'store']);
 $router->get('/users/edit', [UserController::class, 'edit']);
 $router->post('/users/edit', [UserController::class, 'update']);
 $router->post('/users/disable', [UserController::class, 'disable']);
+$router->post('/users/reactivate', [UserController::class, 'reactivate']);
+$router->post('/users/delete', [UserController::class, 'delete']);
 
 $router->get('/settings', [SettingsController::class, 'index']);
 $router->post('/settings', [SettingsController::class, 'update']);
