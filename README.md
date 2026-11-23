@@ -53,6 +53,8 @@ Sugestão de fluxo (MySQL/MariaDB):
 2. Aplique os arquivos `database/migrations/*.sql` em ordem crescente.
 3. Após atualizar o repositório, reaplique apenas as migrations novas.
 
+Alternativa: `php bin/migrate.php` aplica, em ordem, todas as migrations pendentes (controle na tabela `_migrations`). Rode após cada deploy. Sem a `0179_chart_of_accounts.sql`, as telas Plano de Contas, Relatórios contábeis, Centros de custo e Fluxo de caixa retornam erro 500.
+
 Novidades relevantes:
 
 - `0086_users_email_per_clinic.sql`
