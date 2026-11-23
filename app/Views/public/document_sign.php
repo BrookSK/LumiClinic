@@ -8,6 +8,14 @@ $clinicName = (string)($row['clinic_name'] ?? '');
 $patientName = (string)($row['patient_name'] ?? '');
 $token = (string)($row['token'] ?? '');
 $signedAt = (string)($row['signed_at'] ?? '');
+$fileName = trim((string)($row['file_name'] ?? ''));
+$hasFile = $fileName !== '' && trim((string)($row['file_path'] ?? '')) !== '';
+$fileExt = strtolower((string)pathinfo((string)($row['file_path'] ?? ''), PATHINFO_EXTENSION));
+if ($fileExt === '') {
+    $fileExt = strtolower((string)pathinfo($fileName, PATHINFO_EXTENSION));
+}
+$fileUrl = '/doc/sign/file?token=' . urlencode($token);
+$fileDownloadUrl = $fileUrl . '&download=1';
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -38,6 +46,14 @@ $signedAt = (string)($row['signed_at'] ?? '');
         .success-icon{font-size:48px;margin-bottom:12px}
         .success h2{font-size:18px;color:#16a34a;margin-bottom:6px}
         .success p{font-size:13px;color:#6b7280}
+        .attach{padding:14px 16px;border-radius:12px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);margin-bottom:20px;font-size:13px}
+        .attach-title{font-weight:700;font-size:13px;color:#374151;margin-bottom:4px}
+        .attach-name{font-size:13px;margin-bottom:10px;word-break:break-word}
+        .attach-preview{width:100%;height:520px;border:1px solid rgba(17,24,39,.10);border-radius:10px;background:#fff;display:block}
+        .attach-img{max-width:100%;height:auto;border-radius:10px;border:1px solid rgba(17,24,39,.10);display:block}
+        .attach-note{font-size:12px;color:#6b7280;margin-top:8px}
+        .attach-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+        .attach-actions .btn{padding:10px 18px;font-size:13px;text-decoration:none}
     </style>
 </head>
 <body>
@@ -55,6 +71,12 @@ $signedAt = (string)($row['signed_at'] ?? '');
                 <?php if ($signedAt !== ''): ?>
                     <p style="margin-top:8px;">Assinado em <?= date('d/m/Y \à\s H:i', strtotime($signedAt)) ?></p>
                 <?php endif; ?>
+                <?php if ($hasFile): ?>
+                    <div class="attach-actions" style="justify-content:center;margin-top:16px;">
+                        <a class="btn btn-primary" href="<?= htmlspecialchars($fileUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Abrir documento</a>
+                        <a class="btn btn-secondary" href="<?= htmlspecialchars($fileDownloadUrl, ENT_QUOTES, 'UTF-8') ?>">Baixar</a>
+                    </div>
+                <?php endif; ?>
                 <p style="margin-top:12px;font-size:12px;color:#9ca3af;">Você pode fechar esta página.</p>
             </div>
         <?php else: ?>
@@ -67,10 +89,24 @@ $signedAt = (string)($row['signed_at'] ?? '');
                 <div class="doc-body"><?= nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8')) ?></div>
             <?php endif; ?>
 
-            <?php if (trim((string)($row['file_name'] ?? '')) !== ''): ?>
-                <div style="padding:12px 16px;border-radius:10px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);margin-bottom:20px;font-size:13px;">
-                    📎 Arquivo anexo: <strong><?= htmlspecialchars((string)$row['file_name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                    <div style="font-size:11px;color:#6b7280;margin-top:2px;">O arquivo foi disponibilizado pela clínica junto com este documento.</div>
+            <?php if ($hasFile): ?>
+                <div class="attach">
+                    <div class="attach-title">📎 Documento anexo</div>
+                    <div class="attach-name"><strong><?= htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8') ?></strong></div>
+
+                    <?php if ($fileExt === 'pdf'): ?>
+                        <iframe class="attach-preview" src="<?= htmlspecialchars($fileUrl, ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars('Pré-visualização: ' . $fileName, ENT_QUOTES, 'UTF-8') ?>"></iframe>
+                    <?php elseif (in_array($fileExt, ['jpg', 'jpeg', 'png'], true)): ?>
+                        <img class="attach-img" src="<?= htmlspecialchars($fileUrl, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8') ?>" />
+                    <?php else: ?>
+                        <div class="attach-note">Este tipo de arquivo não pode ser exibido aqui. Baixe o arquivo para visualizar o conteúdo.</div>
+                    <?php endif; ?>
+
+                    <div class="attach-actions">
+                        <a class="btn btn-primary" href="<?= htmlspecialchars($fileUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Abrir documento</a>
+                        <a class="btn btn-secondary" href="<?= htmlspecialchars($fileDownloadUrl, ENT_QUOTES, 'UTF-8') ?>">Baixar</a>
+                    </div>
+                    <div class="attach-note">Leia o documento com atenção antes de assinar. Se a pré-visualização não aparecer no seu celular, toque em "Abrir documento".</div>
                 </div>
             <?php endif; ?>
 
@@ -89,7 +125,7 @@ $signedAt = (string)($row['signed_at'] ?? '');
 
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
                     <input type="checkbox" id="agreeCheck" required />
-                    <label for="agreeCheck" style="font-size:13px;color:#374151;">Li e concordo com o documento acima.</label>
+                    <label for="agreeCheck" style="font-size:13px;color:#374151;"><?= $hasFile ? 'Li e concordo com o documento acima, incluindo o arquivo anexo.' : 'Li e concordo com o documento acima.' ?></label>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width:100%;" id="btnSubmit">Assinar documento</button>

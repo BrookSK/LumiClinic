@@ -321,6 +321,8 @@ $router->get('/settings/google-calendar', [\App\Controllers\Settings\GoogleCalen
 
 $router->get('/settings/importer', [ImporterController::class, 'index']);
 $router->post('/settings/importer/upload', [ImporterController::class, 'upload']);
+$router->get('/settings/importer/log', [ImporterController::class, 'logDetail']);
+$router->get('/settings/importer/log/export.csv', [ImporterController::class, 'logExportCsv']);
 $router->get('/settings/tuquinha', [\App\Controllers\Settings\SettingsController::class, 'tuquinha']);
 $router->post('/settings/google-calendar/connect', [\App\Controllers\Settings\GoogleCalendarController::class, 'connect']);
 $router->get('/settings/google-calendar/callback', [\App\Controllers\Settings\GoogleCalendarController::class, 'callback']);
@@ -581,9 +583,11 @@ $router->post('/patients/documents/delete', [\App\Controllers\Patients\PatientDo
 
 $router->get('/patients/document-sign', [\App\Controllers\Patients\PatientDocumentSignController::class, 'index']);
 $router->post('/patients/document-sign/create', [\App\Controllers\Patients\PatientDocumentSignController::class, 'create']);
+$router->get('/patients/document-sign/file', [\App\Controllers\Patients\PatientDocumentSignController::class, 'file']);
 
 $router->get('/doc/sign', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicSign']);
 $router->post('/doc/sign/submit', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicSignSubmit']);
+$router->get('/doc/sign/file', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicFile']);
 
 $router->get('/pub/budget', [\App\Controllers\Public\BudgetViewController::class, 'show']);
 
