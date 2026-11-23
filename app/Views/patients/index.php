@@ -58,6 +58,17 @@ ob_start();
     <div class="lc-flex lc-flex--between lc-flex--wrap lc-gap-sm" style="margin-top:12px;">
         <div class="lc-muted">Página <?= (int)$page ?></div>
         <div class="lc-flex lc-gap-sm">
+            <?php
+                $exportQuery = [];
+                if (trim((string)$q) !== '') {
+                    $exportQuery['q'] = (string)$q;
+                }
+                if ($originId > 0) {
+                    $exportQuery['origin_id'] = $originId;
+                }
+                $exportUrl = '/patients/export.csv' . ($exportQuery !== [] ? ('?' . http_build_query($exportQuery)) : '');
+            ?>
+            <a class="lc-btn lc-btn--secondary" href="<?= htmlspecialchars($exportUrl, ENT_QUOTES, 'UTF-8') ?>" title="Exporta todos os <?= htmlspecialchars(mb_strtolower($patientsLabel, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?> (respeitando a busca e a origem selecionadas) em planilha CSV">📥 Exportar</a>
             <?php if ($page > 1): ?>
                 <a class="lc-btn lc-btn--secondary" href="/patients?q=<?= urlencode((string)$q) ?>&origin_id=<?= (int)$originId ?>&per_page=<?= (int)$perPage ?>&page=<?= (int)($page - 1) ?>">Anterior</a>
             <?php endif; ?>
