@@ -160,7 +160,15 @@ final class UserController extends Controller
         }
 
         $service = new UserAdminService($this->container);
-        $service->updateUser($id, $name, $email, $status, $roleId, ($newPassword === '' ? null : $newPassword), $request->ip());
+        try {
+            $service->updateUser($id, $name, $email, $status, $roleId, ($newPassword === '' ? null : $newPassword), $request->ip());
+        } catch (\RuntimeException $e) {
+            return $this->view('users/edit', [
+                'user' => $service->getUser($id),
+                'roles' => $service->listRoles(),
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // Update council_number if professional
         $councilNumber = trim((string)$request->input('council_number', ''));

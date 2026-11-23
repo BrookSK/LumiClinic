@@ -97,7 +97,7 @@ O projeto é servido via `public/index.php`.
 - Durante esse acesso, termos/documentos legais pendentes do dono não são exigidos e não podem ser aceitos ou assinados.
 - A auditoria registra `auth.impersonation.start` e `auth.impersonation.stop` (com o super admin como `user_id`). Qualquer outra ação registrada durante o acesso leva `impersonator_user_id` no `meta_json`.
 - Os eventos do sistema (`SystemEvent`) disparados durante o acesso também levam `impersonator_user_id` no payload.
-- Durante o acesso não é possível alterar o perfil do dono (nome/e-mail em `/me`).
+- Durante o acesso não é possível alterar o perfil do dono: nem nome/e-mail em `/me`, nem nome/e-mail/senha/papel/status do próprio dono em `/users/edit`. Os outros usuários da clínica continuam editáveis.
 - O botão só funciona no domínio principal ou no domínio da própria clínica. Em um domínio/subdomínio de outra clínica o acesso é recusado.
 - Ao voltar ao admin, o contexto de clínica que o super admin tinha antes é restaurado.
 - **Sair** (logout) durante o acesso encerra a sessão inteira, inclusive a do super admin.
