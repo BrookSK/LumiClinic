@@ -164,13 +164,16 @@ final class ClinicorpImporterService
     }
 
     /**
-     * @return array{imported: int, skipped: int, errors: list<string>}
+     * skipped_details lista cada registro ignorado com a linha da planilha, a identificação e o motivo.
+     * log_id é o id do registro em clinicorp_import_logs (ausente quando o arquivo está vazio).
+     *
+     * @return array{imported: int, skipped: int, errors: list<string>, skipped_details: list<array{line: int, name: string, reason: string}>, log_id?: int}
      */
     public function import(int $clinicId, int $userId, string $type, string $filePath, string $fileName): array
     {
         $rows = XlsxReader::read($filePath);
         if (count($rows) < 2) {
-            return ['imported' => 0, 'skipped' => 0, 'errors' => ['Arquivo vazio ou sem dados.']];
+            return ['imported' => 0, 'skipped' => 0, 'errors' => ['Arquivo vazio ou sem dados.'], 'skipped_details' => []];
         }
 
         $headers = array_map('trim', $rows[0]);
@@ -190,11 +193,12 @@ final class ClinicorpImporterService
             'tratamentos_executados'         => $this->importTratamentosExecutados($clinicId, $headers, $dataRows),
             'tratamentos_nao_executados'     => $this->importTratamentosNaoExecutados($clinicId, $headers, $dataRows),
             'profissionais'                  => $this->importProfissionais($clinicId, $headers, $dataRows),
-            default => ['imported' => 0, 'skipped' => 0, 'errors' => ['Tipo de importação não suportado: ' . $type]],
+            default => ['imported' => 0, 'skipped' => 0, 'errors' => ['Tipo de importação não suportado: ' . $type], 'skipped_details' => []],
         };
+        $result['skipped_details'] = $result['skipped_details'] ?? [];
 
         // Log
-        $this->logImport($clinicId, $userId, $type, $fileName, count($dataRows), $result);
+        $result['log_id'] = $this->logImport($clinicId, $userId, $type, $fileName, count($dataRows), $result);
 
         return $result;
     }
@@ -217,6 +221,36 @@ final class ClinicorpImporterService
         if (!isset($colMap[$key])) return '';
         $idx = $colMap[$key];
         return isset($row[$idx]) ? trim((string)$row[$idx]) : '';
+    }
+
+    /**
+     * Registra um registro ignorado (linha da planilha, identificação legível e motivo).
+     *
+     * @param list<array{line: int, name: string, reason: string}> $skippedList
+     */
+    private function skip(array &$skippedList, int $line, string $identifier, string $reason, string $extra = ''): void
+    {
+        $identifier = trim($identifier);
+        if ($identifier === '') {
+            $identifier = '(sem nome)';
+        }
+        $extra = trim($extra);
+        if ($extra !== '') {
+            $identifier .= ' (' . $extra . ')';
+        }
+        $skippedList[] = ['line' => $line, 'name' => $identifier, 'reason' => $reason];
+    }
+
+    /** Data legível (dd/mm/aaaa) a partir do valor bruto da planilha, para identificar registros ignorados. */
+    private function displayDate(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') return '';
+        $date = preg_match('/^(\d{4}-\d{2}-\d{2})/', $raw, $m) ? $m[1] : XlsxReader::excelDateToString($raw);
+        if ($date && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $d)) {
+            return $d[3] . '/' . $d[2] . '/' . $d[1];
+        }
+        return $raw;
     }
 
     private function findOrCreatePatient(int $clinicId, string $name, string $phone = '', string $email = ''): ?int
@@ -279,6 +313,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -286,7 +321,10 @@ final class ClinicorpImporterService
                 if ($name === '') {
                     $name = $this->col($row, $colMap, 'Paciente');
                 }
-                if ($name === '') { $skipped++; continue; }
+                if ($name === '') {
+                    $this->skip($skippedDetails, $i + 2, '', 'Nome do paciente vazio');
+                    $skipped++; continue;
+                }
 
                 $cidade = $this->col($row, $colMap, 'Cidade');
                 $bairro = $this->col($row, $colMap, 'Bairro');
@@ -308,7 +346,11 @@ final class ClinicorpImporterService
                     if ($address !== '') {
                         $this->pdo->prepare('UPDATE patients SET address = COALESCE(NULLIF(address, \'\'), ?) WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL')
                             ->execute([$address, $clinicId, $name]);
+                        $reason = 'Paciente já cadastrado com este nome (endereço preenchido se estava vazio)';
+                    } else {
+                        $reason = 'Paciente já cadastrado com este nome';
                     }
+                    $this->skip($skippedDetails, $i + 2, $name, $reason);
                     $skipped++;
                     continue;
                 }
@@ -322,7 +364,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Agendamentos Geral ──────────────────────────────────────
@@ -333,6 +375,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -344,10 +387,17 @@ final class ClinicorpImporterService
                 $profName = $this->col($row, $colMap, 'Profissional');
                 $categoria = $this->col($row, $colMap, 'Categoria');
 
-                if ($patientName === '' || $dateRaw === '') { $skipped++; continue; }
+                if ($patientName === '' || $dateRaw === '') {
+                    $reason = $patientName === '' && $dateRaw === '' ? 'Paciente e data vazios' : ($patientName === '' ? 'Nome do paciente vazio' : 'Data do agendamento vazia');
+                    $this->skip($skippedDetails, $i + 2, $patientName, $reason, $this->displayDate($dateRaw));
+                    $skipped++; continue;
+                }
 
                 $date = XlsxReader::excelDateToString($dateRaw);
-                if (!$date) { $skipped++; continue; }
+                if (!$date) {
+                    $this->skip($skippedDetails, $i + 2, $patientName, 'Data inválida: ' . $dateRaw);
+                    $skipped++; continue;
+                }
 
                 // Parse horário "13:15 às 14:00"
                 $startTime = '08:00';
@@ -364,7 +414,16 @@ final class ClinicorpImporterService
                 $profId = $this->findOrCreateProfessional($clinicId, $profName);
                 $serviceId = $this->findOrCreateService($clinicId, $categoria ?: 'Consulta');
 
-                if (!$patientId || !$profId || !$serviceId) { $skipped++; continue; }
+                if (!$patientId || !$profId || !$serviceId) {
+                    $missing = [];
+                    if (!$patientId) $missing[] = 'paciente';
+                    if (!$profId) $missing[] = 'profissional';
+                    if (!$serviceId) $missing[] = 'serviço';
+                    $reason = 'Não foi possível identificar ' . implode('/', $missing);
+                    if (!$profId && trim($profName) === '') $reason .= ' (coluna Profissional vazia)';
+                    $this->skip($skippedDetails, $i + 2, $patientName, $reason, $this->displayDate($dateRaw));
+                    $skipped++; continue;
+                }
 
                 $dbStatus = $this->mapAppointmentStatus($status);
 
@@ -376,7 +435,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     private function mapAppointmentStatus(string $raw): string
@@ -400,6 +459,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -410,20 +470,35 @@ final class ClinicorpImporterService
                 $motivo = $this->col($row, $colMap, 'Motivo');
                 $quem = $this->col($row, $colMap, 'Quem desmarcou');
 
-                if ($nome === '' || $dateRaw === '') { $skipped++; continue; }
+                if ($nome === '' || $dateRaw === '') {
+                    $reason = $nome === '' && $dateRaw === '' ? 'Nome e data vazios' : ($nome === '' ? 'Nome do paciente vazio' : 'Data vazia');
+                    $this->skip($skippedDetails, $i + 2, $nome, $reason, $this->displayDate($dateRaw));
+                    $skipped++; continue;
+                }
 
                 // Clean " - Desmarcado" from name
                 $nome = preg_replace('/\s*-\s*Desmarcado\s*$/i', '', $nome);
 
                 $date = XlsxReader::excelDateToString($dateRaw);
-                if (!$date) { $skipped++; continue; }
+                if (!$date) {
+                    $this->skip($skippedDetails, $i + 2, $nome, 'Data inválida: ' . $dateRaw);
+                    $skipped++; continue;
+                }
 
                 $patientId = $this->findOrCreatePatient($clinicId, $nome, $contato);
                 $serviceId = $this->findOrCreateService($clinicId, $categoria ?: 'Consulta');
                 // Use first professional available
                 $profId = $this->getFirstProfessional($clinicId);
 
-                if (!$patientId || !$serviceId || !$profId) { $skipped++; continue; }
+                if (!$patientId || !$serviceId || !$profId) {
+                    if (!$profId) {
+                        $reason = 'Nenhum profissional ativo cadastrado na clínica';
+                    } else {
+                        $reason = 'Não foi possível identificar ' . (!$patientId ? 'paciente' : 'serviço');
+                    }
+                    $this->skip($skippedDetails, $i + 2, $nome, $reason, $this->displayDate($dateRaw));
+                    $skipped++; continue;
+                }
 
                 $notes = 'Importado da Clinicorp (Desmarcação)';
                 if ($motivo) $notes .= ' | Motivo: ' . $motivo;
@@ -437,7 +512,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Categorias de Agendamento → Services ────────────────────
@@ -449,17 +524,25 @@ final class ClinicorpImporterService
         $skipped = 0;
         $errors = [];
         $seen = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
                 $categoria = $this->col($row, $colMap, 'Categoria');
-                if ($categoria === '' || isset($seen[$categoria])) { $skipped++; continue; }
-                $seen[$categoria] = true;
+                if ($categoria === '' || isset($seen[$categoria])) {
+                    $reason = $categoria === '' ? 'Categoria vazia' : 'Categoria repetida no arquivo (linha ' . $seen[$categoria] . ')';
+                    $this->skip($skippedDetails, $i + 2, $categoria, $reason);
+                    $skipped++; continue;
+                }
+                $seen[$categoria] = $i + 2;
 
                 // Check if service already exists
                 $stmt = $this->pdo->prepare('SELECT id FROM services WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
                 $stmt->execute([$clinicId, $categoria]);
-                if ($stmt->fetch()) { $skipped++; continue; }
+                if ($stmt->fetch()) {
+                    $this->skip($skippedDetails, $i + 2, $categoria, 'Serviço já cadastrado com este nome');
+                    $skipped++; continue;
+                }
 
                 $stmt = $this->pdo->prepare('INSERT INTO services (clinic_id, name, duration_minutes, status, created_at) VALUES (?, ?, 30, \'active\', NOW())');
                 $stmt->execute([$clinicId, $categoria]);
@@ -469,7 +552,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Primeira Consulta ───────────────────────────────────────
@@ -480,6 +563,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -488,16 +572,31 @@ final class ClinicorpImporterService
                 $nome = $this->col($row, $colMap, 'Nome');
                 $obs = $this->col($row, $colMap, 'Observações');
 
-                if ($nome === '' || $dateRaw === '') { $skipped++; continue; }
+                if ($nome === '' || $dateRaw === '') {
+                    $reason = $nome === '' && $dateRaw === '' ? 'Nome e data vazios' : ($nome === '' ? 'Nome do paciente vazio' : 'Data vazia');
+                    $this->skip($skippedDetails, $i + 2, $nome, $reason, $this->displayDate($dateRaw));
+                    $skipped++; continue;
+                }
 
                 $date = XlsxReader::excelDateToString($dateRaw);
-                if (!$date) { $skipped++; continue; }
+                if (!$date) {
+                    $this->skip($skippedDetails, $i + 2, $nome, 'Data inválida: ' . $dateRaw);
+                    $skipped++; continue;
+                }
 
                 $patientId = $this->findOrCreatePatient($clinicId, $nome);
                 $serviceId = $this->findOrCreateService($clinicId, 'Primeira Consulta');
                 $profId = $this->getFirstProfessional($clinicId);
 
-                if (!$patientId || !$serviceId || !$profId) { $skipped++; continue; }
+                if (!$patientId || !$serviceId || !$profId) {
+                    if (!$profId) {
+                        $reason = 'Nenhum profissional ativo cadastrado na clínica';
+                    } else {
+                        $reason = 'Não foi possível identificar ' . (!$patientId ? 'paciente' : 'serviço');
+                    }
+                    $this->skip($skippedDetails, $i + 2, $nome, $reason, $this->displayDate($dateRaw));
+                    $skipped++; continue;
+                }
 
                 $dbStatus = $this->mapAppointmentStatus($status);
                 $notes = 'Importado da Clinicorp (Primeira Consulta)';
@@ -511,7 +610,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Financeiro - Cobranças e Pagamentos ─────────────────────
@@ -522,6 +621,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -532,13 +632,23 @@ final class ClinicorpImporterService
                 $lancRaw = $this->col($row, $colMap, 'Lançamento');
                 $vencRaw = $this->col($row, $colMap, 'Vencimento');
 
-                if ($paciente === '' || $valorRaw === '') { $skipped++; continue; }
+                if ($paciente === '' || $valorRaw === '') {
+                    $reason = $paciente === '' && $valorRaw === '' ? 'Paciente e valor vazios' : ($paciente === '' ? 'Nome do paciente vazio' : 'Valor vazio');
+                    $this->skip($skippedDetails, $i + 2, $paciente, $reason, $this->displayDate($vencRaw ?: $lancRaw));
+                    $skipped++; continue;
+                }
 
                 $valor = XlsxReader::parseMoney($valorRaw);
-                if ($valor <= 0) { $skipped++; continue; }
+                if ($valor <= 0) {
+                    $this->skip($skippedDetails, $i + 2, $paciente, 'Valor zerado ou inválido: ' . $valorRaw, $this->displayDate($vencRaw ?: $lancRaw));
+                    $skipped++; continue;
+                }
 
                 $patientId = $this->findOrCreatePatient($clinicId, $paciente);
-                if (!$patientId) { $skipped++; continue; }
+                if (!$patientId) {
+                    $this->skip($skippedDetails, $i + 2, $paciente, 'Não foi possível identificar o paciente');
+                    $skipped++; continue;
+                }
 
                 $saleStatus = mb_strtolower($statusRaw) === 'em aberto' ? 'open' : 'closed';
 
@@ -561,7 +671,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     private function mapPaymentMethod(string $raw): string
@@ -587,6 +697,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -599,13 +710,23 @@ final class ClinicorpImporterService
                 $fornecedor = $this->col($row, $colMap, 'CPF/CNPJ Fornecedor');
                 $valorTotalRaw = $this->col($row, $colMap, 'Valor Total');
 
-                if ($descricao === '' && $categoria === '') { $skipped++; continue; }
+                if ($descricao === '' && $categoria === '') {
+                    $this->skip($skippedDetails, $i + 2, $fornecedor, 'Descrição e categoria vazias', $this->displayDate($vencRaw));
+                    $skipped++; continue;
+                }
+                $payableLabel = $descricao ?: $categoria;
 
                 $venc = XlsxReader::excelDateToString($vencRaw);
-                if (!$venc) { $skipped++; continue; }
+                if (!$venc) {
+                    $this->skip($skippedDetails, $i + 2, $payableLabel, $vencRaw === '' ? 'Data de vencimento vazia' : 'Data de vencimento inválida: ' . $vencRaw);
+                    $skipped++; continue;
+                }
 
                 $valor = XlsxReader::parseMoney($valorRaw ?: $valorTotalRaw);
-                if ($valor <= 0) { $skipped++; continue; }
+                if ($valor <= 0) {
+                    $this->skip($skippedDetails, $i + 2, $payableLabel, 'Valor zerado ou inválido: ' . ($valorRaw ?: $valorTotalRaw), $this->displayDate($vencRaw));
+                    $skipped++; continue;
+                }
 
                 $title = $descricao ?: $categoria;
                 $description = '';
@@ -626,7 +747,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Orçamentos ──────────────────────────────────────────────
@@ -637,6 +758,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -649,10 +771,17 @@ final class ClinicorpImporterService
                 $obs = $this->col($row, $colMap, 'Observações');
                 $statusRaw = $this->col($row, $colMap, 'Status');
 
-                if ($paciente === '' || $valorRaw === '') { $skipped++; continue; }
+                if ($paciente === '' || $valorRaw === '') {
+                    $reason = $paciente === '' && $valorRaw === '' ? 'Paciente e valor vazios' : ($paciente === '' ? 'Nome do paciente vazio' : 'Valor do orçamento vazio');
+                    $this->skip($skippedDetails, $i + 2, $paciente, $reason, $this->displayDate($this->col($row, $colMap, 'Data')));
+                    $skipped++; continue;
+                }
 
                 $patientId = $this->findOrCreatePatient($clinicId, $paciente, $telefone);
-                if (!$patientId) { $skipped++; continue; }
+                if (!$patientId) {
+                    $this->skip($skippedDetails, $i + 2, $paciente, 'Não foi possível identificar o paciente');
+                    $skipped++; continue;
+                }
 
                 $totalBruto = XlsxReader::parseMoney($valorRaw);
                 $totalLiquido = $valorDescRaw ? XlsxReader::parseMoney($valorDescRaw) : $totalBruto;
@@ -673,7 +802,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Tratamentos Executados ──────────────────────────────────
@@ -684,6 +813,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -694,13 +824,20 @@ final class ClinicorpImporterService
                 $procedimento = $this->col($row, $colMap, 'Procedimento');
                 $valorRaw = $this->col($row, $colMap, 'Valor');
 
-                if ($paciente === '' || $procedimento === '') { $skipped++; continue; }
+                if ($paciente === '' || $procedimento === '') {
+                    $reason = $paciente === '' && $procedimento === '' ? 'Paciente e procedimento vazios' : ($paciente === '' ? 'Nome do paciente vazio' : 'Procedimento vazio');
+                    $this->skip($skippedDetails, $i + 2, $paciente, $reason, $procedimento !== '' ? $procedimento : $this->displayDate($dateRaw));
+                    $skipped++; continue;
+                }
 
                 $patientId = $this->findOrCreatePatient($clinicId, $paciente, $telefone);
                 $profId = $this->findOrCreateProfessional($clinicId, $profissional);
                 $serviceId = $this->findOrCreateService($clinicId, $procedimento);
 
-                if (!$patientId || !$serviceId) { $skipped++; continue; }
+                if (!$patientId || !$serviceId) {
+                    $this->skip($skippedDetails, $i + 2, $paciente, 'Não foi possível identificar ' . (!$patientId ? 'paciente' : 'serviço'), $procedimento);
+                    $skipped++; continue;
+                }
 
                 $stmt = $this->pdo->prepare('INSERT INTO patient_procedures (clinic_id, patient_id, service_id, professional_id, total_sessions, used_sessions, status, created_at) VALUES (?, ?, ?, ?, 1, 1, \'completed\', NOW())');
                 $stmt->execute([$clinicId, $patientId, $serviceId, $profId]);
@@ -710,7 +847,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Tratamentos Não Executados ──────────────────────────────
@@ -721,6 +858,7 @@ final class ClinicorpImporterService
         $imported = 0;
         $skipped = 0;
         $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -729,13 +867,20 @@ final class ClinicorpImporterService
                 $profissional = $this->col($row, $colMap, 'Profissional');
                 $procedimento = $this->col($row, $colMap, 'Procedimento');
 
-                if ($paciente === '' || $procedimento === '') { $skipped++; continue; }
+                if ($paciente === '' || $procedimento === '') {
+                    $reason = $paciente === '' && $procedimento === '' ? 'Paciente e procedimento vazios' : ($paciente === '' ? 'Nome do paciente vazio' : 'Procedimento vazio');
+                    $this->skip($skippedDetails, $i + 2, $paciente, $reason, $procedimento);
+                    $skipped++; continue;
+                }
 
                 $patientId = $this->findOrCreatePatient($clinicId, $paciente, $celular);
                 $profId = $this->findOrCreateProfessional($clinicId, $profissional);
                 $serviceId = $this->findOrCreateService($clinicId, $procedimento);
 
-                if (!$patientId || !$serviceId) { $skipped++; continue; }
+                if (!$patientId || !$serviceId) {
+                    $this->skip($skippedDetails, $i + 2, $paciente, 'Não foi possível identificar ' . (!$patientId ? 'paciente' : 'serviço'), $procedimento);
+                    $skipped++; continue;
+                }
 
                 $stmt = $this->pdo->prepare('INSERT INTO patient_procedures (clinic_id, patient_id, service_id, professional_id, total_sessions, used_sessions, status, created_at) VALUES (?, ?, ?, ?, 1, 0, \'active\', NOW())');
                 $stmt->execute([$clinicId, $patientId, $serviceId, $profId]);
@@ -745,7 +890,7 @@ final class ClinicorpImporterService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Parcelas / Pagamentos (PaymentItem) ───────────────────
@@ -754,6 +899,7 @@ final class ClinicorpImporterService
     {
         $colMap = $this->mapCols($headers);
         $imported = 0; $skipped = 0; $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
@@ -773,8 +919,13 @@ final class ClinicorpImporterService
                 $description = $this->col($row, $colMap, 'PaymentDescription');
                 if ($description === '') $description = $this->col($row, $colMap, 'Description');
 
+                $parcelaExtra = $installmentNo !== '' ? 'parcela ' . $installmentNo . ($installmentsCount !== '' ? '/' . $installmentsCount : '') : '';
+
                 $amount = XlsxReader::parseMoney($amountRaw);
-                if ($amount <= 0) { $skipped++; continue; }
+                if ($amount <= 0) {
+                    $this->skip($skippedDetails, $i + 2, $ownerName, $amountRaw === '' ? 'Valor vazio' : 'Valor zerado ou inválido: ' . $amountRaw, $parcelaExtra);
+                    $skipped++; continue;
+                }
 
                 // Parse dates (ISO format: 2025-06-17T21:00:00.000Z or atomic: 20250617)
                 $occurredOn = null;
@@ -788,10 +939,16 @@ final class ClinicorpImporterService
                         $occurredOn = XlsxReader::excelDateToString($dateStr);
                     }
                 }
-                if (!$occurredOn) { $skipped++; continue; }
+                if (!$occurredOn) {
+                    $this->skip($skippedDetails, $i + 2, $ownerName, $dateStr === '' ? 'Data vazia (PaymentDate, Date e DueDate)' : 'Data inválida: ' . $dateStr, $parcelaExtra);
+                    $skipped++; continue;
+                }
 
                 // Skip canceled
-                if (strtoupper($canceled) === 'X') { $skipped++; continue; }
+                if (strtoupper($canceled) === 'X') {
+                    $this->skip($skippedDetails, $i + 2, $ownerName, 'Parcela cancelada', trim($parcelaExtra . ($parcelaExtra !== '' ? ', ' : '') . $this->displayDate($occurredOn)));
+                    $skipped++; continue;
+                }
 
                 // Map payment method
                 $method = match (true) {
@@ -820,7 +977,7 @@ final class ClinicorpImporterService
                 $errors[] = 'Linha ' . ($i + 2) . ': ' . $e->getMessage();
             }
         }
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Pacientes Cadastro (exportação de dados) ─────────────
@@ -829,11 +986,15 @@ final class ClinicorpImporterService
     {
         $colMap = $this->mapCols($headers);
         $imported = 0; $skipped = 0; $errors = [];
+        $skippedDetails = [];
 
         foreach ($dataRows as $i => $row) {
             try {
                 $name = $this->col($row, $colMap, 'Name');
-                if ($name === '') { $skipped++; continue; }
+                if ($name === '') {
+                    $this->skip($skippedDetails, $i + 2, $this->col($row, $colMap, 'Email'), 'Nome do paciente vazio');
+                    $skipped++; continue;
+                }
                 $name = preg_replace('/\s*\(\d+\)\s*$/', '', trim($name));
 
                 $email = $this->col($row, $colMap, 'Email');
@@ -864,7 +1025,10 @@ final class ClinicorpImporterService
                 // Check existing by name
                 $stmt = $this->pdo->prepare('SELECT id FROM patients WHERE clinic_id = ? AND name = ? AND deleted_at IS NULL LIMIT 1');
                 $stmt->execute([$clinicId, $name]);
-                if ($stmt->fetch()) { $skipped++; continue; }
+                if ($stmt->fetch()) {
+                    $this->skip($skippedDetails, $i + 2, $name, 'Paciente já cadastrado com este nome');
+                    $skipped++; continue;
+                }
 
                 $fullAddress = trim(($address ? $address : '') . ($addressNum ? ', ' . $addressNum : '') . ($neighborhood ? ' - ' . $neighborhood : '') . ($city ? ', ' . $city : '') . ($state ? '/' . $state : '') . ($zip ? ' CEP: ' . $zip : ''));
 
@@ -880,7 +1044,7 @@ final class ClinicorpImporterService
                 $errors[] = 'Linha ' . ($i + 2) . ': ' . $e->getMessage();
             }
         }
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Profissionais ───────────────────────────────────────────
@@ -911,10 +1075,15 @@ final class ClinicorpImporterService
             $roleIds[(string)$r['code']] = (int)$r['id'];
         }
 
+        $skippedDetails = [];
+
         foreach ($dataRows as $i => $row) {
             try {
                 $name = $this->col($row, $colMap, 'Name');
-                if ($name === '') { $skipped++; continue; }
+                if ($name === '') {
+                    $this->skip($skippedDetails, $i + 2, $this->col($row, $colMap, 'Email'), 'Nome do profissional vazio');
+                    $skipped++; continue;
+                }
 
                 $email = strtolower(trim($this->col($row, $colMap, 'Email')));
                 $phone = preg_replace('/[^\d]/', '', $this->col($row, $colMap, 'MobilePhone'));
@@ -948,6 +1117,7 @@ final class ClinicorpImporterService
                     $profRow = $existProf->fetch(\PDO::FETCH_ASSOC);
                     if ($profRow) {
                         if ($profRow['user_id'] !== null && (int)$profRow['user_id'] > 0) {
+                            $this->skip($skippedDetails, $i + 2, $name, 'Profissional já cadastrado com este nome e já vinculado a um usuário', $email);
                             $skipped++; continue;
                         }
                         $existingProfId = (int)$profRow['id'];
@@ -1012,7 +1182,7 @@ final class ClinicorpImporterService
                 $errors[] = 'Linha ' . ($i + 2) . ': ' . $e->getMessage();
             }
         }
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'skipped_details' => $skippedDetails];
     }
 
     // ─── Helpers ─────────────────────────────────────────────────
@@ -1025,22 +1195,72 @@ final class ClinicorpImporterService
         return $row ? (int)$row['id'] : null;
     }
 
-    /** @return list<array{type: string, file_name: string, imported_rows: int, skipped_rows: int, error_rows: int, created_at: string}> */
+    /** @return list<array{id: int, import_type: string, file_name: string, total_rows: int, imported_rows: int, skipped_rows: int, error_rows: int, status: string, created_at: string, created_by_user_id: ?int, created_by_name: ?string}> */
     public function getImportHistory(int $clinicId): array
     {
-        $stmt = $this->pdo->prepare('SELECT import_type, file_name, total_rows, imported_rows, skipped_rows, error_rows, status, created_at FROM clinicorp_import_logs WHERE clinic_id = ? ORDER BY created_at DESC LIMIT 50');
+        $stmt = $this->pdo->prepare('SELECT l.id, l.import_type, l.file_name, l.total_rows, l.imported_rows, l.skipped_rows, l.error_rows, l.status, l.created_at, l.created_by_user_id, u.name AS created_by_name FROM clinicorp_import_logs l LEFT JOIN users u ON u.id = l.created_by_user_id WHERE l.clinic_id = ? ORDER BY l.created_at DESC, l.id DESC LIMIT 50');
         $stmt->execute([$clinicId]);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
 
-    private function logImport(int $clinicId, int $userId, string $type, string $fileName, int $totalRows, array $result): void
+    /**
+     * Um registro do histórico de importações da clínica, com erros e ignorados decodificados.
+     * skipped_list é null quando a importação foi feita antes do registro dos ignorados (skipped_json NULL).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getImportLog(int $clinicId, int $logId): ?array
     {
-        $errorsJson = !empty($result['errors']) ? json_encode(array_slice($result['errors'], 0, 50), JSON_UNESCAPED_UNICODE) : null;
-        $stmt = $this->pdo->prepare('INSERT INTO clinicorp_import_logs (clinic_id, import_type, file_name, total_rows, imported_rows, skipped_rows, error_rows, errors_json, status, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, \'completed\', ?, NOW())');
+        $stmt = $this->pdo->prepare('SELECT l.id, l.import_type, l.file_name, l.total_rows, l.imported_rows, l.skipped_rows, l.error_rows, l.errors_json, l.skipped_json, l.status, l.created_at, l.created_by_user_id, u.name AS created_by_name FROM clinicorp_import_logs l LEFT JOIN users u ON u.id = l.created_by_user_id WHERE l.id = ? AND l.clinic_id = ? LIMIT 1');
+        $stmt->execute([$logId, $clinicId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) return null;
+
+        $errors = [];
+        if ($row['errors_json'] !== null && $row['errors_json'] !== '') {
+            $decoded = json_decode((string)$row['errors_json'], true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $e) {
+                    if (is_scalar($e)) $errors[] = (string)$e;
+                }
+            }
+        }
+
+        $skipped = null;
+        if ($row['skipped_json'] !== null && $row['skipped_json'] !== '') {
+            $skipped = [];
+            $decoded = json_decode((string)$row['skipped_json'], true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $s) {
+                    if (!is_array($s)) continue;
+                    $skipped[] = [
+                        'line'   => (int)($s['line'] ?? 0),
+                        'name'   => (string)($s['name'] ?? ''),
+                        'reason' => (string)($s['reason'] ?? ''),
+                    ];
+                }
+            }
+        }
+
+        unset($row['errors_json'], $row['skipped_json']);
+        $row['errors_list'] = $errors;
+        $row['skipped_list'] = $skipped;
+        return $row;
+    }
+
+    private function logImport(int $clinicId, int $userId, string $type, string $fileName, int $totalRows, array $result): int
+    {
+        $errorsJson = !empty($result['errors']) ? json_encode(array_slice($result['errors'], 0, 500), JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) : null;
+        $skippedDetails = $result['skipped_details'] ?? [];
+        $skippedJson = !empty($skippedDetails) ? json_encode(array_slice($skippedDetails, 0, 5000), JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) : null;
+        $stmt = $this->pdo->prepare('INSERT INTO clinicorp_import_logs (clinic_id, import_type, file_name, total_rows, imported_rows, skipped_rows, error_rows, errors_json, skipped_json, status, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, \'completed\', ?, NOW())');
         $stmt->execute([
             $clinicId, $type, $fileName, $totalRows,
             $result['imported'], $result['skipped'], count($result['errors']),
-            $errorsJson, $userId,
+            $errorsJson === false ? null : $errorsJson,
+            $skippedJson === false ? null : $skippedJson,
+            $userId,
         ]);
+        return (int)$this->pdo->lastInsertId();
     }
 }
