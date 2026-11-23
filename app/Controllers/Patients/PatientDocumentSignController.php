@@ -115,7 +115,7 @@ final class PatientDocumentSignController extends Controller
             $this->sendWhatsapp($clinicId, $patientPhone, $patientName, $title, $url);
             $repo->markSent($id, 'whatsapp');
         } elseif ($sendVia === 'email' && $patientEmail !== '') {
-            $this->sendEmail($patientEmail, $patientName, $title, $url);
+            $this->sendEmail($clinicId, $patientEmail, $patientName, $title, $url);
             $repo->markSent($id, 'email');
         } else {
             $repo->markSent($id, 'portal');
@@ -137,21 +137,39 @@ final class PatientDocumentSignController extends Controller
         }
     }
 
-    private function sendEmail(string $email, string $name, string $title, string $url): void
+    private function sendEmail(int $clinicId, string $email, string $name, string $title, string $url): void
     {
         try {
-            $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-            $safeName = htmlspecialchars($name !== '' ? $name : $email, ENT_QUOTES, 'UTF-8');
-            $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+            $clinic = (new \App\Repositories\ClinicRepository($this->container->get(\PDO::class)))->findById($clinicId);
+            $clinicName = trim((string)($clinic['name'] ?? ''));
+            $clinicEmail = trim((string)($clinic['contact_email'] ?? ''));
+            $displayName = $clinicName !== '' ? $clinicName : 'LumiClinic';
 
-            $html = '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">'
-                . '<p>Olá, <strong>' . $safeName . '</strong>!</p>'
-                . '<p>Você recebeu um documento para assinatura: <strong>' . $safeTitle . '</strong></p>'
-                . '<p><a href="' . $safeUrl . '" style="display:inline-block;background:#815901;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Visualizar e assinar</a></p>'
-                . '<p style="font-size:12px;color:#999;">Se o botão não funcionar, copie e cole: ' . $safeUrl . '</p>'
-                . '</div>';
+            $e = static fn (string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+            $greetName = $name !== '' ? $name : $email;
 
-            (new MailerService($this->container))->send($email, $name !== '' ? $name : $email, 'Documento para assinatura: ' . $title, $html);
+            $content = '<h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#1a1a2e;">Olá, ' . $e($greetName) . '!</h1>'
+                . '<p style="margin:0 0 24px;font-size:15px;color:#4a4a6a;line-height:1.6;">'
+                . ($clinicName !== '' ? 'A <strong>' . $e($clinicName) . '</strong> enviou' : 'Você recebeu')
+                . ' um documento para assinatura: <strong>' . $e($title) . '</strong></p>'
+                . '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr><td align="center">'
+                . '<a href="' . $e($url) . '" style="display:inline-block;background:linear-gradient(135deg,#eeb810,#d4a010);color:#1a1a2e;font-weight:800;font-size:15px;text-decoration:none;padding:14px 36px;border-radius:10px;letter-spacing:0.2px;">Visualizar e assinar</a>'
+                . '</td></tr></table>'
+                . '<p style="margin:0;font-size:12px;color:#aaaacc;line-height:1.5;word-break:break-all;">Se o botão não funcionar, copie e cole este link no navegador: ' . $e($url) . '</p>';
+
+            $html = \App\Services\Mail\EmailLayout::render(
+                $displayName,
+                'Documento para assinatura: ' . $title,
+                $content,
+                'Este e-mail foi enviado para <strong>' . $e($email) . '</strong> por ' . $e($displayName) . '.'
+            );
+
+            $options = ['from_name' => $displayName];
+            if ($clinicEmail !== '') {
+                $options['reply_to'] = $clinicEmail;
+            }
+
+            (new MailerService($this->container))->send($email, $greetName, 'Documento para assinatura: ' . $title, $html, $options);
         } catch (\Throwable $e) {
             error_log('[DocumentSign] Email send error: ' . $e->getMessage());
         }
