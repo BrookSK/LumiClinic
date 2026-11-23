@@ -11,6 +11,8 @@ $hasSkippedDetails = is_array($skippedList);
 $skippedList = $hasSkippedDetails ? $skippedList : [];
 $errorsList = is_array($log['errors_list'] ?? null) ? $log['errors_list'] : [];
 $skippedRows = (int)($log['skipped_rows'] ?? 0);
+$identifiersRemoved = !empty($log['skipped_identifiers_removed']);
+$retentionDays = \App\Services\Importer\ClinicorpImporterService::SKIPPED_IDENTIFIER_RETENTION_DAYS;
 $errorRows = (int)($log['error_rows'] ?? 0);
 
 // Resumo por motivo
@@ -91,6 +93,13 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<?php if ($identifiersRemoved): ?>
+    <div class="impl-notice">
+        Por proteção de dados (LGPD), a identificação dos registros ignorados é removida <?= (int)$retentionDays ?> dias após a importação.
+        A linha da planilha e o motivo continuam disponíveis.
+    </div>
+<?php endif; ?>
+
 <?php if (!empty($byReason)): ?>
 <div class="impl-section">
     <div class="impl-section__title">Resumo por motivo</div>
@@ -127,7 +136,7 @@ ob_start();
                 <?php foreach ($skippedList as $s): ?>
                 <tr>
                     <td><?= (int)($s['line'] ?? 0) ?></td>
-                    <td><?= $h($s['name'] ?? '') ?></td>
+                    <td><?= (string)($s['name'] ?? '') !== '' ? $h($s['name']) : '<span style="color:rgba(31,41,55,.40);">—</span>' ?></td>
                     <td><?= $h($s['reason'] ?? '') ?></td>
                 </tr>
                 <?php endforeach; ?>

@@ -10,6 +10,12 @@ final class ClinicorpImporterService
 {
     private \PDO $pdo;
 
+    /**
+     * Dias em que a identificação (nome/e-mail) dos registros ignorados fica guardada no histórico.
+     * Depois disso só a linha e o motivo são mantidos (minimização de dados pessoais, LGPD).
+     */
+    public const SKIPPED_IDENTIFIER_RETENTION_DAYS = 90;
+
     /** All supported import types with metadata */
     public const TYPES = [
         'pacientes' => [
@@ -1198,6 +1204,7 @@ final class ClinicorpImporterService
     /** @return list<array{id: int, import_type: string, file_name: string, total_rows: int, imported_rows: int, skipped_rows: int, error_rows: int, status: string, created_at: string, created_by_user_id: ?int, created_by_name: ?string}> */
     public function getImportHistory(int $clinicId): array
     {
+        $this->redactExpiredSkippedDetails($clinicId);
         $stmt = $this->pdo->prepare('SELECT l.id, l.import_type, l.file_name, l.total_rows, l.imported_rows, l.skipped_rows, l.error_rows, l.status, l.created_at, l.created_by_user_id, u.name AS created_by_name FROM clinicorp_import_logs l LEFT JOIN users u ON u.id = l.created_by_user_id WHERE l.clinic_id = ? ORDER BY l.created_at DESC, l.id DESC LIMIT 50');
         $stmt->execute([$clinicId]);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
@@ -1211,6 +1218,8 @@ final class ClinicorpImporterService
      */
     public function getImportLog(int $clinicId, int $logId): ?array
     {
+        $this->redactExpiredSkippedDetails($clinicId);
+
         $stmt = $this->pdo->prepare('SELECT l.id, l.import_type, l.file_name, l.total_rows, l.imported_rows, l.skipped_rows, l.error_rows, l.errors_json, l.skipped_json, l.status, l.created_at, l.created_by_user_id, u.name AS created_by_name FROM clinicorp_import_logs l LEFT JOIN users u ON u.id = l.created_by_user_id WHERE l.id = ? AND l.clinic_id = ? LIMIT 1');
         $stmt->execute([$logId, $clinicId]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -1226,6 +1235,9 @@ final class ClinicorpImporterService
             }
         }
 
+        $identifiersExpired = (string)($row['created_at'] ?? '') !== ''
+            && (string)$row['created_at'] < $this->skippedRetentionCutoff();
+
         $skipped = null;
         if ($row['skipped_json'] !== null && $row['skipped_json'] !== '') {
             $skipped = [];
@@ -1235,7 +1247,7 @@ final class ClinicorpImporterService
                     if (!is_array($s)) continue;
                     $skipped[] = [
                         'line'   => (int)($s['line'] ?? 0),
-                        'name'   => (string)($s['name'] ?? ''),
+                        'name'   => $identifiersExpired ? '' : (string)($s['name'] ?? ''),
                         'reason' => (string)($s['reason'] ?? ''),
                     ];
                 }
@@ -1245,7 +1257,46 @@ final class ClinicorpImporterService
         unset($row['errors_json'], $row['skipped_json']);
         $row['errors_list'] = $errors;
         $row['skipped_list'] = $skipped;
+        $row['skipped_identifiers_removed'] = $skipped !== null && $identifiersExpired;
         return $row;
+    }
+
+    private function skippedRetentionCutoff(): string
+    {
+        return (new \DateTimeImmutable('now'))
+            ->modify('-' . self::SKIPPED_IDENTIFIER_RETENTION_DAYS . ' days')
+            ->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Remove nome/e-mail dos registros ignorados das importações da clínica com mais de
+     * SKIPPED_IDENTIFIER_RETENTION_DAYS dias, mantendo linha e motivo.
+     * Só pega registros que ainda têm a chave "name" no JSON (os já anonimizados não têm).
+     */
+    private function redactExpiredSkippedDetails(int $clinicId): void
+    {
+        try {
+            $stmt = $this->pdo->prepare('SELECT id, skipped_json FROM clinicorp_import_logs WHERE clinic_id = ? AND skipped_json IS NOT NULL AND created_at < ? AND skipped_json LIKE ? LIMIT 20');
+            $stmt->execute([$clinicId, $this->skippedRetentionCutoff(), '%"name":%']);
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+
+            $update = $this->pdo->prepare('UPDATE clinicorp_import_logs SET skipped_json = ? WHERE id = ? AND clinic_id = ?');
+            foreach ($rows as $r) {
+                $decoded = json_decode((string)$r['skipped_json'], true);
+                $redacted = [];
+                if (is_array($decoded)) {
+                    foreach ($decoded as $item) {
+                        if (!is_array($item)) continue;
+                        $redacted[] = ['line' => (int)($item['line'] ?? 0), 'reason' => (string)($item['reason'] ?? '')];
+                    }
+                }
+                $json = json_encode($redacted, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+                $update->execute([$json === false ? '[]' : $json, (int)$r['id'], $clinicId]);
+            }
+        } catch (\Throwable $e) {
+            // Não impede a exibição do histórico; tenta de novo na próxima consulta.
+            error_log('[Importer] Falha ao anonimizar ignorados antigos: ' . $e->getMessage());
+        }
     }
 
     private function logImport(int $clinicId, int $userId, string $type, string $fileName, int $totalRows, array $result): int
