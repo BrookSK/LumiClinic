@@ -51,6 +51,55 @@ final class MigrationRunnerService
         return ['total' => count($names), 'executed' => count($names) - count($pending), 'pending' => $pending, 'error' => null];
     }
 
+    /** @param list<string> $columns nomes simples de coluna (sem crase) */
+    public function columnsExist(string $table, array $columns): bool
+    {
+        if (!preg_match('/^\w+$/', $table) || $columns === [] || preg_grep('/^\w+$/', $columns, PREG_GREP_INVERT)) {
+            return false;
+        }
+
+        try {
+            $this->container->get(\PDO::class)->query('SELECT `' . implode('`, `', $columns) . '` FROM `' . $table . '` LIMIT 0');
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Registra migrations como ja executadas SEM rodar o SQL
+     * (para quando o banco foi atualizado manualmente, fora deste controle).
+     * So aceita nomes que estao de fato pendentes.
+     *
+     * @param list<string> $names
+     * @param array<string,string> $refuse nome => motivo; essas nao sao marcadas
+     * @return array{marked:list<string>,refused:array<string,string>}
+     */
+    public function markExecuted(array $names, array $refuse = []): array
+    {
+        $pdo = $this->container->get(\PDO::class);
+        $this->ensureTable($pdo);
+
+        $pending = array_flip($this->status()['pending']);
+        $marked = [];
+        $refused = [];
+        $stmt = $pdo->prepare('INSERT IGNORE INTO `_migrations` (migration) VALUES (:m)');
+        foreach ($names as $name) {
+            $name = (string)$name;
+            if (!isset($pending[$name])) {
+                continue;
+            }
+            if (isset($refuse[$name])) {
+                $refused[$name] = $refuse[$name];
+                continue;
+            }
+            $stmt->execute(['m' => $name]);
+            $marked[] = $name;
+        }
+
+        return ['marked' => $marked, 'refused' => $refused];
+    }
+
     /**
      * Executa as pendentes em ordem e para na primeira que falhar
      * (as seguintes podem depender dela).

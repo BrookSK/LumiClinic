@@ -113,7 +113,7 @@ $migResults = isset($migration_results) && is_array($migration_results) ? $migra
             <?php endforeach; ?>
             <?php $migFailed = array_filter($migResults, fn ($r) => !$r['ok']); ?>
             <?php if ($migFailed !== []): ?>
-                <div style="font-size:12px;color:#b91c1c;">A execução parou na migração com erro. Envie essa mensagem para o desenvolvedor antes de tentar de novo.</div>
+                <div style="font-size:12px;color:#b91c1c;">Veja a mensagem em vermelho acima. Se não souber o que fazer, envie para o desenvolvedor antes de tentar de novo.</div>
             <?php endif; ?>
         </div>
     <?php endif; ?>
@@ -123,19 +123,43 @@ $migResults = isset($migration_results) && is_array($migration_results) ? $migra
     <?php elseif ($migPending === []): ?>
         <div style="font-size:13px;font-weight:700;color:#16a34a;">Banco atualizado (<?= (int)$mig['executed'] ?> migrações executadas).</div>
     <?php else: ?>
-        <div style="font-size:13px;font-weight:700;color:rgba(129,89,1,1);margin-bottom:8px;"><?= count($migPending) ?> pendente(s):</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-            <?php foreach ($migPending as $mp): ?>
-                <code style="padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.04);font-size:12px;"><?= htmlspecialchars((string)$mp, ENT_QUOTES, 'UTF-8') ?></code>
-            <?php endforeach; ?>
+        <style>
+        .mig-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+        .mig-item{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.04);font-size:12px;font-family:monospace;cursor:pointer;max-width:100%;word-break:break-all}
+        .mig-item input{margin:0;flex-shrink:0}
+        .mig-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        </style>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+            <div style="font-size:13px;font-weight:700;color:rgba(129,89,1,1);"><?= count($migPending) ?> pendente(s):</div>
+            <div style="font-size:12px;">
+                <a href="#" onclick="document.querySelectorAll('.mig-cb').forEach(function(c){c.checked=true});return false;">Marcar todas</a> ·
+                <a href="#" onclick="document.querySelectorAll('.mig-cb').forEach(function(c){c.checked=false});return false;">Desmarcar todas</a>
+            </div>
+        </div>
+        <form method="post" action="/sys/settings/server/migrations-mark" id="migMarkForm" style="margin:0;">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <div class="mig-list">
+                <?php foreach ($migPending as $mp): ?>
+                    <label class="mig-item"><input type="checkbox" class="mig-cb" name="migrations[]" value="<?= htmlspecialchars((string)$mp, ENT_QUOTES, 'UTF-8') ?>" checked /><?= htmlspecialchars((string)$mp, ENT_QUOTES, 'UTF-8') ?></label>
+                <?php endforeach; ?>
+            </div>
+        </form>
+
+        <div style="font-size:12px;color:rgba(31,41,55,.60);line-height:1.6;margin-bottom:12px;">
+            <strong>Já rodou essas migrações direto no banco?</strong> Use “Marcar como já executadas”: o sistema só registra que estão feitas, sem rodar o SQL de novo.<br>
+            Use “Executar pendentes” apenas para migrações que ainda não foram aplicadas no banco.
         </div>
         <?php if (count($migPending) > 5): ?>
-            <div style="font-size:12px;color:#b91c1c;margin-bottom:10px;">Há muitas migrações pendentes. Isso pode indicar que o banco foi atualizado por fora deste controle; confirme com o desenvolvedor antes de executar.</div>
+            <div style="font-size:12px;color:#b91c1c;margin-bottom:10px;">Há muitas migrações pendentes, o que normalmente significa que o banco foi atualizado por fora deste controle. Nesse caso, não clique em “Executar pendentes”: use “Marcar como já executadas”.</div>
         <?php endif; ?>
-        <form method="post" action="/sys/settings/server/migrate" style="margin:0;" onsubmit="return confirm('Executar as migrações pendentes agora?');">
-            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
-            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Executar pendentes</button>
-        </form>
+
+        <div class="mig-actions">
+            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit" form="migMarkForm" onclick="var n=document.querySelectorAll('.mig-cb:checked').length; if(!n){alert('Selecione ao menos uma migração.');return false;} return confirm('Registrar ' + n + ' migração(ões) como já executada(s)? O SQL não será rodado.');">Marcar como já executadas</button>
+            <form method="post" action="/sys/settings/server/migrate" style="margin:0;" onsubmit="return confirm('Executar AGORA o SQL de todas as migrações pendentes no banco?\n\nSe você já rodou essas migrações manualmente, cancele e use “Marcar como já executadas”.');">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Executar pendentes</button>
+            </form>
+        </div>
     <?php endif; ?>
 </div>
 

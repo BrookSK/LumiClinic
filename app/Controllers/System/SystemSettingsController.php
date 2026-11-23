@@ -393,6 +393,48 @@ final class SystemSettingsController extends Controller
         return $this->redirect('/sys/settings/server#migracoes');
     }
 
+    /** Registra como executadas as migrations que foram rodadas direto no banco (sem rodar de novo). */
+    public function serverMarkMigrations(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $names = $request->input('migrations', []);
+        $names = is_array($names) ? array_values(array_map('strval', $names)) : [];
+
+        $svc = new MigrationRunnerService($this->container);
+
+        // Conferencia das migrations do programa piloto: so marca se as colunas existem mesmo
+        $refuse = [];
+        if (!$svc->columnsExist('clinics', ['is_pilot']) || !$svc->columnsExist('clinic_subscriptions', ['pilot_discount_percent', 'pilot_discount_ends_at', 'pilot_discount_plan_id', 'pilot_discount_forfeited'])) {
+            $refuse['0176_pilot_discount.sql'] = 'As colunas desta migração não existem no banco. Ela não foi executada; rode pelo botão "Executar pendentes".';
+        }
+        if (!$svc->columnsExist('clinic_subscriptions', ['pilot_discount_duration_value', 'pilot_discount_duration_unit', 'pilot_discount_gateway_state'])) {
+            $refuse['0177_pilot_discount_duration.sql'] = 'As colunas desta migração não existem no banco. Ela não foi executada; rode pelo botão "Executar pendentes".';
+        }
+
+        try {
+            $res = $svc->markExecuted($names, $refuse);
+        } catch (\Throwable $e) {
+            $_SESSION['_migration_results'] = [['migration' => '-', 'ok' => false, 'message' => $e->getMessage()]];
+            return $this->redirect('/sys/settings/server#migracoes');
+        }
+
+        $results = [];
+        foreach ($res['marked'] as $n) {
+            $results[] = ['migration' => $n, 'ok' => true, 'message' => 'Marcada como já executada'];
+        }
+        foreach ($res['refused'] as $n => $why) {
+            $results[] = ['migration' => $n, 'ok' => false, 'message' => $why];
+        }
+        if ($results === []) {
+            $results[] = ['migration' => '-', 'ok' => false, 'message' => 'Nenhuma migração selecionada.'];
+        }
+
+        $_SESSION['_migration_results'] = $results;
+
+        return $this->redirect('/sys/settings/server#migracoes');
+    }
+
     public function serverSubmit(Request $request)
     {
         $this->ensureSuperAdmin();

@@ -723,6 +723,7 @@ $router->post('/sys/settings/ai/wallet/recharge', [\App\Controllers\System\AiWal
 $router->get('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverRequirements']);
 $router->post('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverSubmit']);
 $router->post('/sys/settings/server/migrate', [\App\Controllers\System\SystemSettingsController::class, 'serverMigrate']);
+$router->post('/sys/settings/server/migrations-mark', [\App\Controllers\System\SystemSettingsController::class, 'serverMarkMigrations']);
 
 $router->get('/sys/error-logs', [SystemErrorLogController::class, 'index']);
 $router->get('/sys/error-logs/view', [SystemErrorLogController::class, 'details']);
