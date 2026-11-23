@@ -27,7 +27,7 @@ ob_start();
 
 <?php if ($locked): ?>
     <div class="lc-alert lc-alert--info" style="margin-bottom:12px;">
-        Este lançamento foi gerado por uma venda ou pagamento. Tipo, valor e data não podem ser alterados aqui; ajuste na venda ou no pagamento de origem.
+        Este lançamento foi gerado por uma venda, pagamento ou conta a pagar. Tipo, valor e data não podem ser alterados aqui; ajuste na origem do lançamento.
     </div>
 <?php endif; ?>
 

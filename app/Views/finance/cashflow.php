@@ -190,7 +190,7 @@ ob_start();
                             <?= $isIn ? '+' : '-' ?> R$ <?= number_format((float)$e['amount'], 2, ',', '.') ?>
                         </td>
                         <td class="lc-flex lc-gap-sm" style="align-items:center;">
-                            <?php if ($can('finance.entries.create')): ?>
+                            <?php if ($can('finance.entries.create') || $can('finance.sales.create')): ?>
                                 <a class="lc-btn lc-btn--secondary lc-btn--sm" style="font-size:11px;" href="/finance/cashflow/edit?id=<?= (int)$e['id'] ?>&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>">Editar</a>
                             <?php endif; ?>
                             <?php if ($can('finance.entries.delete')): ?>

@@ -410,8 +410,29 @@ final class FinancialService
      */
     public function isSystemGeneratedEntry(array $entry): bool
     {
-        return (isset($entry['sale_id']) && (int)$entry['sale_id'] > 0)
-            || (isset($entry['payment_id']) && (int)$entry['payment_id'] > 0);
+        if ((isset($entry['sale_id']) && (int)$entry['sale_id'] > 0)
+            || (isset($entry['payment_id']) && (int)$entry['payment_id'] > 0)) {
+            return true;
+        }
+
+        // Baixa de parcela de contas a pagar: o lancamento fica referenciado em paid_entry_id
+        $entryId = (int)($entry['id'] ?? 0);
+        $clinicId = (int)($entry['clinic_id'] ?? 0);
+        if ($entryId <= 0 || $clinicId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->container->get(\PDO::class)->prepare("
+            SELECT 1
+            FROM accounts_payable_installments
+            WHERE clinic_id = :clinic_id
+              AND paid_entry_id = :entry_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ");
+        $stmt->execute(['clinic_id' => $clinicId, 'entry_id' => $entryId]);
+
+        return $stmt->fetchColumn() !== false;
     }
 
     public function updateEntry(
@@ -473,7 +494,7 @@ final class FinancialService
                 || $amountFmt !== number_format((float)$before['amount'], 2, '.', '')
                 || $occurredOn !== (string)$before['occurred_on']
             ) {
-                throw new \RuntimeException('Lançamento gerado por venda ou pagamento: só é possível alterar descrição, centro de custo e forma de pagamento.');
+                throw new \RuntimeException('Lançamento gerado por venda, pagamento ou conta a pagar: só é possível alterar descrição, centro de custo e forma de pagamento.');
             }
         }
 
