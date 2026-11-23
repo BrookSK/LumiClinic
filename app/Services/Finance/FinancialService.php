@@ -391,6 +391,143 @@ final class FinancialService
         return $id;
     }
 
+    /** @return array<string,mixed>|null */
+    public function getEntry(int $entryId): ?array
+    {
+        $clinicId = (new AuthService($this->container))->clinicId();
+        if ($clinicId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        return (new FinancialEntryRepository($this->container->get(\PDO::class)))->findById($clinicId, $entryId);
+    }
+
+    /**
+     * Lançamentos gerados por venda ou pagamento não podem mudar tipo, valor nem data,
+     * para não divergir da venda/pagamento de origem.
+     *
+     * @param array<string,mixed> $entry
+     */
+    public function isSystemGeneratedEntry(array $entry): bool
+    {
+        return (isset($entry['sale_id']) && (int)$entry['sale_id'] > 0)
+            || (isset($entry['payment_id']) && (int)$entry['payment_id'] > 0);
+    }
+
+    public function updateEntry(
+        int $entryId,
+        string $kind,
+        string $occurredOn,
+        string $amountStr,
+        ?string $method,
+        ?int $costCenterId,
+        ?string $description,
+        string $ip,
+        ?string $userAgent = null
+    ): void {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new FinancialEntryRepository($pdo);
+        $before = $repo->findById($clinicId, $entryId);
+        if ($before === null) {
+            throw new \RuntimeException('Lançamento inválido.');
+        }
+
+        $kind = trim($kind);
+        if (!in_array($kind, ['in', 'out'], true)) {
+            throw new \RuntimeException('Tipo inválido.');
+        }
+
+        $occurredOn = trim($occurredOn);
+        if ($occurredOn === '') {
+            $occurredOn = (string)$before['occurred_on'];
+        }
+        $d = \DateTimeImmutable::createFromFormat('Y-m-d', $occurredOn);
+        if ($d === false || $d->format('Y-m-d') !== $occurredOn) {
+            throw new \RuntimeException('Data inválida.');
+        }
+
+        $amount = $this->parseMoney($amountStr);
+        if ($amount <= 0) {
+            throw new \RuntimeException('Valor inválido.');
+        }
+        $amountFmt = number_format($amount, 2, '.', '');
+
+        $method = $method === null ? null : trim($method);
+        if ($method === '') {
+            $method = null;
+        }
+        if ($method !== null && !array_key_exists($method, ChartOfAccountsService::PAYMENT_METHODS)) {
+            throw new \RuntimeException('Forma de pagamento inválida.');
+        }
+
+        if ($this->isSystemGeneratedEntry($before)) {
+            if (
+                $kind !== (string)$before['kind']
+                || $amountFmt !== number_format((float)$before['amount'], 2, '.', '')
+                || $occurredOn !== (string)$before['occurred_on']
+            ) {
+                throw new \RuntimeException('Lançamento gerado por venda ou pagamento: só é possível alterar descrição, centro de custo e forma de pagamento.');
+            }
+        }
+
+        $description = $description === null ? null : trim($description);
+        if ($description === '') {
+            $description = null;
+        }
+
+        $beforeCc = $before['cost_center_id'] !== null ? (int)$before['cost_center_id'] : null;
+        if ($costCenterId !== null && $costCenterId !== $beforeCc) {
+            $cc = (new CostCenterRepository($pdo))->findById($clinicId, $costCenterId);
+            if ($cc === null || (string)($cc['status'] ?? '') !== 'active') {
+                throw new \RuntimeException('Centro de custo inválido.');
+            }
+        }
+
+        $pdo->beginTransaction();
+        try {
+            (new DataVersionRepository($pdo))->record(
+                $clinicId,
+                'financial_entry',
+                $entryId,
+                'finance.entries.update',
+                $before,
+                $actorId,
+                $ip,
+                $userAgent
+            );
+
+            $repo->update($clinicId, $entryId, $kind, $occurredOn, $amountFmt, $method, $costCenterId, $description);
+
+            $after = [
+                'kind' => $kind,
+                'occurred_on' => $occurredOn,
+                'amount' => $amountFmt,
+                'method' => $method,
+                'cost_center_id' => $costCenterId,
+                'description' => $description,
+            ];
+
+            (new FinancialEntryLogRepository($pdo))->log($clinicId, $entryId, 'financial_entries.update', $before, $after, $actorId, $ip);
+
+            $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+            (new AuditLogRepository($pdo))->log($actorId, $clinicId, 'finance.entries.update', ['entry_id' => $entryId, 'before' => $before, 'after' => $after], $ip, $roleCodes, 'financial_entry', $entryId, $userAgent);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function deleteEntry(int $entryId, string $ip, ?string $userAgent = null): void
     {
         $auth = new AuthService($this->container);

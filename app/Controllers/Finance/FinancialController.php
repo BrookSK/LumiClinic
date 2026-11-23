@@ -138,6 +138,73 @@ final class FinancialController extends Controller
         }
     }
 
+    public function editEntry(Request $request)
+    {
+        try { $this->authorize('finance.entries.create'); } catch (\Throwable $e) { $this->authorize('finance.sales.create'); }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/finance/cashflow');
+        }
+
+        $service = new FinancialService($this->container);
+        $row = $service->getEntry($id);
+        if ($row === null) {
+            return $this->redirect('/finance/cashflow?error=' . urlencode('Lançamento inválido.'));
+        }
+
+        return $this->view('finance/cashflow_edit', [
+            'row' => $row,
+            'locked' => $service->isSystemGeneratedEntry($row),
+            'cost_centers' => $service->listCostCenters(),
+            'from' => trim((string)$request->input('from', '')),
+            'to' => trim((string)$request->input('to', '')),
+            'error' => trim((string)$request->input('error', '')),
+        ]);
+    }
+
+    public function updateEntry(Request $request)
+    {
+        try { $this->authorize('finance.entries.create'); } catch (\Throwable $e) { $this->authorize('finance.sales.create'); }
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        $from = trim((string)$request->input('from', ''));
+        $to = trim((string)$request->input('to', ''));
+        $range = ($from !== '' && $to !== '') ? '&from=' . urlencode($from) . '&to=' . urlencode($to) : '';
+
+        $method = trim((string)$request->input('method', ''));
+        $costCenterId = (int)$request->input('cost_center_id', 0);
+        $desc = trim((string)$request->input('description', ''));
+
+        try {
+            (new FinancialService($this->container))->updateEntry(
+                $id,
+                trim((string)$request->input('kind', '')),
+                trim((string)$request->input('occurred_on', '')),
+                trim((string)$request->input('amount', '')),
+                $method === '' ? null : $method,
+                $costCenterId > 0 ? $costCenterId : null,
+                $desc === '' ? null : $desc,
+                $request->ip(),
+                $request->header('user-agent')
+            );
+
+            return $this->redirect('/finance/cashflow' . ($range !== '' ? '?' . ltrim($range, '&') : ''));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/finance/cashflow/edit?id=' . $id . $range . '&error=' . urlencode($e->getMessage()));
+        }
+    }
+
     public function costCenters(Request $request)
     {
         try { $this->authorize('finance.cost_centers.manage'); } catch (\Throwable $e) { $this->authorize('finance.sales.read'); }

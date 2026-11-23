@@ -189,7 +189,10 @@ ob_start();
                         <td style="text-align:right; font-weight:700; color:<?= $isIn ? '#16a34a' : '#b91c1c' ?>;">
                             <?= $isIn ? '+' : '-' ?> R$ <?= number_format((float)$e['amount'], 2, ',', '.') ?>
                         </td>
-                        <td>
+                        <td class="lc-flex lc-gap-sm" style="align-items:center;">
+                            <?php if ($can('finance.entries.create')): ?>
+                                <a class="lc-btn lc-btn--secondary lc-btn--sm" style="font-size:11px;" href="/finance/cashflow/edit?id=<?= (int)$e['id'] ?>&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>">Editar</a>
+                            <?php endif; ?>
                             <?php if ($can('finance.entries.delete')): ?>
                                 <form method="post" action="/finance/entries/delete" onsubmit="return confirm('Excluir?');">
                                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />

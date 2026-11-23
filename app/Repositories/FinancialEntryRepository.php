@@ -190,6 +190,44 @@ final class FinancialEntryRepository
         return (int)$this->pdo->lastInsertId();
     }
 
+    public function update(
+        int $clinicId,
+        int $id,
+        string $kind,
+        string $occurredOn,
+        string $amount,
+        ?string $method,
+        ?int $costCenterId,
+        ?string $description
+    ): void {
+        $sql = "
+            UPDATE financial_entries
+            SET kind = :kind,
+                occurred_on = :occurred_on,
+                amount = :amount,
+                method = :method,
+                cost_center_id = :cost_center_id,
+                description = :description,
+                updated_at = NOW()
+            WHERE id = :id
+              AND clinic_id = :clinic_id
+              AND deleted_at IS NULL
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'id' => $id,
+            'clinic_id' => $clinicId,
+            'kind' => $kind,
+            'occurred_on' => $occurredOn,
+            'amount' => $amount,
+            'method' => ($method === '' ? null : $method),
+            'cost_center_id' => $costCenterId,
+            'description' => ($description === '' ? null : $description),
+        ]);
+    }
+
     public function softDelete(int $clinicId, int $id): void
     {
         $sql = "
