@@ -450,7 +450,9 @@ $router->post('/finance/payments/delete', [PaymentController::class, 'delete']);
 $router->post('/finance/payments/refund', [PaymentController::class, 'refund']);
 
 $router->get('/finance/cashflow', [FinancialController::class, 'cashflow']);
+$router->get('/finance/cashflow/edit', [FinancialController::class, 'editEntry']);
 $router->post('/finance/entries/create', [FinancialController::class, 'createEntry']);
+$router->post('/finance/cashflow/update', [FinancialController::class, 'updateEntry']);
 $router->post('/finance/entries/delete', [FinancialController::class, 'deleteEntry']);
 
 $router->get('/finance/accounts-payable', [\App\Controllers\Finance\AccountsPayableController::class, 'index']);
