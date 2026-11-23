@@ -2,10 +2,17 @@
 $title = 'Admin - Clínicas';
 $items = $items ?? [];
 $q = $q ?? '';
+$error = isset($error) ? trim((string)$error) : '';
 $csrf = $_SESSION['_csrf'] ?? '';
 
 ob_start();
 ?>
+
+<?php if ($error !== ''): ?>
+<div style="padding:12px 16px;border-radius:12px;border:1px solid rgba(185,28,28,.25);background:rgba(185,28,28,.08);color:#b91c1c;font-size:13px;font-weight:600;margin-bottom:14px;">
+    <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
+</div>
+<?php endif; ?>
 
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
     <div>
@@ -57,6 +64,14 @@ ob_start();
                 <span style="font-size:11px;color:rgba(31,41,55,.35);">Criada em <?= htmlspecialchars($createdFmt, ENT_QUOTES, 'UTF-8') ?></span>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0;">
+                <?php if ($ownerEmail !== ''): ?>
+                <?php $confirmMsg = 'Entrar na clínica como o dono (' . $ownerEmail . ')? Todas as ações ficarão registradas na auditoria.'; ?>
+                <form method="post" action="/sys/clinics/impersonate" style="margin:0;" onsubmit="return confirm(<?= htmlspecialchars((string)json_encode($confirmMsg, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8') ?>);">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" value="<?= $id ?>" />
+                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Logar como</button>
+                </form>
+                <?php endif; ?>
                 <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/sys/clinics/edit?id=<?= $id ?>">Editar</a>
                 <form method="post" action="/sys/clinics/set-status" style="margin:0;">
                     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />

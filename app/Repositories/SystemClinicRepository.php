@@ -110,6 +110,26 @@ final class SystemClinicRepository
         return $row ?: null;
     }
 
+    /** @return array<string,mixed>|null */
+    public function findOwnerUserForClinic(int $clinicId): ?array
+    {
+        $sql = "
+            SELECT u.id, u.name, u.email, u.clinic_id, u.is_super_admin
+            FROM users u
+            JOIN user_roles ur ON ur.user_id = u.id AND ur.clinic_id = u.clinic_id
+            JOIN roles r ON r.id = ur.role_id AND r.clinic_id = u.clinic_id AND r.code = 'owner'
+            WHERE u.clinic_id = :clinic_id AND u.deleted_at IS NULL
+            ORDER BY u.id
+            LIMIT 1
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     /** @return list<array<string, mixed>> */
     public function listAll(): array
     {

@@ -90,6 +90,14 @@ O projeto é servido via `public/index.php`.
 - Área do sistema para administrar clínicas, assinaturas e planos.
 - Se o usuário for Super Admin e estiver **sem contexto de clínica ativo**, algumas telas redirecionam para seleção de clínica.
 
+#### Logar como (dono da clínica)
+
+- Em `/sys/clinics`, cada clínica que tem um usuário dono (papel `owner`) mostra o botão **Logar como**. Ele abre a sessão como o dono, sem precisar da senha dele.
+- Enquanto estiver acessando como o dono, uma faixa amarela aparece no topo de todas as telas com o botão **Voltar ao admin** (também disponível no menu do usuário). Ele encerra o acesso e volta para `/sys/clinics` como super admin.
+- Durante esse acesso, termos/documentos legais pendentes do dono não são exigidos e não podem ser aceitos ou assinados.
+- A auditoria registra `auth.impersonation.start` e `auth.impersonation.stop` (com o super admin como `user_id`). Qualquer outra ação registrada durante o acesso leva `impersonator_user_id` no `meta_json`.
+- **Sair** (logout) durante o acesso encerra a sessão inteira, inclusive a do super admin.
+
 ### 3.4 Primeiros passos (passo a passo de uso)
 
 1. **Acesse como Super Admin** (se aplicável) e crie/ative uma clínica.

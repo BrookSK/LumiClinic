@@ -6,6 +6,7 @@ namespace App\Controllers\System;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Services\Auth\AuthService;
 use App\Services\Billing\PilotProgramService;
 use App\Services\System\SystemClinicService;
 
@@ -29,7 +30,29 @@ final class SystemClinicController extends Controller
         return $this->view('system/clinics/index', [
             'items' => $service->listClinics($q),
             'q' => $q,
+            'error' => trim((string)$request->input('error', '')),
         ]);
+    }
+
+    public function impersonate(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/sys/clinics');
+        }
+
+        try {
+            (new AuthService($this->container))->impersonateClinicOwner($id, $request->ip(), $request->header('user-agent'));
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'Acesso negado.') {
+                throw $e;
+            }
+            return $this->redirect('/sys/clinics?error=' . urlencode($e->getMessage()));
+        }
+
+        return $this->redirect('/');
     }
 
     public function create(Request $request)

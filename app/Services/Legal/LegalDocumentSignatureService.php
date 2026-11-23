@@ -80,6 +80,9 @@ final class LegalDocumentSignatureService
     public function signAsUser(int $documentId, string $signatureDataUrl, string $ip, ?string $userAgent): void
     {
         $auth = new AuthService($this->container);
+        if ($auth->isImpersonating()) {
+            throw new \RuntimeException('Não é possível aceitar ou assinar documentos enquanto estiver acessando como outro usuário.');
+        }
         $clinicId = $auth->clinicId();
         $userId = $auth->userId();
         if ($clinicId === null || $userId === null) {

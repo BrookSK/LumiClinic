@@ -94,6 +94,11 @@ final class ClinicContextMiddleware implements MiddlewareInterface
 
         $this->container->set('host_clinic_id', fn () => $hostClinicId);
 
+        // O super admin sempre precisa conseguir encerrar o "logar como"
+        if ($path === '/sys/impersonate/stop') {
+            return $next($request);
+        }
+
         if ($userId !== null && !$isSuperAdmin) {
             if ($sessionClinicId === null) {
                 return Response::html('Contexto de clínica ausente.', 403);
