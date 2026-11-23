@@ -77,6 +77,11 @@ ob_start();
     </div>
 </div>
 
+<?php $viewError = trim((string)($_GET['error'] ?? '')); ?>
+<?php if ($viewError !== ''): ?>
+    <div class="lc-alert lc-alert--danger" style="margin-bottom:12px;"><?= htmlspecialchars($viewError, ENT_QUOTES, 'UTF-8') ?></div>
+<?php endif; ?>
+
 <div class="lc-card">
     <div class="lc-card__title" style="display:flex;align-items:center;justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:12px;">
@@ -103,6 +108,13 @@ ob_start();
                     </label>
                 </form>
                 <button type="button" class="lc-btn lc-btn--secondary lc-btn--sm" onclick="togglePatientEdit()" id="btnEditPatient" style="font-size:11px;">✏️ Editar dados</button>
+            <?php endif; ?>
+            <?php if ($can('patients.delete')): ?>
+                <form method="post" action="/patients/delete" style="display:inline;" onsubmit="return confirm('Excluir este paciente?\n\nO paciente deixará de aparecer em listas, buscas e agenda, e o acesso ao portal será removido. O histórico clínico e financeiro é mantido de forma restrita pelo prazo de guarda exigido por lei (LGPD/CFM).\n\nDeseja continuar?');">
+                    <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['_csrf'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+                    <input type="hidden" name="id" value="<?= (int)($patient['id'] ?? 0) ?>" />
+                    <button type="submit" class="lc-btn lc-btn--danger lc-btn--sm" style="font-size:11px;">🗑 Excluir paciente</button>
+                </form>
             <?php endif; ?>
         </div>
     </div>

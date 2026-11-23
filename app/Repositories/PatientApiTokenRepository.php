@@ -76,6 +76,19 @@ final class PatientApiTokenRepository
         return $row ?: null;
     }
 
+    public function revokeByPatientId(int $clinicId, int $patientId): void
+    {
+        $sql = "
+            UPDATE patient_api_tokens
+            SET revoked_at = NOW()
+            WHERE clinic_id = :clinic_id
+              AND patient_id = :patient_id
+              AND revoked_at IS NULL
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
+    }
+
     public function touchLastUsedAt(int $id): void
     {
         $sql = "

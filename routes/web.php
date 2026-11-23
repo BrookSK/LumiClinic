@@ -560,6 +560,7 @@ $router->post('/patients/create', [PatientController::class, 'store']);
 $router->get('/patients/view', [PatientController::class, 'show']);
 $router->get('/patients/edit', [PatientController::class, 'edit']);
 $router->post('/patients/edit', [PatientController::class, 'update']);
+$router->post('/patients/delete', [PatientController::class, 'delete']);
 $router->get('/patients/search-json', [PatientController::class, 'searchJson']);
 $router->get('/patients/packages-json', [PatientController::class, 'packagesJson']);
 $router->get('/patients/export.csv', [PatientController::class, 'exportCsv']);

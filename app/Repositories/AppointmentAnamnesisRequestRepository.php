@@ -12,15 +12,16 @@ final class AppointmentAnamnesisRequestRepository
     public function findValidByTokenHash(string $tokenHash): ?array
     {
         $sql = "
-            SELECT id, clinic_id, appointment_id, patient_id, template_id,
-                   token_hash, token_encrypted, expires_at, used_at, used_action,
-                   response_id,
-                   created_by_user_id, created_at
-            FROM appointment_anamnesis_requests
-            WHERE token_hash = :token_hash
-              AND deleted_at IS NULL
-              AND used_at IS NULL
-              AND expires_at > NOW()
+            SELECT r.id, r.clinic_id, r.appointment_id, r.patient_id, r.template_id,
+                   r.token_hash, r.token_encrypted, r.expires_at, r.used_at, r.used_action,
+                   r.response_id,
+                   r.created_by_user_id, r.created_at
+            FROM appointment_anamnesis_requests r
+            INNER JOIN patients p ON p.id = r.patient_id AND p.clinic_id = r.clinic_id AND p.deleted_at IS NULL
+            WHERE r.token_hash = :token_hash
+              AND r.deleted_at IS NULL
+              AND r.used_at IS NULL
+              AND r.expires_at > NOW()
             LIMIT 1
         ";
 

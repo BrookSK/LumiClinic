@@ -242,4 +242,22 @@ final class PatientUserRepository
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
     }
+
+    public function softDeleteByPatientId(int $clinicId, int $patientId): void
+    {
+        $sql = "
+            UPDATE patient_users
+            SET
+                email = CONCAT('deleted+', id, '@invalid.local'),
+                status = 'inactive',
+                updated_at = NOW(),
+                deleted_at = NOW()
+            WHERE clinic_id = :clinic_id
+              AND patient_id = :patient_id
+              AND deleted_at IS NULL
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
+    }
 }

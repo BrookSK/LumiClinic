@@ -8,6 +8,7 @@ use App\Core\Container\Container;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Middleware\MiddlewareInterface;
+use App\Repositories\PatientUserRepository;
 use App\Services\Legal\LegalDocumentService;
 use App\Services\Portal\PatientAuthService;
 
@@ -38,6 +39,15 @@ final class PatientAuthMiddleware implements MiddlewareInterface
             $uri = (string)($_SERVER['REQUEST_URI'] ?? '/portal');
             if ($uri !== '' && $uri !== '/portal/login') {
                 $_SESSION['portal_next'] = $uri;
+            }
+            return Response::redirect('/portal/login');
+        }
+
+        // Paciente excluido perde a sessao do portal imediatamente
+        if ((new PatientUserRepository($this->container->get(\PDO::class)))->findByIdGlobal((int)$auth->patientUserId()) === null) {
+            unset($_SESSION['patient_user_id'], $_SESSION['patient_id'], $_SESSION['patient_two_factor_required'], $_SESSION['patient_name']);
+            if (!isset($_SESSION['user_id']) || (int)$_SESSION['user_id'] <= 0) {
+                unset($_SESSION['clinic_id']);
             }
             return Response::redirect('/portal/login');
         }

@@ -27,7 +27,7 @@ final class DocumentSignRequestRepository
             FROM document_sign_requests d
             JOIN patients p ON p.id = d.patient_id AND p.clinic_id = d.clinic_id
             JOIN clinics c ON c.id = d.clinic_id
-            WHERE d.token = :t LIMIT 1");
+            WHERE d.token = :t AND p.deleted_at IS NULL LIMIT 1");
         $stmt->execute(['t' => $token]);
         $row = $stmt->fetch();
         return $row ?: null;
