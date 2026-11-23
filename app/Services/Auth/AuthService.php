@@ -290,7 +290,18 @@ final class AuthService
             throw new \RuntimeException('Não é possível acessar como outro super admin.');
         }
 
+        // Mesma regra do login: em um domínio/subdomínio de outra clínica a sessão do dono seria bloqueada
+        $hostClinicId = $this->container->has('host_clinic_id') ? $this->container->get('host_clinic_id') : null;
+        if (is_int($hostClinicId) && $hostClinicId !== $clinicId) {
+            throw new \RuntimeException('Este endereço pertence a outra clínica. Acesse o painel pelo domínio principal para logar como o dono desta clínica.');
+        }
+
         $ownerId = (int)$owner['id'];
+
+        $previousClinicId = isset($_SESSION['clinic_id']) ? (int)$_SESSION['clinic_id'] : null;
+        $previousActiveClinicId = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['active_clinic_id'])
+            ? $_SESSION['active_clinic_id']
+            : null;
 
         session_regenerate_id(true);
 
@@ -303,6 +314,8 @@ final class AuthService
             'clinic_id' => $clinicId,
             'clinic_name' => (string)($clinic['name'] ?? ''),
             'started_at' => time(),
+            'previous_clinic_id' => $previousClinicId,
+            'previous_active_clinic_id' => $previousActiveClinicId,
         ];
 
         $_SESSION['user_id'] = $ownerId;
@@ -365,7 +378,18 @@ final class AuthService
         $audit->log($superAdminId, $clinicId, 'auth.impersonation.stop', $meta, $ip, null, 'user', $targetUserId > 0 ? $targetUserId : null, $userAgent);
         SystemEvent::dispatch($this->container, 'user.impersonation.stop', $meta, 'user', $superAdminId, $ip, $userAgent);
 
+        $previousClinicId = isset($imp['previous_clinic_id']) ? (int)$imp['previous_clinic_id'] : null;
+        $previousActiveClinicId = isset($imp['previous_active_clinic_id']) ? (int)$imp['previous_active_clinic_id'] : null;
+
         unset($_SESSION['impersonator'], $_SESSION['clinic_id'], $_SESSION['active_clinic_id'], $_SESSION['required_legal_docs'], $_SESSION['auth_next']);
+
+        // Restaura o contexto de clínica que o super admin tinha antes de iniciar
+        if ($previousClinicId !== null && $previousClinicId > 0) {
+            $_SESSION['clinic_id'] = $previousClinicId;
+        }
+        if ($previousActiveClinicId !== null && $previousActiveClinicId > 0) {
+            $_SESSION['active_clinic_id'] = $previousActiveClinicId;
+        }
 
         $_SESSION['user_id'] = $superAdminId;
         $_SESSION['is_super_admin'] = 1;

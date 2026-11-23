@@ -45,6 +45,15 @@ final class MeController extends Controller
         $pdo = $this->container->get(\PDO::class);
         $users = new UserRepository($pdo);
 
+        // Durante o "logar como" o super admin não pode alterar o perfil (e-mail) do dono
+        if ($auth->isImpersonating()) {
+            return $this->view('account/me', [
+                'user' => $users->findById($userId),
+                'error' => 'Não é possível alterar o perfil enquanto estiver acessando como outro usuário.',
+                'success' => null,
+            ]);
+        }
+
         if ($name === '' || $email === '') {
             return $this->view('account/me', [
                 'user' => $users->findById($userId),

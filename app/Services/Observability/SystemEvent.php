@@ -24,6 +24,17 @@ final class SystemEvent
         $clinicId = $auth->clinicId();
         $userId = $auth->userId();
 
+        // Durante o "logar como", registra também o super admin que está agindo
+        if (
+            !array_key_exists('impersonator_user_id', $payload)
+            && isset($_SESSION['impersonator'])
+            && is_array($_SESSION['impersonator'])
+            && isset($_SESSION['impersonator']['user_id'])
+            && (int)$_SESSION['impersonator']['user_id'] > 0
+        ) {
+            $payload['impersonator_user_id'] = (int)$_SESSION['impersonator']['user_id'];
+        }
+
         $payload = self::sanitizePayload($container, $payload);
 
         $role = null;

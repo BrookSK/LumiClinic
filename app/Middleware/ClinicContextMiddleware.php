@@ -94,8 +94,8 @@ final class ClinicContextMiddleware implements MiddlewareInterface
 
         $this->container->set('host_clinic_id', fn () => $hostClinicId);
 
-        // O super admin sempre precisa conseguir encerrar o "logar como"
-        if ($path === '/sys/impersonate/stop') {
+        // O super admin sempre precisa conseguir encerrar o "logar como" ou sair
+        if ($path === '/sys/impersonate/stop' || $path === '/logout') {
             return $next($request);
         }
 
