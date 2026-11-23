@@ -6,6 +6,7 @@ namespace App\Services\Finance;
 
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\ChartAccountRepository;
 use App\Repositories\CostCenterRepository;
 use App\Repositories\DataVersionRepository;
 use App\Repositories\FinancialEntryLogRepository;
@@ -33,8 +34,71 @@ final class FinancialService
         return $repo->listActiveByClinic($clinicId);
     }
 
-    public function createCostCenter(string $name, string $ip, ?string $userAgent = null): int
-    {
+    /**
+     * Normaliza e valida os dados contábeis de um centro de custo.
+     *
+     * @return array{code:?string,description:?string,chart_account_id:?int}
+     */
+    private function normalizeCostCenterAccounting(
+        \PDO $pdo,
+        int $clinicId,
+        ?int $costCenterId,
+        ?string $code,
+        ?string $description,
+        ?int $chartAccountId,
+        ?int $currentChartAccountId = null
+    ): array {
+        $code = $code === null ? '' : trim($code);
+        $description = $description === null ? '' : trim($description);
+
+        if (mb_strlen($code) > 32) {
+            throw new \RuntimeException('O código do centro de custo deve ter no máximo 32 caracteres.');
+        }
+        if (mb_strlen($description) > 255) {
+            throw new \RuntimeException('A descrição deve ter no máximo 255 caracteres.');
+        }
+
+        $repo = new CostCenterRepository($pdo);
+        if ($code !== '') {
+            $dup = $repo->findByCode($clinicId, $code);
+            if ($dup !== null && (int)$dup['id'] !== (int)($costCenterId ?? 0)) {
+                throw new \RuntimeException('Já existe um centro de custo com este código.');
+            }
+        }
+
+        if ($chartAccountId !== null && $chartAccountId <= 0) {
+            $chartAccountId = null;
+        }
+
+        if ($chartAccountId !== null) {
+            $account = (new ChartAccountRepository($pdo))->findById($clinicId, $chartAccountId);
+            if ($account === null) {
+                throw new \RuntimeException('Conta contábil inválida.');
+            }
+            if ((string)($account['account_type'] ?? '') !== 'analytic') {
+                throw new \RuntimeException('Selecione uma conta analítica (que recebe lançamentos), não uma conta de grupo.');
+            }
+            $keepsCurrent = $currentChartAccountId !== null && $currentChartAccountId === $chartAccountId;
+            if (!$keepsCurrent && (string)($account['status'] ?? '') !== 'active') {
+                throw new \RuntimeException('A conta contábil selecionada está inativa.');
+            }
+        }
+
+        return [
+            'code' => $code === '' ? null : $code,
+            'description' => $description === '' ? null : $description,
+            'chart_account_id' => $chartAccountId,
+        ];
+    }
+
+    public function createCostCenter(
+        string $name,
+        string $ip,
+        ?string $userAgent = null,
+        ?string $code = null,
+        ?string $description = null,
+        ?int $chartAccountId = null
+    ): int {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
@@ -53,19 +117,36 @@ final class FinancialService
         $existing = $repo->findByNameIncludingDeleted($clinicId, $name);
         if ($existing !== null) {
             $deletedAt = $existing['deleted_at'] ?? null;
-            if ($deletedAt !== null && trim((string)$deletedAt) !== '') {
-                $id = (int)$existing['id'];
-                $repo->restore($clinicId, $id);
-            } else {
+            if ($deletedAt === null || trim((string)$deletedAt) === '') {
                 throw new \RuntimeException('Já existe um centro de custo com este nome.');
             }
+        }
+
+        $acc = $this->normalizeCostCenterAccounting(
+            $pdo,
+            $clinicId,
+            $existing !== null ? (int)$existing['id'] : null,
+            $code,
+            $description,
+            $chartAccountId
+        );
+
+        if ($existing !== null) {
+            $id = (int)$existing['id'];
+            $repo->restore($clinicId, $id);
+            $repo->update($clinicId, $id, $name, $acc['code'], $acc['description'], $acc['chart_account_id']);
         } else {
-            $id = $repo->create($clinicId, $name);
+            $id = $repo->create($clinicId, $name, $acc['code'], $acc['description'], $acc['chart_account_id']);
         }
 
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
-        $audit->log($actorId, $clinicId, 'finance.cost_centers.create', ['cost_center_id' => $id], $ip, $roleCodes, 'cost_center', $id, $userAgent);
+        $audit->log($actorId, $clinicId, 'finance.cost_centers.create', [
+            'cost_center_id' => $id,
+            'code' => $acc['code'],
+            'chart_account_id' => $acc['chart_account_id'],
+            'has_description' => $acc['description'] !== null,
+        ], $ip, $roleCodes, 'cost_center', $id, $userAgent);
 
         return $id;
     }
@@ -96,8 +177,15 @@ final class FinancialService
         return $repo->findById($clinicId, $id);
     }
 
-    public function updateCostCenter(int $id, string $name, string $ip, ?string $userAgent = null): void
-    {
+    public function updateCostCenter(
+        int $id,
+        string $name,
+        string $ip,
+        ?string $userAgent = null,
+        ?string $code = null,
+        ?string $description = null,
+        ?int $chartAccountId = null
+    ): void {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
@@ -112,15 +200,30 @@ final class FinancialService
 
         $pdo = $this->container->get(\PDO::class);
         $repo = new CostCenterRepository($pdo);
-        if ($repo->findById($clinicId, $id) === null) {
+        $current = $repo->findById($clinicId, $id);
+        if ($current === null) {
             throw new \RuntimeException('Centro de custo inválido.');
         }
 
-        $repo->update($clinicId, $id, $name);
+        $sameName = $repo->findByNameIncludingDeleted($clinicId, $name);
+        if ($sameName !== null && (int)$sameName['id'] !== $id) {
+            throw new \RuntimeException('Já existe um centro de custo com este nome.');
+        }
+
+        $currentAccountId = isset($current['chart_account_id']) && $current['chart_account_id'] !== null ? (int)$current['chart_account_id'] : null;
+        $acc = $this->normalizeCostCenterAccounting($pdo, $clinicId, $id, $code, $description, $chartAccountId, $currentAccountId);
+
+        $repo->update($clinicId, $id, $name, $acc['code'], $acc['description'], $acc['chart_account_id']);
 
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
-        $audit->log($actorId, $clinicId, 'finance.cost_centers.update', ['cost_center_id' => $id], $ip, $roleCodes, 'cost_center', $id, $userAgent);
+        $audit->log($actorId, $clinicId, 'finance.cost_centers.update', [
+            'cost_center_id' => $id,
+            'code' => $acc['code'],
+            'chart_account_id' => $acc['chart_account_id'],
+            'previous_chart_account_id' => $currentAccountId,
+            'has_description' => $acc['description'] !== null,
+        ], $ip, $roleCodes, 'cost_center', $id, $userAgent);
     }
 
     public function setCostCenterStatus(int $id, string $status, string $ip, ?string $userAgent = null): void

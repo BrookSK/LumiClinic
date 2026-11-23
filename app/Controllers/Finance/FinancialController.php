@@ -10,6 +10,7 @@ use App\Core\Http\Response;
 use App\Repositories\ServiceCatalogRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Compliance\DataExportService;
+use App\Services\Finance\ChartOfAccountsService;
 use App\Services\Finance\FinancialService;
 use App\Services\Finance\SalesService;
 
@@ -153,6 +154,7 @@ final class FinancialController extends Controller
         $svc = new FinancialService($this->container);
         return $this->view('finance/cost_centers', [
             'rows' => $svc->listAllCostCenters(),
+            'chart_accounts' => (new ChartOfAccountsService($this->container))->listActiveAnalyticAccounts(),
             'error' => trim((string)$request->input('error', '')),
             'success' => trim((string)$request->input('success', '')),
         ]);
@@ -172,8 +174,18 @@ final class FinancialController extends Controller
         }
 
         $name = trim((string)$request->input('name', ''));
+        $code = trim((string)$request->input('code', ''));
+        $description = trim((string)$request->input('description', ''));
+        $chartAccountId = (int)$request->input('chart_account_id', 0);
         try {
-            (new FinancialService($this->container))->createCostCenter($name, $request->ip(), $request->header('user-agent'));
+            (new FinancialService($this->container))->createCostCenter(
+                $name,
+                $request->ip(),
+                $request->header('user-agent'),
+                $code === '' ? null : $code,
+                $description === '' ? null : $description,
+                $chartAccountId > 0 ? $chartAccountId : null
+            );
             return $this->redirect('/finance/cost-centers?success=' . urlencode('Criado.'));
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/cost-centers?error=' . urlencode($e->getMessage()));
@@ -206,6 +218,10 @@ final class FinancialController extends Controller
 
         return $this->view('finance/cost_centers_edit', [
             'row' => $row,
+            'chart_accounts' => (new ChartOfAccountsService($this->container))->listActiveAnalyticAccounts(),
+            'current_chart_account' => isset($row['chart_account_id']) && $row['chart_account_id'] !== null
+                ? (new ChartOfAccountsService($this->container))->getAccount((int)$row['chart_account_id'])
+                : null,
             'error' => trim((string)$request->input('error', '')),
             'success' => trim((string)$request->input('success', '')),
         ]);
@@ -226,9 +242,20 @@ final class FinancialController extends Controller
 
         $id = (int)$request->input('id', 0);
         $name = trim((string)$request->input('name', ''));
+        $code = trim((string)$request->input('code', ''));
+        $description = trim((string)$request->input('description', ''));
+        $chartAccountId = (int)$request->input('chart_account_id', 0);
 
         try {
-            (new FinancialService($this->container))->updateCostCenter($id, $name, $request->ip(), $request->header('user-agent'));
+            (new FinancialService($this->container))->updateCostCenter(
+                $id,
+                $name,
+                $request->ip(),
+                $request->header('user-agent'),
+                $code === '' ? null : $code,
+                $description === '' ? null : $description,
+                $chartAccountId > 0 ? $chartAccountId : null
+            );
             return $this->redirect('/finance/cost-centers/edit?id=' . $id . '&success=' . urlencode('Salvo.'));
         } catch (\RuntimeException $e) {
             return $this->redirect('/finance/cost-centers/edit?id=' . $id . '&error=' . urlencode($e->getMessage()));

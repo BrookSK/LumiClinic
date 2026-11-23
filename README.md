@@ -59,6 +59,9 @@ Novidades relevantes:
   - e-mail de usuário agora é **único por clínica** (multi-clínica)
 - `0087_stock_material_categories_and_units.sql`
   - cria `material_categories` e `material_units`
+- `0179_chart_of_accounts.sql`
+  - cria `chart_accounts` (plano de contas hierárquico por clínica, em `/finance/chart-of-accounts`, com modelo padrão para clínicas)
+  - adiciona `code`, `description` e `chart_account_id` em `cost_centers` (vínculo do centro de custo com a conta contábil)
 
 ### 2.4 Subir o servidor
 
