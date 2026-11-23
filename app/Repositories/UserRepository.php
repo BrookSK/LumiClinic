@@ -74,6 +74,22 @@ final class UserRepository
         return $row ?: null;
     }
 
+    /** True se o usuario existe, nao foi excluido e esta com status active. */
+    public function isActiveById(int $userId): bool
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT 1
+            FROM users
+            WHERE id = :id
+              AND status = 'active'
+              AND deleted_at IS NULL
+            LIMIT 1
+        ");
+        $stmt->execute(['id' => $userId]);
+
+        return $stmt->fetchColumn() !== false;
+    }
+
     public function updatePasswordById(int $userId, string $passwordHash): void
     {
         $sql = "

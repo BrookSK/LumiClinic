@@ -168,6 +168,7 @@ final class AdminUserRepository
         $sql = "
             UPDATE users
                SET deleted_at = NOW(),
+                   email = CONCAT('deleted+', id, '@invalid.local'),
                    updated_at = NOW()
              WHERE id = :id
                AND clinic_id = :clinic_id
