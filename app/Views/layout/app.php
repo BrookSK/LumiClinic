@@ -180,6 +180,7 @@ $ico = [
                     <div class="lc-navgroup__children">
                         <div class="lc-nav__sub">
                             <?= $navItem('/sys/settings/billing', 'Assinatura', $ico['settings'], $isActive('/sys/settings/billing')) ?>
+                            <?= $navItem('/sys/settings/pilot', 'Clínicas piloto', $ico['settings'], $isActive('/sys/settings/pilot')) ?>
                             <?= $navItem('/sys/settings/whatsapp', 'WhatsApp', $ico['settings'], $isActive('/sys/settings/whatsapp')) ?>
                             <?= $navItem('/sys/settings/google-oauth', 'Google Calendar', $ico['settings'], $isActive('/sys/settings/google-oauth')) ?>
                             <?= $navItem('/sys/settings/ai', 'IA (OpenAI)', $ico['settings'], $isActive('/sys/settings/ai')) ?>

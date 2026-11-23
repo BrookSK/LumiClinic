@@ -88,6 +88,17 @@ foreach ($queues as $queue) {
     }
 }
 
+// Desconto de clinicas piloto: atualiza no gateway o valor de quem venceu, perdeu ou saiu do programa
+$pilotSynced = 0;
+try {
+    $pilotSynced = (new \App\Services\Billing\PilotProgramService($container))->syncPendingGatewayValues();
+} catch (\Throwable $e) {
+    $details[] = 'pilot: ' . $e->getMessage();
+}
+if ($pilotSynced > 0) {
+    $details[] = "pilot: {$pilotSynced} assinatura(s) atualizada(s)";
+}
+
 header('Content-Type: application/json');
 echo json_encode([
     'ok' => true,

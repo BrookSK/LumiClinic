@@ -9,9 +9,15 @@ $error = isset($error) ? (string)$error : '';
 
 $planName = (string)($plan['name'] ?? $plan['code'] ?? '');
 $price = '-';
+$originalPrice = null;
 if (isset($plan['price_cents'])) {
     $cents = (int)$plan['price_cents'];
-    $price = 'R$ ' . number_format(max(0, $cents) / 100, 2, ',', '.');
+    $charge = isset($charge_cents) ? (int)$charge_cents : $cents;
+    $price = 'R$ ' . number_format(max(0, $charge) / 100, 2, ',', '.');
+    if ($charge < $cents) {
+        // Desconto de clínica piloto
+        $originalPrice = 'R$ ' . number_format(max(0, $cents) / 100, 2, ',', '.');
+    }
 }
 
 ob_start();
@@ -23,7 +29,10 @@ ob_start();
         <div class="lc-muted" style="margin-bottom:10px;">
             Plano selecionado: <strong><?= htmlspecialchars($planName, ENT_QUOTES, 'UTF-8') ?></strong>
             <br />
-            Valor a cobrar agora: <strong><?= htmlspecialchars($price, ENT_QUOTES, 'UTF-8') ?></strong>
+            Valor a cobrar agora:
+            <?php if ($originalPrice !== null): ?><s style="color:rgba(31,41,55,.45);"><?= htmlspecialchars($originalPrice, ENT_QUOTES, 'UTF-8') ?></s><?php endif; ?>
+            <strong><?= htmlspecialchars($price, ENT_QUOTES, 'UTF-8') ?></strong>
+            <?php if ($originalPrice !== null): ?><span style="font-size:12px;color:#16a34a;font-weight:700;">(desconto de clínica piloto)</span><?php endif; ?>
         </div>
 
         <?php if ($error !== ''): ?>

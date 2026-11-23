@@ -112,7 +112,12 @@ final class BillingGatewayService
         (new AsaasClient($this->container))->updateSubscriptionCreditCard($asaasSubId, $payload);
     }
 
-    public function syncGatewaySubscriptionAmount(int $clinicId): void
+    /**
+     * Envia ao gateway o valor recorrente do plano atual (com desconto piloto, se houver).
+     *
+     * @param bool $updatePendingPayments true = atualiza tambem as cobrancas pendentes ja geradas
+     */
+    public function syncGatewaySubscriptionAmount(int $clinicId, bool $updatePendingPayments = false): void
     {
         $pdo = $this->container->get(\PDO::class);
 
@@ -134,10 +139,11 @@ final class BillingGatewayService
 
         $planId = isset($sub['plan_id']) && $sub['plan_id'] !== null ? (int)$sub['plan_id'] : null;
         $plan = $planId !== null ? (new SaasPlanRepository($pdo))->findById($planId) : null;
-        $priceCents = $plan !== null ? (int)($plan['price_cents'] ?? 0) : 0;
+        $priceCents = (new PilotProgramService($this->container))->effectivePriceCents($clinicId, $plan);
         $amount = max(0, $priceCents) / 100;
 
-        (new AsaasClient($this->container))->updateSubscriptionValue($asaasSubId, $amount);
+        (new AsaasClient($this->container))->updateSubscriptionValue($asaasSubId, $amount, $updatePendingPayments);
+        (new PilotProgramService($this->container))->markGatewaySynced($clinicId, $plan);
     }
 
     public function cancelGatewaySubscription(int $clinicId): void
@@ -185,7 +191,7 @@ final class BillingGatewayService
         $planId = isset($sub['plan_id']) && $sub['plan_id'] !== null ? (int)$sub['plan_id'] : null;
         $plan = $planId !== null ? (new SaasPlanRepository($pdo))->findById($planId) : null;
 
-        $priceCents = $plan !== null ? (int)($plan['price_cents'] ?? 0) : 0;
+        $priceCents = (new PilotProgramService($this->container))->effectivePriceCents($clinicId, $plan);
         $amount = max(0, $priceCents) / 100;
 
         $provider = (string)($sub['gateway_provider'] ?? '');

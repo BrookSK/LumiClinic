@@ -3,6 +3,8 @@ $title = 'Admin - Editar Clínica';
 $csrf = $_SESSION['_csrf'] ?? '';
 $clinic = $clinic ?? null;
 $error = $error ?? null;
+$notice = $notice ?? null;
+$pilot = isset($pilot) && is_array($pilot) ? $pilot : ['schema_ready' => false];
 
 $g = fn(string $k) => is_array($clinic) ? (string)($clinic[$k] ?? '') : '';
 $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
@@ -60,6 +62,9 @@ ob_start();
 <?php if ($error): ?>
     <div class="lc-alert lc-alert--danger" style="margin-bottom:14px;"><?= $e((string)$error) ?></div>
 <?php endif; ?>
+<?php if ($notice): ?>
+    <div class="lc-alert lc-alert--success" style="margin-bottom:14px;"><?= $e((string)$notice) ?></div>
+<?php endif; ?>
 
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -93,6 +98,54 @@ ob_start();
             <label class="lc-label">Nome da clínica</label>
             <input class="lc-input" type="text" name="name" value="<?= $e($name) ?>" required />
         </div>
+    </div>
+
+    <!-- Programa piloto -->
+    <?php
+    $pFmt = function ($v): string {
+        $s = trim((string)($v ?? ''));
+        if ($s === '') return '—';
+        try { return (new \DateTimeImmutable($s))->format('d/m/Y H:i'); } catch (\Throwable $ex) { return $s; }
+    };
+    $pStatusMap = [
+        'active' => ['Desconto ativo', '#16a34a'],
+        'expired' => ['Período encerrado', '#6b7280'],
+        'forfeited' => ['Benefício perdido (trocou de plano)', '#b91c1c'],
+        'removed' => ['Fora do programa', '#6b7280'],
+    ];
+    $pSettings = $pilot['settings'] ?? ['configured' => false];
+    ?>
+    <div class="sc-card">
+        <div class="sc-title">Programa piloto</div>
+        <?php if (empty($pilot['schema_ready'])): ?>
+            <div class="sc-desc" style="margin-bottom:0;">Disponível depois de executar as migrações pendentes em <a href="/sys/settings/server">Servidor → Migrações do banco</a>.</div>
+        <?php else: ?>
+            <div class="sc-desc">Clínicas piloto recebem o desconto definido em <a href="/sys/settings/pilot">Configurações → Clínicas piloto</a> no primeiro plano contratado.</div>
+            <input type="hidden" name="pilot_field" value="1" />
+            <input type="hidden" name="is_pilot" value="0" />
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;font-weight:650;color:rgba(31,41,55,.85);">
+                <input type="checkbox" name="is_pilot" value="1" <?= !empty($pilot['is_pilot']) ? 'checked' : '' ?> style="width:18px;height:18px;margin-top:1px;flex-shrink:0;" />
+                <span>Clínica participa do programa piloto</span>
+            </label>
+
+            <?php if (empty($pilot['is_pilot'])): ?>
+                <?php if (!empty($pSettings['configured'])): ?>
+                    <div class="sc-desc" style="margin:10px 0 0;">Ao marcar e salvar: <?= $e(\App\Services\Billing\PilotDiscountService::percentLabel((float)$pSettings['percent'])) ?> de desconto por <?= $e(\App\Services\Billing\PilotDiscountService::durationLabel((int)$pSettings['duration'], (string)$pSettings['unit'])) ?>, contando a partir de agora.<?= !empty($pilot['has_snapshot']) ? ' A condição anterior é substituída.' : '' ?></div>
+                <?php else: ?>
+                    <div class="sc-desc" style="margin:10px 0 0;color:#b5841e;">Configure a porcentagem e a duração do desconto antes de marcar uma clínica.</div>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <?php if (!empty($pilot['has_snapshot'])): ?>
+                <?php [$psLbl, $psClr] = $pStatusMap[(string)($pilot['status'] ?? '')] ?? ['—', '#6b7280']; ?>
+                <div style="margin-top:12px;padding:12px;border-radius:10px;border:1px solid rgba(17,24,39,.08);background:rgba(0,0,0,.015);font-size:12px;color:rgba(31,41,55,.65);line-height:1.7;">
+                    <span style="display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:<?= $psClr ?>18;color:<?= $psClr ?>;border:1px solid <?= $psClr ?>30;margin-bottom:4px;"><?= $e($psLbl) ?></span><br>
+                    Desconto: <strong><?= $e($pilot['percent_label'] ?? '') ?></strong> por <?= $e($pilot['duration_label'] ?? '') ?><br>
+                    Período: <?= $e($pFmt($pilot['starts_at'] ?? '')) ?> até <?= $e($pFmt($pilot['ends_at'] ?? '')) ?><br>
+                    Plano com desconto: <?= $e($pilot['benefit_plan_name'] ?? 'o primeiro plano pago que a clínica contratar') ?>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
     </div>
 
     <!-- Contato da clínica -->

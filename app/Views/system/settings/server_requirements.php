@@ -91,6 +91,54 @@ ob_start();
     <?php endforeach; ?>
 </div>
 
+<!-- Migrações do banco (rodar pelo navegador) -->
+<?php
+$mig = isset($migrations) && is_array($migrations) ? $migrations : ['total' => 0, 'executed' => 0, 'pending' => [], 'error' => null];
+$migPending = is_array($mig['pending'] ?? null) ? $mig['pending'] : [];
+$migResults = isset($migration_results) && is_array($migration_results) ? $migration_results : null;
+?>
+<div id="migracoes" style="padding:18px;border-radius:14px;border:1px solid <?= $migPending !== [] ? 'rgba(238,184,16,.35)' : 'rgba(22,163,74,.18)' ?>;background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);margin-bottom:16px;">
+    <div style="font-weight:750;font-size:14px;color:rgba(31,41,55,.90);margin-bottom:4px;">Migrações do banco</div>
+    <div style="font-size:12px;color:rgba(31,41,55,.50);margin-bottom:12px;">Atualiza a estrutura do banco depois de um deploy. Faz o mesmo que o comando <code>php bin/migrate.php</code>, sem precisar de terminal.</div>
+
+    <?php if ($migResults !== null): ?>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+            <?php if ($migResults === []): ?>
+                <div class="lc-alert lc-alert--success">Nenhuma migração pendente.</div>
+            <?php endif; ?>
+            <?php foreach ($migResults as $r): ?>
+                <div style="padding:8px 12px;border-radius:10px;font-size:12px;border:1px solid <?= $r['ok'] ? 'rgba(22,163,74,.22)' : 'rgba(185,28,28,.25)' ?>;background:<?= $r['ok'] ? 'rgba(22,163,74,.05)' : 'rgba(185,28,28,.05)' ?>;word-break:break-word;">
+                    <strong><?= htmlspecialchars((string)$r['migration'], ENT_QUOTES, 'UTF-8') ?></strong> — <?= htmlspecialchars((string)$r['message'], ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            <?php endforeach; ?>
+            <?php $migFailed = array_filter($migResults, fn ($r) => !$r['ok']); ?>
+            <?php if ($migFailed !== []): ?>
+                <div style="font-size:12px;color:#b91c1c;">A execução parou na migração com erro. Envie essa mensagem para o desenvolvedor antes de tentar de novo.</div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($mig['error'])): ?>
+        <div class="lc-alert lc-alert--danger">Não foi possível ler o controle de migrações: <?= htmlspecialchars((string)$mig['error'], ENT_QUOTES, 'UTF-8') ?></div>
+    <?php elseif ($migPending === []): ?>
+        <div style="font-size:13px;font-weight:700;color:#16a34a;">Banco atualizado (<?= (int)$mig['executed'] ?> migrações executadas).</div>
+    <?php else: ?>
+        <div style="font-size:13px;font-weight:700;color:rgba(129,89,1,1);margin-bottom:8px;"><?= count($migPending) ?> pendente(s):</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+            <?php foreach ($migPending as $mp): ?>
+                <code style="padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.04);font-size:12px;"><?= htmlspecialchars((string)$mp, ENT_QUOTES, 'UTF-8') ?></code>
+            <?php endforeach; ?>
+        </div>
+        <?php if (count($migPending) > 5): ?>
+            <div style="font-size:12px;color:#b91c1c;margin-bottom:10px;">Há muitas migrações pendentes. Isso pode indicar que o banco foi atualizado por fora deste controle; confirme com o desenvolvedor antes de executar.</div>
+        <?php endif; ?>
+        <form method="post" action="/sys/settings/server/migrate" style="margin:0;" onsubmit="return confirm('Executar as migrações pendentes agora?');">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+            <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Executar pendentes</button>
+        </form>
+    <?php endif; ?>
+</div>
+
 <!-- Cron URL (fila de jobs) -->
 <?php
 $cronToken = trim((string)($cron_token ?? ''));

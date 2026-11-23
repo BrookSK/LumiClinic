@@ -29,6 +29,24 @@ $decodeLimits = function ($j): array {
 
 $planName = is_array($plan) ? trim((string)($plan['name'] ?? $plan['code'] ?? '')) : '';
 $price = is_array($plan) && isset($plan['price_cents']) ? $fmtMoney((int)$plan['price_cents']) : '—';
+
+// Condição exclusiva para clínicas piloto (só vem preenchido durante o período do benefício)
+$pilot = isset($pilot) && is_array($pilot) ? $pilot : null;
+$pilotPrices = $pilot !== null && is_array($pilot['prices'] ?? null) ? $pilot['prices'] : [];
+$pilotBenefitPlanId = $pilot !== null && isset($pilot['plan_id']) ? (int)$pilot['plan_id'] : 0;
+$pilotCurrentDiscount = null;
+if ($pilot !== null && is_array($plan) && isset($pilot['current_price_cents']) && (int)$pilot['current_price_cents'] < (int)($plan['price_cents'] ?? 0)) {
+    $pilotCurrentDiscount = $fmtMoney((int)$pilot['current_price_cents']);
+}
+$pilotEndsFmt = '';
+if ($pilot !== null) {
+    try {
+        $pilotEndsDt = new \DateTimeImmutable((string)$pilot['ends_at']);
+        $pilotEndsFmt = $pilotEndsDt->format('d/m/Y') . ' às ' . $pilotEndsDt->format('H:i');
+    } catch (\Throwable $e) {
+        $pilotEndsFmt = '';
+    }
+}
 $subStatus = (string)($subscription['status'] ?? '');
 $stLbl = $statusLabel[$subStatus] ?? $subStatus;
 $stClr = $statusColor[$subStatus] ?? '#6b7280';
@@ -81,6 +99,48 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
 }
 ?>
 
+<?php if ($pilot !== null): ?>
+<?php
+$pilotPlanName = '';
+if ($pilotBenefitPlanId > 0) {
+    $pilotPlanName = $pilotBenefitPlanId === (int)($subscription['plan_id'] ?? 0) ? $planName : '';
+    if ($pilotPlanName === '') {
+        foreach ($plans as $_p) {
+            if ((int)($_p['id'] ?? 0) === $pilotBenefitPlanId) { $pilotPlanName = trim((string)($_p['name'] ?? $_p['code'] ?? '')); break; }
+        }
+    }
+}
+?>
+<style>
+.pilot-box{padding:16px 18px;border-radius:14px;border:1px solid rgba(22,163,74,.28);background:linear-gradient(135deg,rgba(22,163,74,.07),rgba(253,229,159,.14));box-shadow:0 4px 16px rgba(17,24,39,.05);margin-bottom:16px}
+.pilot-box__head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pilot-box__pct{display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:8px 10px;border-radius:12px;background:#16a34a;color:#fff;font-weight:900;font-size:18px;line-height:1}
+.pilot-box__title{font-weight:800;font-size:15px;color:rgba(31,41,55,.95)}
+.pilot-box__sub{font-size:13px;color:rgba(31,41,55,.65);margin-top:2px;line-height:1.5}
+.pilot-box__rules{margin:12px 0 0;padding:10px 12px 10px 28px;border-radius:10px;background:rgba(255,255,255,.65);border:1px solid rgba(17,24,39,.06);font-size:12px;color:rgba(31,41,55,.70);line-height:1.65}
+.pilot-old{text-decoration:line-through;color:rgba(31,41,55,.40);font-weight:600}
+.pilot-tag{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(22,163,74,.12);color:#15803d;border:1px solid rgba(22,163,74,.25)}
+</style>
+<div class="pilot-box">
+    <div class="pilot-box__head">
+        <span class="pilot-box__pct">-<?= htmlspecialchars((string)$pilot['percent_label'], ENT_QUOTES, 'UTF-8') ?></span>
+        <div style="flex:1;min-width:200px;">
+            <div class="pilot-box__title">Condição exclusiva para clientes piloto</div>
+            <div class="pilot-box__sub">
+                Sua clínica tem <strong><?= htmlspecialchars((string)$pilot['percent_label'], ENT_QUOTES, 'UTF-8') ?> de desconto</strong>
+                <?php if ((string)$pilot['duration_label'] !== ''): ?>por <strong><?= htmlspecialchars((string)$pilot['duration_label'], ENT_QUOTES, 'UTF-8') ?></strong><?php endif; ?>
+                no valor do plano<?php if ($pilotEndsFmt !== ''): ?>, válido até <strong><?= htmlspecialchars($pilotEndsFmt, ENT_QUOTES, 'UTF-8') ?></strong><?php endif; ?>.
+            </div>
+        </div>
+    </div>
+    <ul class="pilot-box__rules">
+        <li>O desconto vale para o primeiro plano contratado<?= $pilotPlanName !== '' ? ': <strong>' . htmlspecialchars($pilotPlanName, ENT_QUOTES, 'UTF-8') . '</strong>' : '' ?>.</li>
+        <li>Se a clínica mudar de plano, perde o benefício. Ele não pode ser transferido para o novo plano nem recuperado ao voltar para o plano anterior.</li>
+        <li>Ao fim do período, o plano passa a ser cobrado pelo valor normal.</li>
+    </ul>
+</div>
+<?php endif; ?>
+
 <?php if ($pendingPlanId !== null && $pendingPlanId > 0): ?>
 <div style="padding:14px 16px;border-radius:14px;border:1px solid rgba(238,184,16,.30);background:rgba(253,229,159,.12);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
     <div>
@@ -106,7 +166,15 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
     <div style="padding:18px;border-radius:14px;border:1px solid rgba(17,24,39,.08);background:var(--lc-surface);box-shadow:0 4px 16px rgba(17,24,39,.06);">
         <div style="font-size:12px;color:rgba(31,41,55,.45);font-weight:600;">Plano</div>
         <div style="font-weight:800;font-size:18px;margin-top:4px;"><?= htmlspecialchars($planName !== '' ? $planName : '—', ENT_QUOTES, 'UTF-8') ?></div>
-        <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;"><?= htmlspecialchars($price, ENT_QUOTES, 'UTF-8') ?>/mês</div>
+        <?php if ($pilotCurrentDiscount !== null): ?>
+            <div style="font-size:13px;margin-top:2px;">
+                <span class="pilot-old"><?= htmlspecialchars($price, ENT_QUOTES, 'UTF-8') ?></span>
+                <span style="font-weight:800;color:#15803d;"><?= htmlspecialchars($pilotCurrentDiscount, ENT_QUOTES, 'UTF-8') ?>/mês</span>
+            </div>
+            <div style="margin-top:6px;"><span class="pilot-tag">Desconto piloto</span></div>
+        <?php else: ?>
+            <div style="font-size:13px;color:rgba(31,41,55,.50);margin-top:2px;"><?= htmlspecialchars($price, ENT_QUOTES, 'UTF-8') ?>/mês</div>
+        <?php endif; ?>
     </div>
     <div style="padding:18px;border-radius:14px;border:1px solid <?= $stClr ?>22;background:<?= $stClr ?>06;box-shadow:0 4px 16px rgba(17,24,39,.06);">
         <div style="font-size:12px;color:rgba(31,41,55,.45);font-weight:600;">Status</div>
@@ -169,10 +237,22 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
             $isCurrent = ((int)($subscription['plan_id'] ?? 0) === $pid);
             $tEnabled = array_key_exists('transcription_enabled', $limits) ? (bool)$limits['transcription_enabled'] : true;
             $tMin = (int)($limits['transcription_minutes'] ?? 0);
+            $pDiscCents = $pilotPrices[$pid] ?? null;
+            // Trocar para este plano faz perder o desconto piloto já vinculado a outro plano
+            $pLosesPilot = $pilot !== null && $pilotBenefitPlanId > 0 && $pid !== $pilotBenefitPlanId;
+            $pChargeLabel = $fmtMoney($pDiscCents !== null ? (int)$pDiscCents : $pCents);
             ?>
             <div style="padding:16px;border-radius:14px;border:<?= $isCurrent ? '2px solid rgba(238,184,16,.40)' : '1px solid rgba(17,24,39,.08)' ?>;background:<?= $isCurrent ? 'rgba(253,229,159,.06)' : 'rgba(0,0,0,.01)' ?>;">
                 <div style="font-weight:800;font-size:15px;color:rgba(31,41,55,.96);"><?= htmlspecialchars($pName, ENT_QUOTES, 'UTF-8') ?></div>
-                <div style="font-size:20px;font-weight:900;color:rgba(129,89,1,1);margin-top:6px;"><?= $fmtMoney($pCents) ?><span style="font-size:12px;font-weight:600;color:rgba(31,41,55,.40);">/mês</span></div>
+                <?php if ($pDiscCents !== null): ?>
+                    <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+                        <span class="pilot-old" style="font-size:14px;"><?= $fmtMoney($pCents) ?></span>
+                        <span style="font-size:20px;font-weight:900;color:#15803d;"><?= $fmtMoney((int)$pDiscCents) ?><span style="font-size:12px;font-weight:600;color:rgba(31,41,55,.40);">/mês</span></span>
+                    </div>
+                    <div style="margin-top:4px;"><span class="pilot-tag">-<?= htmlspecialchars((string)$pilot['percent_label'], ENT_QUOTES, 'UTF-8') ?> piloto</span></div>
+                <?php else: ?>
+                    <div style="font-size:20px;font-weight:900;color:rgba(129,89,1,1);margin-top:6px;"><?= $fmtMoney($pCents) ?><span style="font-size:12px;font-weight:600;color:rgba(31,41,55,.40);">/mês</span></div>
+                <?php endif; ?>
                 <div style="font-size:12px;color:rgba(31,41,55,.50);margin-top:8px;line-height:1.6;">
                     Transcrição: <?= !$tEnabled ? 'Não incluso' : ($tMin > 0 ? $tMin . ' min/mês' : 'Ilimitado') ?><br>
                     Usuários: <?= (int)($limits['users'] ?? 0) > 0 ? (int)$limits['users'] : 'Ilimitado' ?><br>
@@ -181,7 +261,7 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
                 <?php if ($isOwner && !$isCurrent): ?>
                     <div id="planCard_<?= $pid ?>" style="margin-top:10px;">
                         <button class="lc-btn lc-btn--primary lc-btn--sm" type="button" style="width:100%;justify-content:center;"
-                            onclick="openPlanCheckout(<?= $pid ?>, '<?= htmlspecialchars(addslashes($pName), ENT_QUOTES, 'UTF-8') ?>', '<?= $fmtMoney($pCents) ?>')">
+                            onclick="openPlanCheckout(<?= $pid ?>, '<?= htmlspecialchars(addslashes($pName), ENT_QUOTES, 'UTF-8') ?>', '<?= $pChargeLabel ?>', <?= $pLosesPilot ? 'true' : 'false' ?>, '<?= $pDiscCents !== null ? $fmtMoney($pCents) : '' ?>')">
                             Selecionar
                         </button>
                     </div>
@@ -256,6 +336,12 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
             <button onclick="closePlanCheckout()" style="background:none;border:none;cursor:pointer;font-size:20px;color:rgba(31,41,55,.40);padding:4px;">✕</button>
         </div>
         <div style="padding:20px 24px;">
+            <div id="planCheckoutPilotLoss" style="display:none;padding:12px 14px;border-radius:12px;border:1px solid rgba(185,28,28,.25);background:rgba(185,28,28,.05);font-size:13px;color:rgba(127,29,29,.95);line-height:1.5;margin-bottom:14px;">
+                <strong>Atenção:</strong> ao trocar de plano sua clínica perde o desconto de cliente piloto. O benefício não passa para o novo plano e não volta se você retornar ao plano atual.
+            </div>
+            <div id="planCheckoutPilotBind" style="display:none;padding:12px 14px;border-radius:12px;border:1px solid rgba(22,163,74,.25);background:rgba(22,163,74,.06);font-size:13px;color:rgba(21,128,61,1);line-height:1.5;margin-bottom:14px;">
+                Desconto de cliente piloto aplicado. Ele fica vinculado a este plano, o primeiro contratado.
+            </div>
             <style>
             .cc-section{margin-top:0}
             .cc-title{font-weight:750;font-size:13px;color:rgba(31,41,55,.80);margin-bottom:10px}
@@ -287,9 +373,11 @@ if ($pendingPlanId !== null && $pendingPlanId > 0 && is_array($plans)) {
 </div>
 
 <script>
-function openPlanCheckout(planId, planName, price) {
+function openPlanCheckout(planId, planName, price, losesPilot, originalPrice) {
     document.getElementById('planCheckoutPlanId').value = planId;
-    document.getElementById('planCheckoutInfo').textContent = planName + ' — ' + price + '/mês';
+    document.getElementById('planCheckoutInfo').textContent = planName + ' — ' + price + '/mês' + (originalPrice ? ' (de ' + originalPrice + ')' : '');
+    document.getElementById('planCheckoutPilotLoss').style.display = losesPilot ? 'block' : 'none';
+    document.getElementById('planCheckoutPilotBind').style.display = (!losesPilot && originalPrice) ? 'block' : 'none';
     var overlay = document.getElementById('planCheckoutOverlay');
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';

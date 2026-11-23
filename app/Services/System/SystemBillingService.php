@@ -51,6 +51,10 @@ final class SystemBillingService
 
         (new SystemBillingRepository($pdo))->updateSubscriptionPlan($clinicId, $planId);
 
+        // Mesma regra da troca feita pela clinica: desconto piloto e perdido ao mudar de plano.
+        // O valor no gateway e corrigido pela rotina do cron (PilotProgramService::syncPendingGatewayValues).
+        (new \App\Services\Billing\PilotProgramService($this->container))->onPlanChanged($clinicId, $planId, $ip);
+
         (new AuditLogRepository($pdo))->log((int)($_SESSION['user_id'] ?? null), null, 'system.billing.set_plan', ['clinic_id' => $clinicId, 'plan_id' => $planId], $ip);
     }
 

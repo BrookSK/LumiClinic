@@ -43,12 +43,23 @@ final class ClinicSubscriptionController extends Controller
             $transcription = (new \App\Services\Billing\PlanEntitlementsService($this->container))->transcriptionStatus($clinicId);
         }
 
+        // Condição exclusiva para clínicas piloto (null = não exibe nada)
+        $pilot = null;
+        if ($clinicId !== null) {
+            $pilotSvc = new \App\Services\Billing\PilotProgramService($this->container);
+            $pilot = $pilotSvc->clinicOffer($clinicId, $data['plans']);
+            if ($pilot !== null && is_array($data['plan'])) {
+                $pilot['current_price_cents'] = $pilotSvc->effectivePriceCents($clinicId, $data['plan']);
+            }
+        }
+
         return $this->view('billing/subscription', [
             'subscription' => $data['subscription'],
             'plan' => $data['plan'],
             'plans' => $data['plans'],
             'payments' => $data['payments'],
             'transcription' => $transcription,
+            'pilot' => $pilot,
             'ok' => (string)$request->input('ok', ''),
             'error' => (string)$request->input('error', ''),
         ]);
@@ -121,9 +132,14 @@ final class ClinicSubscriptionController extends Controller
         $planId = (int)$request->input('plan_id', 0);
         try {
             $data = (new ClinicSubscriptionSelfService($this->container))->getCheckoutData($planId);
+            $clinicId = (new AuthService($this->container))->clinicId();
+            $chargeCents = $clinicId !== null
+                ? (new \App\Services\Billing\PilotProgramService($this->container))->effectivePriceCents($clinicId, $data['plan'])
+                : (int)($data['plan']['price_cents'] ?? 0);
             return $this->view('billing/subscription_checkout', [
                 'subscription' => $data['subscription'],
                 'plan' => $data['plan'],
+                'charge_cents' => $chargeCents,
                 'error' => (string)$request->input('error', ''),
             ]);
         } catch (\RuntimeException $e) {

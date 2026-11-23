@@ -694,6 +694,9 @@ $router->post('/sys/settings/google-oauth', [\App\Controllers\System\SystemGoogl
 $router->get('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billing']);
 $router->post('/sys/settings/billing', [\App\Controllers\System\SystemSettingsController::class, 'billingSubmit']);
 
+$router->get('/sys/settings/pilot', [\App\Controllers\System\SystemSettingsController::class, 'pilot']);
+$router->post('/sys/settings/pilot', [\App\Controllers\System\SystemSettingsController::class, 'pilotSubmit']);
+
 $router->get('/sys/settings/seo', [\App\Controllers\System\SystemSettingsController::class, 'seo']);
 $router->post('/sys/settings/seo', [\App\Controllers\System\SystemSettingsController::class, 'seoSubmit']);
 
@@ -717,6 +720,7 @@ $router->post('/sys/settings/ai/wallet/recharge', [\App\Controllers\System\AiWal
 
 $router->get('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverRequirements']);
 $router->post('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverSubmit']);
+$router->post('/sys/settings/server/migrate', [\App\Controllers\System\SystemSettingsController::class, 'serverMigrate']);
 
 $router->get('/sys/error-logs', [SystemErrorLogController::class, 'index']);
 $router->get('/sys/error-logs/view', [SystemErrorLogController::class, 'details']);

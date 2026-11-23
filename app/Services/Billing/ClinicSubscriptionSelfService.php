@@ -45,6 +45,9 @@ final class ClinicSubscriptionSelfService
                     $stmt = $pdo->prepare("\n                        UPDATE clinic_subscriptions\n                        SET plan_id = :plan_id,\n                            pending_plan_id = NULL,\n                            pending_plan_effective_at = NULL,\n                            updated_at = NOW()\n                        WHERE clinic_id = :clinic_id\n                        LIMIT 1\n                    ");
                     $stmt->execute(['clinic_id' => $clinicId, 'plan_id' => $pendingPlanId]);
 
+                    // Trocou de plano: desconto piloto e perdido (ou vinculado, se ainda nao havia plano pago)
+                    (new PilotProgramService($this->container))->onPlanChanged($clinicId, $pendingPlanId);
+
                     $gw = new BillingGatewayService($this->container);
                     $gw->ensureGatewaySubscription($clinicId);
                     $gw->syncGatewaySubscriptionAmount($clinicId);
@@ -58,6 +61,13 @@ final class ClinicSubscriptionSelfService
                     $pdo->rollBack();
                 }
             }
+        }
+
+        // Desconto piloto venceu/foi removido e o gateway ainda cobra o valor antigo? Corrige agora.
+        try {
+            (new PilotProgramService($this->container))->syncClinicIfNeeded($clinicId);
+        } catch (\Throwable $e) {
+            // nao bloqueia a tela; o cron tenta de novo
         }
 
         $plans = (new SaasPlanRepository($pdo))->listActive();
@@ -225,7 +235,8 @@ final class ClinicSubscriptionSelfService
             throw new \RuntimeException('Customer Asaas não encontrado.');
         }
 
-        $amount = max(0, $newPrice) / 100;
+        // Clinica piloto contratando o primeiro plano pago: cobra com desconto
+        $amount = max(0, (new PilotProgramService($this->container))->effectivePriceCents($clinicId, $plan)) / 100;
         $payment = $gw->createAsaasCreditCardPaymentForUpgrade($clinicId, $customerId, $amount, $card, $ip, $userAgent);
 
         $paymentId = isset($payment['id']) ? (string)$payment['id'] : '';
@@ -245,6 +256,8 @@ final class ClinicSubscriptionSelfService
 
             $stmt = $pdo->prepare("\n                UPDATE clinic_subscriptions\n                SET plan_id = :plan_id,\n                    pending_upgrade_plan_id = NULL,\n                    pending_upgrade_payment_id = NULL,\n                    pending_plan_id = NULL,\n                    pending_plan_effective_at = NULL,\n                    updated_at = NOW()\n                WHERE clinic_id = :clinic_id\n                LIMIT 1\n            ");
             $stmt->execute(['clinic_id' => $clinicId, 'plan_id' => $planId]);
+
+            (new PilotProgramService($this->container))->onPlanChanged($clinicId, $planId, $ip);
 
             $gw->syncGatewaySubscriptionAmount($clinicId);
             $gw->ensureAsaasSubscriptionCreditCard($clinicId, $card, $ip, $userAgent);

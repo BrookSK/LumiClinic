@@ -53,6 +53,7 @@ final class BillingEventProcessorService
                         $pdo->beginTransaction();
                         $stmt = $pdo->prepare("\n                            UPDATE clinic_subscriptions\n                            SET plan_id = :plan_id,\n                                pending_upgrade_plan_id = NULL,\n                                pending_upgrade_payment_id = NULL,\n                                status = 'active',\n                                past_due_since = NULL,\n                                updated_at = NOW()\n                            WHERE clinic_id = :clinic_id\n                            LIMIT 1\n                        ");
                         $stmt->execute(['clinic_id' => $clinicId, 'plan_id' => $pendingPlanId]);
+                        (new PilotProgramService($this->container))->onPlanChanged($clinicId, $pendingPlanId);
                         $pdo->commit();
                     } catch (\Throwable $e) {
                         if ($pdo->inTransaction()) {

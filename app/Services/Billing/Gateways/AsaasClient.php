@@ -216,7 +216,10 @@ final class AsaasClient
     }
 
     /** @return array<string,mixed> */
-    public function updateSubscriptionValue(string $subscriptionId, float $value): array
+    /**
+     * @param bool $updatePendingPayments true = o Asaas tambem atualiza as cobrancas ja geradas e ainda pendentes
+     */
+    public function updateSubscriptionValue(string $subscriptionId, float $value, bool $updatePendingPayments = false): array
     {
         $subscriptionId = trim($subscriptionId);
         if ($subscriptionId === '') {
@@ -234,11 +237,14 @@ final class AsaasClient
         }
 
         $http = new HttpClient();
+        $body = ['value' => $value];
+        if ($updatePendingPayments) {
+            $body['updatePendingPayments'] = true;
+        }
+
         $resp = $http->request('PUT', $baseUrl . '/subscriptions/' . urlencode($subscriptionId), [
             'access_token' => $apiKey,
-        ], [
-            'value' => $value,
-        ]);
+        ], $body);
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
             throw new \RuntimeException('Falha ao atualizar assinatura no Asaas.');

@@ -6,6 +6,7 @@ namespace App\Controllers\System;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Services\Billing\PilotProgramService;
 use App\Services\System\SystemClinicService;
 
 final class SystemClinicController extends Controller
@@ -127,14 +128,28 @@ final class SystemClinicController extends Controller
             return $this->redirect('/sys/clinics');
         }
 
-        $service = new SystemClinicService($this->container);
-        $clinic = $service->getClinic($id);
+        $notices = [
+            'enrolled' => 'Clínica marcada como piloto. O desconto já vale; se ela já tem assinatura no Asaas, o valor cobrado foi atualizado.',
+            'unenrolled' => 'Clínica removida do programa piloto. Se ela tem assinatura no Asaas, o valor cheio voltou a ser cobrado.',
+            'gateway' => 'Programa piloto salvo, mas não foi possível atualizar o valor no Asaas agora. O cron do servidor tenta de novo automaticamente.',
+        ];
+        $notice = $notices[(string)$request->input('pilot_notice', '')] ?? null;
+
+        return $this->renderEdit($id, null, $notice);
+    }
+
+    private function renderEdit(int $id, ?string $error, ?string $notice = null)
+    {
+        $clinic = (new SystemClinicService($this->container))->getClinic($id);
         if ($clinic === null) {
             return $this->redirect('/sys/clinics');
         }
 
         return $this->view('system/clinics/edit', [
             'clinic' => $clinic,
+            'pilot' => (new PilotProgramService($this->container))->adminInfo($id),
+            'error' => $error,
+            'notice' => $notice,
         ]);
     }
 
@@ -182,12 +197,7 @@ final class SystemClinicController extends Controller
         ];
 
         if ($name === '') {
-            $service = new SystemClinicService($this->container);
-            $clinic = $service->getClinic($id);
-            return $this->view('system/clinics/edit', [
-                'clinic' => $clinic,
-                'error' => 'Nome é obrigatório.',
-            ]);
+            return $this->renderEdit($id, 'Nome é obrigatório.');
         }
 
         try {
@@ -201,15 +211,26 @@ final class SystemClinicController extends Controller
                 $ownerFields,
                 $clinicContactFields
             );
-            return $this->redirect('/sys/clinics/edit?id=' . $id);
         } catch (\RuntimeException $e) {
-            $service = new SystemClinicService($this->container);
-            $clinic = $service->getClinic($id);
-            return $this->view('system/clinics/edit', [
-                'clinic' => $clinic,
-                'error' => $e->getMessage(),
-            ]);
+            return $this->renderEdit($id, $e->getMessage());
         }
+
+        // Programa piloto (o campo só vem no formulário quando o banco já tem as colunas)
+        if ((string)$request->input('pilot_field', '') === '1') {
+            $isPilot = (string)$request->input('is_pilot', '0') === '1';
+            try {
+                $res = (new PilotProgramService($this->container))->setPilot($id, $isPilot, $request->ip());
+            } catch (\RuntimeException $e) {
+                return $this->renderEdit($id, 'Os dados da clínica foram salvos, mas a marcação de piloto não: ' . $e->getMessage());
+            }
+
+            if ($res['changed']) {
+                $notice = !$res['gateway_ok'] ? 'gateway' : ($isPilot ? 'enrolled' : 'unenrolled');
+                return $this->redirect('/sys/clinics/edit?id=' . $id . '&pilot_notice=' . $notice);
+            }
+        }
+
+        return $this->redirect('/sys/clinics/edit?id=' . $id);
     }
 
     public function setStatus(Request $request)

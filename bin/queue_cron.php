@@ -72,3 +72,13 @@ foreach ($queues as $queue) {
 if ($totalProcessed > 0 || $totalFailed > 0) {
     echo date('Y-m-d H:i:s') . " Queue cron: {$totalProcessed} processed, {$totalFailed} failed\n";
 }
+
+// Desconto de clinicas piloto: atualiza no gateway o valor de quem venceu, perdeu ou saiu do programa
+try {
+    $pilotSynced = (new \App\Services\Billing\PilotProgramService($container))->syncPendingGatewayValues();
+    if ($pilotSynced > 0) {
+        echo date('Y-m-d H:i:s') . " Pilot discount: {$pilotSynced} subscription(s) synced\n";
+    }
+} catch (\Throwable $e) {
+    echo date('Y-m-d H:i:s') . ' Pilot discount sync error: ' . $e->getMessage() . "\n";
+}

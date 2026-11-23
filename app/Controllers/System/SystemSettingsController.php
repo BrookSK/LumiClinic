@@ -6,7 +6,9 @@ namespace App\Controllers\System;
 
 use App\Controllers\Controller;
 use App\Core\Http\Request;
+use App\Services\Billing\PilotProgramService;
 use App\Services\Mail\MailerService;
+use App\Services\System\MigrationRunnerService;
 use App\Services\System\SystemSettingsService;
 
 final class SystemSettingsController extends Controller
@@ -122,6 +124,41 @@ final class SystemSettingsController extends Controller
         $service->saveBillingSettings($_POST);
 
         return $this->redirect('/sys/settings/billing');
+    }
+
+    public function pilot(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $svc = new PilotProgramService($this->container);
+        $saved = trim((string)$request->input('saved', ''));
+        $error = trim((string)$request->input('error', ''));
+
+        return $this->view('system/settings/pilot', [
+            'settings' => $svc->getSettings(),
+            'schema_ready' => $svc->schemaReady(),
+            'clinics' => $svc->listPilotClinics(),
+            'success' => $saved !== '' ? 'Salvo com sucesso. A nova condição vale para as clínicas marcadas como piloto a partir de agora.' : null,
+            'error' => $error !== '' ? $error : null,
+        ]);
+    }
+
+    public function pilotSubmit(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        try {
+            (new PilotProgramService($this->container))->saveSettings(
+                (string)$request->input('discount_percent', ''),
+                (string)$request->input('duration_value', ''),
+                (string)$request->input('duration_unit', ''),
+                $request->ip()
+            );
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/sys/settings/pilot?error=' . urlencode($e->getMessage()));
+        }
+
+        return $this->redirect('/sys/settings/pilot?saved=1');
     }
 
     public function seo(Request $request)
@@ -332,9 +369,28 @@ final class SystemSettingsController extends Controller
         $service = new SystemSettingsService($this->container);
         $cronToken = trim((string)($service->getText('cron.secret_token') ?? ''));
 
+        $migrationResults = $_SESSION['_migration_results'] ?? null;
+        unset($_SESSION['_migration_results']);
+
         return $this->view('system/settings/server_requirements', [
             'cron_token' => $cronToken,
+            'migrations' => (new MigrationRunnerService($this->container))->status(),
+            'migration_results' => is_array($migrationResults) ? $migrationResults : null,
         ]);
+    }
+
+    public function serverMigrate(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        try {
+            $results = (new MigrationRunnerService($this->container))->runPending();
+        } catch (\Throwable $e) {
+            $results = [['migration' => '-', 'ok' => false, 'message' => $e->getMessage()]];
+        }
+        $_SESSION['_migration_results'] = $results;
+
+        return $this->redirect('/sys/settings/server#migracoes');
     }
 
     public function serverSubmit(Request $request)
