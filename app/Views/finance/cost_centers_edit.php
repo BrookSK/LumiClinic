@@ -5,6 +5,8 @@ $row = $row ?? null;
 $chartAccounts = $chart_accounts ?? [];
 $currentChartAccount = $current_chart_account ?? null;
 $natureLabels = \App\Services\Finance\ChartOfAccountsService::NATURES;
+$categoryLabels = \App\Services\Finance\FinancialService::COST_CENTER_CATEGORIES;
+$selectedCategory = (string)($row['category'] ?? '');
 $selectedAccountId = (int)($row['chart_account_id'] ?? 0);
 
 $accountsByNature = [];
@@ -80,6 +82,16 @@ ob_start();
                         <label class="lc-label">Código (opcional)</label>
                         <input class="lc-input" type="text" name="code" maxlength="32" placeholder="Ex: CC-001" value="<?= htmlspecialchars((string)($row['code'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" />
                     </div>
+                </div>
+
+                <div class="lc-field" style="margin-top:10px;">
+                    <label class="lc-label">Categoria</label>
+                    <select class="lc-select" name="category" style="max-width:480px;">
+                        <option value="">Sem categoria</option>
+                        <?php foreach ($categoryLabels as $catKey => $catLabel): ?>
+                            <option value="<?= htmlspecialchars($catKey, ENT_QUOTES, 'UTF-8') ?>" <?= $catKey === $selectedCategory ? 'selected' : '' ?>><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <div class="lc-field" style="margin-top:10px;">

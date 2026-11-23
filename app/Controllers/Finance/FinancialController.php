@@ -244,6 +244,7 @@ final class FinancialController extends Controller
         $code = trim((string)$request->input('code', ''));
         $description = trim((string)$request->input('description', ''));
         $chartAccountId = (int)$request->input('chart_account_id', 0);
+        $category = trim((string)$request->input('category', ''));
         try {
             (new FinancialService($this->container))->createCostCenter(
                 $name,
@@ -251,7 +252,8 @@ final class FinancialController extends Controller
                 $request->header('user-agent'),
                 $code === '' ? null : $code,
                 $description === '' ? null : $description,
-                $chartAccountId > 0 ? $chartAccountId : null
+                $chartAccountId > 0 ? $chartAccountId : null,
+                $category === '' ? null : $category
             );
             return $this->redirect('/finance/cost-centers?success=' . urlencode('Criado.'));
         } catch (\RuntimeException $e) {
@@ -312,6 +314,7 @@ final class FinancialController extends Controller
         $code = trim((string)$request->input('code', ''));
         $description = trim((string)$request->input('description', ''));
         $chartAccountId = (int)$request->input('chart_account_id', 0);
+        $category = trim((string)$request->input('category', ''));
 
         try {
             (new FinancialService($this->container))->updateCostCenter(
@@ -321,7 +324,8 @@ final class FinancialController extends Controller
                 $request->header('user-agent'),
                 $code === '' ? null : $code,
                 $description === '' ? null : $description,
-                $chartAccountId > 0 ? $chartAccountId : null
+                $chartAccountId > 0 ? $chartAccountId : null,
+                $category === '' ? null : $category
             );
             return $this->redirect('/finance/cost-centers/edit?id=' . $id . '&success=' . urlencode('Salvo.'));
         } catch (\RuntimeException $e) {

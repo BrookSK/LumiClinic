@@ -8,6 +8,16 @@ $accountsByNature = [];
 foreach ($chartAccounts as $a) {
     $accountsByNature[(string)($a['nature'] ?? '')][] = $a;
 }
+$categoryLabels = \App\Services\Finance\FinancialService::COST_CENTER_CATEGORIES;
+$rowsByCategory = [];
+foreach ($rows as $r) {
+    $cat = (string)($r['category'] ?? '');
+    if (!isset($categoryLabels[$cat])) {
+        $cat = '';
+    }
+    $rowsByCategory[$cat][] = $r;
+}
+$groups = $categoryLabels + ['' => 'Sem categoria'];
 $error   = $error ?? ($_GET['error'] ?? null);
 $success = $success ?? ($_GET['success'] ?? null);
 
@@ -80,6 +90,15 @@ ob_start();
                     </select>
                 <?php endif; ?>
             </div>
+            <div class="lc-field" style="width:210px;">
+                <label class="lc-label">Categoria</label>
+                <select class="lc-select" name="category">
+                    <option value="">Sem categoria</option>
+                    <?php foreach ($categoryLabels as $catKey => $catLabel): ?>
+                        <option value="<?= htmlspecialchars($catKey, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($catLabel, ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <button class="lc-btn lc-btn--primary" type="submit">Criar</button>
         </form>
     </div>
@@ -95,8 +114,14 @@ ob_start();
         </div>
     </div>
 <?php else: ?>
+    <?php foreach ($groups as $groupKey => $groupLabel): ?>
+    <?php $groupRows = $rowsByCategory[$groupKey] ?? []; if (empty($groupRows)) continue; ?>
+    <div style="display:flex; align-items:baseline; gap:8px; margin:18px 0 10px;">
+        <div style="font-weight:800; font-size:15px;"><?= htmlspecialchars($groupLabel, ENT_QUOTES, 'UTF-8') ?></div>
+        <span class="lc-muted" style="font-size:12px;"><?= count($groupRows) ?></span>
+    </div>
     <div class="lc-grid lc-gap-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
-        <?php foreach ($rows as $r): ?>
+        <?php foreach ($groupRows as $r): ?>
             <?php
             $id = (int)($r['id'] ?? 0);
             $st = (string)($r['status'] ?? 'active');
@@ -139,6 +164,7 @@ ob_start();
             </div>
         <?php endforeach; ?>
     </div>
+    <?php endforeach; ?>
 <?php endif; ?>
 
 <?php

@@ -19,6 +19,15 @@ use App\Services\Auth\AuthService;
 
 final class FinancialService
 {
+    /** Categorias fixas para agrupar centros de custo. */
+    public const COST_CENTER_CATEGORIES = [
+        'personnel' => 'Despesas com pessoal',
+        'administrative' => 'Despesas administrativas',
+        'financial' => 'Despesas financeiras',
+        'investment' => 'Investimentos',
+        'operational' => 'Custos operacionais',
+    ];
+
     public function __construct(private readonly Container $container) {}
 
     /** @return list<array<string,mixed>> */
@@ -37,7 +46,7 @@ final class FinancialService
     /**
      * Normaliza e valida os dados contábeis de um centro de custo.
      *
-     * @return array{code:?string,description:?string,chart_account_id:?int}
+     * @return array{code:?string,description:?string,chart_account_id:?int,category:?string}
      */
     private function normalizeCostCenterAccounting(
         \PDO $pdo,
@@ -46,8 +55,14 @@ final class FinancialService
         ?string $code,
         ?string $description,
         ?int $chartAccountId,
-        ?int $currentChartAccountId = null
+        ?int $currentChartAccountId = null,
+        ?string $category = null
     ): array {
+        $category = $category === null ? '' : trim($category);
+        if ($category !== '' && !array_key_exists($category, self::COST_CENTER_CATEGORIES)) {
+            throw new \RuntimeException('Categoria inválida.');
+        }
+
         $code = $code === null ? '' : trim($code);
         $description = $description === null ? '' : trim($description);
 
@@ -91,6 +106,7 @@ final class FinancialService
             'code' => $code === '' ? null : $code,
             'description' => $description === '' ? null : $description,
             'chart_account_id' => $chartAccountId,
+            'category' => $category === '' ? null : $category,
         ];
     }
 
@@ -100,7 +116,8 @@ final class FinancialService
         ?string $userAgent = null,
         ?string $code = null,
         ?string $description = null,
-        ?int $chartAccountId = null
+        ?int $chartAccountId = null,
+        ?string $category = null
     ): int {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -131,15 +148,17 @@ final class FinancialService
             $existing !== null ? (int)$existing['id'] : null,
             $code,
             $description,
-            $chartAccountId
+            $chartAccountId,
+            null,
+            $category
         );
 
         if ($existing !== null) {
             $id = (int)$existing['id'];
             $repo->restore($clinicId, $id);
-            $repo->update($clinicId, $id, $name, $acc['code'], $acc['description'], $acc['chart_account_id']);
+            $repo->update($clinicId, $id, $name, $acc['code'], $acc['description'], $acc['chart_account_id'], $acc['category']);
         } else {
-            $id = $repo->create($clinicId, $name, $acc['code'], $acc['description'], $acc['chart_account_id']);
+            $id = $repo->create($clinicId, $name, $acc['code'], $acc['description'], $acc['chart_account_id'], $acc['category']);
         }
 
         $audit = new AuditLogRepository($pdo);
@@ -148,6 +167,7 @@ final class FinancialService
             'cost_center_id' => $id,
             'code' => $acc['code'],
             'chart_account_id' => $acc['chart_account_id'],
+            'category' => $acc['category'],
             'has_description' => $acc['description'] !== null,
         ], $ip, $roleCodes, 'cost_center', $id, $userAgent);
 
@@ -187,7 +207,8 @@ final class FinancialService
         ?string $userAgent = null,
         ?string $code = null,
         ?string $description = null,
-        ?int $chartAccountId = null
+        ?int $chartAccountId = null,
+        ?string $category = null
     ): void {
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
@@ -214,9 +235,9 @@ final class FinancialService
         }
 
         $currentAccountId = isset($current['chart_account_id']) && $current['chart_account_id'] !== null ? (int)$current['chart_account_id'] : null;
-        $acc = $this->normalizeCostCenterAccounting($pdo, $clinicId, $id, $code, $description, $chartAccountId, $currentAccountId);
+        $acc = $this->normalizeCostCenterAccounting($pdo, $clinicId, $id, $code, $description, $chartAccountId, $currentAccountId, $category);
 
-        $repo->update($clinicId, $id, $name, $acc['code'], $acc['description'], $acc['chart_account_id']);
+        $repo->update($clinicId, $id, $name, $acc['code'], $acc['description'], $acc['chart_account_id'], $acc['category']);
 
         $audit = new AuditLogRepository($pdo);
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
@@ -224,6 +245,7 @@ final class FinancialService
             'cost_center_id' => $id,
             'code' => $acc['code'],
             'chart_account_id' => $acc['chart_account_id'],
+            'category' => $acc['category'],
             'previous_chart_account_id' => $currentAccountId,
             'has_description' => $acc['description'] !== null,
         ], $ip, $roleCodes, 'cost_center', $id, $userAgent);
