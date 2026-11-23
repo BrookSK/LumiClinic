@@ -197,7 +197,7 @@ ob_start();
                                             ?>
                                             <button
                                                 type="button"
-                                                class="lc-flex lc-gap-sm"
+                                                class="lc-flex lc-gap-sm<?= $status === 'no_show' ? ' lc-appt--no-show' : '' ?>"
                                                 style="align-items:center; background:none; border:none; padding:0; cursor:pointer; text-align:left; width:100%;"
                                                 onclick="event.stopPropagation(); openApptDetail(<?= (int)$it['id'] ?>);"
                                                 title="<?= htmlspecialchars(($patientNameMonth !== '' ? $patientNameMonth . ' — ' : '') . $sname . ' (' . substr((string)$it['start_at'], 11, 5) . ')', ENT_QUOTES, 'UTF-8') ?>"
@@ -211,7 +211,7 @@ ob_start();
                                                     <?php else: ?>
                                                         <span class="lc-muted">• <?= htmlspecialchars($pname, ENT_QUOTES, 'UTF-8') ?></span>
                                                     <?php endif; ?>
-                                                    <?php $cardTagLabel = ['confirmed' => 'Confirmado', 'in_progress' => 'Atendendo', 'completed' => 'Concluído', 'no_show' => 'Faltou', 'cancelled' => 'Cancelado'][$status] ?? ''; ?>
+                                                    <?php $cardTagLabel = ['confirmed' => 'Confirmado', 'in_progress' => 'Atendendo', 'completed' => 'Concluído', 'no_show' => '⚠ Faltou · reagendar', 'cancelled' => 'Cancelado'][$status] ?? ''; ?>
                                                     <?php if ($cardTagLabel !== ''): ?><span class="lc-status-tag lc-status-tag--<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>"><?= $cardTagLabel ?></span><?php endif; ?>
                                                 </div>
                                             </button>

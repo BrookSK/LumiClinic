@@ -564,6 +564,10 @@ button.lc-statusbar .lc-muted{color: rgba(31,41,55,0.72)}
 .lc-statusbar--cancelled{border-left-color: var(--lc-status-gray)}
 .lc-statusbar--no_show{border-left-color: var(--lc-status-red)}
 /* Agenda: destaque para agendamentos com status "Faltou" (apenas cartoes de agendamento, nao alertas) */
+button.lc-statusbar.lc-statusbar--no_show{background:#fdeceb; border-left-width:5px; border-left-color:#c0392b; box-shadow:0 0 0 1px #f0c9c5 inset}
+button.lc-statusbar.lc-statusbar--no_show:hover{background:#fbdcd9}
+.lc-appt--no-show{background:#fdeceb !important; border-left:4px solid #c0392b !important; border-radius:6px !important; padding:2px 4px !important}
+.lc-status-tag--no_show{font-weight:700}
 /* Agenda: etiquetas de status em tons pasteis (Agendado nao recebe etiqueta) */
 .lc-status-tag{display:inline-block; flex-shrink:0; margin-left:6px; padding:1px 8px; border-radius:999px; font-size:10px; font-weight:600; line-height:1.5; white-space:nowrap; vertical-align:middle; color:#6b6b6b; background:#ececec; border:1px solid #dcdcdc}
 .lc-status-tag--confirmed{color:#3d5f8f; background:#e0ebf8; border-color:#c9daf1}

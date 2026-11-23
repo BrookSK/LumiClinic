@@ -681,6 +681,8 @@ ob_start();
     });
   }
 
+  const canReschedule = <?= $can('scheduling.update') ? 'true' : 'false' ?>;
+
   function esc(s) {
     return (s || '').toString()
       .replace(/&/g, '&amp;')
@@ -745,6 +747,7 @@ ob_start();
               '<div><span class="lc-muted">Início</span><div style="font-weight:700;">' + esc((it.start_at || '').toString().replace('T', ' ')) + '</div></div>' +
               '<div><span class="lc-muted">Fim</span><div style="font-weight:700;">' + esc((it.end_at || '').toString().replace('T', ' ')) + '</div></div>' +
               '<div><span class="lc-muted">Status</span><div style="font-weight:700;">' + (['confirmed','in_progress','completed','no_show','cancelled'].indexOf(it.status) !== -1 ? '<span class="lc-status-tag lc-status-tag--lg lc-status-tag--' + it.status + '">' + esc(fmtStatus(it.status)) + '</span>' : esc(fmtStatus(it.status || ''))) + '</div></div>' +
+              (it.status === 'no_show' ? '<div class="lc-alert lc-alert--danger" style="margin:0;">Paciente faltou. Reagende para recuperar o atendimento.' + (canReschedule ? ' <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/schedule/reschedule?id=' + encodeURIComponent(it.id) + '">Reagendar</a>' : '') + '</div>' : '') +
             '</div>' +
           '</div>' +
         '</div>' +
