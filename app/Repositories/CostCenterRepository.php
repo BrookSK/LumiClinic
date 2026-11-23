@@ -12,7 +12,7 @@ final class CostCenterRepository
     public function listActiveByClinic(int $clinicId): array
     {
         $sql = "
-            SELECT id, clinic_id, name, code, description, chart_account_id, status
+            SELECT id, clinic_id, name, code, description, category, chart_account_id, status
             FROM cost_centers
             WHERE clinic_id = :clinic_id
               AND deleted_at IS NULL
@@ -31,7 +31,7 @@ final class CostCenterRepository
     public function listByClinic(int $clinicId): array
     {
         $sql = "
-            SELECT cc.id, cc.clinic_id, cc.name, cc.code, cc.description, cc.chart_account_id,
+            SELECT cc.id, cc.clinic_id, cc.name, cc.code, cc.description, cc.category, cc.chart_account_id,
                    cc.status, cc.created_at, cc.updated_at,
                    ca.code AS chart_account_code,
                    ca.name AS chart_account_name
@@ -56,7 +56,7 @@ final class CostCenterRepository
     public function findById(int $clinicId, int $id): ?array
     {
         $sql = "
-            SELECT id, clinic_id, name, code, description, chart_account_id, status
+            SELECT id, clinic_id, name, code, description, category, chart_account_id, status
             FROM cost_centers
             WHERE id = :id
               AND clinic_id = :clinic_id
@@ -127,11 +127,11 @@ final class CostCenterRepository
         return $row ?: null;
     }
 
-    public function create(int $clinicId, string $name, ?string $code = null, ?string $description = null, ?int $chartAccountId = null): int
+    public function create(int $clinicId, string $name, ?string $code = null, ?string $description = null, ?int $chartAccountId = null, ?string $category = null): int
     {
         $sql = "
-            INSERT INTO cost_centers (clinic_id, name, code, description, chart_account_id, status, created_at)
-            VALUES (:clinic_id, :name, :code, :description, :chart_account_id, 'active', NOW())
+            INSERT INTO cost_centers (clinic_id, name, code, description, category, chart_account_id, status, created_at)
+            VALUES (:clinic_id, :name, :code, :description, :category, :chart_account_id, 'active', NOW())
         ";
 
         $stmt = $this->pdo->prepare($sql);
@@ -140,19 +140,21 @@ final class CostCenterRepository
             'name' => $name,
             'code' => $code,
             'description' => $description,
+            'category' => $category,
             'chart_account_id' => $chartAccountId,
         ]);
 
         return (int)$this->pdo->lastInsertId();
     }
 
-    public function update(int $clinicId, int $id, string $name, ?string $code = null, ?string $description = null, ?int $chartAccountId = null): void
+    public function update(int $clinicId, int $id, string $name, ?string $code = null, ?string $description = null, ?int $chartAccountId = null, ?string $category = null): void
     {
         $sql = "
             UPDATE cost_centers
             SET name = :name,
                 code = :code,
                 description = :description,
+                category = :category,
                 chart_account_id = :chart_account_id,
                 updated_at = NOW()
             WHERE id = :id
@@ -168,6 +170,7 @@ final class CostCenterRepository
             'name' => $name,
             'code' => $code,
             'description' => $description,
+            'category' => $category,
             'chart_account_id' => $chartAccountId,
         ]);
     }
