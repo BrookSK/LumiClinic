@@ -14,15 +14,19 @@ final class SecurityHeadersMiddleware implements MiddlewareInterface
     {
         $response = $next($request);
 
+        // Anexos de documentos para assinatura podem ser exibidos em <iframe> na mesma origem
+        $path = $request->path();
+        $allowSameOriginFrame = $path === '/doc/sign/file' || $path === '/patients/document-sign/file';
+
         $response = $response
             ->withHeader('X-Content-Type-Options', 'nosniff')
-            ->withHeader('X-Frame-Options', 'DENY')
+            ->withHeader('X-Frame-Options', $allowSameOriginFrame ? 'SAMEORIGIN' : 'DENY')
             ->withHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
             ->withHeader('Permissions-Policy', 'geolocation=(), microphone=(self), camera=()')
             ->withHeader('Cross-Origin-Opener-Policy', 'same-origin')
             ->withHeader('Cross-Origin-Resource-Policy', 'same-origin');
 
-        $response = $response->withHeader('Content-Security-Policy', "default-src 'self'; connect-src 'self' https://www.google-analytics.com; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' blob: https://cdn.tailwindcss.com; script-src-elem 'self' 'unsafe-inline' blob: https://cdn.tailwindcss.com; worker-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
+        $response = $response->withHeader('Content-Security-Policy', "default-src 'self'; connect-src 'self' https://www.google-analytics.com; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' blob: https://cdn.tailwindcss.com; script-src-elem 'self' 'unsafe-inline' blob: https://cdn.tailwindcss.com; worker-src 'self' blob:; base-uri 'self'; frame-ancestors " . ($allowSameOriginFrame ? "'self'" : "'none'") . "; form-action 'self'");
 
         return $response;
     }

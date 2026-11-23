@@ -569,9 +569,11 @@ $router->post('/patients/documents/delete', [\App\Controllers\Patients\PatientDo
 
 $router->get('/patients/document-sign', [\App\Controllers\Patients\PatientDocumentSignController::class, 'index']);
 $router->post('/patients/document-sign/create', [\App\Controllers\Patients\PatientDocumentSignController::class, 'create']);
+$router->get('/patients/document-sign/file', [\App\Controllers\Patients\PatientDocumentSignController::class, 'file']);
 
 $router->get('/doc/sign', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicSign']);
 $router->post('/doc/sign/submit', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicSignSubmit']);
+$router->get('/doc/sign/file', [\App\Controllers\Patients\PatientDocumentSignController::class, 'publicFile']);
 
 $router->get('/pub/budget', [\App\Controllers\Public\BudgetViewController::class, 'show']);
 

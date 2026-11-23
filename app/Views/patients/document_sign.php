@@ -83,6 +83,7 @@ ob_start();
                     <th>Status</th>
                     <th>Data envio</th>
                     <th>Assinado em</th>
+                    <th>Arquivo</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -108,6 +109,17 @@ ob_start();
                         <td><span class="lc-badge <?= $statusBadge[$st] ?? 'lc-badge--secondary' ?>"><?= $statusLabel[$st] ?? $st ?></span></td>
                         <td style="font-size:12px;"><?= $sentAt !== '' ? date('d/m/Y H:i', strtotime($sentAt)) : '—' ?></td>
                         <td style="font-size:12px;"><?= $signedAt !== '' ? date('d/m/Y H:i', strtotime($signedAt)) : '—' ?></td>
+                        <td>
+                            <?php if (trim((string)($it['file_name'] ?? '')) !== '' && trim((string)($it['file_path'] ?? '')) !== ''): ?>
+                                <?php $fileUrl = '/patients/document-sign/file?id=' . (int)($it['id'] ?? 0); ?>
+                                <div class="lc-flex lc-gap-sm">
+                                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="<?= htmlspecialchars($fileUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" title="<?= htmlspecialchars((string)$it['file_name'], ENT_QUOTES, 'UTF-8') ?>">Ver arquivo</a>
+                                    <a class="lc-btn lc-btn--secondary lc-btn--sm" href="<?= htmlspecialchars($fileUrl . '&download=1', ENT_QUOTES, 'UTF-8') ?>">Baixar</a>
+                                </div>
+                            <?php else: ?>
+                                <span class="lc-muted">—</span>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
