@@ -80,9 +80,12 @@ final class PatientDocumentSignController extends Controller
         $fileMime = null;
         $file = $_FILES['document_file'] ?? null;
         if (is_array($file) && ($file['error'] ?? 4) === UPLOAD_ERR_OK && ($file['size'] ?? 0) > 0) {
+            $ext = strtolower((string)pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
+            if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'], true)) {
+                return $this->redirect('/patients/document-sign?patient_id=' . $patientId . '&error=' . urlencode('Formato de arquivo não permitido. Envie PDF, JPG, PNG, DOC ou DOCX.'));
+            }
             $bytes = file_get_contents($file['tmp_name']);
             if ($bytes !== false) {
-                $ext = pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION) ?: 'pdf';
                 $token = bin2hex(random_bytes(12));
                 $relative = 'document_sign/' . date('Ymd') . '_' . $token . '.' . $ext;
                 PrivateStorage::put($clinicId, $relative, $bytes);
@@ -204,5 +207,121 @@ final class PatientDocumentSignController extends Controller
 
         $row['status'] = 'signed';
         return $this->view('public/document_sign', ['row' => $row, 'already_signed' => true, 'just_signed' => true]);
+    }
+
+    /** Public file endpoint — serves the attachment of a sign request by token */
+    public function publicFile(Request $request): Response
+    {
+        $token = trim((string)$request->input('token', ''));
+        if ($token === '') {
+            return Response::html('Link inválido.', 400);
+        }
+
+        $row = $this->repo()->findByToken($token);
+        if ($row === null) {
+            return Response::html('Documento não encontrado.', 404);
+        }
+
+        $status = (string)($row['status'] ?? '');
+        if ($status !== 'pending' && $status !== 'signed') {
+            return Response::html('Este documento não está mais disponível.', 410);
+        }
+
+        $download = (string)$request->input('download', '') === '1';
+        $response = $this->serveAttachment($row, $download);
+        if ($response->status() !== 200) {
+            return $response;
+        }
+
+        (new AuditLogRepository($this->container->get(\PDO::class)))->log(
+            null, (int)$row['clinic_id'], $download ? 'document_sign.file_downloaded' : 'document_sign.file_viewed',
+            ['id' => (int)$row['id'], 'patient_id' => (int)$row['patient_id']],
+            $request->ip(), null, 'document_sign_request', (int)$row['id'], $request->header('user-agent')
+        );
+
+        return $response;
+    }
+
+    /** Staff file endpoint — clinic-scoped */
+    public function file(Request $request): Response
+    {
+        $this->authorize('patients.read');
+
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        if ($clinicId === null) {
+            return $this->redirect('/patients');
+        }
+
+        $id = (int)$request->input('id', 0);
+        $row = $id > 0 ? $this->repo()->findById($clinicId, $id) : null;
+        if ($row === null) {
+            return Response::html('Documento não encontrado.', 404);
+        }
+
+        $download = (string)$request->input('download', '') === '1';
+        $response = $this->serveAttachment($row, $download);
+        if ($response->status() !== 200) {
+            return $response;
+        }
+
+        $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+        (new AuditLogRepository($this->container->get(\PDO::class)))->log(
+            $auth->userId(), $clinicId, 'document_sign.file_viewed_staff',
+            ['id' => (int)$row['id'], 'patient_id' => (int)$row['patient_id'], 'download' => $download],
+            $request->ip(), $roleCodes, 'document_sign_request', (int)$row['id'], $request->header('user-agent')
+        );
+
+        return $response;
+    }
+
+    /** @param array<string,mixed> $row */
+    private function serveAttachment(array $row, bool $download): Response
+    {
+        $relative = trim((string)($row['file_path'] ?? ''));
+        if ($relative === '') {
+            return Response::html('Este documento não possui arquivo anexo.', 404);
+        }
+
+        $clinicId = (int)($row['clinic_id'] ?? 0);
+        $fullPath = PrivateStorage::fullPath($clinicId, $relative);
+        $realFile = is_file($fullPath) ? realpath($fullPath) : false;
+        $realBase = realpath(PrivateStorage::clinicBasePath($clinicId));
+        if ($realFile === false || $realBase === false || !str_starts_with($realFile, $realBase . '/')) {
+            return Response::html('Arquivo não encontrado.', 404);
+        }
+
+        $ext = strtolower((string)pathinfo($relative, PATHINFO_EXTENSION));
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        $mime = $mimeMap[$ext] ?? 'application/octet-stream';
+        $inlineAllowed = in_array($ext, ['pdf', 'jpg', 'jpeg', 'png'], true);
+        $disposition = ($download || !$inlineAllowed) ? 'attachment' : 'inline';
+
+        $originalName = trim(str_replace(["\r", "\n"], '', (string)($row['file_name'] ?? '')));
+        $asciiName = (string)preg_replace('/[^\x20-\x7E]/', '', $originalName);
+        $asciiName = trim(str_replace(['"', '\\', ';'], '', $asciiName));
+        if ($asciiName === '') {
+            $asciiName = 'documento' . ($ext !== '' ? '.' . $ext : '');
+        }
+        $utf8Name = $originalName !== '' ? $originalName : $asciiName;
+
+        $bytes = file_get_contents($realFile);
+        if ($bytes === false) {
+            return Response::html('Arquivo não encontrado.', 404);
+        }
+
+        return Response::raw($bytes, 200, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => $disposition . '; filename="' . $asciiName . '"; filename*=UTF-8\'\'' . rawurlencode($utf8Name),
+            'Content-Length' => (string)strlen($bytes),
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 }
