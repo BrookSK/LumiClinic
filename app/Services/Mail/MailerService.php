@@ -12,7 +12,12 @@ final class MailerService
 {
     public function __construct(private readonly Container $container) {}
 
-    public function send(string $toEmail, string $toName, string $subject, string $htmlBody): void
+    /**
+     * @param array{from_name?: string, reply_to?: string} $options
+     *        from_name: nome exibido no remetente (ex.: nome da clinica). O endereco tecnico continua o de mail.from_address.
+     *        reply_to: e-mail para respostas (ex.: e-mail da clinica).
+     */
+    public function send(string $toEmail, string $toName, string $subject, string $htmlBody, array $options = []): void
     {
         $settings = new SystemSettingsService($this->container);
         $smtpHost = trim((string)($settings->getText('mail.smtp.host') ?? ''));
@@ -30,13 +35,28 @@ final class MailerService
             $fromEmail = 'no-reply@' . $host;
         }
 
-        $toEmail = trim($toEmail);
+        $customFromName = self::cleanHeader((string)($options['from_name'] ?? ''));
+        if ($customFromName !== '') {
+            $fromName = $customFromName;
+        }
+        $fromName = trim(str_replace(['<', '>', '"'], '', self::cleanHeader($fromName)));
+        if ($fromName === '') {
+            $fromName = 'LumiClinic';
+        }
+        $fromEmail = self::cleanHeader($fromEmail);
+
+        $replyTo = self::cleanHeader((string)($options['reply_to'] ?? ''));
+        if ($replyTo !== '' && filter_var($replyTo, FILTER_VALIDATE_EMAIL) === false) {
+            $replyTo = '';
+        }
+
+        $toEmail = self::cleanHeader($toEmail);
         if ($toEmail === '') {
             throw new \RuntimeException('Destinatário inválido.');
         }
 
-        $toName = trim($toName);
-        $subject = trim($subject);
+        $toName = self::cleanHeader($toName);
+        $subject = self::cleanHeader($subject);
 
         if ($smtpHost !== '') {
             $phpMailer = new PHPMailer(true);
@@ -58,6 +78,9 @@ final class MailerService
 
             $phpMailer->CharSet = 'UTF-8';
             $phpMailer->setFrom($fromEmail, $fromName);
+            if ($replyTo !== '') {
+                $phpMailer->addReplyTo($replyTo, $fromName);
+            }
             $phpMailer->addAddress($toEmail, $toName !== '' ? $toName : $toEmail);
             $phpMailer->isHTML(true);
             $phpMailer->Subject = $subject;
@@ -77,11 +100,18 @@ final class MailerService
         $headers[] = 'MIME-Version: 1.0';
         $headers[] = 'Content-Type: text/html; charset=UTF-8';
         $headers[] = 'From: ' . $fromHeader;
-        $headers[] = 'Reply-To: ' . $fromEmail;
+        $headers[] = 'Reply-To: ' . ($replyTo !== '' ? $replyTo : $fromEmail);
 
         $ok = mail($toHeader, $encodedSubject, $htmlBody, implode("\r\n", $headers));
         if (!$ok) {
             throw new \RuntimeException('Falha ao enviar e-mail (mail()).');
         }
+    }
+
+    /** Remove CR/LF e controles de valores usados em cabecalhos (evita header injection). */
+    private static function cleanHeader(string $value): string
+    {
+        $value = preg_replace('/[\x00-\x1F\x7F]+/', ' ', $value) ?? '';
+        return trim($value);
     }
 }
