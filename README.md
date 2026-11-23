@@ -62,6 +62,11 @@ Novidades relevantes:
 - `0178_clinicorp_import_logs_skipped_details.sql`
   - adiciona `skipped_json` em `clinicorp_import_logs`: guarda quem foi ignorado em cada importação (linha da planilha, identificação e motivo), exibido em `GET /settings/importer/log?id=N` e exportável em CSV
   - dados pessoais (LGPD): a identificação (nome/e-mail) dos ignorados é removida automaticamente 90 dias após a importação (`ClinicorpImporterService::SKIPPED_IDENTIFIER_RETENTION_DAYS`), mantendo linha e motivo; os registros são apagados junto com a clínica
+- `0179_chart_of_accounts.sql`
+  - cria `chart_accounts` (plano de contas hierárquico por clínica, em `/finance/chart-of-accounts`, com modelo padrão para clínicas)
+  - adiciona `code`, `description` e `chart_account_id` em `cost_centers` (vínculo do centro de custo com a conta contábil)
+  - **Plano de Contas** (`/finance/chart-of-accounts`): contas sintéticas/analíticas por clínica; contas do Ativo vinculadas às formas de pagamento (Caixa, Pix, Cartões...), contas padrão para receitas/despesas sem classificação e conta financeira padrão (Conta Banco no modelo) para lançamentos sem forma de pagamento; centros de custo só se vinculam a contas de Receita, Custo / Despesa ou Passivo
+  - **Relatórios para Contabilidade** (`/finance/accounting`, permissão `finance.reports.read`): resultado do período por conta e movimento por conta financeira, com três exportações CSV (`;`, UTF-8): lançamentos com conta débito/crédito (`/finance/accounting/entries.csv`), resumo por conta (`/finance/accounting/summary.csv`) e plano de contas (`/finance/chart-of-accounts/export.csv`)
 
 ### 2.4 Subir o servidor
 

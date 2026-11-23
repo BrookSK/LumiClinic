@@ -463,9 +463,21 @@ $router->post('/finance/cost-centers/update', [FinancialController::class, 'upda
 $router->post('/finance/cost-centers/status', [FinancialController::class, 'setCostCenterStatus']);
 $router->post('/finance/cost-centers/delete', [FinancialController::class, 'deleteCostCenter']);
 
+$router->get('/finance/chart-of-accounts', [\App\Controllers\Finance\ChartOfAccountsController::class, 'index']);
+$router->post('/finance/chart-of-accounts/create', [\App\Controllers\Finance\ChartOfAccountsController::class, 'create']);
+$router->get('/finance/chart-of-accounts/edit', [\App\Controllers\Finance\ChartOfAccountsController::class, 'edit']);
+$router->post('/finance/chart-of-accounts/update', [\App\Controllers\Finance\ChartOfAccountsController::class, 'update']);
+$router->post('/finance/chart-of-accounts/status', [\App\Controllers\Finance\ChartOfAccountsController::class, 'setStatus']);
+$router->post('/finance/chart-of-accounts/delete', [\App\Controllers\Finance\ChartOfAccountsController::class, 'delete']);
+$router->post('/finance/chart-of-accounts/apply-template', [\App\Controllers\Finance\ChartOfAccountsController::class, 'applyTemplate']);
+
 $router->get('/finance/reports', [FinancialController::class, 'reports']);
 $router->get('/finance/reports/export.csv', [FinancialController::class, 'reportsExportCsv']);
 $router->get('/finance/reports/export.pdf', [FinancialController::class, 'reportsExportPdf']);
+$router->get('/finance/accounting', [\App\Controllers\Finance\AccountingReportsController::class, 'index']);
+$router->get('/finance/accounting/entries.csv', [\App\Controllers\Finance\AccountingReportsController::class, 'entriesCsv']);
+$router->get('/finance/accounting/summary.csv', [\App\Controllers\Finance\AccountingReportsController::class, 'summaryCsv']);
+$router->get('/finance/chart-of-accounts/export.csv', [\App\Controllers\Finance\AccountingReportsController::class, 'chartCsv']);
 
 $router->get('/stock/materials', [MaterialController::class, 'index']);
 $router->get('/stock/materials/create', [MaterialController::class, 'createForm']);

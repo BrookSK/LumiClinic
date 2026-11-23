@@ -74,6 +74,47 @@ final class FinancialEntryRepository
         ];
     }
 
+    /**
+     * Lançamentos do período para os relatórios contábeis, com o centro de custo e a conta contábil vinculada.
+     * Mesmo filtro de summarizeTotalsByClinicRange, para que os totais batam com o fluxo de caixa.
+     * Retorna no máximo $limit linhas (entre 1 e 200000); quem chama detecta o corte pedindo uma linha a mais.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function listForAccounting(int $clinicId, string $fromDate, string $toDate, int $limit = 100000): array
+    {
+        $sql = "
+            SELECT
+                e.id, e.kind, e.occurred_on,
+                e.amount, e.method, e.status,
+                e.description,
+                e.sale_id, e.payment_id,
+                e.cost_center_id,
+                cc.code AS cost_center_code,
+                cc.name AS cost_center_name,
+                cc.chart_account_id
+            FROM financial_entries e
+            LEFT JOIN cost_centers cc
+                   ON cc.id = e.cost_center_id
+                  AND cc.clinic_id = e.clinic_id
+            WHERE e.clinic_id = :clinic_id
+              AND e.deleted_at IS NULL
+              AND e.occurred_on BETWEEN :from_date AND :to_date
+            ORDER BY e.occurred_on ASC, e.id ASC
+            LIMIT " . max(1, min(200000, $limit)) . "
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'clinic_id' => $clinicId,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ]);
+
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
+
     /** @return array<string,mixed>|null */
     public function findById(int $clinicId, int $id): ?array
     {

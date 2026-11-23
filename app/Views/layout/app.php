@@ -429,6 +429,10 @@ $ico = [
                                 <?php endif; ?>
                                 <?php if ($can('finance.cost_centers.manage') || $can('finance.sales.read')): ?>
                                     <?= $navItem('/finance/cost-centers', 'Centros de Custo', $ico['finance'], $isActive('/finance/cost-centers')) ?>
+                                    <?= $navItem('/finance/chart-of-accounts', 'Plano de Contas', $ico['finance'], $isActive('/finance/chart-of-accounts')) ?>
+                                <?php endif; ?>
+                                <?php if ($can('finance.reports.read')): ?>
+                                    <?= $navItem('/finance/accounting', 'Relatórios contábeis', $ico['finance'], $isActive('/finance/accounting')) ?>
                                 <?php endif; ?>
                             </div>
                         </div>
