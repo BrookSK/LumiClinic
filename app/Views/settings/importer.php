@@ -101,6 +101,25 @@ ob_start();
                 </ul>
             </details>
         <?php endif; ?>
+        <?php $resultSkipped = is_array($result['skipped_details'] ?? null) ? $result['skipped_details'] : []; ?>
+        <?php if (!empty($resultSkipped)): ?>
+            <details style="margin-top:8px;">
+                <summary style="font-size:11px;color:rgba(180,83,9,.85);cursor:pointer;">Ver ignorados e motivo</summary>
+                <ul style="font-size:11px;color:rgba(31,41,55,.65);margin-top:4px;padding-left:18px;">
+                    <?php foreach (array_slice($resultSkipped, 0, 10) as $sk): ?>
+                        <li>Linha <?= (int)($sk['line'] ?? 0) ?> · <?= htmlspecialchars((string)($sk['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars((string)($sk['reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?></li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php if (count($resultSkipped) > 10): ?>
+                    <div style="font-size:11px;color:rgba(31,41,55,.45);margin-top:2px;">Mostrando 10 de <?= count($resultSkipped) ?> ignorados.</div>
+                <?php endif; ?>
+            </details>
+        <?php endif; ?>
+        <?php if (!empty($result['log_id']) && ((int)$result['skipped'] > 0 || $hasErrors)): ?>
+            <div style="margin-top:10px;">
+                <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/settings/importer/log?id=<?= (int)$result['log_id'] ?>">Ver todos os detalhes</a>
+            </div>
+        <?php endif; ?>
     </div>
 <?php endif; ?>
 
@@ -167,18 +186,33 @@ ob_start();
                     <th>Ignorados</th>
                     <th>Erros</th>
                     <th>Data</th>
+                    <th>Detalhes</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($history as $h): ?>
+                <?php $logUrl = '/settings/importer/log?id=' . (int)($h['id'] ?? 0); ?>
                 <tr>
                     <td><?= htmlspecialchars($types[$h['import_type']]['label'] ?? $h['import_type'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= htmlspecialchars($h['file_name'], ENT_QUOTES, 'UTF-8') ?></td>
                     <td><?= (int)$h['total_rows'] ?></td>
                     <td style="color:rgba(34,197,94,.8);font-weight:600;"><?= (int)$h['imported_rows'] ?></td>
-                    <td><?= (int)$h['skipped_rows'] ?></td>
-                    <td style="<?= (int)$h['error_rows'] > 0 ? 'color:rgba(239,68,68,.7);font-weight:600;' : '' ?>"><?= (int)$h['error_rows'] ?></td>
+                    <td>
+                        <?php if ((int)$h['skipped_rows'] > 0): ?>
+                            <a href="<?= htmlspecialchars($logUrl, ENT_QUOTES, 'UTF-8') ?>" title="Ver quem foi ignorado e o motivo" style="color:rgba(180,83,9,.9);font-weight:600;"><?= (int)$h['skipped_rows'] ?></a>
+                        <?php else: ?>
+                            0
+                        <?php endif; ?>
+                    </td>
+                    <td style="<?= (int)$h['error_rows'] > 0 ? 'color:rgba(239,68,68,.7);font-weight:600;' : '' ?>">
+                        <?php if ((int)$h['error_rows'] > 0): ?>
+                            <a href="<?= htmlspecialchars($logUrl, ENT_QUOTES, 'UTF-8') ?>" title="Ver erros" style="color:inherit;"><?= (int)$h['error_rows'] ?></a>
+                        <?php else: ?>
+                            0
+                        <?php endif; ?>
+                    </td>
                     <td><?= htmlspecialchars($h['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><a class="lc-btn lc-btn--secondary lc-btn--sm" href="<?= htmlspecialchars($logUrl, ENT_QUOTES, 'UTF-8') ?>">Ver detalhes</a></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

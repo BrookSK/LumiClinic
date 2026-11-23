@@ -59,6 +59,9 @@ Novidades relevantes:
   - e-mail de usuário agora é **único por clínica** (multi-clínica)
 - `0087_stock_material_categories_and_units.sql`
   - cria `material_categories` e `material_units`
+- `0178_clinicorp_import_logs_skipped_details.sql`
+  - adiciona `skipped_json` em `clinicorp_import_logs`: guarda quem foi ignorado em cada importação (linha da planilha, identificação e motivo), exibido em `GET /settings/importer/log?id=N` e exportável em CSV
+  - dados pessoais (LGPD): a identificação (nome/e-mail) dos ignorados é removida automaticamente 90 dias após a importação (`ClinicorpImporterService::SKIPPED_IDENTIFIER_RETENTION_DAYS`), mantendo linha e motivo; os registros são apagados junto com a clínica
 
 ### 2.4 Subir o servidor
 
