@@ -7,6 +7,7 @@ namespace App\Services\Patients;
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\DataVersionRepository;
+use App\Repositories\PatientApiTokenRepository;
 use App\Repositories\PatientRepository;
 use App\Repositories\PatientUserRepository;
 use App\Repositories\ProfessionalRepository;
@@ -283,6 +284,7 @@ final class PatientService
 
             $repo->softDelete($clinicId, $patientId);
             (new PatientUserRepository($pdo))->softDeleteByPatientId($clinicId, $patientId);
+            (new PatientApiTokenRepository($pdo))->revokeByPatientId($clinicId, $patientId);
 
             $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
             (new AuditLogRepository($pdo))->log(
