@@ -8,6 +8,7 @@ use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\DataVersionRepository;
 use App\Repositories\PatientRepository;
+use App\Repositories\PatientUserRepository;
 use App\Repositories\ProfessionalRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Billing\PlanEntitlementsService;
@@ -239,6 +240,69 @@ final class PatientService
                 $patientId,
                 $userAgent
             );
+        }
+    }
+
+    /**
+     * Exclusão lógica (deleted_at). Prontuário e histórico permanecem armazenados
+     * para atender a prazos legais de guarda (LGPD/CFM). O acesso ao portal é revogado.
+     */
+    public function delete(int $patientId, string $ip, ?string $userAgent = null): void
+    {
+        $auth = new AuthService($this->container);
+        $clinicId = $auth->clinicId();
+        $actorId = $auth->userId();
+
+        if ($clinicId === null || $actorId === null) {
+            throw new \RuntimeException('Contexto inválido.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $repo = new PatientRepository($pdo);
+        $existing = $repo->findClinicalById($clinicId, $patientId);
+        if ($existing === null) {
+            throw new \RuntimeException('Paciente não encontrado.');
+        }
+
+        if ($repo->countUpcomingActiveAppointments($clinicId, $patientId) > 0) {
+            throw new \RuntimeException('Este paciente possui agendamentos futuros. Cancele ou remova os agendamentos antes de excluir.');
+        }
+
+        $pdo->beginTransaction();
+        try {
+            (new DataVersionRepository($pdo))->record(
+                $clinicId,
+                'patient',
+                $patientId,
+                'patients.delete',
+                $existing,
+                $actorId,
+                $ip,
+                $userAgent
+            );
+
+            $repo->softDelete($clinicId, $patientId);
+            (new PatientUserRepository($pdo))->softDeleteByPatientId($clinicId, $patientId);
+
+            $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
+            (new AuditLogRepository($pdo))->log(
+                $actorId,
+                $clinicId,
+                'patients.delete',
+                ['patient_id' => $patientId, 'soft_delete' => true],
+                $ip,
+                $roleCodes,
+                'patient',
+                $patientId,
+                $userAgent
+            );
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
     }
 }

@@ -85,6 +85,10 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<?php if ((string)($_GET['deleted'] ?? '') === '1'): ?>
+    <div class="lc-alert lc-alert--success" style="margin-bottom:12px;">Paciente excluído. O histórico é mantido de forma restrita conforme os prazos legais de guarda.</div>
+<?php endif; ?>
+
 <div class="lc-card">
     <div class="lc-card__title">Lista</div>
 

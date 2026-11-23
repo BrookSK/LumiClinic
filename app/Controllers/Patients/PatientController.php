@@ -356,6 +356,31 @@ final class PatientController extends Controller
         }
     }
 
+    public function delete(Request $request)
+    {
+        $this->authorize('patients.delete');
+
+        $redirect = $this->redirectSuperAdminWithoutClinicContext();
+        if ($redirect !== null) {
+            return $redirect;
+        }
+
+        $id = (int)$request->input('id', 0);
+        if ($id <= 0) {
+            return $this->redirect('/patients');
+        }
+
+        try {
+            (new PatientService($this->container))->delete($id, $request->ip(), $request->header('user-agent'));
+        } catch (\RuntimeException $e) {
+            return $this->redirect('/patients/view?id=' . $id . '&error=' . rawurlencode($e->getMessage()));
+        } catch (\Throwable $e) {
+            return $this->redirect('/patients/view?id=' . $id . '&error=' . rawurlencode('Erro ao excluir paciente.'));
+        }
+
+        return $this->redirect('/patients?deleted=1');
+    }
+
     public function searchJson(Request $request): Response
     {
         $this->authorize('patients.read');

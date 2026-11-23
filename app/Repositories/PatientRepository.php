@@ -347,6 +347,23 @@ final class PatientRepository
         ]);
     }
 
+    public function countUpcomingActiveAppointments(int $clinicId, int $patientId): int
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) AS c
+            FROM appointments
+            WHERE clinic_id = :clinic_id
+              AND patient_id = :patient_id
+              AND deleted_at IS NULL
+              AND status IN ('scheduled','confirmed','in_progress')
+              AND start_at >= NOW()
+        ");
+        $stmt->execute(['clinic_id' => $clinicId, 'patient_id' => $patientId]);
+        $row = $stmt->fetch();
+
+        return (int)($row['c'] ?? 0);
+    }
+
     /**
      * Lista pacientes com aniversário no mês informado (1-12).
      * @return list<array<string, mixed>>
