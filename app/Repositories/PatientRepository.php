@@ -144,7 +144,7 @@ final class PatientRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function exportByClinicFiltered(int $clinicId, string $q, ?int $originId, int $limit = 10000): array
+    public function exportByClinicFiltered(int $clinicId, string $q, ?int $originId, ?int $limit = null): array
     {
         $originFilter = '';
         $params = [
@@ -171,7 +171,7 @@ final class PatientRepository
               )
               {$originFilter}
             ORDER BY p.name ASC
-            LIMIT " . (int)$limit . "
+            " . ($limit !== null ? ('LIMIT ' . max(1, (int)$limit)) : '') . "
         ";
 
         $stmt = $this->pdo->prepare($sql);
