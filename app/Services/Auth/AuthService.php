@@ -7,6 +7,7 @@ namespace App\Services\Auth;
 use App\Core\Container\Container;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\PermissionRepository;
+use App\Repositories\SystemClinicRepository;
 use App\Repositories\UserRoleRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\UserPasswordResetRepository;
@@ -254,20 +255,188 @@ final class AuthService
         return new AuthResult(true, 'OK');
     }
 
+    /**
+     * Super admin passa a usar a sessão do dono (owner) da clínica, sem senha.
+     * Os dados do super admin ficam em $_SESSION['impersonator'] para poder voltar.
+     */
+    public function impersonateClinicOwner(int $clinicId, string $ip, ?string $userAgent = null): void
+    {
+        $isSuperAdminSession = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+        $superAdminId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+        if (!$isSuperAdminSession || $superAdminId <= 0 || $this->isImpersonating()) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $pdo = $this->container->get(\PDO::class);
+        $users = new UserRepository($pdo);
+
+        $superAdmin = $users->findById($superAdminId);
+        if ($superAdmin === null || (int)($superAdmin['is_super_admin'] ?? 0) !== 1) {
+            throw new \RuntimeException('Acesso negado.');
+        }
+
+        $clinics = new SystemClinicRepository($pdo);
+        $clinic = $clinics->findById($clinicId);
+        if ($clinic === null) {
+            throw new \RuntimeException('Clínica não encontrada.');
+        }
+
+        $owner = $clinics->findOwnerUserForClinic($clinicId);
+        if ($owner === null) {
+            throw new \RuntimeException('Esta clínica não possui um usuário dono (owner).');
+        }
+
+        if ((int)($owner['is_super_admin'] ?? 0) === 1) {
+            throw new \RuntimeException('Não é possível acessar como outro super admin.');
+        }
+
+        // Mesma regra do login: em um domínio/subdomínio de outra clínica a sessão do dono seria bloqueada
+        $hostClinicId = $this->container->has('host_clinic_id') ? $this->container->get('host_clinic_id') : null;
+        if (is_int($hostClinicId) && $hostClinicId !== $clinicId) {
+            throw new \RuntimeException('Este endereço pertence a outra clínica. Acesse o painel pelo domínio principal para logar como o dono desta clínica.');
+        }
+
+        $ownerId = (int)$owner['id'];
+
+        $previousClinicId = isset($_SESSION['clinic_id']) ? (int)$_SESSION['clinic_id'] : null;
+        $previousActiveClinicId = isset($_SESSION['active_clinic_id']) && is_int($_SESSION['active_clinic_id'])
+            ? $_SESSION['active_clinic_id']
+            : null;
+
+        session_regenerate_id(true);
+
+        $_SESSION['impersonator'] = [
+            'user_id' => $superAdminId,
+            'name' => (string)($superAdmin['name'] ?? ''),
+            'target_user_id' => $ownerId,
+            'target_name' => (string)($owner['name'] ?? ''),
+            'target_email' => (string)($owner['email'] ?? ''),
+            'clinic_id' => $clinicId,
+            'clinic_name' => (string)($clinic['name'] ?? ''),
+            'started_at' => time(),
+            'previous_clinic_id' => $previousClinicId,
+            'previous_active_clinic_id' => $previousActiveClinicId,
+        ];
+
+        $_SESSION['user_id'] = $ownerId;
+        $_SESSION['is_super_admin'] = 0;
+        $_SESSION['clinic_id'] = $clinicId;
+        $this->loadPermissionsAndRolesIntoSession($clinicId, $ownerId);
+
+        unset($_SESSION['active_clinic_id'], $_SESSION['auth_next'], $_SESSION['pending_access'], $_SESSION['required_legal_docs']);
+
+        $meta = [
+            'impersonator_user_id' => $superAdminId,
+            'target_user_id' => $ownerId,
+            'clinic_id' => $clinicId,
+        ];
+        $audit = new AuditLogRepository($pdo);
+        $audit->log($superAdminId, $clinicId, 'auth.impersonation.start', $meta, $ip, null, 'user', $ownerId, $userAgent);
+        SystemEvent::dispatch($this->container, 'user.impersonation.start', $meta, 'user', $superAdminId, $ip, $userAgent);
+    }
+
+    public function isImpersonating(): bool
+    {
+        return isset($_SESSION['impersonator'])
+            && is_array($_SESSION['impersonator'])
+            && isset($_SESSION['impersonator']['user_id'])
+            && (int)$_SESSION['impersonator']['user_id'] > 0;
+    }
+
+    /**
+     * Encerra o "logar como" e restaura a sessão do super admin.
+     * Retorna false quando não havia impersonação ou quando o super admin original não é mais válido
+     * (nesse caso a sessão é encerrada por completo).
+     */
+    public function stopImpersonation(string $ip, ?string $userAgent = null): bool
+    {
+        if (!$this->isImpersonating()) {
+            return false;
+        }
+
+        /** @var array<string,mixed> $imp */
+        $imp = $_SESSION['impersonator'];
+        $superAdminId = (int)$imp['user_id'];
+        $targetUserId = (int)($imp['target_user_id'] ?? 0);
+        $clinicId = isset($imp['clinic_id']) ? (int)$imp['clinic_id'] : null;
+        $startedAt = (int)($imp['started_at'] ?? 0);
+
+        $pdo = $this->container->get(\PDO::class);
+        $superAdmin = (new UserRepository($pdo))->findById($superAdminId);
+        if ($superAdmin === null || (int)($superAdmin['is_super_admin'] ?? 0) !== 1) {
+            $this->logout($ip, $userAgent);
+            return false;
+        }
+
+        $meta = [
+            'impersonator_user_id' => $superAdminId,
+            'target_user_id' => $targetUserId,
+            'clinic_id' => $clinicId,
+            'duration_seconds' => $startedAt > 0 ? max(0, time() - $startedAt) : null,
+        ];
+        $audit = new AuditLogRepository($pdo);
+        $audit->log($superAdminId, $clinicId, 'auth.impersonation.stop', $meta, $ip, null, 'user', $targetUserId > 0 ? $targetUserId : null, $userAgent);
+        SystemEvent::dispatch($this->container, 'user.impersonation.stop', $meta, 'user', $superAdminId, $ip, $userAgent);
+
+        $previousClinicId = isset($imp['previous_clinic_id']) ? (int)$imp['previous_clinic_id'] : null;
+        $previousActiveClinicId = isset($imp['previous_active_clinic_id']) ? (int)$imp['previous_active_clinic_id'] : null;
+
+        unset($_SESSION['impersonator'], $_SESSION['clinic_id'], $_SESSION['active_clinic_id'], $_SESSION['required_legal_docs'], $_SESSION['auth_next']);
+
+        // Restaura o contexto de clínica que o super admin tinha antes de iniciar
+        if ($previousClinicId !== null && $previousClinicId > 0) {
+            $_SESSION['clinic_id'] = $previousClinicId;
+        }
+        if ($previousActiveClinicId !== null && $previousActiveClinicId > 0) {
+            $_SESSION['active_clinic_id'] = $previousActiveClinicId;
+        }
+
+        $_SESSION['user_id'] = $superAdminId;
+        $_SESSION['is_super_admin'] = 1;
+        $_SESSION['permissions'] = [];
+        $_SESSION['role_codes'] = [];
+
+        session_regenerate_id(true);
+
+        return true;
+    }
+
+    private function loadPermissionsAndRolesIntoSession(int $clinicId, int $userId): void
+    {
+        $pdo = $this->container->get(\PDO::class);
+
+        $permissionsRepo = new PermissionRepository($pdo);
+        $decisions = $permissionsRepo->getPermissionDecisionsForUser($clinicId, $userId);
+
+        if (is_array($decisions) && isset($decisions['allow'], $decisions['deny'])) {
+            $_SESSION['permissions'] = $decisions;
+        } else {
+            $_SESSION['permissions'] = $permissionsRepo->getPermissionCodesForUser($clinicId, $userId);
+        }
+
+        $rolesRepo = new UserRoleRepository($pdo);
+        $_SESSION['role_codes'] = $rolesRepo->getRoleCodesForUser($clinicId, $userId);
+    }
+
     public function logout(string $ip, ?string $userAgent = null): void
     {
         $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
         $clinicId = isset($_SESSION['clinic_id']) ? (int)$_SESSION['clinic_id'] : null;
         $roleCodes = isset($_SESSION['role_codes']) && is_array($_SESSION['role_codes']) ? $_SESSION['role_codes'] : null;
 
+        $logoutMeta = [];
+        if ($this->isImpersonating()) {
+            $logoutMeta['impersonator_user_id'] = (int)$_SESSION['impersonator']['user_id'];
+        }
+
         $audit = new AuditLogRepository($this->container->get(\PDO::class));
-        $audit->log($userId, $clinicId, 'auth.logout', [], $ip, $roleCodes, 'user', $userId, $userAgent);
-        SystemEvent::dispatch($this->container, 'user.logout', [], 'user', $userId, $ip, $userAgent);
+        $audit->log($userId, $clinicId, 'auth.logout', $logoutMeta, $ip, $roleCodes, 'user', $userId, $userAgent);
+        SystemEvent::dispatch($this->container, 'user.logout', $logoutMeta, 'user', $userId, $ip, $userAgent);
 
         $hasPatientSession = isset($_SESSION['patient_user_id']) && (int)$_SESSION['patient_user_id'] > 0;
 
         unset($_SESSION['user_id'], $_SESSION['active_clinic_id'], $_SESSION['permissions'], $_SESSION['is_super_admin']);
-        unset($_SESSION['role_codes'], $_SESSION['pending_access']);
+        unset($_SESSION['role_codes'], $_SESSION['pending_access'], $_SESSION['impersonator']);
         if (!$hasPatientSession) {
             unset($_SESSION['clinic_id']);
         }

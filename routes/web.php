@@ -669,6 +669,8 @@ $router->get('/sys/clinics/edit', [SystemClinicController::class, 'edit']);
 $router->post('/sys/clinics/update', [SystemClinicController::class, 'update']);
 $router->post('/sys/clinics/set-status', [SystemClinicController::class, 'setStatus']);
 $router->post('/sys/clinics/delete', [SystemClinicController::class, 'delete']);
+$router->post('/sys/clinics/impersonate', [SystemClinicController::class, 'impersonate']);
+$router->post('/sys/impersonate/stop', [\App\Controllers\System\ImpersonationController::class, 'stop']);
 
 $router->get('/sys/billing', [SystemBillingAdminController::class, 'index']);
 $router->get('/sys/billing/view', [SystemBillingAdminController::class, 'details']);

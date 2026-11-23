@@ -79,6 +79,12 @@ final class AuthMiddleware implements MiddlewareInterface
             return Response::redirect('/login');
         }
 
+        // Super admin "logado como" o dono: não exige aceite/assinatura de termos em nome do dono
+        if ($auth->isImpersonating()) {
+            $_SESSION['required_legal_docs'] = [];
+            return $next($request);
+        }
+
         $pending = (new LegalDocumentService($this->container))->listPendingRequiredForCurrentUser();
         $_SESSION['required_legal_docs'] = $pending;
 

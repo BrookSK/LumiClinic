@@ -105,6 +105,11 @@ final class UserAdminService
             throw new \RuntimeException('Contexto inválido.');
         }
 
+        // Durante o "logar como" o super admin não pode alterar os dados (e-mail/senha) do próprio dono
+        if ($auth->isImpersonating() && $actorId === $userId) {
+            throw new \RuntimeException('Não é possível alterar o próprio usuário enquanto estiver acessando como outro usuário.');
+        }
+
         $users = new AdminUserRepository($this->container->get(\PDO::class));
         $users->updateProfile($clinicId, $userId, $name, $email, $status);
 

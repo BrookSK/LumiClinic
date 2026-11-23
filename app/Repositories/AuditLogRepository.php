@@ -23,6 +23,13 @@ final class AuditLogRepository
         ?string $occurredAt = null,
     ): void
     {
+        // Ações feitas por um super admin "logado como" outro usuário ficam rastreáveis
+        if (isset($_SESSION['impersonator']) && is_array($_SESSION['impersonator'])
+            && isset($_SESSION['impersonator']['user_id']) && (int)$_SESSION['impersonator']['user_id'] > 0
+            && !array_key_exists('impersonator_user_id', $meta)) {
+            $meta['impersonator_user_id'] = (int)$_SESSION['impersonator']['user_id'];
+        }
+
         $sql = "
             INSERT INTO audit_logs (
                 clinic_id,

@@ -2,6 +2,7 @@
 /** @var string $content */
 /** @var string $title */
 $csrf = $_SESSION['_csrf'] ?? '';
+$lcImpersonator = (isset($_SESSION['impersonator']) && is_array($_SESSION['impersonator'])) ? $_SESSION['impersonator'] : null;
 
 $terminology = isset($terminology) && is_array($terminology) ? $terminology : [];
 $patientLabel = trim((string)($terminology['patient_label'] ?? 'Paciente'));
@@ -569,6 +570,12 @@ $ico = [
                         </summary>
                         <div class="lc-actions__menu">
                             <a class="lc-btn lc-btn--secondary" href="/me">Perfil</a>
+                            <?php if ($lcImpersonator !== null): ?>
+                            <form method="post" action="/sys/impersonate/stop">
+                                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                                <button class="lc-btn lc-btn--secondary" type="submit">Voltar ao admin</button>
+                            </form>
+                            <?php endif; ?>
                             <form method="post" action="/logout">
                                 <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
                                 <button class="lc-btn lc-btn--secondary" type="submit">Sair</button>
@@ -578,6 +585,23 @@ $ico = [
                 </div>
             </div>
         </header>
+
+        <?php if ($lcImpersonator !== null): ?>
+        <?php
+        $lcImpName = trim((string)($lcImpersonator['target_name'] ?? ''));
+        $lcImpEmail = trim((string)($lcImpersonator['target_email'] ?? ''));
+        $lcImpClinic = trim((string)($lcImpersonator['clinic_name'] ?? ''));
+        ?>
+        <div role="alert" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 16px 0;padding:10px 14px;border-radius:12px;border:1px solid rgba(180,83,9,.35);background:#fef3c7;color:#92400e;font-size:13px;font-weight:600;">
+            <div>
+                Você está acessando como <?= htmlspecialchars($lcImpName !== '' ? $lcImpName : $lcImpEmail, ENT_QUOTES, 'UTF-8') ?><?php if ($lcImpEmail !== '' && $lcImpName !== ''): ?> (<?= htmlspecialchars($lcImpEmail, ENT_QUOTES, 'UTF-8') ?>)<?php endif; ?><?php if ($lcImpClinic !== ''): ?> na clínica <?= htmlspecialchars($lcImpClinic, ENT_QUOTES, 'UTF-8') ?><?php endif; ?>. Todas as ações ficam registradas na auditoria.
+            </div>
+            <form method="post" action="/sys/impersonate/stop" style="margin:0;">
+                <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>" />
+                <button class="lc-btn lc-btn--primary lc-btn--sm" type="submit">Voltar ao admin</button>
+            </form>
+        </div>
+        <?php endif; ?>
 
         <section class="lc-content" style="display:block;visibility:visible;height:auto;overflow:visible;min-height:200px;">
             <?= $content ?>
