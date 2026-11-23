@@ -43,6 +43,12 @@ ob_start();
     </div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers">Centros de Custo</a>
+        <?php if ($can('finance.reports.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/finance/accounting">Relatórios contábeis</a>
+        <?php endif; ?>
+        <?php if (!empty($rows)): ?>
+            <a class="lc-btn lc-btn--secondary" href="/finance/chart-of-accounts/export.csv">Exportar plano (CSV)</a>
+        <?php endif; ?>
     </div>
 </div>
 

@@ -407,6 +407,7 @@ final class SystemClinicService
                 'sale_logs' => 'clinic_id',
                 'sales' => 'clinic_id',
                 'cost_centers' => 'clinic_id',
+                'chart_accounts' => 'clinic_id',
                 // Patient procedures & packages
                 'appointment_package_sessions' => 'clinic_id',
                 'patient_procedures' => 'clinic_id',

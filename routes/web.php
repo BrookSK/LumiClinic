@@ -472,6 +472,10 @@ $router->post('/finance/chart-of-accounts/apply-template', [\App\Controllers\Fin
 $router->get('/finance/reports', [FinancialController::class, 'reports']);
 $router->get('/finance/reports/export.csv', [FinancialController::class, 'reportsExportCsv']);
 $router->get('/finance/reports/export.pdf', [FinancialController::class, 'reportsExportPdf']);
+$router->get('/finance/accounting', [\App\Controllers\Finance\AccountingReportsController::class, 'index']);
+$router->get('/finance/accounting/entries.csv', [\App\Controllers\Finance\AccountingReportsController::class, 'entriesCsv']);
+$router->get('/finance/accounting/summary.csv', [\App\Controllers\Finance\AccountingReportsController::class, 'summaryCsv']);
+$router->get('/finance/chart-of-accounts/export.csv', [\App\Controllers\Finance\AccountingReportsController::class, 'chartCsv']);
 
 $router->get('/stock/materials', [MaterialController::class, 'index']);
 $router->get('/stock/materials/create', [MaterialController::class, 'createForm']);

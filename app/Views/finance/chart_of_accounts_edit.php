@@ -58,6 +58,9 @@ ob_start();
     <div class="lc-badge lc-badge--primary">Editar conta <?= htmlspecialchars($curCode, ENT_QUOTES, 'UTF-8') ?></div>
     <div class="lc-flex lc-gap-sm lc-flex--wrap">
         <a class="lc-btn lc-btn--secondary" href="/finance/cost-centers">Centros de Custo</a>
+        <?php if ($can('finance.reports.read')): ?>
+            <a class="lc-btn lc-btn--secondary" href="/finance/accounting">Relatórios contábeis</a>
+        <?php endif; ?>
         <a class="lc-btn lc-btn--secondary" href="/finance/chart-of-accounts">Voltar</a>
     </div>
 </div>

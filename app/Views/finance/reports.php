@@ -75,6 +75,9 @@ ob_start();
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/reports/export.csv?<?= http_build_query($exportQuery) ?>">📊 Exportar planilha</a>
         <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/reports/export.pdf?<?= http_build_query($exportQuery) ?>">📄 Exportar PDF</a>
+        <?php if (!$is_professional): ?>
+        <a class="lc-btn lc-btn--secondary lc-btn--sm" href="/finance/accounting?<?= htmlspecialchars(http_build_query(['from' => (string)$from, 'to' => (string)$to]), ENT_QUOTES, 'UTF-8') ?>">Relatórios contábeis</a>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 </div>
