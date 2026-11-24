@@ -307,7 +307,7 @@ final class SupportBotService
             $p[] = '(nenhum trecho relevante encontrado)';
         }
         foreach ($chunks as $c) {
-            $p[] = '<<<TRECHO ' . $c['id'] . ($c['perm'] !== '' ? ' | permissão: ' . $c['perm'] : '') . '>>>';
+            $p[] = '<<<TRECHO ' . $c['id'] . ($c['perm'] !== '' ? ' | permissão: ' . $c['perm'] : '') . ($c['source'] === 'resolucao' ? ' | resolução de chamado anterior' : '') . '>>>';
             $p[] = $c['text'];
             $p[] = '<<<FIM>>>';
         }

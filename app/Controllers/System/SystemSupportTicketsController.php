@@ -10,6 +10,7 @@ use App\Repositories\SupportChatRepository;
 use App\Repositories\SupportTicketEventRepository;
 use App\Repositories\SupportTicketNotificationRepository;
 use App\Repositories\SupportTicketRepository;
+use App\Services\Support\SupportKbDraftService;
 use App\Services\Support\SupportTicketService;
 use App\Services\Support\SupportTicketWhatsappNotifier;
 
@@ -150,6 +151,16 @@ final class SystemSupportTicketsController extends Controller
             (new SupportTicketService($this->container))->resolve($id, (string)$request->input('resolution', ''), $this->actorId(), $request->ip(), $request->header('user-agent'));
         } catch (\RuntimeException $e) {
             return $this->redirect($this->back($id, 'error', $e->getMessage()));
+        }
+
+        // Sugestão de FAQ: só cria um rascunho para revisão, nada é publicado.
+        if ((string)$request->input('suggest_kb', '') === '1') {
+            try {
+                (new SupportKbDraftService($this->container))->createDraftFromTicket($id, $this->actorId());
+                return $this->redirect('/sys/support/kb?tab=draft&saved=' . urlencode('Chamado resolvido. Revise a sugestão de FAQ antes de aprovar.'));
+            } catch (\Throwable $e) {
+                return $this->redirect($this->back($id, 'error', 'Chamado resolvido, mas a sugestão de FAQ não foi gerada: ' . $e->getMessage()));
+            }
         }
 
         return $this->redirect($this->back($id, 'saved', '1'));

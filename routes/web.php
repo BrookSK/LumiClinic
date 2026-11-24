@@ -761,6 +761,14 @@ $router->post('/sys/support/whatsapp/phones/delete', [\App\Controllers\System\Sy
 $router->post('/sys/support/whatsapp/phones/toggle', [\App\Controllers\System\SystemSupportWhatsappController::class, 'phoneToggle']);
 $router->post('/sys/support/whatsapp/test', [\App\Controllers\System\SystemSupportWhatsappController::class, 'test']);
 
+$router->get('/sys/support/kb', [\App\Controllers\System\SystemSupportKbController::class, 'index']);
+$router->get('/sys/support/kb/export.md', [\App\Controllers\System\SystemSupportKbController::class, 'export']);
+$router->post('/sys/support/kb/generate', [\App\Controllers\System\SystemSupportKbController::class, 'generate']);
+$router->post('/sys/support/kb/approve', [\App\Controllers\System\SystemSupportKbController::class, 'approve']);
+$router->post('/sys/support/kb/reject', [\App\Controllers\System\SystemSupportKbController::class, 'reject']);
+$router->post('/sys/support/kb/save', [\App\Controllers\System\SystemSupportKbController::class, 'save']);
+$router->post('/sys/support/kb/delete', [\App\Controllers\System\SystemSupportKbController::class, 'delete']);
+
 $router->get('/sys/support/settings', [\App\Controllers\System\SystemSupportSettingsController::class, 'index']);
 $router->post('/sys/support/settings', [\App\Controllers\System\SystemSupportSettingsController::class, 'submit']);
 

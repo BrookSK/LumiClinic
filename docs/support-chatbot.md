@@ -124,3 +124,21 @@ Bot: <texto>
 ```
 
 Seções sem conteúdo são omitidas. Acima de 3500 caracteres a mensagem é dividida e cada parte começa com `(parte i/n)`.
+
+## Da resolução à base de conhecimento (revisão obrigatória)
+
+Quando um chamado é resolvido, a resolução escrita pelo desenvolvedor vira uma sugestão de FAQ, mas nada chega ao assistente sem a aprovação de um super admin. O texto original da resolução nunca é mostrado às clínicas.
+
+Fluxo:
+
+1. Em `/sys/support/tickets/show`, ao marcar como resolvido, a caixa "Sugerir entrada para a base de conhecimento" (marcada por padrão) cria um rascunho. Para chamados já resolvidos há o botão "Gerar sugestão de FAQ".
+2. `SupportKbDraftService::createDraftFromTicket()` usa só título, categoria, o que o usuário tentou, esperado, ocorrido e a resolução. Esses textos passam por `SupportTextSanitizer::anonymize()` (com o nome da clínica e do usuário do chamado) antes de ir à OpenAI. O modelo (o mesmo de `support.bot.model`, chave resolvida como no assistente) escreve uma pergunta e uma resposta genéricas. O resultado é anonimizado de novo e passa pelo verificador de padrões proibidos (os mesmos de `bin/support_kb_check.php`). Se a IA estiver indisponível, usa-se um modelo simples com o título e a resolução já anonimizados.
+3. O rascunho aparece em `/sys/support/kb` (abas Rascunhos, Aprovadas, Rejeitadas), com os avisos do verificador em destaque.
+4. **Aprovar** salva o texto da tela, roda o verificador de novo e só aprova se não houver problemas. Registra quem aprovou e quando, e apaga o cache da base (`storage/cache/support_kb.json`). **Rejeitar** e **Excluir** também apagam o cache. Entradas aprovadas não são editáveis: rejeite para editar.
+5. Somente entradas com `status = 'approved'` são lidas por `SupportKnowledgeBase`. No prompt elas aparecem como "resolução de chamado anterior".
+
+Exportação: `GET /sys/support/kb/export.md` baixa as entradas aprovadas no formato de `docs/knowledge-base/99-faq-resolucoes.md`, para versionar no repositório. As entradas aprovadas no banco já são lidas em tempo de execução, então a exportação serve só para histórico. Se o arquivo exportado for commitado, a base ignora a entrada do banco cuja pergunta (sem acentos e pontuação) é igual ao título de uma seção do arquivo, então a resposta não aparece duas vezes. A coluna `exported_at` mostra quando a entrada foi exportada.
+
+O que é removido automaticamente: e-mails, telefones, CPF e CNPJ, cartões, links, IPs, números com 3 ou mais dígitos, chaves e tokens, e nomes da clínica e do usuário. O verificador bloqueia a aprovação se sobrar termo de área de plataforma, credencial, infraestrutura, travessão ou marcador automático como `[nome]`.
+
+O que o aprovador deve conferir à mão: nomes de profissionais ou pacientes citados por extenso, detalhes de uma clínica específica, nomes de telas que não existem para a clínica, promessas de prazo e se a resposta serve para qualquer clínica.
