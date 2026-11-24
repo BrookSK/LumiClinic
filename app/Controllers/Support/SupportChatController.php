@@ -56,7 +56,7 @@ final class SupportChatController extends Controller
         return Response::json([
             'ok' => true,
             'enabled' => $enabled,
-            'greeting' => 'Olá' . ($first !== '' ? ', ' . $first : '') . '! Sou o assistente do LumiClinic. Pergunte como usar qualquer tela do sistema. Se eu não souber, abro um chamado para a nossa equipe.',
+            'greeting' => 'Olá' . ($first !== '' ? ', ' . $first : '') . '! Sou o assistente do LumiClinic. Pergunte como usar qualquer tela do sistema. Se eu não conseguir resolver, chamo a nossa equipe.',
             'chips' => $this->chipsFor($pagePath),
             'whatsapp_url' => $wa,
             'guide_url' => '/tutorial/guia-completo',

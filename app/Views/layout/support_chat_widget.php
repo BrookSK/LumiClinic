@@ -36,8 +36,10 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
 .lc-sc-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px;background:#fff}
 .lc-sc-chip{border:1px solid var(--lc-sc-border);background:var(--lc-sc-bg);color:var(--lc-sc-text);border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer}
 .lc-sc-chip:hover{border-color:var(--lc-sc-main)}
-.lc-sc-team{margin:0 12px 8px;padding:7px 10px;border:1px dashed var(--lc-sc-main);background:transparent;color:var(--lc-sc-main);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer}
-.lc-sc-team:hover{background:#f6f1e4}
+.lc-sc-resolve{display:none;flex-wrap:wrap;align-items:center;gap:6px;padding:0 12px 8px;background:#fff;font-size:12.5px;font-weight:600}
+.lc-sc-resolve.lc-sc-on{display:flex}
+.lc-sc-resolve .lc-sc-chip{font-weight:600}
+.lc-sc-resolve .lc-sc-team{border-color:var(--lc-sc-main);color:var(--lc-sc-main)}
 .lc-sc-form{display:flex;gap:8px;align-items:flex-end;padding:8px 12px;border-top:1px solid var(--lc-sc-border);background:var(--lc-sc-bg)}
 .lc-sc-input{flex:1;resize:none;border:1px solid var(--lc-sc-border);border-radius:10px;padding:8px 10px;font:inherit;font-size:13.5px;max-height:96px;min-height:38px;background:#fff;color:var(--lc-sc-text)}
 .lc-sc-btn{border:0;border-radius:10px;background:var(--lc-sc-main);color:#fff;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer}
@@ -66,7 +68,11 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
     <div class="lc-sc-msgs" id="lc-sc-msgs" role="log" aria-live="polite" aria-label="Mensagens do assistente"></div>
     <div class="lc-sc-typing" id="lc-sc-typing" aria-label="O assistente está escrevendo"><i></i><i></i><i></i></div>
     <div class="lc-sc-chips" id="lc-sc-chips"></div>
-    <button type="button" class="lc-sc-team" id="lc-sc-team">Falar com a equipe</button>
+    <div class="lc-sc-resolve" id="lc-sc-resolve" role="group" aria-label="A resposta resolveu?">
+      <span>Isso resolveu?</span>
+      <button type="button" class="lc-sc-chip" id="lc-sc-yes">Sim</button>
+      <button type="button" class="lc-sc-chip lc-sc-team" id="lc-sc-no">Não, falar com a equipe</button>
+    </div>
     <form class="lc-sc-form" id="lc-sc-form" autocomplete="off">
       <textarea class="lc-sc-input" id="lc-sc-input" rows="1" maxlength="1000" placeholder="Digite sua dúvida..." aria-label="Mensagem para o assistente"></textarea>
       <button type="submit" class="lc-sc-btn" id="lc-sc-send">Enviar</button>
@@ -86,10 +92,11 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
   if (!root) return;
   var $ = function (id) { return document.getElementById(id); };
   var fab = $('lc-sc-fab'), panel = $('lc-sc-panel'), msgs = $('lc-sc-msgs'), typing = $('lc-sc-typing');
-  var chipsBox = $('lc-sc-chips'), teamBtn = $('lc-sc-team'), form = $('lc-sc-form'), input = $('lc-sc-input');
+  var chipsBox = $('lc-sc-chips'), resolveBox = $('lc-sc-resolve'), yesBtn = $('lc-sc-yes'), noBtn = $('lc-sc-no'), form = $('lc-sc-form'), input = $('lc-sc-input');
   var sendBtn = $('lc-sc-send'), countEl = $('lc-sc-count'), waLink = $('lc-sc-wa');
   var csrf = root.getAttribute('data-csrf') || '';
   var KEY = 'lcScConversation';
+  var ESCALATE_TEXT = 'Não, falar com a equipe'; // igual a SupportBotService::ESCALATE_TEXT
   var booted = false, busy = false, maxChars = 1000, greeting = '';
   var convId = null;
   try { convId = window.sessionStorage.getItem(KEY) || null; } catch (e) {}
@@ -147,7 +154,8 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
   function setBusy(v) {
     busy = v;
     sendBtn.disabled = v;
-    teamBtn.disabled = v;
+    yesBtn.disabled = v;
+    noBtn.disabled = v;
     typing.classList.toggle('lc-sc-on', v);
     if (v) scrollDown();
   }
@@ -160,6 +168,8 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
         .then(function (j) { j.__status = r.status; return j; });
     });
   }
+
+  function showResolve(v) { resolveBox.classList.toggle('lc-sc-on', !!v); }
 
   function showChips(list) {
     chipsBox.textContent = '';
@@ -192,6 +202,7 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
       msgs.textContent = '';
       if (!j.messages || !j.messages.length) addMsg('bot', greeting, false);
       (j.messages || []).forEach(function (m) { addMsg(m.role === 'user' ? 'user' : 'bot', m.content, m.role !== 'user'); });
+      showResolve(false);
       if (j.status && j.status !== 'open') { convId = null; saveConv(); }
       else chipsBox.textContent = '';
     }).catch(function () {});
@@ -201,6 +212,7 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
     text = String(text || '').trim();
     if (!text || busy) return;
     chipsBox.textContent = '';
+    showResolve(false);
     addMsg('user', text, false);
     input.value = ''; autoGrow(); updateCount();
     setBusy(true);
@@ -216,6 +228,7 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
       convId = j.conversation_id || convId; saveConv();
       addMsg('bot', j.reply, true);
       if (j.action === 'create_ticket') { convId = null; saveConv(); }
+      else if (j.action === 'answer') showResolve(true);
       input.focus();
     }).catch(function () {
       setBusy(false);
@@ -227,6 +240,7 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
     if (busy) return;
     convId = null; saveConv();
     msgs.textContent = '';
+    showResolve(false);
     addMsg('bot', greeting || 'Olá! Como posso ajudar?', false);
     api('GET', '/support/chat/bootstrap?page_path=' + encodeURIComponent(window.location.pathname)).then(function (j) { if (j && j.ok) showChips(j.chips); }).catch(function () {});
     input.focus();
@@ -254,7 +268,15 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
   fab.addEventListener('click', function () { if (panel.classList.contains('lc-sc-open')) closePanel(); else openPanel(); });
   $('lc-sc-close').addEventListener('click', closePanel);
   $('lc-sc-new').addEventListener('click', newConversation);
-  teamBtn.addEventListener('click', function () { send('Quero falar com a equipe de suporte.', true); });
+  yesBtn.addEventListener('click', function () {
+    if (busy) return;
+    showResolve(false);
+    addMsg('user', 'Sim', false);
+    addMsg('bot', 'Que bom que deu certo! Se surgir outra dúvida, é só escrever aqui.', false);
+    input.focus();
+  });
+  // O texto do botão não é a descrição do problema: o servidor o ignora na contagem e faz a triagem antes do chamado.
+  noBtn.addEventListener('click', function () { send(ESCALATE_TEXT, true); });
   form.addEventListener('submit', function (e) { e.preventDefault(); send(input.value, false); });
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(input.value, false); }

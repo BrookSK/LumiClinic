@@ -119,7 +119,7 @@ Os grupos abrem e fecham clicando no título. O botão de três barras no topo r
 - **Busca rápida**: campo "Buscar paciente (nome, e-mail ou telefone)...". Digite e pressione **Enter** para abrir a lista de pacientes já filtrada (/patients?q=...). Se você não tem permissão de ver pacientes, a busca não abre a lista.
 - Selo **CLÍNICA**.
 - **Menu do usuário** (ícone de pessoa): **Perfil** (/me) e **Sair**.
-**Assistente de suporte:** no canto inferior direito fica um botão redondo com o desenho de uma conversa (ao passar o mouse aparece "Precisa de ajuda?"). Ele abre o painel **Assistente LumiClinic**, onde você digita a dúvida em "Digite sua dúvida..." e clica em **Enviar**. No painel há **Nova conversa**, **Fechar**, o botão **Falar com a equipe** (para abrir um chamado) e o link **Guia completo**. Quando a plataforma não ativa o assistente, no mesmo lugar aparece o botão verde **Falar com suporte**, que abre o WhatsApp do suporte.
+**Assistente de suporte:** no canto inferior direito fica um botão redondo com o desenho de uma conversa (ao passar o mouse aparece "Precisa de ajuda?"). Ele abre o painel **Assistente LumiClinic**, onde você digita a dúvida em "Digite sua dúvida..." e clica em **Enviar**. No painel há **Nova conversa**, **Fechar** e o link **Guia completo**. Depois de cada resposta aparece **Isso resolveu?** com **Sim** e **Não, falar com a equipe**; o chamado só é aberto depois que o assistente tenta ajudar mais uma vez. Quando a plataforma não ativa o assistente, no mesmo lugar aparece o botão verde **Falar com suporte**, que abre o WhatsApp do suporte.
 
 ## Minha conta (Perfil)
 <!-- perm: nenhuma (qualquer usuario logado) -->
