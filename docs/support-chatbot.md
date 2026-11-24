@@ -66,3 +66,61 @@ Com `gpt-4o-mini`, cada mensagem envia cerca de 3 a 8 mil tokens de entrada (reg
 - Página nova: acrescentar a URL em `routes:` do arquivo para ganhar reforço de 35% na busca quando o usuário estiver nela.
 - Tom e limites: editar `buildSystemPrompt()`.
 - Verificar tamanho da base: `php bin/support_kb_check.php`.
+
+## WhatsApp do suporte (notificação aos desenvolvedores)
+
+A Evolution API já era usada pelas clínicas (QR Code por clínica, instância `lc-<id>`), mas não existia uma instância da plataforma. O suporte usa uma instância própria (`support.wa.instance`, padrão `lumiclinic-support`, validada por `/^[A-Za-z0-9_-]{3,40}$/`) com a URL e o token globais de `/sys/settings/whatsapp`.
+
+- Tela: `/sys/support/whatsapp` (super admin). Gera o QR Code, mostra o status com atualização a cada 3 s, desconecta, cadastra até 20 números (nome, telefone normalizado com 55, ativo/inativo, teste de envio) e lista as últimas 30 notificações.
+- Código: `SupportWhatsappService` (instância, status, QR, envio), `SupportTicketWhatsappNotifier` (mensagem e entrega), `SystemSupportWhatsappController`. `EvolutionClient` ganhou métodos `*Global`/`*Of` que exigem o token global e nunca usam a chave de uma clínica. Se faltar token ou URL, a mensagem é "Configure a Evolution API global em /sys/settings/whatsapp".
+- Entrega: ao criar o chamado, uma mensagem é enviada a cada número ativo (pausa de 1 s entre envios). Com PHP-FPM o envio ocorre depois que a resposta do chat foi entregue (`fastcgi_finish_request`, timeout de 15 s); sem FPM, no mesmo request com timeout de 8 s. Cada envio gera uma linha em `support_ticket_notifications` (`sent`, `failed` ou `skipped`). Falhas nunca impedem a criação do chamado.
+- Contingência: se nada foi entregue por WhatsApp e `support.notify.email_fallback` estiver ativo, envia e-mail com o mesmo conteúdo aos endereços de `dev.alert_emails`.
+- Reenvio: na página do chamado, "Reenviar notificação (só falhas)" ou "Reenviar para todos".
+- Privacidade: segredos são removidos (`redactSecrets`) e a conversa vai truncada (últimas 10 mensagens, 300 caracteres cada). Telefones aparecem mascarados nas telas. Tokens e QR Code não são gravados em log.
+- `/support/chat*` foi liberado no `BillingEnforcementMiddleware` para que clínicas com assinatura bloqueada ainda falem com o assistente.
+
+### Modelo da mensagem
+
+```
+🆕 *NOVO CHAMADO DE SUPORTE*
+*LC-000123* | Severidade: *ALTA* | Categoria: Erro
+Título: <título>
+
+🏥 *Clínica*
+<nome> (ID <id>)
+
+👤 *Solicitante*
+<nome>
+E-mail: <e-mail>
+Telefone: <telefone>
+Perfil: <perfis>
+
+📍 *Onde*
+Página: <caminho>
+URL: <base_url><caminho>
+Quando: dd/mm/aaaa hh:mm
+
+📝 *Resumo*
+<resumo>
+
+🔧 *O que já tentou*
+<passos>
+
+🎯 *Esperado*
+<esperado>
+
+⚠️ *O que aconteceu*
+<ocorrido>
+
+🐞 *Erros recentes (60 min)*
+- [500] POST /rota: mensagem (hh:mm)
+
+💬 *Conversa (últimas 10)*
+Usuário: <texto>
+Bot: <texto>
+
+🔗 *Painel*
+<base_url>/sys/support/tickets/show?id=<id>
+```
+
+Seções sem conteúdo são omitidas. Acima de 3500 caracteres a mensagem é dividida e cada parte começa com `(parte i/n)`.

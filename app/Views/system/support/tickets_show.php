@@ -231,6 +231,20 @@ ob_start();
                     <?php if (($n['error'] ?? '') !== ''): ?><div class="lc-muted"><?= $e($n['error']) ?></div><?php endif; ?>
                 </div>
             <?php endforeach; ?>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                <form method="post" action="/sys/support/tickets/resend-notification" style="margin:0;">
+                    <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" />
+                    <input type="hidden" name="id" value="<?= $id ?>" />
+                    <input type="hidden" name="mode" value="failed" />
+                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Reenviar notificação (só falhas)</button>
+                </form>
+                <form method="post" action="/sys/support/tickets/resend-notification" style="margin:0;" onsubmit="return confirm('Reenviar para todos os números ativos?');">
+                    <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" />
+                    <input type="hidden" name="id" value="<?= $id ?>" />
+                    <input type="hidden" name="mode" value="all" />
+                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Reenviar para todos</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>

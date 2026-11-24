@@ -28,7 +28,8 @@ final class SupportTicketService
                 $notifier = $candidate;
             }
         }
-        $this->notifier = $notifier ?? new SupportNullTicketNotifier();
+        // Padrão: notificação por WhatsApp/e-mail aos desenvolvedores (FEAT-006). SupportNullTicketNotifier segue disponível para testes.
+        $this->notifier = $notifier ?? new SupportTicketWhatsappNotifier($this->container);
         $this->sanitizer = new SupportTextSanitizer();
     }
 

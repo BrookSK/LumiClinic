@@ -11,6 +11,7 @@ use App\Repositories\SupportTicketEventRepository;
 use App\Repositories\SupportTicketNotificationRepository;
 use App\Repositories\SupportTicketRepository;
 use App\Services\Support\SupportTicketService;
+use App\Services\Support\SupportTicketWhatsappNotifier;
 
 final class SystemSupportTicketsController extends Controller
 {
@@ -149,6 +150,30 @@ final class SystemSupportTicketsController extends Controller
             (new SupportTicketService($this->container))->resolve($id, (string)$request->input('resolution', ''), $this->actorId(), $request->ip(), $request->header('user-agent'));
         } catch (\RuntimeException $e) {
             return $this->redirect($this->back($id, 'error', $e->getMessage()));
+        }
+
+        return $this->redirect($this->back($id, 'saved', '1'));
+    }
+
+    /** Reenvia a notificação do chamado: apenas aos números que falharam (mode=failed) ou a todos os ativos (mode=all). */
+    public function resendNotification(Request $request)
+    {
+        $this->ensureSuperAdmin();
+
+        $id = (int)$request->input('id', 0);
+        $onlyFailed = (string)$request->input('mode', 'failed') !== 'all';
+
+        try {
+            $result = (new SupportTicketWhatsappNotifier($this->container))->resend($id, $onlyFailed);
+        } catch (\RuntimeException $e) {
+            return $this->redirect($this->back($id, 'error', $e->getMessage()));
+        }
+
+        if ($result['sent'] === 0 && $result['failed'] === 0) {
+            return $this->redirect($this->back($id, 'error', 'Nada a reenviar: nenhum número com falha ou nenhum número ativo.'));
+        }
+        if ($result['sent'] === 0) {
+            return $this->redirect($this->back($id, 'error', 'Nenhuma mensagem foi entregue. Verifique a conexão em WhatsApp do suporte.'));
         }
 
         return $this->redirect($this->back($id, 'saved', '1'));

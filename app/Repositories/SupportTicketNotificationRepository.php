@@ -58,4 +58,18 @@ final class SupportTicketNotificationRepository
         /** @var list<array<string,mixed>> */
         return $stmt->fetchAll();
     }
+
+    /** Últimas notificações de todos os chamados (log de entregas do super admin). @return list<array<string,mixed>> */
+    public function listLatest(int $limit = 30): array
+    {
+        $limit = max(1, min(200, $limit));
+        $stmt = $this->pdo->query("
+            SELECT n.id, n.ticket_id, n.channel, n.destination, n.status, n.error, n.attempts, n.created_at, t.public_code
+            FROM support_ticket_notifications n
+            LEFT JOIN support_tickets t ON t.id = n.ticket_id
+            ORDER BY n.id DESC
+            LIMIT " . $limit);
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
 }
