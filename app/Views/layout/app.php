@@ -811,7 +811,7 @@ $ico = [
 </script>
 
 <?php
-// Assistente de suporte (chat) para usuários de clínica; senão, botão flutuante de WhatsApp
+// Assistente de suporte (chat) para usuários de clínica, além do botão flutuante de WhatsApp
 $_scImpersonating = isset($_SESSION['impersonator']) && is_array($_SESSION['impersonator']);
 // Em "logar como" o active_clinic_id não é definido (a clínica vem de clinic_id); chamados saem marcados como do super admin.
 $_scShow = !empty($support_bot_enabled) && !$isSuperAdmin && ($hasClinicContext || $_scImpersonating);
@@ -819,9 +819,21 @@ if ($_scShow) {
     require __DIR__ . '/support_chat_widget.php';
 }
 
-// Floating support button
+// Floating support button (WhatsApp): sempre exibido quando configurado, independente do assistente
 $_supportWa = trim((string)($support_settings['support_whatsapp_number'] ?? ''));
-if (!$_scShow && $_supportWa !== ''):
+if ($_scShow && $_supportWa !== ''):
+?>
+<style>
+/* O botão do assistente fica empilhado acima do botão de WhatsApp */
+.lc-sc-fab{bottom:76px}
+.lc-sc-panel{bottom:144px;max-height:calc(100vh - 166px)}
+@media (max-width:480px){
+  .lc-sc-fab{bottom:70px}
+  .lc-sc-panel{bottom:0;max-height:100%}
+}
+</style>
+<?php endif;
+if ($_supportWa !== ''):
     $_waClean = preg_replace('/\D+/', '', $_supportWa);
     $_waUrl = 'https://wa.me/' . $_waClean . '?text=' . urlencode('Ola! Preciso de ajuda com o sistema.');
 ?>
