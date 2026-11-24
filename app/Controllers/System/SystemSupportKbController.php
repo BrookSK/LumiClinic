@@ -190,7 +190,7 @@ final class SystemSupportKbController extends Controller
         return $this->redirect($this->back((string)$entry['status'], 'saved', 'Entrada excluída.'));
     }
 
-    /** Baixa o markdown das entradas aprovadas (formato de docs/knowledge-base/99-faq-resolucoes.md), só para versionar no repositório. */
+    /** Somente leitura (GET não grava nada além do registro de auditoria). Baixa o markdown das entradas aprovadas (formato de docs/knowledge-base/99-faq-resolucoes.md), só para versionar no repositório. */
     public function export(Request $request)
     {
         $this->ensureSuperAdmin();
@@ -217,7 +217,6 @@ final class SystemSupportKbController extends Controller
             $md .= "<!-- Entradas aprovadas de chamados resolvidos serao exportadas aqui -->\n";
         }
 
-        $repo->markExported($ids);
         $this->audit($request, 'support.kb.export', 0, ['count' => count($ids)]);
 
         return Response::raw($md, 200, [

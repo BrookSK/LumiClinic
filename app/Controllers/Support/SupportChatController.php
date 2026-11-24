@@ -95,6 +95,10 @@ final class SupportChatController extends Controller
                 'user_agent' => mb_substr((string)$request->header('user-agent', ''), 0, 300),
                 'client_time' => is_string($clientTime) ? mb_substr($clientTime, 0, 40) : '',
             ]);
+        } catch (\PDOException $e) {
+            // PDOException estende RuntimeException: nunca repassar o texto do banco ao navegador.
+            error_log('[SupportChat] erro de banco: ' . get_class($e));
+            return Response::json(['ok' => false, 'error' => 'Não foi possível processar sua mensagem agora.'], 500);
         } catch (\RuntimeException $e) {
             return Response::json(['ok' => false, 'error' => $e->getMessage()], 404);
         } catch (\Throwable $e) {

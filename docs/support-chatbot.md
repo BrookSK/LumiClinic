@@ -45,7 +45,7 @@ A chave é resolvida nessa ordem em `SupportBotService::resolveApiKey()`. O assi
 
 ## Base de conhecimento
 
-Formato esperado em cada arquivo: front matter com `title:` e `routes:`, seções `## `, comentário `<!-- perm: codigo -->` logo abaixo do título da seção. Seções maiores que 2400 caracteres são divididas em `### ` e depois por parágrafos. O arquivo `README.md` da pasta é ignorado. Resoluções aprovadas em `support_kb_entries` entram como trechos de origem `resolucao`.
+Formato esperado em cada arquivo: front matter com `title:` e `routes:`, seções `## `, comentário `<!-- perm: codigo -->` logo abaixo do título da seção (o carregador repassa ao modelo só os códigos de permissão, em lista separada por vírgula, mesmo que o comentário traga explicações entre parênteses). Seções maiores que 2400 caracteres são divididas em `### ` e depois por parágrafos. O arquivo `README.md` da pasta é ignorado. Resoluções aprovadas em `support_kb_entries` entram como trechos de origem `resolucao`.
 
 Cache: `storage/cache/support_kb.json`, invalidado pela data de modificação dos `.md` e pelas datas das entradas aprovadas. Se a pasta não for gravável, o cache é ignorado e a base é lida a cada requisição.
 
@@ -137,7 +137,7 @@ Fluxo:
 4. **Aprovar** salva o texto da tela, roda o verificador de novo e só aprova se não houver problemas. Registra quem aprovou e quando, e apaga o cache da base (`storage/cache/support_kb.json`). **Rejeitar** e **Excluir** também apagam o cache. Entradas aprovadas não são editáveis: rejeite para editar.
 5. Somente entradas com `status = 'approved'` são lidas por `SupportKnowledgeBase`. No prompt elas aparecem como "resolução de chamado anterior".
 
-Exportação: `GET /sys/support/kb/export.md` baixa as entradas aprovadas no formato de `docs/knowledge-base/99-faq-resolucoes.md`, para versionar no repositório. As entradas aprovadas no banco já são lidas em tempo de execução, então a exportação serve só para histórico. Se o arquivo exportado for commitado, a base ignora a entrada do banco cuja pergunta (sem acentos e pontuação) é igual ao título de uma seção do arquivo, então a resposta não aparece duas vezes. A coluna `exported_at` mostra quando a entrada foi exportada.
+Exportação: `GET /sys/support/kb/export.md` baixa as entradas aprovadas no formato de `docs/knowledge-base/99-faq-resolucoes.md`, para versionar no repositório. As entradas aprovadas no banco já são lidas em tempo de execução, então a exportação serve só para histórico. Se o arquivo exportado for commitado, a base ignora a entrada do banco cuja pergunta (sem acentos e pontuação) é igual ao título de uma seção do arquivo, então a resposta não aparece duas vezes. O download é somente leitura e não altera nenhum registro. Atenção: rejeitar ou excluir no sistema uma entrada que já foi exportada e commitada **não** a remove do arquivo `99-faq-resolucoes.md`, que continua sendo lido pela base. Nesse caso edite ou apague a seção correspondente no arquivo e faça o commit também.
 
 O que é removido automaticamente: e-mails, telefones, CPF e CNPJ, cartões, links, IPs, números com 3 ou mais dígitos, chaves e tokens, e nomes da clínica e do usuário. O verificador bloqueia a aprovação se sobrar termo de área de plataforma, credencial, infraestrutura, travessão ou marcador automático como `[nome]`.
 

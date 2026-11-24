@@ -206,6 +206,12 @@ final class SystemSettingsService
         }
     }
 
+    /** Só o interruptor do assistente (uma leitura), para checagens em toda renderização de página. */
+    public function isSupportBotEnabled(): bool
+    {
+        return trim((string)($this->getText('support.bot.enabled') ?? '')) === '1';
+    }
+
     /**
      * Configuração do assistente de suporte (chatbot). Não confundir com getSupportSettings(), que é o contato público.
      * A chave da OpenAI nunca é devolvida, só o indicador api_key_set.

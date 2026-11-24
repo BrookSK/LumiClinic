@@ -76,7 +76,7 @@ final class SupportBotService
     public function isEnabled(): bool
     {
         try {
-            return (new SystemSettingsService($this->container))->getSupportBotSettings()['enabled'];
+            return (new SystemSettingsService($this->container))->isSupportBotEnabled();
         } catch (\Throwable $e) {
             return false;
         }
@@ -202,7 +202,7 @@ final class SupportBotService
         $action = $parsed['action'];
         $reply = $parsed['reply'];
 
-        if ($action === 'create_ticket' && !$this->canCreateTicket($userTurns, $forced)) {
+        if ($action === 'create_ticket' && !$this->canCreateTicket($userTurns)) {
             $action = 'ask_details';
             if ($reply === '' || !str_contains($reply, '?')) {
                 $reply = trim($reply . ' Para a equipe resolver mais rápido, pode me contar o que você estava tentando fazer, em qual tela e o que aconteceu?');
@@ -234,13 +234,14 @@ final class SupportBotService
                     'kb_chunk_ids' => $chunkIds,
                 ]
             );
-        } catch (\RuntimeException $e) {
-            $note = 'Não consegui abrir o chamado agora: ' . $e->getMessage();
-            $chat->addMessage($conversationId, 'assistant', $note);
-            return $this->result($reply . "\n\n" . $note, 'ask_details');
         } catch (\Throwable $e) {
-            error_log('[SupportBot] falha ao criar chamado: ' . mb_substr($e->getMessage(), 0, 300));
-            $note = 'Não consegui abrir o chamado agora. Tente novamente em instantes. ' . $contact;
+            // PDOException também é RuntimeException: só as mensagens pensadas para o usuário (limite, conversa já com chamado) são exibidas.
+            if ($e instanceof \RuntimeException && !($e instanceof \PDOException)) {
+                $note = 'Não consegui abrir o chamado agora: ' . $e->getMessage();
+            } else {
+                error_log('[SupportBot] falha ao criar chamado: ' . get_class($e));
+                $note = 'Não consegui abrir o chamado agora. Tente novamente em instantes. ' . $contact;
+            }
             $chat->addMessage($conversationId, 'assistant', $note);
             return $this->result($reply . "\n\n" . $note, 'ask_details');
         }
@@ -355,9 +356,10 @@ final class SupportBotService
     }
 
     /** O servidor decide se o chamado pode ser aberto, independente do que o modelo pediu. */
-    private function canCreateTicket(int $userTurns, bool $forced): bool
+    private function canCreateTicket(int $userTurns): bool
     {
-        return $forced ? $userTurns >= 2 : $userTurns >= 3;
+        // Com "Falar com a equipe" a frase fixa do botão já conta como a 1ª mensagem; exigir 3 garante 2 respostas reais.
+        return $userTurns >= 3;
     }
 
     /** @param list<array<string,mixed>> $history */

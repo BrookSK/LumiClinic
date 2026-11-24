@@ -57,12 +57,23 @@ final class SupportTicketWhatsappNotifier implements SupportTicketNotifierInterf
                     fastcgi_finish_request();
                 } catch (\Throwable $e) {
                 }
+                $this->releaseSession();
                 $this->deliver($ticket, false, 15);
             });
             return;
         }
 
+        // Sem FPM a entrega é síncrona: solta o lock da sessão para não travar as outras requisições do usuário.
+        $this->releaseSession();
         $this->deliver($ticket, false, 8);
+    }
+
+    /** Libera o lock do arquivo de sessão antes de enviar mensagens lentas. $_SESSION continua legível. */
+    private function releaseSession(): void
+    {
+        if (function_exists('session_status') && session_status() === PHP_SESSION_ACTIVE) {
+            @session_write_close();
+        }
     }
 
     /**

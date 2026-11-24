@@ -69,7 +69,7 @@ abstract class Controller
             if ($isSuperAdmin || !isset($_SESSION['user_id']) || (new AuthService($this->container))->isImpersonating()) {
                 return false;
             }
-            return (new SystemSettingsService($this->container))->getSupportBotSettings()['enabled'];
+            return (new SystemSettingsService($this->container))->isSupportBotEnabled();
         } catch (\Throwable $e) {
             return false;
         }

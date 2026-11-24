@@ -68,7 +68,6 @@ ob_start();
                 <?php endif; ?>
                 Criada em <?= $e($fmt((string)($en['created_at'] ?? ''))) ?>
                 <?php if (!empty($en['reviewed_at'])): ?>&middot; Revisada em <?= $e($fmt((string)$en['reviewed_at'])) ?><?php endif; ?>
-                <?php if (!empty($en['exported_at'])): ?>&middot; Exportada em <?= $e($fmt((string)$en['exported_at'])) ?><?php endif; ?>
             </div>
         </div>
 

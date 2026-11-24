@@ -26,7 +26,7 @@ final class SupportKnowledgeBase
     private const CHARS_PER_TOKEN = 3.5;
     private const MAX_CHUNKS_PER_FILE = 5;
     private const ROUTE_BOOST = 1.35;
-    private const CACHE_VERSION = 2;
+    private const CACHE_VERSION = 3;
 
     /** @var array{chunks:list<array<string,mixed>>,index:string,df:array<string,int>,avg_len:float}|null */
     private ?array $data = null;
@@ -423,11 +423,23 @@ final class SupportKnowledgeBase
         $perm = '';
         $body = (string)preg_replace_callback('/<!--\s*perm:\s*(.*?)\s*-->\s*\n?/s', function (array $m) use (&$perm): string {
             if ($perm === '') {
-                $perm = trim($m[1]);
+                $perm = $this->normalizePerm(trim($m[1]));
             }
             return '';
         }, $body);
         return [$perm, trim($body)];
+    }
+
+    /**
+     * Comentários de permissão podem trazer prosa ("finance.sales.read (ver), ..."). O prompt recebe só os códigos,
+     * em lista separada por vírgula, para a regra de permissão do assistente comparar códigos com códigos.
+     */
+    private function normalizePerm(string $raw): string
+    {
+        if (preg_match_all('/\b[a-z][a-z0-9_]*(?:\.[a-z0-9_*]+)+/', $raw, $m) > 0) {
+            return implode(', ', array_values(array_unique($m[0])));
+        }
+        return stripos($raw, 'nenhuma') === 0 ? 'nenhuma' : $raw;
     }
 
     /** @return list<string> */

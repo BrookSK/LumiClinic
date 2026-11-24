@@ -77,15 +77,6 @@ final class SupportKbEntryRepository
         return (int)$stmt->fetchColumn();
     }
 
-    /** @param list<int> $ids */
-    public function markExported(array $ids): void
-    {
-        foreach ($ids as $id) {
-            $stmt = $this->pdo->prepare('UPDATE support_kb_entries SET exported_at = NOW() WHERE id = :id');
-            $stmt->execute(['id' => (int)$id]);
-        }
-    }
-
     /** status: approved ou rejected (ou draft para reabrir). */
     public function review(int $id, string $status, ?int $reviewerId): void
     {

@@ -111,28 +111,42 @@ final class SupportTicketService
         }
 
         $repo = new SupportTicketRepository($pdo);
-        $ticketId = $repo->create([
-            'clinic_id' => $clinicId,
-            'user_id' => $userId,
-            'conversation_id' => $conversationId,
-            'title' => $title,
-            'summary' => $this->clean((string)($ticketData['summary'] ?? ''), 4000),
-            'category' => $category,
-            'severity' => $severity,
-            'context_json' => json_encode(
-                $context + ['transcript' => $transcript],
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR
-            ) ?: null,
-            'steps_tried' => $this->clean((string)($ticketData['steps_tried'] ?? ''), 2000),
-            'expected' => $this->clean((string)($ticketData['expected'] ?? ''), 2000),
-            'actual' => $this->clean((string)($ticketData['actual'] ?? ''), 2000),
-            'page_path' => $pagePath !== '' ? $pagePath : null,
-        ]);
-
-        $chat->setStatus($conversationId, $clinicId, $userId, 'ticketed');
-
         $events = new SupportTicketEventRepository($pdo);
-        $events->add($ticketId, $userId, 'created', 'Chamado criado pelo assistente de suporte.');
+
+        // Transação: reserva a conversa (open -> ticketed), cria o chamado e o evento juntos.
+        // Um duplo clique não passa da reserva, e uma falha no meio não deixa chamado pela metade.
+        $pdo->beginTransaction();
+        try {
+            if (!$chat->claimForTicket($conversationId, $clinicId, $userId)) {
+                throw new \RuntimeException('Esta conversa já gerou um chamado.');
+            }
+
+            $ticketId = $repo->create([
+                'clinic_id' => $clinicId,
+                'user_id' => $userId,
+                'conversation_id' => $conversationId,
+                'title' => $title,
+                'summary' => $this->clean((string)($ticketData['summary'] ?? ''), 4000),
+                'category' => $category,
+                'severity' => $severity,
+                'context_json' => json_encode(
+                    $context + ['transcript' => $transcript],
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR
+                ) ?: null,
+                'steps_tried' => $this->clean((string)($ticketData['steps_tried'] ?? ''), 2000),
+                'expected' => $this->clean((string)($ticketData['expected'] ?? ''), 2000),
+                'actual' => $this->clean((string)($ticketData['actual'] ?? ''), 2000),
+                'page_path' => $pagePath !== '' ? $pagePath : null,
+            ]);
+
+            $events->add($ticketId, $userId, 'created', 'Chamado criado pelo assistente de suporte.');
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
 
         $ticket = $repo->findById($ticketId);
         if ($ticket === null) {
