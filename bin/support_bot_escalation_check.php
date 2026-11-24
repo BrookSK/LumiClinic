@@ -46,8 +46,21 @@ foreach ([
     'tem como fazer chamada de vídeo com o paciente?',
     'o profissional precisa ter treinamento cadastrado?',
     'quero cadastrar o treinamento do funcionário',
+    'preciso marcar uma reunião interna, como faço?',
+    'gostaria de treinar minha recepcionista, tem material?',
+    'quero fazer uma apresentação do sistema para minha equipe',
+    'preciso marcar uma reunião com a equipe na agenda, como faço?',
 ] as $q) {
     $check('wantsMeeting: "' . $q . '"', Bot::wantsMeeting($q), false);
+}
+// Pedidos de treinamento/reunião com a equipe que citam um módulo do sistema: contam.
+foreach ([
+    'preciso de um treinamento sobre a agenda',
+    'preciso de treinamento para cadastrar pacientes',
+    'quero uma reunião com o suporte para ver os pacientes',
+    'quero um treinamento para usar o financeiro',
+] as $q) {
+    $check('wantsMeeting: "' . $q . '"', Bot::wantsMeeting($q), true);
 }
 
 // stillNeedsHelp
@@ -61,6 +74,8 @@ $check('stillNeedsHelp: "obrigado, deu certo"', Bot::stillNeedsHelp('obrigado, d
 $check('stillNeedsHelp: "ainda não"', Bot::stillNeedsHelp('ainda não'), false);
 $check('stillNeedsHelp: "aparece a mensagem suporte indisponível"', Bot::stillNeedsHelp('aparece a mensagem suporte indisponível'), false);
 $check('stillNeedsHelp: "não deu erro nenhum"', Bot::stillNeedsHelp('não deu erro nenhum'), false);
+$check('stillNeedsHelp: "mesmo assim obrigado"', Bot::stillNeedsHelp('mesmo assim obrigado'), false);
+$check('stillNeedsHelp: "fiz isso e mesmo assim não salvou"', Bot::stillNeedsHelp('fiz isso e mesmo assim não salvou'), true);
 
 // wantsTeam (mensagem inteira)
 $check('wantsTeam: "Não, falar com a equipe"', Bot::wantsTeam('Não, falar com a equipe'), true);
@@ -79,6 +94,12 @@ $check('decideTicket: normal, modelo create_ticket, 1 resposta', Bot::decideTick
 $check('decideTicket: normal, modelo create_ticket, 2 respostas', Bot::decideTicket(Bot::MODE_NORMAL, 'create_ticket', 2, false, false), true);
 $check('decideTicket: modo chamado, resposta sem insistência e modelo perguntando', Bot::decideTicket(Bot::MODE_TICKET, 'ask_details', 2, false, false), false);
 $check('decideTicket: modo chamado, insistiu mas nada descrito (0 respostas)', Bot::decideTicket(Bot::MODE_TICKET, 'ask_details', 0, true, false), false);
+// Menção a reunião/treinamento sem pedido reconhecido: aceita o create_ticket do modelo com 1 resposta, fora da triagem.
+$check('decideTicket: normal, modelo create_ticket, menção a treinamento, 1 resposta', Bot::decideTicket(Bot::MODE_NORMAL, 'create_ticket', 1, false, false, true), true);
+$check('decideTicket: normal, modelo respondeu, menção a treinamento', Bot::decideTicket(Bot::MODE_NORMAL, 'answer', 1, false, false, true), false);
+$check('decideTicket: triagem, modelo create_ticket, só menção', Bot::decideTicket(Bot::MODE_TRIAGE, 'create_ticket', 1, false, false, true), false);
+$check('mentionsMeeting: "reunião interna, como faço?"', Bot::mentionsMeeting('preciso marcar uma reunião interna, como faço?'), true);
+$check('mentionsMeeting: "como emito nota?"', Bot::mentionsMeeting('como emito nota?'), false);
 
 // analyzeConversation: histórico já com a mensagem atual gravada (como em handleMessage).
 $u = static fn(string $s): array => ['role' => 'user', 'content' => $s];
@@ -117,7 +138,23 @@ $check('analyze+decide: reunião na primeira mensagem abre', Bot::decideTicket($
 $q = 'como bloqueio a agenda para fazer uma reunião?';
 $s = Bot::analyzeConversation([$u($q)], $q, false);
 $check('analyze: dúvida de agenda fica no modo normal', $s['mode'] === Bot::MODE_NORMAL && !$s['insert_marker'], true);
-$check('analyze+decide: dúvida de agenda não abre', Bot::decideTicket($s['mode'], 'answer', 1, $s['insisted_again'], $s['meeting_requested']), false);
+$check('analyze+decide: dúvida de agenda não abre', Bot::decideTicket($s['mode'], 'answer', 1, $s['insisted_again'], $s['meeting_requested'], $s['meeting_mentioned']), false);
+
+// Dúvida de uso fora da lista antiga ("reunião interna, como faço?"): modo normal e o assistente responde.
+$q = 'preciso marcar uma reunião interna, como faço?';
+$s = Bot::analyzeConversation([$u($q)], $q, false);
+$check('analyze: "reunião interna, como faço?" fica no modo normal', $s['mode'] === Bot::MODE_NORMAL && !$s['insert_marker'], true);
+$check('analyze+decide: "reunião interna, como faço?" com answer não abre', Bot::decideTicket($s['mode'], 'answer', 1, $s['insisted_again'], $s['meeting_requested'], $s['meeting_mentioned']), false);
+
+// Pedido de treinamento sobre um módulo na primeira mensagem: abre, mesmo que o modelo só responda.
+$q = 'preciso de um treinamento sobre a agenda';
+$s = Bot::analyzeConversation([$u($q)], $q, false);
+$check('analyze+decide: treinamento sobre a agenda na primeira mensagem abre', Bot::decideTicket($s['mode'], 'answer', count($s['real_user_texts']), $s['insisted_again'], $s['meeting_requested'], $s['meeting_mentioned']), true);
+
+// Modo chamado: "mesmo assim obrigado" não é insistência.
+$h = [$u('erro ao salvar'), $u(Bot::ESCALATE_TEXT), $marker, $a('Tente recarregar a página.'), $u('mesmo assim obrigado')];
+$s = Bot::analyzeConversation($h, 'mesmo assim obrigado', false);
+$check('analyze: "mesmo assim obrigado" não é insistência', $s['insisted_again'], false);
 
 // Só pedidos de equipe, nada descrito: não abre, o assistente pergunta antes.
 $h = [$u('quero falar com a equipe'), $marker, $a('Claro. O que está acontecendo?'), $u(Bot::ESCALATE_TEXT)];
