@@ -813,7 +813,8 @@ $ico = [
 <?php
 // Assistente de suporte (chat) para usuários de clínica; senão, botão flutuante de WhatsApp
 $_scImpersonating = isset($_SESSION['impersonator']) && is_array($_SESSION['impersonator']);
-$_scShow = !empty($support_bot_enabled) && !$isSuperAdmin && $hasClinicContext && !$_scImpersonating;
+// Em "logar como" o active_clinic_id não é definido (a clínica vem de clinic_id); chamados saem marcados como do super admin.
+$_scShow = !empty($support_bot_enabled) && !$isSuperAdmin && ($hasClinicContext || $_scImpersonating);
 if ($_scShow) {
     require __DIR__ . '/support_chat_widget.php';
 }

@@ -158,7 +158,7 @@ final class SupportChatController extends Controller
         ]);
     }
 
-    /** Exige usuário de clínica autenticado, fora de "logar como" e fora do super admin. */
+    /** Exige usuário de clínica autenticado (inclui "logar como", que é marcado nos chamados) e fora do super admin sem clínica. */
     private function guard(): ?Response
     {
         $auth = new AuthService($this->container);
@@ -166,7 +166,7 @@ final class SupportChatController extends Controller
         $userId = $auth->userId();
         $clinicId = $auth->clinicId();
 
-        if ($isSuperAdmin || $auth->isImpersonating() || $userId === null || $userId <= 0 || $clinicId === null || $clinicId <= 0) {
+        if ($isSuperAdmin || $userId === null || $userId <= 0 || $clinicId === null || $clinicId <= 0) {
             return Response::json(['ok' => false, 'error' => 'Acesso negado.'], 403);
         }
         return null;

@@ -282,6 +282,11 @@ final class SupportTicketWhatsappNotifier implements SupportTicketNotifierInterf
             $lines[] = 'Título: ' . $title;
         }
 
+        if (!empty($context['impersonated_session'])) {
+            $impId = (int)($context['impersonator_user_id'] ?? 0);
+            $lines[] = '⚠ *Aberto por super admin em modo Logar como*' . ($impId > 0 ? ' (usuário #' . $impId . ')' : '') . ' - não é um cliente real';
+        }
+
         $lines[] = '';
         $lines[] = '🏥 *Clínica*';
         $lines[] = ($clinicName !== '' ? $clinicName : '-') . ($clinicId > 0 ? ' (ID ' . $clinicId . ')' : '');
