@@ -741,6 +741,37 @@ $router->post('/sys/settings/ai', [\App\Controllers\System\SystemSettingsControl
 $router->post('/sys/settings/ai/wallet', [\App\Controllers\System\AiWalletController::class, 'saveSettings']);
 $router->post('/sys/settings/ai/wallet/recharge', [\App\Controllers\System\AiWalletController::class, 'manualRecharge']);
 
+$router->get('/support/chat/bootstrap', [\App\Controllers\Support\SupportChatController::class, 'bootstrap']);
+$router->post('/support/chat/message', [\App\Controllers\Support\SupportChatController::class, 'message']);
+$router->get('/support/chat/history', [\App\Controllers\Support\SupportChatController::class, 'history']);
+
+$router->get('/sys/support/tickets', [\App\Controllers\System\SystemSupportTicketsController::class, 'index']);
+$router->get('/sys/support/tickets/show', [\App\Controllers\System\SystemSupportTicketsController::class, 'show']);
+$router->post('/sys/support/tickets/status', [\App\Controllers\System\SystemSupportTicketsController::class, 'status']);
+$router->post('/sys/support/tickets/note', [\App\Controllers\System\SystemSupportTicketsController::class, 'note']);
+$router->post('/sys/support/tickets/resolve', [\App\Controllers\System\SystemSupportTicketsController::class, 'resolve']);
+$router->post('/sys/support/tickets/resend-notification', [\App\Controllers\System\SystemSupportTicketsController::class, 'resendNotification']);
+
+$router->get('/sys/support/whatsapp', [\App\Controllers\System\SystemSupportWhatsappController::class, 'index']);
+$router->get('/sys/support/whatsapp/status-json', [\App\Controllers\System\SystemSupportWhatsappController::class, 'statusJson']);
+$router->post('/sys/support/whatsapp/connect', [\App\Controllers\System\SystemSupportWhatsappController::class, 'connect']);
+$router->post('/sys/support/whatsapp/disconnect', [\App\Controllers\System\SystemSupportWhatsappController::class, 'disconnect']);
+$router->post('/sys/support/whatsapp/phones/save', [\App\Controllers\System\SystemSupportWhatsappController::class, 'phoneSave']);
+$router->post('/sys/support/whatsapp/phones/delete', [\App\Controllers\System\SystemSupportWhatsappController::class, 'phoneDelete']);
+$router->post('/sys/support/whatsapp/phones/toggle', [\App\Controllers\System\SystemSupportWhatsappController::class, 'phoneToggle']);
+$router->post('/sys/support/whatsapp/test', [\App\Controllers\System\SystemSupportWhatsappController::class, 'test']);
+
+$router->get('/sys/support/kb', [\App\Controllers\System\SystemSupportKbController::class, 'index']);
+$router->get('/sys/support/kb/export.md', [\App\Controllers\System\SystemSupportKbController::class, 'export']);
+$router->post('/sys/support/kb/generate', [\App\Controllers\System\SystemSupportKbController::class, 'generate']);
+$router->post('/sys/support/kb/approve', [\App\Controllers\System\SystemSupportKbController::class, 'approve']);
+$router->post('/sys/support/kb/reject', [\App\Controllers\System\SystemSupportKbController::class, 'reject']);
+$router->post('/sys/support/kb/save', [\App\Controllers\System\SystemSupportKbController::class, 'save']);
+$router->post('/sys/support/kb/delete', [\App\Controllers\System\SystemSupportKbController::class, 'delete']);
+
+$router->get('/sys/support/settings', [\App\Controllers\System\SystemSupportSettingsController::class, 'index']);
+$router->post('/sys/support/settings', [\App\Controllers\System\SystemSupportSettingsController::class, 'submit']);
+
 $router->get('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverRequirements']);
 $router->post('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverSubmit']);
 $router->post('/sys/settings/server/migrate', [\App\Controllers\System\SystemSettingsController::class, 'serverMigrate']);

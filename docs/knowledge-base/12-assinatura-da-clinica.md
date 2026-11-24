@@ -99,5 +99,5 @@ Quando a assinatura está vencida ou pendente, qualquer tela do sistema mostra *
 - O botão que sincroniza a cobrança com o processador de pagamento não aparece na tela; se a cobrança parece desatualizada, fale com a equipe de suporte.
 
 ## Mapa de rotas
-- /billing/subscription (página principal), /billing/subscription/change-plan, /billing/subscription/checkout, /billing/subscription/cancel, /billing/subscription/cancel-downgrade, /billing/subscription/ensure-gateway.
+- /billing/subscription (página principal), /billing/subscription/change-plan, /billing/subscription/checkout, /billing/subscription/cancel, /billing/subscription/cancel-downgrade.
 - Tela de bloqueio (402): aparece em qualquer rota protegida quando a assinatura está pendente.

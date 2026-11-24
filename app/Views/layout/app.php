@@ -193,6 +193,24 @@ $ico = [
                     </div>
                 </details>
 
+                <details class="lc-navgroup" <?= $isActive('/sys/support') ? 'open' : '' ?>>
+                    <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/sys/support') ? ' lc-nav__item--active' : '' ?>">
+                        <span class="lc-nav__icon" aria-hidden="true"><?= $ico['help'] ?></span>
+                        <span class="lc-nav__label">Suporte</span>
+                        <span class="lc-navgroup__chev" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </summary>
+                    <div class="lc-navgroup__children">
+                        <div class="lc-nav__sub">
+                            <?= $navItem('/sys/support/tickets', 'Chamados', $ico['help'], $isActive('/sys/support/tickets')) ?>
+                            <?= $navItem('/sys/support/kb', 'Base de conhecimento' . ((int)($support_kb_draft_count ?? 0) > 0 ? ' (' . (int)$support_kb_draft_count . ')' : ''), $ico['help'], $isActive('/sys/support/kb')) ?>
+                            <?= $navItem('/sys/support/settings', 'Configuração do assistente', $ico['settings'], $isActive('/sys/support/settings')) ?>
+                            <?= $navItem('/sys/support/whatsapp', 'WhatsApp do suporte', $ico['help'], $isActive('/sys/support/whatsapp')) ?>
+                        </div>
+                    </div>
+                </details>
+
                 <?= $navItem('/sys/error-logs', 'Logs de erro', $ico['settings'], $isActive('/sys/error-logs')) ?>
                 <?= $navItem('/sys/queue-jobs', 'Fila', $ico['stock'], $isActive('/sys/queue-jobs')) ?>
                 <?= $navItem('/sys/settings/server', 'Servidor', $ico['settings'], $isActive('/sys/settings/server')) ?>
@@ -793,9 +811,16 @@ $ico = [
 </script>
 
 <?php
+// Assistente de suporte (chat) para usuários de clínica; senão, botão flutuante de WhatsApp
+$_scImpersonating = isset($_SESSION['impersonator']) && is_array($_SESSION['impersonator']);
+$_scShow = !empty($support_bot_enabled) && !$isSuperAdmin && $hasClinicContext && !$_scImpersonating;
+if ($_scShow) {
+    require __DIR__ . '/support_chat_widget.php';
+}
+
 // Floating support button
 $_supportWa = trim((string)($support_settings['support_whatsapp_number'] ?? ''));
-if ($_supportWa !== ''):
+if (!$_scShow && $_supportWa !== ''):
     $_waClean = preg_replace('/\D+/', '', $_supportWa);
     $_waUrl = 'https://wa.me/' . $_waClean . '?text=' . urlencode('Ola! Preciso de ajuda com o sistema.');
 ?>

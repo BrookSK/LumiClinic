@@ -58,3 +58,6 @@ O script percorre docs/knowledge-base/*.md (exceto README.md), imprime o total d
 
 ## Resoluções de chamados (99-faq-resolucoes.md)
 Quando um chamado de suporte é resolvido, a solução aprovada é gravada no sistema e exportada para o arquivo 99-faq-resolucoes.md. O assistente carrega esse arquivo junto com os demais. Mantenha cada entrada curta: pergunta do usuário, causa e passo a passo da solução, sem dados de pessoas. Se uma resolução vale para todos, copie o conteúdo para o arquivo do módulo correspondente e remova a entrada do 99.
+
+### Fluxo de revisão das resoluções
+Chamados resolvidos geram um rascunho de FAQ anonimizado que um super admin revisa em `/sys/support/kb`. Só entradas aprovadas valem para o assistente, e o texto bruto da resolução nunca é exibido às clínicas. As entradas aprovadas são lidas direto do banco; o arquivo 99-faq-resolucoes.md (exportado em `/sys/support/kb/export.md`) serve para versionar o histórico, e a base evita duplicar uma pergunta que esteja nos dois lugares. Na revisão, confira à mão: nomes citados, detalhes de uma clínica específica, prazos prometidos e telas que a clínica não vê. Veja o fluxo completo em docs/support-chatbot.md.
