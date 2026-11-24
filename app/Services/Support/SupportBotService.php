@@ -158,52 +158,20 @@ final class SupportBotService
 
         // Pedido de equipe (botão "Não, falar com a equipe" ou texto digitado): primeiro uma triagem, só depois a entrevista do chamado.
         // Pedido de reunião/treinamento também marca a conversa como pedido de equipe.
-        $meetingRequested = self::wantsMeeting($text);
-        $escalateNow = $forceTicket || self::wantsTeam($text) || $meetingRequested;
-        $markerAt = null;
-        foreach ($history as $i => $m) {
-            if ((string)$m['role'] === 'system' && (string)$m['content'] === self::FORCE_MARKER) {
-                $markerAt = $i;
-                break;
-            }
-        }
-        // Insistência só conta quando o pedido de equipe já existia antes desta mensagem.
-        $insistedAgain = $markerAt !== null && ($forceTicket || $this->isEscalationText($text) || self::stillNeedsHelp($text));
-        $triageDone = false;
-        if ($markerAt !== null) {
-            foreach ($history as $i => $m) {
-                if ($i > $markerAt && (string)$m['role'] === 'assistant') {
-                    $triageDone = true;
-                    break;
-                }
-            }
-        } elseif ($escalateNow) {
+        $state = self::analyzeConversation($history, $text, $forceTicket);
+        if ($state['insert_marker']) {
             $chat->addMessage($conversationId, 'system', self::FORCE_MARKER);
-            $markerAt = count($history);
         }
-        $mode = $markerAt === null ? self::MODE_NORMAL : ($triageDone ? self::MODE_TICKET : self::MODE_TRIAGE);
-
-        $turns = [];
-        $lastAssistant = '';
-        $realUserTexts = [];
-        foreach ($history as $m) {
-            $role = (string)$m['role'];
-            if ($role !== 'user' && $role !== 'assistant') {
-                continue;
-            }
-            $turns[] = ['role' => $role, 'content' => (string)$m['content']];
-            if ($role === 'assistant') {
-                $lastAssistant = (string)$m['content'];
-            } elseif (!$this->isEscalationText((string)$m['content'])) {
-                $realUserTexts[] = (string)$m['content'];
-            }
-        }
-        $turns = array_slice($turns, -self::HISTORY_LIMIT);
-        // Só conta o que o usuário realmente descreveu: o clique em "Não, falar com a equipe" e "quero falar com a equipe" ficam de fora.
+        $mode = $state['mode'];
+        $meetingRequested = $state['meeting_requested'];
+        $insistedAgain = $state['insisted_again'];
+        $realUserTexts = $state['real_user_texts'];
         $userTurns = count($realUserTexts);
+        $lastAssistant = $state['last_assistant'];
+        $turns = array_slice($state['turns'], -self::HISTORY_LIMIT);
 
         // No pedido de equipe o texto do botão não serve para buscar na base: usa as últimas descrições reais.
-        $searchText = $this->isEscalationText($text) ? implode(' ', array_slice($realUserTexts, -2)) : $text;
+        $searchText = self::isEscalationText($text) ? implode(' ', array_slice($realUserTexts, -2)) : $text;
 
         $kb = new SupportKnowledgeBase($this->container);
         $pageView = (string)($clientContext['page_view'] ?? '');
@@ -242,9 +210,7 @@ final class SupportBotService
             $action = 'create_ticket';
             if ($modelAction !== 'create_ticket') {
                 // O modelo ainda estava perguntando, mas o usuário já insistiu ou pediu reunião: não pergunta mais.
-                $reply = $meetingRequested
-                    ? 'Entendi, vou chamar a equipe para te ajudar. Eles vão entrar em contato com você para combinar a reunião.'
-                    : 'Entendi, vou chamar a equipe para te ajudar.';
+                $reply = self::forcedTicketReply($meetingRequested);
             }
         } elseif ($mode === self::MODE_TRIAGE && $modelAction === 'create_ticket') {
             // Triagem: o chamado não abre antes de uma tentativa de ajuda.
@@ -272,7 +238,7 @@ final class SupportBotService
             return $this->result($reply, $action);
         }
 
-        $ticketData = $this->completeTicketData($parsed['ticket'], $realUserTexts, $meetingRequested);
+        $ticketData = self::completeTicketData($parsed['ticket'], $realUserTexts, $meetingRequested);
         $tried = $this->botAttemptsSummary($history);
         if ($tried !== '') {
             $ticketData['summary'] = trim(mb_substr((string)($ticketData['summary'] ?? ''), 0, 2800) . "\n\nO que o assistente já tentou:\n" . $tried);
@@ -435,16 +401,18 @@ final class SupportBotService
      * Decisão do servidor sobre abrir o chamado nesta resposta (função pura, testada em bin/support_bot_escalation_check.php).
      *  a) pedido de reunião/treinamento/chamada: abre, inclusive na triagem, desde que haja ao menos uma mensagem real do usuário;
      *  b) modo chamado (a triagem já respondeu) e o usuário insistiu de novo (botão, pedido de equipe ou "não consegui"): abre,
-     *     sem depender da ação do modelo nem do mínimo de 2 respostas;
+     *     sem depender da ação do modelo nem do mínimo de 2 respostas, desde que o usuário tenha descrito algo ao menos uma vez
+     *     (só cliques no botão ou "quero falar com a equipe" não bastam: o assistente faz uma pergunta curta antes);
      *  c) nos demais casos: a triagem nunca abre; normal e chamado abrem só se o modelo pediu create_ticket e canCreateTicket().
      * Os limites por usuário (handleMessage) e por conversa/clínica (SupportTicketService::createFromBot) continuam valendo.
      */
     public static function decideTicket(string $mode, string $modelAction, int $userTurns, bool $insistedAgain, bool $meetingRequested): bool
     {
+        // Proteção: a própria mensagem com o pedido de reunião já conta como descrição, então na prática é sempre >= 1.
         if ($meetingRequested && $userTurns >= 1) {
             return true;
         }
-        if ($mode === self::MODE_TICKET && $insistedAgain) {
+        if ($mode === self::MODE_TICKET && $insistedAgain && $userTurns >= 1) {
             return true;
         }
         if ($mode === self::MODE_TRIAGE) {
@@ -456,8 +424,13 @@ final class SupportBotService
     /**
      * Pedido de reunião, treinamento, chamada ou de alguém para ensinar, em qualquer parte da mensagem.
      * Para evitar falsos positivos em dúvidas comuns ("como agendo um paciente?", "pode me ensinar a cadastrar?",
-     * "agendar uma ligação de retorno para o paciente"), o termo precisa vir depois de um verbo de pedido
-     * (quero, preciso, gostaria, pode, marcar, agendar...) ou o pedido precisa citar alguém da equipe para ensinar/treinar.
+     * "agendar uma ligação de retorno para o paciente"), o termo precisa vir depois de um verbo de pedido do próprio usuário
+     * (quero, preciso, gostaria, pode...; verbos genéricos como ter/fazer/marcar/agendar sozinhos não contam)
+     * ou o pedido precisa citar alguém da equipe para ensinar/treinar.
+     * O pedido genérico não conta quando a mensagem fala do uso da agenda, de bloqueios, pacientes, profissionais,
+     * funcionários ou cadastros ("como bloqueio a agenda para fazer uma reunião?", "quero cadastrar o treinamento do funcionário"):
+     * nesses casos é uma dúvida de uso e o assistente responde normalmente.
+     * "Reunião/treinamento para me ensinar" e "alguém da equipe para me ensinar" contam sempre.
      * "Ligação" só conta como "me liguem"/"me ligar" ou "ligação da equipe/do suporte".
      */
     public static function wantsMeeting(string $text): bool
@@ -466,9 +439,10 @@ final class SupportBotService
         if ($t === '' || mb_strlen($t) > self::MAX_MESSAGE_CHARS) {
             return false;
         }
-        $pedido = '(?:quero|queria|quer|preciso|precisava|precisamos|gostaria|gostariamos|pode|podem|poderia|poderiam|da para|tem como|marcar|marcamos|agendar|solicito|solicitar|pedir|peco|ter|fazer)';
+        $pedido = '(?:quero|queria|preciso|precisava|precisamos|gostaria|gostariamos|pode|podem|poderia|poderiam|da para|tem como|solicito|solicitar|pedir|peco)';
         $alvo = '(?:reuniao|reunioes|treinamento|treinamentos|treinar|capacitacao|capacitar|videochamada|video chamada|chamada de video|call|demonstracao|apresentacao do sistema|alguem (?:da equipe |do suporte )?(?:para |pra )?(?:me |nos )?(?:ensinar|ensina|ensine|treinar|explicar|mostrar))';
-        if (preg_match('/\b' . $pedido . '\b[^.?!]{0,60}?\b' . $alvo . '\b/u', $t) === 1) {
+        $usoDoSistema = '/\b(?:agenda|agendas|bloque\w*|pacientes?|profissiona\w*|funcionari\w*|colaborador\w*|cadastr\w*)\b/u';
+        if (preg_match('/\b' . $pedido . '\b[^.?!]{0,60}?\b' . $alvo . '\b/u', $t) === 1 && preg_match($usoDoSistema, $t) !== 1) {
             return true;
         }
         if (preg_match('/\b(?:alguem|pessoa|atendente|equipe|suporte|voces)\b[^.?!]{0,40}?\b(?:me|nos)\s+(?:ensinar|ensina|ensine|treinar|treina|treine)\b/u', $t) === 1) {
@@ -483,6 +457,9 @@ final class SupportBotService
     /**
      * Depois de um pedido de equipe (marcador já gravado), indica que a sugestão não resolveu ou que o usuário ainda quer a equipe.
      * Mais amplo que wantsTeam(): procura em qualquer parte da mensagem.
+     * Respostas curtas às perguntas da triagem ("ainda não", "continua aparecendo", "aparece suporte indisponível")
+     * não contam sozinhas: "ainda não" e "continua" só contam com o complemento de falha, e as palavras de equipe
+     * só contam junto de um pedido (quero/preciso/chama/falar com...).
      */
     public static function stillNeedsHelp(string $text): bool
     {
@@ -490,9 +467,86 @@ final class SupportBotService
         if ($t === '' || mb_strlen($t) > 600) {
             return false;
         }
-        $falhou = '(?:nao consegui|nao conseguimos|nao consigo|nao deu certo|nao deu|nao funcionou|nao funciona|nao resolveu|nao resolve|nao adiantou|nao ajudou|continua|continuo|ainda nao|mesmo assim|ja verifiquei|ja verificamos|ja conferi|ja olhei|ja tentei|ja tentamos|ja fiz isso|ja fiz isto|persiste|sem sucesso)';
-        $equipe = '(?:equipe|suporte|atendente|atendimento humano|humano|humana|alguem da equipe|falar com alguem|abrir (?:um |o )?chamado|abre (?:um |o )?chamado)';
-        return preg_match('/\b' . $falhou . '\b/u', $t) === 1 || preg_match('/\b' . $equipe . '\b/u', $t) === 1;
+        $falhou = '(?:nao consegui|nao conseguimos|nao consigo|nao deu certo|nao funcionou|nao funciona|nao resolveu|nao resolve|nao adiantou|nao ajudou|ainda nao (?:deu|funcion\w*|resolv\w*|consegui\w*)|continua (?:sem funcionar|nao funcionando|dando (?:o mesmo )?erro|com (?:o mesmo )?(?:erro|problema)|igual|do mesmo jeito)|mesmo assim|ja verifiquei|ja verificamos|ja conferi|ja olhei|ja tentei|ja tentamos|ja fiz isso|ja fiz isto|o problema persiste|sem sucesso)';
+        $equipe = '(?:equipe|suporte|atendente|atendimento humano|humano|humana|alguem)';
+        $pedeEquipe = '(?:quero|queria|preciso|prefiro|gostaria|chama|chame|chamar|chamem|falar com|fala com|passa para|passar para|me passa)';
+        return preg_match('/\b' . $falhou . '\b/u', $t) === 1
+            || preg_match('/\b' . $pedeEquipe . '\b[^.?!]{0,30}?\b' . $equipe . '\b/u', $t) === 1
+            || preg_match('/\b(?:abrir|abre|abra|abram)\s+(?:um |o )?chamado\b/u', $t) === 1;
+    }
+
+    /**
+     * Lê o histórico da conversa (já com a mensagem atual gravada) e devolve o estado usado na decisão do chamado.
+     * Função pura, testada em bin/support_bot_escalation_check.php.
+     *  - insert_marker: a conversa ainda não tinha pedido de equipe e esta mensagem é um (botão, pedido digitado ou reunião);
+     *  - mode: normal, triagem (pedido sem resposta do assistente depois dele) ou chamado (a triagem já respondeu);
+     *  - insisted_again: só quando o pedido de equipe já existia antes desta mensagem;
+     *  - real_user_texts: mensagens do usuário sem o botão e sem "quero falar com a equipe".
+     *
+     * @param list<array<string,mixed>> $history
+     * @return array{insert_marker:bool,mode:string,meeting_requested:bool,insisted_again:bool,real_user_texts:list<string>,last_assistant:string,turns:list<array{role:string,content:string}>}
+     */
+    public static function analyzeConversation(array $history, string $text, bool $forceTicket): array
+    {
+        $meetingRequested = self::wantsMeeting($text);
+        $escalateNow = $forceTicket || self::wantsTeam($text) || $meetingRequested;
+        $markerAt = null;
+        foreach ($history as $i => $m) {
+            if ((string)$m['role'] === 'system' && (string)$m['content'] === self::FORCE_MARKER) {
+                $markerAt = $i;
+                break;
+            }
+        }
+        $insistedAgain = $markerAt !== null && ($forceTicket || self::isEscalationText($text) || self::stillNeedsHelp($text));
+        $insertMarker = false;
+        $triageDone = false;
+        if ($markerAt !== null) {
+            foreach ($history as $i => $m) {
+                if ($i > $markerAt && (string)$m['role'] === 'assistant') {
+                    $triageDone = true;
+                    break;
+                }
+            }
+        } elseif ($escalateNow) {
+            $insertMarker = true;
+            $markerAt = count($history);
+        }
+        $mode = $markerAt === null ? self::MODE_NORMAL : ($triageDone ? self::MODE_TICKET : self::MODE_TRIAGE);
+
+        $turns = [];
+        $lastAssistant = '';
+        $realUserTexts = [];
+        foreach ($history as $m) {
+            $role = (string)$m['role'];
+            if ($role !== 'user' && $role !== 'assistant') {
+                continue;
+            }
+            $content = (string)$m['content'];
+            $turns[] = ['role' => $role, 'content' => $content];
+            if ($role === 'assistant') {
+                $lastAssistant = $content;
+            } elseif (!self::isEscalationText($content)) {
+                $realUserTexts[] = $content;
+            }
+        }
+
+        return [
+            'insert_marker' => $insertMarker,
+            'mode' => $mode,
+            'meeting_requested' => $meetingRequested,
+            'insisted_again' => $insistedAgain,
+            'real_user_texts' => $realUserTexts,
+            'last_assistant' => $lastAssistant,
+            'turns' => $turns,
+        ];
+    }
+
+    /** Resposta curta quando o servidor abre o chamado e o modelo ainda estava perguntando (sem prometer prazo). */
+    public static function forcedTicketReply(bool $meetingRequested): string
+    {
+        return $meetingRequested
+            ? 'Entendi, vou chamar a equipe para te ajudar. Eles vão entrar em contato com você para combinar a reunião.'
+            : 'Entendi, vou chamar a equipe para te ajudar.';
     }
 
     /** Minúsculas, sem acentos e com espaços simples, para as detecções acima. */
@@ -517,7 +571,7 @@ final class SupportBotService
      * @param list<string> $realUserTexts mensagens em que o usuário descreveu algo (sem o botão nem "quero falar com a equipe")
      * @return array<string,string>
      */
-    private function completeTicketData(array $ticket, array $realUserTexts, bool $meetingRequested): array
+    public static function completeTicketData(array $ticket, array $realUserTexts, bool $meetingRequested): array
     {
         $texts = array_values(array_filter(array_map(
             static fn(string $s): string => trim((string)preg_replace('/\s+/u', ' ', $s)),
@@ -557,7 +611,7 @@ final class SupportBotService
         return $ticket;
     }
 
-    private function isEscalationText(string $text): bool
+    private static function isEscalationText(string $text): bool
     {
         $t = trim($text);
         return $t === self::ESCALATE_TEXT || self::wantsTeam($t);
