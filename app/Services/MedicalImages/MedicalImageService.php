@@ -27,7 +27,7 @@ final class MedicalImageService
         $actorId = $auth->userId();
 
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -35,7 +35,7 @@ final class MedicalImageService
         $patients = new PatientRepository($pdo);
         $patient = $patients->findClinicalById($clinicId, $patientId);
         if ($patient === null) {
-            throw new \RuntimeException('Paciente inv?lido.');
+            throw new \RuntimeException('Paciente inválido.');
         }
 
         $repo = new MedicalImageRepository($pdo);
@@ -72,7 +72,7 @@ final class MedicalImageService
         $actorId = $auth->userId();
 
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -80,7 +80,7 @@ final class MedicalImageService
         $patients = new PatientRepository($pdo);
         $patient = $patients->findClinicalById($clinicId, $patientId);
         if ($patient === null) {
-            throw new \RuntimeException('Paciente inv?lido.');
+            throw new \RuntimeException('Paciente inválido.');
         }
 
         $repo = new MedicalImageRepository($pdo);
@@ -159,14 +159,14 @@ final class MedicalImageService
         $actorId = $auth->userId();
 
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
 
         $patients = new PatientRepository($pdo);
         if ($patients->findById($clinicId, $patientId) === null) {
-            throw new \RuntimeException('Paciente inv?lido.');
+            throw new \RuntimeException('Paciente inválido.');
         }
 
         $tmp = isset($file['tmp_name']) ? (string)$file['tmp_name'] : '';
@@ -177,7 +177,7 @@ final class MedicalImageService
 
         $bytes = file_get_contents($tmp);
         if ($bytes === false || $bytes === '') {
-            throw new \RuntimeException('Arquivo inv?lido.');
+            throw new \RuntimeException('Arquivo inválido.');
         }
 
         $ent = new PlanEntitlementsService($this->container);
@@ -273,14 +273,14 @@ final class MedicalImageService
         $actorId = $auth->userId();
 
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
 
         $patients = new PatientRepository($pdo);
         if ($patients->findById($clinicId, $patientId) === null) {
-            throw new \RuntimeException('Paciente inv?lido.');
+            throw new \RuntimeException('Paciente inválido.');
         }
 
         $takenAt = $meta['taken_at'];
@@ -362,7 +362,7 @@ final class MedicalImageService
 
         $bytes = file_get_contents($tmp);
         if ($bytes === false || $bytes === '') {
-            throw new \RuntimeException('Arquivo inv?lido.');
+            throw new \RuntimeException('Arquivo inválido.');
         }
 
         $ent = new PlanEntitlementsService($this->container);
@@ -410,7 +410,7 @@ final class MedicalImageService
         $actorId = $auth->userId();
 
         if ($clinicId === null || $actorId === null) {
-            return Response::html('Contexto inv?lido.', 403);
+            return Response::html('Contexto inválido.', 403);
         }
 
         $pdo = $this->container->get(\PDO::class);

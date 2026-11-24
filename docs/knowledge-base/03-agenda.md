@@ -64,7 +64,7 @@ Na aba Dia os filtros ficam no cartão **Filtros** e o botão é **Aplicar filtr
 **Por que o campo Horário aparece vazio?** Um horário só é oferecido quando existe: (a) horário de funcionamento da clínica naquele dia da semana, (b) regra de atendimento do profissional nesse dia, (c) nenhum bloqueio, e (d) nenhum outro agendamento no mesmo intervalo. A grade anda de acordo com o **Intervalo (min)** da regra do profissional, com mínimo de 5 minutos. Veja as seções Horários de funcionamento, Regras de agenda e Bloqueios.
 
 **Erros**
-- "Serviço é obrigatório.", "Profissional é obrigatório.", "Paciente é obrigatório.", "Horário é obrigatório." (campo não preenchido). Atenção: na tela essas mensagens podem aparecer com ponto de interrogação no lugar das letras acentuadas, por exemplo "Servi?o ? obrigat?rio."
+- "Serviço é obrigatório.", "Profissional é obrigatório.", "Paciente é obrigatório.", "Horário é obrigatório." (campo não preenchido).
 - Se você não escolher o paciente na lista, a janela mostra "Selecione um paciente da lista." e não envia.
 - "Conflito de horário." (outra pessoa reservou o mesmo horário, escolha outro)
 - "Pacote inválido." ou "Pacote sem sessões disponíveis."
