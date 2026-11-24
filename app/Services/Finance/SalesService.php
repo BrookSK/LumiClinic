@@ -35,7 +35,7 @@ final class SalesService
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $limit = max(1, min($limit, 500));
@@ -52,7 +52,7 @@ final class SalesService
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -95,7 +95,7 @@ final class SalesService
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $origin = $origin === '' ? 'reception' : $origin;
@@ -114,7 +114,7 @@ final class SalesService
         if ($patientId !== null) {
             $patRepo = new PatientRepository($pdo);
             if ($patRepo->findById($clinicId, $patientId) === null) {
-                throw new \RuntimeException('Paciente inv?lido.');
+                throw new \RuntimeException('Paciente inválido.');
             }
         }
 
@@ -151,43 +151,43 @@ final class SalesService
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $type = trim($type);
         $allowedTypes = ['procedure', 'package', 'subscription'];
         if (!in_array($type, $allowedTypes, true)) {
-            throw new \RuntimeException('Tipo inv?lido.');
+            throw new \RuntimeException('Tipo inválido.');
         }
 
         if ($referenceId <= 0) {
-            throw new \RuntimeException('Refer?ncia inv?lida.');
+            throw new \RuntimeException('Referência inválida.');
         }
 
         if ($quantity <= 0) {
-            throw new \RuntimeException('Quantidade inv?lida.');
+            throw new \RuntimeException('Quantidade inválida.');
         }
 
         $unitPrice = $this->parseMoney($unitPriceStr);
         if ($unitPrice < 0) {
-            throw new \RuntimeException('Valor inv?lido.');
+            throw new \RuntimeException('Valor inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
         $saleRepo = new SaleRepository($pdo);
         $sale = $saleRepo->findById($clinicId, $saleId);
         if ($sale === null) {
-            throw new \RuntimeException('Venda inv?lida.');
+            throw new \RuntimeException('Venda inválida.');
         }
 
         if ((string)$sale['status'] !== 'open') {
-            throw new \RuntimeException('A venda n?o est? aberta.');
+            throw new \RuntimeException('A venda não está aberta.');
         }
 
         if ($professionalId !== null) {
             $profRepo = new ProfessionalRepository($pdo);
             if ($profRepo->findById($clinicId, $professionalId) === null) {
-                throw new \RuntimeException('Profissional inv?lido.');
+                throw new \RuntimeException('Profissional inválido.');
             }
         }
 
@@ -197,7 +197,7 @@ final class SalesService
             $svcRepo = new ServiceCatalogRepository($pdo);
             $svc = $svcRepo->findById($clinicId, $referenceId);
             if ($svc === null) {
-                throw new \RuntimeException('Servi?o inv?lido.');
+                throw new \RuntimeException('Serviço inválido.');
             }
             if ($resolvedUnitPrice == 0.0 && isset($svc['price_cents']) && $svc['price_cents'] !== null) {
                 $resolvedUnitPrice = ((float)$svc['price_cents']) / 100.0;
@@ -208,7 +208,7 @@ final class SalesService
             $pkgRepo = new PackageRepository($pdo);
             $pkg = $pkgRepo->findById($clinicId, $referenceId);
             if ($pkg === null) {
-                throw new \RuntimeException('Pacote inv?lido.');
+                throw new \RuntimeException('Pacote inválido.');
             }
             if ($resolvedUnitPrice == 0.0) {
                 $resolvedUnitPrice = (float)$pkg['price'];
@@ -219,7 +219,7 @@ final class SalesService
             $planRepo = new SubscriptionPlanRepository($pdo);
             $plan = $planRepo->findById($clinicId, $referenceId);
             if ($plan === null) {
-                throw new \RuntimeException('Plano inv?lido.');
+                throw new \RuntimeException('Plano inválido.');
             }
             if ($resolvedUnitPrice == 0.0) {
                 $resolvedUnitPrice = (float)$plan['price'];
@@ -481,14 +481,14 @@ final class SalesService
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
         $payRepo = new PaymentRepository($pdo);
         $payment = $payRepo->findById($clinicId, $paymentId);
         if ($payment === null) {
-            throw new \RuntimeException('Pagamento inv?lido.');
+            throw new \RuntimeException('Pagamento inválido.');
         }
 
         (new DataVersionRepository($pdo))->record(
@@ -644,14 +644,14 @@ final class SalesService
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
         $saleRepo = new SaleRepository($pdo);
         $sale = $saleRepo->findById($clinicId, $saleId);
         if ($sale === null) {
-            throw new \RuntimeException('Venda inv?lida.');
+            throw new \RuntimeException('Venda inválida.');
         }
 
         (new DataVersionRepository($pdo))->record(
@@ -757,20 +757,20 @@ final class SalesService
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $budgetStatus = trim($budgetStatus);
         $allowed = ['draft', 'sent', 'approved', 'rejected', 'standby', 'completed'];
         if (!in_array($budgetStatus, $allowed, true)) {
-            throw new \RuntimeException('Status inv?lido.');
+            throw new \RuntimeException('Status inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
         $saleRepo = new SaleRepository($pdo);
         $sale = $saleRepo->findById($clinicId, $saleId);
         if ($sale === null) {
-            throw new \RuntimeException('Venda inv?lida.');
+            throw new \RuntimeException('Venda inválida.');
         }
 
         if ((string)$sale['status'] === 'cancelled') {
@@ -854,12 +854,12 @@ final class SalesService
         $clinicId = $auth->clinicId();
         $actorId = $auth->userId();
         if ($clinicId === null || $actorId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $date = \DateTimeImmutable::createFromFormat('Y-m-d', $startDateYmd);
         if ($date === false) {
-            throw new \RuntimeException('Data inv?lida.');
+            throw new \RuntimeException('Data inválida.');
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -867,7 +867,7 @@ final class SalesService
         $saleRepo = new SaleRepository($pdo);
         $sale = $saleRepo->findById($clinicId, $saleId);
         if ($sale === null) {
-            throw new \RuntimeException('Venda inv?lida.');
+            throw new \RuntimeException('Venda inválida.');
         }
 
         if ((string)$sale['status'] === 'cancelled') {
@@ -977,7 +977,7 @@ final class SalesService
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $repo = new ProfessionalRepository($this->container->get(\PDO::class));
@@ -990,7 +990,7 @@ final class SalesService
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $repo = new ServiceCatalogRepository($this->container->get(\PDO::class));
@@ -1003,7 +1003,7 @@ final class SalesService
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $repo = new PackageRepository($this->container->get(\PDO::class));
@@ -1016,7 +1016,7 @@ final class SalesService
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         if ($clinicId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $repo = new SubscriptionPlanRepository($this->container->get(\PDO::class));

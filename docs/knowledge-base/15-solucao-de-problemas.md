@@ -59,7 +59,7 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 **Causa:** o profissional já tem outro agendamento nesse horário. **O que fazer:** escolha outro horário ou outro profissional.
 
 ### 15. "Paciente é obrigatório.", "Profissional é obrigatório.", "Serviço é obrigatório.", "Horário é obrigatório."
-**Causa:** campo obrigatório vazio no formulário de agendamento. **O que fazer:** preencha, escolhendo o paciente na lista que aparece ao digitar. Atenção: na tela essas mensagens podem aparecer com "?" no lugar das letras acentuadas (por exemplo "Servi?o ? obrigat?rio.").
+**Causa:** campo obrigatório vazio no formulário de agendamento. **O que fazer:** preencha, escolhendo o paciente na lista que aparece ao digitar.
 
 ### 16. "Data/hora inválida."
 **Causa:** data ou horário em formato inválido. **O que fazer:** escolha a data no calendário e o horário na lista.

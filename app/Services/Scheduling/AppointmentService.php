@@ -510,7 +510,7 @@ final class AppointmentService
             $ppRepo = new PatientPackageRepository($pdo);
             $ok = $ppRepo->consumeOneSessionForUpdate($clinicId, $patientPackageId);
             if (!$ok) {
-                throw new \RuntimeException('Pacote sem sess?es dispon?veis.');
+                throw new \RuntimeException('Pacote sem sessões disponíveis.');
             }
 
             (new AuditLogRepository($pdo))->log($actorUserId, $clinicId, 'packages.session_consumed', [
@@ -539,7 +539,7 @@ final class AppointmentService
         $userId = $auth->userId();
 
         if ($clinicId === null || $userId === null) {
-            throw new \RuntimeException('Contexto inv?lido.');
+            throw new \RuntimeException('Contexto inválido.');
         }
 
         $pdo = $this->container->get(\PDO::class);
@@ -547,18 +547,18 @@ final class AppointmentService
         $apptRepo = new AppointmentRepository($pdo);
         $current = $apptRepo->findById($clinicId, $appointmentId);
         if ($current === null) {
-            throw new \RuntimeException('Agendamento inv?lido.');
+            throw new \RuntimeException('Agendamento inválido.');
         }
 
         $serviceRepo = new ServiceCatalogRepository($pdo);
         $service = $serviceRepo->findById($clinicId, $serviceId);
         if ($service === null) {
-            throw new \RuntimeException('Servi?o inv?lido.');
+            throw new \RuntimeException('Serviço inválido.');
         }
 
         $durationMinutes = (int)$service['duration_minutes'];
         if ($durationMinutes <= 0) {
-            throw new \RuntimeException('Servi?o inv?lido.');
+            throw new \RuntimeException('Serviço inválido.');
         }
 
         $bufferBefore = isset($service['buffer_before_minutes']) ? (int)$service['buffer_before_minutes'] : 0;
@@ -569,12 +569,12 @@ final class AppointmentService
         $profRepo = new ProfessionalRepository($pdo);
         $prof = $profRepo->findById($clinicId, $professionalId);
         if ($prof === null) {
-            throw new \RuntimeException('Profissional inv?lido.');
+            throw new \RuntimeException('Profissional inválido.');
         }
 
         $start = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $startAt);
         if ($start === false) {
-            throw new \RuntimeException('Data/hora inv?lida.');
+            throw new \RuntimeException('Data/hora inválida.');
         }
         $end = $start->modify('+' . $durationMinutes . ' minutes');
 
@@ -611,7 +611,7 @@ final class AppointmentService
 
             $conflicts = $apptRepo->listOverlappingForUpdateExcludingAppointment($clinicId, $professionalId, $occupiedStartStr, $occupiedEndStr, $appointmentId);
             if ($conflicts !== []) {
-                throw new \RuntimeException('Conflito de hor?rio.');
+                throw new \RuntimeException('Conflito de horário.');
             }
 
             $apptRepo->updateTimeProfessionalAndService($clinicId, $appointmentId, $professionalId, $serviceId, $startStr, $endStr, $bufferBefore, $bufferAfter);

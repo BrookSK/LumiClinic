@@ -222,7 +222,7 @@ final class AppointmentRepository
     }
 
     /**
-     * Lista agendamentos para opera??o com filtros (usa joins para nome/CPF/servi?o/profissional).
+     * Lista agendamentos para operação com filtros (usa joins para nome/CPF/serviço/profissional).
      *
      * @return list<array<string,mixed>>
      */
