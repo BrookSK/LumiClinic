@@ -20,11 +20,11 @@ O **Portal do Paciente** é uma área separada, em /portal, onde o paciente entr
 ## Como o paciente ganha acesso
 <!-- perm: patients.update (criar acesso na ficha) -->
 **Quem faz:** a equipe da clínica. Detalhes e botões em 04-pacientes.
-1. Abra o paciente e vá para o **Acesso ao Portal** (/patients/portal-access?patient_id=...) ou preencha o campo de senha no cadastro do paciente.
+1. Abra a tela **Portal do Paciente** do paciente pelo endereço /patients/portal-access?patient_id=... (o perfil do paciente não tem botão para ela) ou preencha o campo de senha no cadastro do paciente (Pacientes > Novo).
 2. Confirme o **E-mail para login no Portal** do paciente (obrigatório: "E-mail do paciente é obrigatório para criar acesso.").
 3. Clique em **Criar/Atualizar acesso e gerar redefinição**. O sistema envia ao paciente um e-mail "Seu acesso ao Portal do Paciente - nome da clínica" com um link para definir a senha. A tela também mostra o link para você copiar e enviar por WhatsApp.
 4. O link vale **1 hora**. Se vencer, gere outro com o mesmo botão.
-5. O paciente abre o link (tela **Primeiro acesso**), define a senha em **Defina uma senha** e clica em **Salvar e entrar**.
+5. O paciente abre o link do e-mail. Quando a tela é **Primeiro acesso**, ele define a senha em **Defina uma senha** e clica em **Salvar e entrar**. Quando é **Redefinir senha**, digita a **Nova senha** e clica em **Salvar**.
 
 **Dicas**
 - O botão **Esqueci minha senha / primeiro acesso** da tela de login do portal também serve para o paciente pedir o link sozinho (digite o e-mail e clique em **Gerar link**). Por segurança a resposta é sempre "Se o e-mail existir, você receberá instruções para redefinir a senha.", mesmo se o e-mail não existe.
@@ -39,10 +39,12 @@ O **Portal do Paciente** é uma área separada, em /portal, onde o paciente entr
 - Erros: "Credenciais inválidas." (e-mail ou senha errados), "Link inválido ou expirado.", "Token inválido ou expirado." (link de senha vencido, gere outro), "Senha deve ter pelo menos 8 caracteres.".
 
 ## O que o paciente vê no portal
+O menu lateral do portal tem só estes itens: **Início**, **Agenda**, **Anamnese**, **Documentos**, **Enviar fotos** e **Meu perfil**. O ícone de sino no topo abre **Notificações** e o menu do usuário tem **Perfil** e **Sair**. As telas Buscar, Acesso, Conteúdos, Resumo, LGPD, Tokens de API e Termos obrigatórios não têm item de menu nem botão no portal: o paciente só chega nelas digitando o endereço (ou, no caso dos termos, quando o portal pede o aceite).
+
 | Tela | Endereço | Para que serve |
 |---|---|---|
 | Início | /portal | Boas-vindas, **Próximas consultas**, atalhos **Agenda**, **Documentos**, **Enviar fotos**, **Meu perfil** e **Avisos recentes** |
-| Minha agenda | /portal/agenda | Lista as consultas com status (Agendado, Confirmado, Em andamento, Concluído, Cancelado, Faltou). Botões **Confirmar**, **Solicitar reagendamento** e **Solicitar cancelamento**. **Solicitações pendentes** mostra o que já foi pedido |
+| Agenda (título da tela: Minha agenda) | /portal/agenda | Lista as consultas com status (Agendado, Confirmado, Em andamento, Concluído, Cancelado, Faltou). Botões **Confirmar**, **Solicitar reagendamento** e **Solicitar cancelamento**. **Solicitações pendentes** mostra o que já foi pedido |
 | Meus documentos | /portal/documentos | **Termos aceitos**, **Assinaturas** (abrir arquivo) e **Imagens clínicas** (antes e depois) liberadas pela clínica |
 | Anamnese | /portal/anamnese | **Pendentes** (botão **Preencher**) e **Preenchidas** (botão **PDF**, selo **Assinada**) |
 | Buscar | /portal/busca | Busca por consulta, assinatura, upload ou data em agenda, documentos, notificações e uploads |
@@ -56,13 +58,13 @@ O **Portal do Paciente** é uma área separada, em /portal, onde o paciente entr
 | Tokens de API | /portal/api-tokens | Chaves de acesso pessoais do paciente |
 | Termos obrigatórios | /portal/required-consents | Termos que precisam ser aceitos antes de usar o portal |
 
-**Termos obrigatórios**: quando existe um documento obrigatório pendente (Configurações > Documentos LGPD) o paciente vê **Antes de continuar** com os botões **Ler** e **Assinar**. Enquanto houver termo pendente ele não navega no portal. Depois de aceitar aparece "Tudo certo!" e **Continuar**.
+**Termos obrigatórios**: quando existe um documento obrigatório pendente (Configurações > Documentos & Termos > Documentos LGPD) o paciente vê **Antes de continuar** com os botões **Ler** e **Assinar**. Enquanto houver termo pendente ele não navega no portal. Depois de aceitar aparece "Tudo certo!" e **Continuar**.
 
 ## O que a clínica faz com os pedidos do paciente
 - **Reagendamento ou cancelamento** pedido pelo paciente: aparece em **Solicitações do portal** na Agenda, com os botões **Aprovar** e **Rejeitar** (03-agenda). Aprovar um reagendamento só marca o pedido; a clínica ainda precisa reagendar o horário na Agenda.
 - **Solicitação de alteração de dados**: Menu > Pacientes > Solicitações de perfil (/patients/profile-requests), com **aprovar** ou **rejeitar** (04-pacientes). O paciente vê "Você tem uma solicitação de alteração pendente" até a clínica responder.
 - **Fotos enviadas**: ficam em moderação em /medical-images/moderation (05-prontuarios-e-atendimento). Só depois de aprovadas entram nos documentos do paciente.
-- **Documentos e conteúdos**: a clínica libera pela ficha do paciente (Documentos, Conteúdos) com a opção **Disponibilizar no Portal**.
+- **Documentos e conteúdos**: documentos para assinar saem pelo botão **Enviar p/ Assinatura** do perfil do paciente, com **🌐 Disponibilizar no Portal**. Conteúdos de leitura são liberados em /patients/content (abra pelo endereço), com **Conceder**.
 - **Confirmação**: o botão **Confirmar** do paciente muda a consulta para Confirmado.
 - **Pedidos de LGPD** (exportar dados, solicitar exclusão, revogar consentimento): o paciente cria em /portal/lgpd e acompanha o histórico (ID, Tipo, Status, Criado em). Esses pedidos são tratados pela equipe de suporte do sistema. Se um paciente reclamar de demora ou perguntar algo, passe a informação para o suporte (90-quando-falar-com-a-equipe).
 
@@ -91,21 +93,21 @@ Páginas públicas com passo a passo, em linguagem simples, que você pode manda
 
 **O paciente não recebeu o e-mail com o link.** Confira o e-mail no cadastro, peça para olhar o spam e reenvie. Você também pode copiar o link na tela de Acesso ao Portal e mandar por WhatsApp.
 
-**Como o paciente confirma a consulta?** No portal, **Minha agenda**, botão **Confirmar**. Também pode confirmar pelo link do WhatsApp ou e-mail.
+**Como o paciente confirma a consulta?** No portal, menu **Agenda** (tela Minha agenda), botão **Confirmar**. Também pode confirmar pelo link do WhatsApp ou e-mail.
 
 **O paciente pediu para cancelar pelo portal. O que acontece?** O pedido vira uma solicitação pendente na Agenda. A clínica usa **Aprovar** ou **Rejeitar**. O cancelamento só vale depois da aprovação.
 
 **Quais documentos o paciente vê?** Termos aceitos, assinaturas e imagens clínicas liberadas, além de documentos disponibilizados no portal e anamneses.
 
-**O paciente enviou fotos e elas não aparecem.** As fotos passam por moderação. Aprove em Imagens clínicas > moderação.
+**O paciente enviou fotos e elas não aparecem.** As fotos passam por moderação. Aprove na tela Moderação, aberta pelo endereço /medical-images/moderation (não há item de menu).
 
 **Posso ver o portal como o paciente vê?** Não existe visualização como paciente. Peça um print ao paciente ou use os tutoriais de /tutorial/paciente.
 
 **O paciente esqueceu a senha.** Use **Esqueci minha senha / primeiro acesso** no portal, ou gere o link pela ficha do paciente.
 
-**O paciente quer apagar os dados dele.** Ele registra o pedido em /portal/lgpd (**Solicitar exclusão**). Avise a equipe de suporte para acompanhar o pedido.
+**O paciente quer apagar os dados dele.** Ele registra o pedido em /portal/lgpd (tipo **Solicitar exclusão** e botão **Enviar**; a tela só abre digitando o endereço). Avise a equipe de suporte para acompanhar o pedido.
 
-**Notificações push não chegam.** O paciente precisa ativar em **Notificações > Ativar** e permitir no navegador. Se o botão não funciona, avise o suporte.
+**Notificações push não chegam.** O paciente precisa abrir **Notificações** (ícone de sino no topo), clicar em **Ativar** e permitir no navegador. Se o botão não funciona, avise o suporte.
 
 ## Mapa de rotas
 - Acesso: /portal/login, /portal/register, /portal/forgot, /portal/reset, /portal/logout.

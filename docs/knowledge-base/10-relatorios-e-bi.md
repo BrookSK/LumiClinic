@@ -29,10 +29,10 @@ Lista os pacientes que não retornam e precisam de contato.
 - Título **Relatório de Follow-up** ("Pacientes que não retornaram e precisam de contato.").
 - Cartões: **Total de pacientes**, **Nunca vieram**, **Com WhatsApp** e **Com telefone**.
 - Filtro **Sem consulta há mais de** com as opções 60, 90, 120, 180, 270, 365, 540 e 730 dias (o padrão é 180) e o botão **Filtrar**. O sistema aceita de 30 a 730 dias.
-- Tabela: #, **Paciente**, **Última consulta**, **Dias sem retorno**, **Telefone**, **WhatsApp** (Sim ou Não) e o botão **Ver**, que abre o paciente.
+- Tabela: **Paciente**, **Última consulta**, **Dias sem retorno**, **Telefone**, **WhatsApp** (Sim ou Não) e o botão **Ver**, que abre o paciente.
 - **📄 Exportar PDF** gera o relatório em PDF (/reports/follow-up/export.pdf).
 - Quando está tudo em dia: "Nenhum paciente encontrado para este critério. Todos em dia!".
-- Para falar com os pacientes use a aba **Follow-up** em Pacientes > Aniversariantes / Follow-up, que tem o botão WhatsApp em cada linha.
+- Para falar com os pacientes use a aba **📞 Follow-up** em Menu > Pacientes > Aniversariantes / Follow-up, que tem o botão WhatsApp em cada linha.
 
 ## Relatório Financeiro
 Está descrito em detalhe em 07-financeiro (seção Relatório Financeiro). Resumo: filtros **De**, **Até** e **Profissional**, indicadores de receita e caixa, exportação em planilha e PDF. Use os relatórios contábeis para enviar dados ao contador.
@@ -71,7 +71,7 @@ Os arquivos baixam no seu navegador. Se o arquivo vier vazio, ajuste o período.
 
 **Como baixo os dados em planilha?** Use **📊 Exportar planilha** nos relatórios Financeiro e de Estoque.
 
-**Não vejo o grupo Relatórios.** Faltam permissões de relatório. Peça em Configurações > Usuários e Acesso > Papéis e Permissões.
+**Não vejo o grupo Relatórios.** Faltam permissões de relatório. Peça ao dono da clínica em Configurações > Usuários & Acesso > Papéis & Permissões.
 
 **Existe relatório de comissão?** Não.
 

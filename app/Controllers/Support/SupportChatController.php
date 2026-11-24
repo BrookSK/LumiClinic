@@ -56,7 +56,7 @@ final class SupportChatController extends Controller
         return Response::json([
             'ok' => true,
             'enabled' => $enabled,
-            'greeting' => 'Olá' . ($first !== '' ? ', ' . $first : '') . '! Sou o assistente do LumiClinic. Pergunte como usar qualquer tela do sistema. Se eu não souber, abro um chamado para a nossa equipe.',
+            'greeting' => 'Olá' . ($first !== '' ? ', ' . $first : '') . '! Sou o assistente do LumiClinic. Pergunte como usar qualquer tela do sistema. Se eu não conseguir resolver, chamo a nossa equipe.',
             'chips' => $this->chipsFor($pagePath),
             'whatsapp_url' => $wa,
             'guide_url' => '/tutorial/guia-completo',
@@ -86,6 +86,7 @@ final class SupportChatController extends Controller
         $referer = (string)$request->header('referer', '');
         $refPath = $referer !== '' ? (string)(parse_url($referer, PHP_URL_PATH) ?? '') : '';
         $clientTime = $request->input('client_time', '');
+        $pageView = $request->input('page_view', '');
 
         $bot = new SupportBotService($this->container);
         try {
@@ -93,6 +94,7 @@ final class SupportChatController extends Controller
             $out = $bot->handleMessage($conversationId, $message, $pagePath, $force, [
                 'referrer_path' => SupportBotService::normalizePagePath($refPath),
                 'user_agent' => mb_substr((string)$request->header('user-agent', ''), 0, 300),
+                'page_view' => is_string($pageView) ? $pageView : '',
                 'client_time' => is_string($clientTime) ? mb_substr($clientTime, 0, 40) : '',
             ]);
         } catch (\PDOException $e) {

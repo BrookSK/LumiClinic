@@ -8,13 +8,13 @@ routes:
 
 # Pacientes
 
-O nome "Paciente" pode estar diferente na sua clínica (por exemplo Cliente). Em Configurações > Geral > Terminologia a clínica escolhe o rótulo e o menu acompanha. Neste texto usamos Paciente.
+O nome "Paciente" pode estar diferente na sua clínica (por exemplo Cliente). Em Configurações > Geral, bloco Terminologia a clínica escolhe o rótulo e o menu acompanha. Neste texto usamos Paciente.
 
 ## Lista de pacientes
 <!-- perm: patients.read -->
 **Onde fica:** Menu > Pacientes > Pacientes (/patients).
 
-- **Busca:** campo "Buscar por nome, email ou telefone" e filtro **Todas origens** (origens cadastradas em Configurações > Operacional). Clique em **Buscar**. A busca rápida do topo do sistema abre esta mesma lista já filtrada (aparece o aviso "Busca rápida: procurando ...").
+- **Busca:** campo "Buscar por nome, email ou telefone" e filtro **Todas origens** (origens cadastradas em Configurações > Geral, cartão Operacional). Clique em **Buscar**. A busca rápida do topo do sistema abre esta mesma lista já filtrada (aparece o aviso "Busca rápida: procurando ...").
 - **Tabela:** ID, Nome (com foto ou iniciais), E-mail, Telefone, Origem, Status (Ativo, Desativado, Inativo) e **Ações**: **Abrir** (perfil) e **Editar**.
 - **Paginação:** botões Anterior e Próxima (25 por página; aceita até 100).
 - **Exportar:** botão **Exportar** baixa um CSV (/patients/export.csv) com ID, Nome, E-mail, Telefone, CPF, Data de nascimento, Sexo, Endereço, Origem, Status e Cadastrado em, respeitando o filtro de busca e de origem. O arquivo abre direto no Excel.
@@ -37,7 +37,7 @@ O nome "Paciente" pode estar diferente na sua clínica (por exemplo Cliente). Em
 | CPF | Não | |
 | Rua, Número, Complemento, Bairro, Cidade, UF, CEP | Não | O sistema junta tudo em um único endereço |
 | Profissional de referência | Não | Lista de profissionais ativos |
-| Origem do paciente | Não | Gerenciar origens leva a Configurações > Operacional |
+| Origem do paciente | Não | Gerenciar origens leva a Configurações > Geral, cartão Operacional |
 | Observações | Não | Texto livre |
 
 Clique em **Criar**. O sistema abre o perfil do paciente. Se o acesso ao portal falhar, o cadastro continua salvo (crie o acesso depois, veja Acesso ao Portal).
@@ -98,9 +98,10 @@ Erros: "Profissional é obrigatório.", "Data/hora é obrigatória.", "Data/hora
 ## Alertas clínicos (ficha clínica)
 <!-- perm: patients.read (ver), patients.update (adicionar, resolver, remover) -->
 **Onde fica:** perfil > Alertas Clínicos (/patients/clinical-sheet?patient_id=...). Três cartões lado a lado:
-- **Alertas:** botão **+ Adicionar** com **Título** (obrigatório), **Detalhes** e **Gravidade** (Atenção, Crítico, Info). Cada alerta tem o botão x para remover. Alertas ativos aparecem em destaque no prontuário e na execução da consulta.
-- **Alergias:** **Tipo** (Alergia ou Contraindicação), **Agente** (obrigatório, ex.: Dipirona), **Reação** e **Severidade**.
-- **Condições:** **Condição** (obrigatório, ex.: Hipertensão), **Status** (Ativa, Inativa, Resolvida), **Data de início** e **Notas**.
+Os formulários abrem ao clicar em **+ Adicionar** em cada cartão e não têm rótulos acima dos campos: cada campo é identificado pelo texto cinza dentro dele (placeholder). Cada formulário tem **Salvar** e um ✕ para fechar.
+- **Alertas:** campo "Título do alerta" (obrigatório), "Detalhes (opcional)" e uma lista com a gravidade (Atenção, Crítico, Info). Cada alerta salvo tem o botão ✕ para remover. Alertas ativos aparecem em destaque no prontuário e na execução da consulta.
+- **Alergias:** lista com o tipo (Alergia ou Contraindicação), campo "Ex: Dipirona" (o agente, obrigatório), "Reação (opcional)" e "Severidade".
+- **Condições:** campo "Ex: Hipertensão" (a condição, obrigatória), lista de status (Ativa, Inativa, Resolvida), um campo de data (início, mostrado depois como "Desde ...") e "Notas (opcional)".
 Remover pede confirmação. Mensagens de retorno: "Salvo." e "Removido."
 
 ## Linha do tempo
@@ -117,14 +118,14 @@ Remover pede confirmação. Mensagens de retorno: "Salvo." e "Removido."
 1. Clique em **+ Enviar documento**.
 2. Escolha o **Arquivo** e, se quiser, o **Título** (ex.: Exame de sangue, RG, Laudo).
 3. Clique em **Enviar** ("Documento enviado.").
-A tabela mostra Data, Título, Arquivo, Tamanho, **Abrir** e o x de excluir ("Documento excluído."). Erros: "Selecione um arquivo.", "Arquivo inválido.", "Limite de armazenamento do plano atingido." (libere espaço ou faça upgrade).
+A tabela mostra Data, Título, Arquivo, Tamanho, **Abrir** e o botão ✕ de excluir, que pede confirmação "Excluir documento?" ("Documento excluído."). Erros: "Selecione um arquivo.", "Arquivo inválido.", "Limite de armazenamento do plano atingido." (libere espaço ou faça upgrade).
 
 ## Enviar documento para assinatura
 <!-- perm: patients.read (ver), patients.update (enviar) -->
 **Onde fica:** perfil > Enviar p/ Assinatura (/patients/document-sign?patient_id=...).
-1. Em **Título do documento** informe o nome (obrigatório).
-2. Envie um **Arquivo** (PDF, JPG, PNG, DOC ou DOCX) e/ou cole o texto em **Conteúdo / Texto do documento**.
-3. Escolha como enviar: **Enviar via WhatsApp** (precisa de telefone), **Enviar via E-mail** (precisa de e-mail) ou **Disponibilizar no Portal**. Se o contato escolhido não existir, o documento fica no Portal.
+1. Em **Título do documento *** informe o nome (obrigatório).
+2. Envie um **Arquivo (PDF, imagem, opcional)** (a lista aceita PDF, JPG, PNG, DOC ou DOCX) e/ou cole o texto em **Conteúdo / Texto do documento (opcional)**.
+3. Não há botão "Enviar" único: clique em um destes três botões, que já enviam: **📱 Enviar via WhatsApp** (precisa de telefone), **📧 Enviar via E-mail** (precisa de e-mail) ou **🌐 Disponibilizar no Portal**. Se o contato escolhido não existir, o documento fica no Portal.
 4. O paciente recebe um link (/doc/sign), lê o documento, desenha a assinatura, marca o aceite e clica em **Assinar documento**. Depois ele pode abrir ou baixar o arquivo.
 A lista **Documentos enviados** mostra Título, Enviado via, Status (Aguardando, Assinado, Expirado, Cancelado), Data envio, Assinado em e **Ver arquivo** ou **Baixar**.
 Erros: "Título é obrigatório.", "Formato de arquivo não permitido. Envie PDF, JPG, PNG, DOC ou DOCX."
@@ -141,14 +142,14 @@ O paciente entra em /portal com e-mail e senha.
 ## Solicitações de alteração de perfil
 <!-- perm: patients.update -->
 **Onde fica:** Menu > Pacientes > Solicitações de perfil (/patients/profile-requests). Quando o paciente pede pelo portal para alterar seus dados, o pedido chega aqui.
-- Filtros por status: Pendente, Aprovada, Rejeitada.
+- Abas de filtro por status: Pendentes, Aprovadas, Rejeitadas.
 - Cada cartão mostra o paciente (link **Ver paciente**) e os campos pedidos (Nome, E-mail, Telefone, Nascimento, Sexo, CPF, Endereço, Rua, Número, Complemento, Bairro, Cidade, UF, CEP).
 - **Aprovar** aplica as mudanças no cadastro. **Rejeitar** descarta (pede confirmação).
 
 ## Conteúdos para o portal
 <!-- perm: patients.update -->
 **Onde fica:** /patients/content (abra pelo endereço). Cadastro de materiais de leitura para pacientes.
-- **Cadastrar conteúdo:** **Tipo** (Link, PDF, Vídeo), **Título** (obrigatório), **Descrição**, **URL**, **Procedimento** e **Público-alvo**, depois **Salvar**.
+- **Cadastrar conteúdo:** **Tipo** (Link, PDF (estrutura), Vídeo), **Título** (obrigatório), **Descrição**, **URL**, **Procedimento** e **Público-alvo (opcional)**, depois **Salvar**.
 - **Conteúdos ativos:** em cada linha, busque o paciente em **Conceder ao paciente** e clique em **Conceder** para liberar o conteúdo no portal dele.
 
 ## Aniversariantes e follow-up
@@ -156,7 +157,7 @@ O paciente entra em /portal com e-mail e senha.
 **Onde fica:** Menu > Pacientes > Aniversariantes / Follow-up (/patients/birthdays). Duas abas:
 - **Aniversariantes:** filtro **Mês**. Lista os aniversariantes com idade, botão **WhatsApp** individual e **Ver**. Em **Envio em lote** escolha o template e clique em **Enviar para todos com WhatsApp**.
 - **Follow-up:** filtro **Sem consulta há mais de** (90, 120, 180, 270 ou 365 dias; padrão 180). Lista os pacientes que não voltam, com a data da última consulta, botão **WhatsApp**, **Ver** e envio em lote.
-Regras do envio por WhatsApp: o paciente precisa ter telefone e ter marcado o recebimento por WhatsApp; o template precisa existir e estar ativo (Configurações > Geral > Templates WhatsApp). Mensagens de erro: "Paciente sem telefone cadastrado.", "Paciente sem opt-in para WhatsApp.", "Template ... não encontrado.", "Template desativado."
+Regras do envio por WhatsApp: o paciente precisa ter telefone e ter marcado o recebimento por WhatsApp; o template precisa existir e estar ativo (Configurações > Geral, cartão Templates WhatsApp). Mensagens de erro: "Paciente sem telefone cadastrado.", "Paciente sem opt-in para WhatsApp.", "Template ... não encontrado.", "Template desativado."
 
 **Relatório de follow-up** (/patients/follow-up e /reports/follow-up, menu Relatórios > Follow-up): mesma ideia em formato de relatório, com cartões Total de pacientes, Nunca vieram, Com WhatsApp e Com telefone, filtro **Sem consulta há mais de**, tabela com envio por WhatsApp e **Exportar PDF**. Em /patients/follow-up o envio em lote exige escolher um Template.
 
@@ -189,7 +190,7 @@ Pacotes do paciente nascem de vendas de pacote no Financeiro. Ao agendar, se o p
 
 **Aparece "Este paciente possui agendamentos futuros".** Cancele os agendamentos futuros dele na Agenda e exclua novamente.
 
-**Não vejo o botão Excluir paciente.** Falta a permissão patients.delete. Peça ao dono em Papéis e Permissões.
+**Não vejo o botão Excluir paciente.** Falta a permissão patients.delete. Peça ao dono em Papéis & Permissões.
 
 **Como exporto minha lista de pacientes?** Em Pacientes clique em Exportar. O CSV respeita a busca atual.
 
@@ -205,4 +206,4 @@ Pacotes do paciente nascem de vendas de pacote no Financeiro. Ao agendar, se o p
 
 **Como recupero pacientes sem retorno?** Aba Follow-up (90 a 365 dias sem consulta) ou Relatórios > Follow-up, com envio por WhatsApp e exportação em PDF.
 
-**Posso mudar o nome Paciente para Cliente?** Sim, em Configurações > Geral > Terminologia.
+**Posso mudar o nome Paciente para Cliente?** Sim, em Configurações > Geral, bloco Terminologia.

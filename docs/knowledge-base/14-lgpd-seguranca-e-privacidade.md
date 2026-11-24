@@ -21,8 +21,8 @@ A clínica trata dados de saúde, que são dados sensíveis na LGPD. O sistema a
 ## Consentimentos e termos do paciente
 <!-- perm: consent_terms.manage (cadastrar), consent_terms.accept (coletar aceite e assinatura) -->
 - Termos por procedimento e a coleta do aceite com assinatura estão em 05-prontuarios-e-atendimento (seção Termos de consentimento) e na aba **Termos** do paciente (/consent?patient_id=...).
-- Termos para o portal e para a equipe ficam em Configurações > Documentos e Termos > **Documentos LGPD** (/settings/lgpd). Passo a passo em 11-configuracoes-usuarios-permissoes.
-- Cada aceite guarda quem aceitou, a versão do texto, data e hora, IP de origem, e uma verificação de integridade do conteúdo. Em Configurações > Documentos e Termos > **Assinaturas** você consulta tudo, com **✓ Íntegro** ou **✗ Alterado**.
+- Termos para o portal e para a equipe ficam em Configurações > Documentos & Termos > **Documentos LGPD** (/settings/lgpd). Passo a passo em 11-configuracoes-usuarios-permissoes.
+- Cada aceite guarda quem aceitou, a versão do texto, data e hora, IP de origem, e uma verificação de integridade do conteúdo. Em Configurações > Documentos & Termos > **Assinaturas** você consulta tudo, com **✓ Íntegro** ou **✗ Alterado**.
 - Se o texto de um documento já assinado é editado, o sistema cria uma **nova versão**. Quem assinou a versão antiga continua com o registro dela.
 - Documento marcado como **Aceite obrigatório** bloqueia o acesso até a pessoa aceitar. Para a equipe a tela é **Antes de continuar** (/legal/required, "Para usar o sistema, você precisa aceitar os termos obrigatórios.") com o botão **Assinar**. Para o paciente é **Antes de continuar** no portal.
 
@@ -70,13 +70,13 @@ A clínica trata dados de saúde, que são dados sensíveis na LGPD. O sistema a
 6. Em caso de suspeita de vazamento (perda de celular, senha divulgada), troque a senha na hora e avise a equipe de suporte.
 
 ## Perguntas frequentes
-**Onde vejo quem assinou o termo?** Configurações > Documentos e Termos > **Assinaturas**.
+**Onde vejo quem assinou o termo?** Configurações > Documentos & Termos > **Assinaturas**.
 
 **O que significa "✗ Alterado" numa assinatura?** O texto guardado não confere com o que foi assinado. Fale com a equipe de suporte com o ID da assinatura.
 
 **Preciso de consentimento para enviar WhatsApp?** Sim. Marque no cadastro **Receber lembretes por WhatsApp** só se o paciente autorizou. Campanhas de segmento filtram quem aceitou.
 
-**Como crio uma política de privacidade que o paciente precisa aceitar?** Configurações > Documentos LGPD > **Termos do Portal do Paciente** > **+ Novo**, marque **Aceite obrigatório** e salve.
+**Como crio uma política de privacidade que o paciente precisa aceitar?** Menu > Configurações > Documentos & Termos > Documentos LGPD, bloco **Termos do Portal do Paciente** > **+ Novo**, marque **Aceite obrigatório** e salve.
 
 **O paciente pediu para apagar os dados dele.** Ele registra em /portal/lgpd ou avisa a clínica. Informe a equipe de suporte para tratar o pedido. Não exclua prontuários por conta própria: há obrigações de guarda do prontuário.
 
@@ -88,7 +88,7 @@ A clínica trata dados de saúde, que são dados sensíveis na LGPD. O sistema a
 
 **Quanto tempo fico logado?** Até 24 horas, ou até clicar em **Sair**.
 
-**Alguém usou meu login.** Troque a senha imediatamente (ícone de usuário > **Perfil** > **Alterar senha**, ou **Esqueci minha senha**) e avise a equipe de suporte.
+**Alguém usou meu login.** Troque a senha imediatamente (ícone de pessoa no topo > **Perfil** > **Alterar senha**, ou **Esqueci minha senha**) e avise a equipe de suporte.
 
 **Posso mandar o prontuário por WhatsApp?** Prefira disponibilizar pelo **Portal do Paciente**, que exige login do paciente.
 

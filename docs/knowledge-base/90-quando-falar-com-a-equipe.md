@@ -18,6 +18,12 @@ Fale com a equipe de suporte do LumiClinic quando:
 - Você precisa de algo que o sistema não oferece ou quer sugerir uma melhoria.
 - Dois cadastros de paciente precisam ser unificados ou há dados que parecem errados e você não consegue corrigir pela tela.
 
+## Como o assistente tenta ajudar antes de chamar a equipe
+Depois de cada resposta, o painel do assistente mostra **Isso resolveu?** com dois botões: **Sim** e **Não, falar com a equipe**.
+- Se clicar em **Sim**, a conversa termina ali e você pode fazer outra pergunta quando quiser.
+- Se clicar em **Não, falar com a equipe** (ou escrever que quer falar com a equipe), o assistente **não abre o chamado na hora**. Primeiro ele tenta ajudar de novo: pergunta o que está acontecendo, procura outra resposta na base e sugere o caminho na tela.
+- Se mesmo assim não resolver, clique em **Não, falar com a equipe** de novo ou diga que ainda precisa da equipe. Aí o assistente faz as perguntas abaixo, abre o chamado e avisa a equipe.
+
 ## O que o assistente pede antes de abrir o chamado
 Quanto mais detalhes, mais rápido a equipe resolve sem precisar perguntar de novo. Tenha em mãos:
 1. **Em qual tela você estava** (o caminho no menu, por exemplo Financeiro > Orçamentos > Abrir) ou o endereço (/finance/sales/view?id=...). Se possível o número do registro (orçamento, agendamento, paciente).
@@ -35,7 +41,7 @@ Quanto mais detalhes, mais rápido a equipe resolve sem precisar perguntar de no
 - Evite enviar dados completos de pacientes. Informe o ID do registro e o primeiro nome, se necessário.
 
 ## O que acontece depois de abrir o chamado
-- O assistente cria um chamado com o resumo e os detalhes que você informou e avisa a equipe responsável.
+- O assistente cria um chamado com o resumo e os detalhes que você informou, inclui o que ele já tentou sugerir para você e avisa a equipe responsável.
 - Você recebe o número do chamado para acompanhar. Mantenha o WhatsApp ou e-mail de contato atualizado para ser avisado.
 - Quando o problema é resolvido, a solução é registrada para que perguntas parecidas sejam respondidas na hora da próxima vez.
 - Enquanto espera, siga as dicas de contorno que o assistente sugerir (por exemplo registrar o atendimento em papel e lançar depois).
@@ -44,10 +50,10 @@ Quanto mais detalhes, mais rápido a equipe resolve sem precisar perguntar de no
 São urgentes: sistema fora do ar para toda a clínica, acesso bloqueado com paciente na recepção, suspeita de vazamento de dados e perda de dados. Avise no chamado que é urgente e diga o impacto (quantos atendimentos estão parados).
 
 ## Perguntas frequentes
-**Como falo com o suporte?** Pelo assistente de ajuda do sistema: se ele não souber responder, ele abre o chamado para você depois de fazer algumas perguntas.
+**Como falo com o suporte?** Pelo assistente de ajuda do sistema (botão redondo de conversa no canto inferior direito da tela). Depois de cada resposta ele pergunta **Isso resolveu?**. Se você clicar em **Não, falar com a equipe**, ele tenta ajudar mais uma vez e, se ainda não resolver, faz algumas perguntas e abre o chamado para você.
 
 **Quanto tempo leva para resolver?** Depende do problema. Casos que impedem o atendimento têm prioridade. Informe o impacto no chamado.
 
-**Preciso repetir tudo se o assistente já perguntou?** Não. O chamado já leva o que você informou.
+**Preciso repetir tudo se o assistente já perguntou?** Não. O chamado já leva o que você informou e o que o assistente já tentou.
 
 **Posso mandar um print?** Pode, desde que não mostre senhas nem dados de pacientes além do necessário.

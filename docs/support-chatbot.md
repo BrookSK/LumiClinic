@@ -16,13 +16,14 @@ Quando o widget aparece: `Controller::view()` envia `support_bot_enabled` ao lay
 
 ## Fluxo de uma mensagem
 
-1. O widget envia `{conversation_id?, message, page_path, force_ticket?, client_time}` com o cabeçalho `X-CSRF-Token`.
+1. O widget envia `{conversation_id?, message, page_path, force_ticket?, client_time}` (`force_ticket` vem do botão "Não, falar com a equipe" e pede triagem, não chamado imediato) com o cabeçalho `X-CSRF-Token`.
 2. O controller exige usuário de clínica na sessão. `clinic_id` e `user_id` nunca vêm da requisição. A conversa precisa pertencer à clínica e ao usuário da sessão.
 3. O serviço aplica `redactSecrets` (CPF, CNPJ, cartão, senhas, tokens), corta em 1000 caracteres, confere o limite de 30 mensagens por usuário por hora (escopo `support_chat`) e grava a mensagem.
 4. A busca usa o texto do usuário, a última pergunta do assistente e a página atual. Retorna até 8 trechos dentro de cerca de 7000 tokens (caracteres / 3,5).
 5. A chamada vai para `chat/completions` com as últimas 12 mensagens, `temperature 0.2`, `response_format json_object`, `max_tokens 700` e timeout de 25 s.
 6. O JSON `{action, reply, ticket}` é validado. Ação desconhecida vira `answer`. Resposta que não seja JSON vira texto simples.
-7. Em `create_ticket` o servidor confere as condições: 3 mensagens do usuário na conversa, ou 2 quando o usuário usou "Falar com a equipe". Sem isso a ação cai para `ask_details`.
+7. Pedido de equipe (botão "Não, falar com a equipe" ou frase como "quero falar com o suporte") grava o marcador de sistema `FORCE_MARKER`. Até o assistente responder uma vez depois do marcador vale o MODO TRIAGEM: `create_ticket` é bloqueado e o assistente tenta ajudar (nova busca na base com as últimas descrições reais do usuário, sugestão de caminho na tela ou perguntas). Depois vale o MODO CHAMADO (entrevista). Em `create_ticket` o servidor exige 2 mensagens em que o usuário descreveu o problema; o clique no botão e os pedidos de equipe não contam. Sem isso a ação cai para `ask_details`.
+7a. O chamado recebe no `summary` e em `steps_tried` o resumo do que o assistente já respondeu (últimas 4 respostas, 300 caracteres cada), além da transcrição completa em `context_json`.
 8. Com o chamado criado, a conversa fica `ticketed` e a resposta traz o protocolo (`LC-000123`). A próxima mensagem abre uma conversa nova.
 
 ## Regras do prompt

@@ -48,14 +48,10 @@ A página **Minha assinatura** mostra o plano da clínica, a situação da cobra
 A tabela **Cobranças (N)** lista Vencimento, Valor, Status e Pago em, com os links **Fatura** e **Boleto** de cada cobrança. Para pagar um boleto pendente abra o link **Boleto**. Para ver o comprovante abra **Fatura**.
 
 ## Como atualizar o cartão
-Não existe uma tela só para trocar o cartão. Para atualizar a forma de pagamento:
-1. Abra Menu > Assinatura.
-2. Clique em **Selecionar** no plano atual ou em outro plano e preencha os campos do cartão no painel **Assinar plano**.
-3. Confirme. Se aparecer erro de pagamento, confira número, validade, CVV, CPF e CEP do titular, e tente de novo.
-Se continuar sem funcionar, fale com a equipe de suporte informando o horário da tentativa e a mensagem exibida (nunca envie o número do cartão).
+Não existe uma tela só para trocar o cartão, e o plano atual mostra apenas o texto **Plano atual**, sem botão **Selecionar**. Os campos do cartão só aparecem ao clicar em **Selecionar** em outro plano (painel **Assinar plano**). Para trocar só o cartão, mantendo o plano, fale com a equipe de suporte, informando o horário e a mensagem exibida (nunca envie o número do cartão). Se estiver trocando de plano, confira número, validade, CVV, CPF e CEP do titular no painel e tente de novo em caso de erro de pagamento.
 
 ## Cancelar a assinatura
-Na seção **Cancelar assinatura**: "O cancelamento encerra sua assinatura ao fim do período atual. Você perderá acesso ao sistema." Clique em **Confirmar cancelamento**. A mensagem "Assinatura cancelada." confirma. Pense bem: depois do fim do período o acesso é bloqueado.
+No fim da página, clique no título pequeno **Cancelar assinatura** para abrir a seção: "O cancelamento encerra sua assinatura ao fim do período atual. Você perderá acesso ao sistema." Clique em **Confirmar cancelamento**. A mensagem "Assinatura cancelada." confirma. Pense bem: depois do fim do período o acesso é bloqueado.
 
 ## Bloqueio por pendência (tela Acesso bloqueado)
 Quando a assinatura está vencida ou pendente, qualquer tela do sistema mostra **Acesso bloqueado** ("O acesso ao sistema foi temporariamente bloqueado porque a assinatura da sua clínica está pendente ou vencida."). Nela há **Ver minha assinatura**, botões de contato com o suporte (WhatsApp e e-mail, quando cadastrados) e **Sair**.
@@ -67,7 +63,7 @@ Quando a assinatura está vencida ou pendente, qualquer tela do sistema mostra *
 
 **O que fazer**
 1. O dono entra e abre **Ver minha assinatura**.
-2. Pague o boleto pendente pelo link **Boleto** da cobrança em atraso, ou troque para pagamento por cartão em **Selecionar** (plano atual).
+2. Pague o boleto pendente pelo link **Boleto** da cobrança em atraso (tabela **Cobranças**). Se não houver boleto para pagar, fale com a equipe de suporte.
 3. Depois da confirmação do pagamento o acesso é liberado. Pode levar alguns minutos. Saia e entre de novo.
 4. Se pagou e continua bloqueado depois de uns 30 minutos, fale com a equipe de suporte informando o nome da clínica, a data e o valor do pagamento.
 
@@ -84,9 +80,9 @@ Quando a assinatura está vencida ou pendente, qualquer tela do sistema mostra *
 
 **Como pago o boleto?** Em Cobranças, clique em **Boleto** na linha da cobrança.
 
-**Como atualizo o cartão?** Selecione o plano atual (ou outro) e preencha os dados do cartão no painel **Assinar plano**. Veja a seção Como atualizar o cartão.
+**Como atualizo o cartão?** Não há tela só para o cartão. Os campos do cartão aparecem ao clicar em **Selecionar** em outro plano. Para trocar só o cartão, fale com a equipe de suporte. Veja a seção Como atualizar o cartão.
 
-**Atingi o limite de usuários.** Faça upgrade de plano ou arquive usuários que não usam mais o sistema (Configurações > Usuários).
+**Atingi o limite de usuários.** Faça upgrade de plano ou arquive usuários que não usam mais o sistema (Menu > Configurações > Usuários & Acesso > Usuários).
 
 **Atingi o limite de transcrição de áudio.** O limite é mensal. Faça upgrade para um plano com mais minutos ou aguarde o próximo mês.
 

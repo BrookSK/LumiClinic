@@ -21,9 +21,9 @@ O grupo **Configurações** do menu lateral reúne, conforme a permissão de cad
 | Modelos de prontuário | Configurações > Modelos de prontuário | medical_record_templates.manage | 05 |
 | Clínica | Configurações > Clínica (/clinic) | clinics.read | 01 |
 | Agenda: Horários, Feriados, Regras, Bloqueios | Configurações > Agenda | clinics.read, schedule_rules.manage, blocks.manage | 03 |
-| Usuários | Configurações > Usuários e Acesso > Usuários | users.read | 01 e este arquivo |
-| Papéis & Permissões | Configurações > Usuários e Acesso | rbac.manage | 01 e este arquivo |
-| Documentos LGPD e Assinaturas | Configurações > Documentos e Termos | clinics.read | este arquivo e 14 |
+| Usuários | Configurações > Usuários & Acesso > Usuários | users.read | 01 e este arquivo |
+| Papéis & Permissões | Configurações > Usuários & Acesso > Papéis & Permissões | rbac.manage | 01 e este arquivo |
+| Documentos LGPD e Assinaturas | Configurações > Documentos & Termos | clinics.read | este arquivo e 14 |
 | Anamnese | Configurações > Anamnese | anamnesis.manage | 05 |
 | Serviços (Cadastro, Vínculo com estoque, Procedimentos) | Configurações > Serviços | services.manage, procedures.manage | 06 |
 | Assinatura (somente Owner) | Menu > Assinatura | papel Owner | 12 |
@@ -56,7 +56,7 @@ Clique em **Salvar configurações**. Os rótulos mudam em todo o menu e nas tel
 
 ## Configuração operacional (funil, motivos, origens)
 <!-- perm: settings.read (ver), settings.update (alterar) -->
-**Onde fica:** Menu > Configurações > Geral > **Operacional** (/settings/operational). Título **Configuração operacional** ("Gerencie as listas usadas no dia a dia. Arraste os itens para reordenar.").
+**Onde fica:** Menu > Configurações > Geral, cartão **Operacional** (/settings/operational). Título **Configuração operacional** ("Gerencie as listas usadas no dia a dia. Arraste os itens para reordenar.").
 
 Três abas:
 - **Etapas do funil**: o funil organiza o paciente desde o primeiro contato até a conversão. Campo **Nova etapa** (ex.: Triagem) e **Adicionar**.
@@ -66,7 +66,7 @@ Três abas:
 
 ## Inteligência Artificial da clínica
 <!-- perm: settings.read (ver), settings.update (salvar, testar, remover) -->
-**Onde fica:** Menu > Configurações > Geral > **Inteligência Artificial** (/settings/ai). Usada para a **transcrição de áudio no prontuário** (veja 05) e para **gerar feriados** (03).
+**Onde fica:** Menu > Configurações > Geral, cartão **Inteligência Artificial** (/settings/ai). Usada para a **transcrição de áudio no prontuário** (veja 05) e para **gerar feriados** (03).
 
 A página mostra a situação:
 - **IA ativa (configuração global do sistema)**: a IA já está pronta, você não precisa configurar nada. O limite de uso depende do plano de assinatura (veja 12).
@@ -77,7 +77,7 @@ Para limites do plano veja 12-assinatura-da-clinica: "Limite de transcrição at
 
 ## Importador de dados (Clinicorp)
 <!-- perm: settings.update -->
-**Onde fica:** Menu > Configurações > Geral > **Importador Clinicorp** (/settings/importer). Serve para trazer para o LumiClinic os dados exportados em planilha .xlsx do Clinicorp.
+**Onde fica:** Menu > Configurações > Geral, cartão **Importador Clinicorp** (/settings/importer). Serve para trazer para o LumiClinic os dados exportados em planilha .xlsx do Clinicorp.
 
 **Como exportar do Clinicorp** (guia na própria tela "📖 Como exportar dados do Clinicorp")
 1. No sistema do Clinicorp abra o menu lateral (três pontinhos) e vá em **Relatórios e Indicadores**.
@@ -123,9 +123,9 @@ Alguns tipos aparecem como **🚧 Em breve** (Produtos, Entradas, Saídas, Quant
 
 ## Usuários
 <!-- perm: users.read (lista), users.create, users.update, users.delete -->
-**Onde fica:** Menu > Configurações > Usuários e Acesso > Usuários (/users). Passo a passo completo em 01-primeiros-passos. Resumo:
-- **+ Novo usuário**: Nome completo, E-mail de login, Senha, Papel. Erros: "Preencha todos os campos.", "Limite de usuários do plano atingido.".
-- **Editar**: nome, e-mail, papel, status, nova senha (vazio mantém a atual) e dados profissionais (especialidade e número do conselho).
+**Onde fica:** Menu > Configurações > Usuários & Acesso > Usuários (/users). Passo a passo completo em 01-primeiros-passos. Resumo:
+- **+ Novo usuário**: Nome completo, E-mail de login, Senha, Papel (define as permissões), botão **Criar usuário**. Erros: "Preencha todos os campos.", "Limite de usuários do plano atingido.".
+- **Editar**: Nome completo, E-mail, Papel, Status, Nova senha (vazio mantém a atual) e **Dados profissionais** (Especialidade e Nº do conselho (CRM, CRO, etc.)). Na parte de baixo há o bloco **Desativar usuário** com o botão **Confirmar desativação**.
 - **Arquivar**: o usuário perde o acesso, mas pode ser reativado. **Reativar**: devolve o acesso. **Excluir**: some da lista.
 - Você não pode arquivar ou excluir o seu próprio usuário nem o último proprietário da clínica.
 - Para quem atende na agenda, o usuário também precisa ser vinculado a um **Profissional** (06-servicos-profissionais).
@@ -133,11 +133,11 @@ Alguns tipos aparecem como **🚧 Em breve** (Produtos, Entradas, Saídas, Quant
 
 ## Papéis e permissões (RBAC)
 <!-- perm: rbac.manage -->
-**Onde fica:** Menu > Configurações > Usuários e Acesso > Papéis & Permissões (/rbac). Passo a passo em 01-primeiros-passos.
+**Onde fica:** Menu > Configurações > Usuários & Acesso > Papéis & Permissões (/rbac). Passo a passo em 01-primeiros-passos.
 
 - Papéis de fábrica: **Owner** (dono, não pode ser editado), **Admin**, **Profissional**, **Recepção** e **Financeiro**. A clínica pode criar papéis próprios (ex.: Enfermeiro).
 - Em cada permissão marque **Permitir** ou **Negar**. **Negar** sempre vence **Permitir**.
-- **Clonar este papel** copia as permissões. **Resetar para padrão** volta às permissões de fábrica.
+- Em cada papel há **✓ Permitir tudo**, **Limpar tudo** e **Salvar permissões**. **Clonar este papel** (campo **Nome do novo papel** e botão **Clonar**) copia as permissões. **Resetar para padrão** volta às permissões de fábrica e pede **Confirmar reset**. Na lista, cada papel mostra a etiqueta **Sistema** (de fábrica) ou **Personalizado** (criado pela clínica), o texto **Somente leitura** quando não pode ser editado e o botão **Editar permissões**.
 - Depois de mudar permissões a pessoa deve sair e entrar de novo.
 
 **Glossário das permissões que mais aparecem**
@@ -173,7 +173,7 @@ Alguns tipos aparecem como **🚧 Em breve** (Produtos, Entradas, Saídas, Quant
 
 ## Documentos LGPD e Assinaturas
 <!-- perm: clinics.read -->
-**Onde fica:** Menu > Configurações > Documentos e Termos > **Documentos LGPD** (/settings/lgpd) e **Assinaturas** (/clinic/legal-signatures).
+**Onde fica:** Menu > Configurações > Documentos & Termos > **Documentos LGPD** (/settings/lgpd) e **Assinaturas** (/clinic/legal-signatures).
 
 **Documentos LGPD** ("Gerencie os termos e políticas que precisam ser aceitos. Documentos marcados como obrigatórios bloqueiam o acesso até serem aceitos.")
 - Dois blocos: **Termos do Portal do Paciente** (pacientes aceitam ao entrar no portal) e **Termos da Equipe Interna** (funcionários aceitam ao entrar no sistema).
@@ -196,21 +196,21 @@ Os tokens de API são do paciente, criados por ele em /portal/api-tokens. A clí
 
 **Como mudo o primeiro dia da semana da agenda?** Configurações > Geral, campo **Início da semana**.
 
-**Como crio um novo funcionário com acesso?** Configurações > Usuários e Acesso > Usuários > **+ Novo usuário**. Escolha o papel certo. Se ele atende, vincule a um profissional.
+**Como crio um novo funcionário com acesso?** Menu > Configurações > Usuários & Acesso > Usuários > **+ Novo usuário**. Escolha o papel certo. Se ele atende, vincule a um profissional.
 
-**Um funcionário saiu. O que faço?** Em Usuários use **Arquivar**. O acesso é bloqueado e o histórico continua. Se ele também era profissional, inative-o em /professionals.
+**Um funcionário saiu. O que faço?** Em Configurações > Usuários & Acesso > Usuários use **Arquivar** na linha dele. O acesso é bloqueado e o histórico continua. Se ele também era profissional, inative-o em /professionals.
 
-**Como libero uma tela para alguém?** Configurações > Papéis & Permissões > Editar permissões do papel dela. Depois peça para sair e entrar de novo. Se o papel é de fábrica, prefira clonar e ajustar o clone.
+**Como libero uma tela para alguém?** Configurações > Usuários & Acesso > Papéis & Permissões, clique em **Editar permissões** no papel dela e depois em **Salvar permissões**. Depois peça para sair e entrar de novo. Se o papel é de fábrica, prefira clonar e ajustar o clone.
 
 **Qual a diferença entre Negar e não marcar?** Não marcar apenas não concede. **Negar** bloqueia mesmo que outra regra conceda.
 
-**Como crio um termo que o paciente precisa aceitar no portal?** Configurações > Documentos LGPD > bloco **Termos do Portal do Paciente** > **+ Novo**, marque **Aceite obrigatório** e salve.
+**Como crio um termo que o paciente precisa aceitar no portal?** Menu > Configurações > Documentos & Termos > Documentos LGPD, bloco **Termos do Portal do Paciente** > **+ Novo**, marque **Aceite obrigatório** e salve.
 
 **O que acontece se eu editar um termo que já foi assinado?** Uma nova versão é criada. As assinaturas antigas continuam válidas para a versão antiga.
 
-**Como vejo quem aceitou o termo?** Configurações > Documentos e Termos > **Assinaturas**.
+**Como vejo quem aceitou o termo?** Menu > Configurações > Documentos & Termos > **Assinaturas**.
 
-**Como importo meus pacientes do Clinicorp?** Configurações > Geral > Importador Clinicorp, escolha **Cadastro de Pacientes**, selecione o arquivo .xlsx e clique em **Importar**. Os ignorados aparecem com o motivo.
+**Como importo meus pacientes do Clinicorp?** Menu > Configurações > Geral, cartão **Importador Clinicorp**, escolha **Cadastro de Pacientes**, selecione o arquivo .xlsx e clique em **Importar**. Os ignorados aparecem com o motivo.
 
 **A importação ignorou registros.** Veja **Ver ignorados e motivo**. Os mais comuns são nome vazio, data inválida, valor zerado e paciente já cadastrado. Corrija a planilha e reimporte.
 
