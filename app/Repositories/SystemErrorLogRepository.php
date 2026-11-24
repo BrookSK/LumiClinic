@@ -94,4 +94,27 @@ final class SystemErrorLogRepository
         $row = $stmt->fetch();
         return $row ?: null;
     }
+
+    /**
+     * Erros recentes de um usuário (sem stack trace), para o contexto de chamados de suporte.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function listRecentByUser(int $userId, int $minutes = 60, int $limit = 5): array
+    {
+        $limit = max(1, min($limit, 20));
+        $minutes = max(1, min($minutes, 1440));
+
+        $stmt = $this->pdo->prepare("
+            SELECT status_code, error_type, message, method, path, created_at
+            FROM system_error_logs
+            WHERE user_id = :user_id AND created_at >= (NOW() - INTERVAL {$minutes} MINUTE)
+            ORDER BY id DESC
+            LIMIT {$limit}
+        ");
+        $stmt->execute(['user_id' => $userId]);
+
+        /** @var list<array<string,mixed>> */
+        return $stmt->fetchAll();
+    }
 }
