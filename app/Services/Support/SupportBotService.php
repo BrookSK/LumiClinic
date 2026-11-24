@@ -112,7 +112,7 @@ final class SupportBotService
     }
 
     /**
-     * @param array<string,mixed> $clientContext page_path é ignorado aqui; aceita user_agent, referrer_path, client_time
+     * @param array<string,mixed> $clientContext page_path é ignorado aqui; page_view (day|week|month) é a visão da Agenda; aceita user_agent, referrer_path, client_time
      * @return array{reply:string,action:string,ticket_code:?string}
      */
     public function handleMessage(int $conversationId, string $userText, string $pagePath, bool $forceTicket = false, array $clientContext = []): array
@@ -202,10 +202,14 @@ final class SupportBotService
         $searchText = $this->isEscalationText($text) ? implode(' ', array_slice($realUserTexts, -2)) : $text;
 
         $kb = new SupportKnowledgeBase($this->container);
+        $pageView = (string)($clientContext['page_view'] ?? '');
+        if (!in_array($pageView, ['day', 'week', 'month'], true)) {
+            $pageView = '';
+        }
         $chunks = $kb->search($searchText !== '' ? $searchText : $text, $lastAssistant, $pagePath);
         $chunkIds = array_map(static fn(array $c): string => (string)$c['id'], $chunks);
 
-        $messages = [['role' => 'system', 'content' => $this->buildSystemPrompt($chunks, $kb->compactIndex(), $pagePath, $clinicId, $userId, $mode)]];
+        $messages = [['role' => 'system', 'content' => $this->buildSystemPrompt($chunks, $kb->compactIndex(), $pagePath, $clinicId, $userId, $mode, $pageView)]];
         foreach ($turns as $t) {
             $messages[] = $t;
         }
@@ -231,7 +235,9 @@ final class SupportBotService
         if ($mode === self::MODE_TRIAGE && $action === 'create_ticket') {
             // Triagem: o chamado não abre antes de uma tentativa de ajuda.
             $action = 'ask_details';
-            $reply = 'Antes de chamar a equipe, quero tentar te ajudar. Me conte o que está acontecendo: o que você queria fazer, em qual tela e o que aparece para você?';
+            if ($reply === '' || !str_contains($reply, '?')) {
+                $reply = trim($reply . ' Antes de chamar a equipe, quero tentar te ajudar. Me conte o que está acontecendo: o que você queria fazer, em qual tela e o que aparece para você?');
+            }
         } elseif ($action === 'create_ticket' && !$this->canCreateTicket($userTurns)) {
             $action = 'ask_details';
             if ($reply === '' || !str_contains($reply, '?')) {
@@ -294,7 +300,7 @@ final class SupportBotService
      *
      * @param list<array{id:string,file:string,title:string,perm:string,source:string,text:string,score:float}> $chunks
      */
-    public function buildSystemPrompt(array $chunks, string $index, string $pagePath, int $clinicId, int $userId, string $mode = self::MODE_NORMAL): string
+    public function buildSystemPrompt(array $chunks, string $index, string $pagePath, int $clinicId, int $userId, string $mode = self::MODE_NORMAL, string $pageView = ''): string
     {
         $stmt = $this->pdo()->prepare('SELECT name FROM users WHERE id = :id AND clinic_id = :clinic_id LIMIT 1');
         $stmt->execute(['id' => $userId, 'clinic_id' => $clinicId]);
@@ -340,6 +346,10 @@ final class SupportBotService
         $p[] = '- Nome: ' . ($first !== '' ? $first : 'não informado');
         $p[] = '- Papéis: ' . ($roles !== [] ? implode(', ', $roles) : 'não informado');
         $p[] = '- Página atual: ' . ($pagePath !== '' ? $pagePath : 'desconhecida');
+        if ($pageView !== '') {
+            $nomes = ['day' => 'Dia', 'week' => 'Semana', 'month' => 'Mês'];
+            $p[] = '- Visão da Agenda aberta agora: ' . $nomes[$pageView] . ' (use só os trechos e botões que valem para essa visão).';
+        }
         $p[] = '- Permissões: ' . $permLine;
         $p[] = '';
         $p[] = 'ASSUNTOS DA BASE';
@@ -422,8 +432,12 @@ final class SupportBotService
         if ($t === mb_strtolower(self::ESCALATE_TEXT)) {
             return true;
         }
-        return preg_match('/\b(falar|chamar|conversar|contato|contatar|abrir (um )?chamado)\b.{0,30}\b(equipe|suporte|atendente|humano|pessoa|chamado)\b/u', $t) === 1
-            || preg_match('/\b(equipe|suporte|atendente|humano)\b.{0,20}\b(por favor|agora)\b/u', $t) === 1;
+        // A mensagem inteira precisa ser o pedido (ex.: "quero falar com o suporte"); frases comuns como "contato da pessoa no cadastro" não contam.
+        $alvo = '(?:equipe|suporte|atendente|humano|humana|pessoa|chamado)';
+        $fim = '(?:\s+(?:de suporte|humano|humana|por favor|agora))*[.!?]*';
+        return preg_match('/^(?:(?:oi|olá|ola)[,!]?\s+)?(?:(?:eu\s+)?(?:quero|preciso|queria|gostaria de|posso|pode|podem|vou)\s+)?(?:falar|chamar|conversar|entrar em contato|ter contato|contatar|abrir)\s+(?:com\s+|a\s+|o\s+|um\s+|uma\s+)*' . $alvo . $fim . '$/u', $t) === 1
+            || preg_match('/^(?:quero|preciso de|queria|gostaria de)\s+(?:um|uma)\s+' . $alvo . $fim . '$/u', $t) === 1
+            || preg_match('/^(?:equipe|suporte|atendente|humano)\s+(?:por favor|agora)[.!?]*$/u', $t) === 1;
     }
 
     /**

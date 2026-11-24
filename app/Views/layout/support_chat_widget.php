@@ -169,6 +169,14 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
     });
   }
 
+  function currentView() {
+    try {
+      var v = new URLSearchParams(window.location.search).get('view');
+      if (v === 'day' || v === 'week' || v === 'month') return v;
+      return window.location.pathname === '/schedule' ? 'week' : '';
+    } catch (e) { return ''; }
+  }
+
   function showResolve(v) { resolveBox.classList.toggle('lc-sc-on', !!v); }
 
   function showChips(list) {
@@ -202,9 +210,9 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
       msgs.textContent = '';
       if (!j.messages || !j.messages.length) addMsg('bot', greeting, false);
       (j.messages || []).forEach(function (m) { addMsg(m.role === 'user' ? 'user' : 'bot', m.content, m.role !== 'user'); });
-      showResolve(false);
-      if (j.status && j.status !== 'open') { convId = null; saveConv(); }
-      else chipsBox.textContent = '';
+      var last = j.messages && j.messages.length ? j.messages[j.messages.length - 1] : null;
+      if (j.status && j.status !== 'open') { convId = null; saveConv(); showResolve(false); }
+      else { chipsBox.textContent = ''; showResolve(!!last && last.role !== 'user'); }
     }).catch(function () {});
   }
 
@@ -216,7 +224,7 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
     addMsg('user', text, false);
     input.value = ''; autoGrow(); updateCount();
     setBusy(true);
-    var body = { message: text, page_path: window.location.pathname, force_ticket: !!force, client_time: new Date().toISOString() };
+    var body = { message: text, page_path: window.location.pathname, page_view: currentView(), force_ticket: !!force, client_time: new Date().toISOString() };
     if (convId) body.conversation_id = convId;
     api('POST', '/support/chat/message', body).then(function (j) {
       setBusy(false);
@@ -228,7 +236,7 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
       convId = j.conversation_id || convId; saveConv();
       addMsg('bot', j.reply, true);
       if (j.action === 'create_ticket') { convId = null; saveConv(); }
-      else if (j.action === 'answer') showResolve(true);
+      else if (j.action === 'answer' || j.action === 'ask_details') showResolve(true);
       input.focus();
     }).catch(function () {
       setBusy(false);
