@@ -36,20 +36,21 @@ final class OpenAiClient
 
     /**
      * @param array<int,array<string,mixed>> $messages
+     * @param array<string,mixed> $extra campos adicionais do payload (ex.: response_format, max_tokens)
      * @return array<string,mixed>
      */
-    public function chatCompletions(string $model, array $messages, float $temperature = 0.2): array
+    public function chatCompletions(string $model, array $messages, float $temperature = 0.2, array $extra = [], int $timeoutSeconds = 60): array
     {
         $key = $this->resolveKey();
 
         $http = new \App\Services\Http\HttpClient();
         $resp = $http->request('POST', 'https://api.openai.com/v1/chat/completions', [
             'Authorization' => 'Bearer ' . $key,
-        ], [
+        ], array_merge($extra, [
             'model' => $model,
             'messages' => $messages,
             'temperature' => $temperature,
-        ], 60);
+        ]), max(5, $timeoutSeconds));
 
         if ($resp['status'] < 200 || $resp['status'] >= 300) {
             $detail = '';

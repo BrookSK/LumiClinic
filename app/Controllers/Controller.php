@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Container\Container;
 use App\Core\Http\Response;
 use App\Core\View\View;
+use App\Services\Auth\AuthService;
 use App\Services\Authorization\AuthorizationService;
 use App\Services\System\SystemSettingsService;
 use App\Services\Settings\SettingsService;
@@ -35,7 +36,25 @@ abstract class Controller
             }
         }
 
+        if (!array_key_exists('support_bot_enabled', $data)) {
+            $data['support_bot_enabled'] = $this->supportBotEnabledForSession();
+        }
+
         return Response::html(View::render($view, $data));
+    }
+
+    /** Mostra o assistente de suporte só para usuário de clínica (não super admin, não "logar como") com o bot ativo. */
+    private function supportBotEnabledForSession(): bool
+    {
+        try {
+            $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
+            if ($isSuperAdmin || !isset($_SESSION['user_id']) || (new AuthService($this->container))->isImpersonating()) {
+                return false;
+            }
+            return (new SystemSettingsService($this->container))->getSupportBotSettings()['enabled'];
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     protected function redirect(string $to): Response

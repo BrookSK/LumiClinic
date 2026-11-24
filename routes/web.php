@@ -741,6 +741,10 @@ $router->post('/sys/settings/ai', [\App\Controllers\System\SystemSettingsControl
 $router->post('/sys/settings/ai/wallet', [\App\Controllers\System\AiWalletController::class, 'saveSettings']);
 $router->post('/sys/settings/ai/wallet/recharge', [\App\Controllers\System\AiWalletController::class, 'manualRecharge']);
 
+$router->get('/support/chat/bootstrap', [\App\Controllers\Support\SupportChatController::class, 'bootstrap']);
+$router->post('/support/chat/message', [\App\Controllers\Support\SupportChatController::class, 'message']);
+$router->get('/support/chat/history', [\App\Controllers\Support\SupportChatController::class, 'history']);
+
 $router->get('/sys/support/tickets', [\App\Controllers\System\SystemSupportTicketsController::class, 'index']);
 $router->get('/sys/support/tickets/show', [\App\Controllers\System\SystemSupportTicketsController::class, 'show']);
 $router->post('/sys/support/tickets/status', [\App\Controllers\System\SystemSupportTicketsController::class, 'status']);
