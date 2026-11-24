@@ -26,6 +26,7 @@ if ($files === false || $files === []) {
 sort($files);
 
 // Termos simples (comparacao sem diferenciar maiusculas de minusculas).
+// Manter igual a SupportKbDraftService::FORBIDDEN_TERMS (app/Services/Support/SupportKbDraftService.php).
 $forbiddenTerms = [
     '/sys/',
     'super admin',
@@ -36,6 +37,7 @@ $forbiddenTerms = [
     'openai',
     'api_key',
     'apikey',
+    'api key',
     "\u{2014}", // travessao
 ];
 

@@ -20,6 +20,7 @@ final class SupportTextSanitizer
      *  - "cnpj 11.222.333/0001-81"             => "cnpj [CNPJ removido]"
      *  - "cartão 4111 1111 1111 1111"          => "cartão [cartão removido]"   (13 a 19 dígitos que passam no Luhn)
      *  - "senha: abc123"                       => "senha: [removido]"
+     *  - "a senha é abc123"                    => "a senha: [removido]"   ("a senha é inválida" fica inalterado)
      *  - "Authorization: Bearer abc.def.ghi12" => "Authorization: Bearer [token removido]"
      *  - "sk-abcdefghijklmnopqrstuv"           => "[token removido]"
      *  - "a1b2c3...(32+ caracteres hex)"       => "[código removido]"
@@ -37,8 +38,19 @@ final class SupportTextSanitizer
 
         // "senha: x", "password=x", "token: x", "api key: x"
         $text = (string)preg_replace(
-            '/\b(senha|password|passwd|pwd|token|api[_ -]?key|chave(?:\s+de\s+api)?|secret)(?:\s*[:=]\s*|\s+(?:é|eh)\s+)\S+/iu',
+            '/\b(senha|password|passwd|pwd|token|api[_ -]?key|chave(?:\s+de\s+api)?|secret)\s*[:=]\s*\S+/iu',
             '$1: [removido]',
+            $text
+        );
+
+        // "a senha é x": só remove quando x parece um segredo (tem dígito ou símbolo). Frases comuns como
+        // "a senha é inválida" ficam intactas. Troca aceita: uma senha só de letras escrita assim não é removida.
+        $text = (string)preg_replace_callback(
+            '/\b(senha|password|passwd|pwd|token|api[_ -]?key|chave(?:\s+de\s+api)?|secret)\s+(?:é|eh)\s+(\S+)/iu',
+            static function (array $m): string {
+                $word = rtrim($m[2], '.,;:!?)');
+                return preg_match('/[^\p{L}]/u', $word) === 1 ? $m[1] . ': [removido]' : $m[0];
+            },
             $text
         );
 

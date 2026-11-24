@@ -107,7 +107,7 @@ $_scCsrf = htmlspecialchars((string)($csrf ?? ''), ENT_QUOTES, 'UTF-8');
       if (m.index > last) parent.appendChild(document.createTextNode(text.slice(last, m.index)));
       if (m[1] !== undefined) {
         var b = document.createElement('strong'); b.textContent = m[1]; parent.appendChild(b);
-      } else if (m[3].charAt(0) === '/' && m[3].charAt(1) !== '/') {
+      } else if (m[3].charAt(0) === '/' && /^\/[A-Za-z0-9]/.test(m[3]) && m[3].indexOf('\\') === -1) {
         var a = document.createElement('a'); a.textContent = m[2]; a.setAttribute('href', m[3]); parent.appendChild(a);
       } else {
         parent.appendChild(document.createTextNode(m[0]));

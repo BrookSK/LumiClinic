@@ -26,7 +26,7 @@ final class SupportKnowledgeBase
     private const CHARS_PER_TOKEN = 3.5;
     private const MAX_CHUNKS_PER_FILE = 5;
     private const ROUTE_BOOST = 1.35;
-    private const CACHE_VERSION = 1;
+    private const CACHE_VERSION = 3;
 
     /** @var array{chunks:list<array<string,mixed>>,index:string,df:array<string,int>,avg_len:float}|null */
     private ?array $data = null;
@@ -193,6 +193,16 @@ final class SupportKnowledgeBase
         return $this->data = $data;
     }
 
+    /** Apaga o cache em disco e em memória. Chamado ao aprovar, rejeitar, editar ou excluir uma resolução. */
+    public function invalidateCache(): void
+    {
+        $this->data = null;
+        $file = $this->cacheFile();
+        if ($file !== null && is_file($file)) {
+            @unlink($file);
+        }
+    }
+
     private function cacheFile(): ?string
     {
         $dir = dirname(__DIR__, 3) . '/storage/cache';
@@ -284,6 +294,16 @@ final class SupportKnowledgeBase
             }
         }
 
+        // Dedupe: o arquivo 99-faq-resolucoes.md exportado e as entradas aprovadas no banco trazem as mesmas respostas.
+        // Uma pergunta que já existe como título de seção do arquivo (ou em outra entrada) não entra duas vezes.
+        $seenQuestions = [];
+        foreach ($chunks as $c) {
+            if (($c['file'] ?? '') === '99-faq-resolucoes') {
+                $seenQuestions[$this->normalizeQuestion((string)($c['title'] ?? ''))] = true;
+            }
+        }
+
+        $hasEntries = false;
         foreach ($entries as $e) {
             $id = (int)($e['id'] ?? 0);
             $q = trim((string)($e['question'] ?? ''));
@@ -291,9 +311,15 @@ final class SupportKnowledgeBase
             if ($id <= 0 || $q === '' || $a === '') {
                 continue;
             }
+            $norm = $this->normalizeQuestion($q);
+            if (isset($seenQuestions[$norm])) {
+                continue;
+            }
+            $seenQuestions[$norm] = true;
+            $hasEntries = true;
             $chunks[] = $this->makeChunk('resolucao#' . $id, 'resolucao', $q, 'Resolução de chamado', [], '', "Pergunta: {$q}\nResposta: {$a}", 'resolucao');
         }
-        if ($entries !== []) {
+        if ($hasEntries) {
             $indexLines[] = '- Resoluções aprovadas de chamados anteriores';
         }
 
@@ -397,11 +423,23 @@ final class SupportKnowledgeBase
         $perm = '';
         $body = (string)preg_replace_callback('/<!--\s*perm:\s*(.*?)\s*-->\s*\n?/s', function (array $m) use (&$perm): string {
             if ($perm === '') {
-                $perm = trim($m[1]);
+                $perm = $this->normalizePerm(trim($m[1]));
             }
             return '';
         }, $body);
         return [$perm, trim($body)];
+    }
+
+    /**
+     * Comentários de permissão podem trazer prosa ("finance.sales.read (ver), ..."). O prompt recebe só os códigos,
+     * em lista separada por vírgula, para a regra de permissão do assistente comparar códigos com códigos.
+     */
+    private function normalizePerm(string $raw): string
+    {
+        if (preg_match_all('/\b[a-z][a-z0-9_]*(?:\.[a-z0-9_*]+)+/', $raw, $m) > 0) {
+            return implode(', ', array_values(array_unique($m[0])));
+        }
+        return stripos($raw, 'nenhuma') === 0 ? 'nenhuma' : $raw;
     }
 
     /** @return list<string> */
@@ -491,6 +529,12 @@ final class SupportKnowledgeBase
             $p = substr($p, 0, $q);
         }
         return $p === '/' ? '/' : rtrim($p, '/');
+    }
+
+    /** Pergunta sem acentos, maiúsculas e pontuação, para comparar duplicatas. */
+    private function normalizeQuestion(string $q): string
+    {
+        return implode(' ', $this->tokenize($q));
     }
 
     /** @return list<string> */

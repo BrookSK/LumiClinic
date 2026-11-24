@@ -204,6 +204,7 @@ $ico = [
                     <div class="lc-navgroup__children">
                         <div class="lc-nav__sub">
                             <?= $navItem('/sys/support/tickets', 'Chamados', $ico['help'], $isActive('/sys/support/tickets')) ?>
+                            <?= $navItem('/sys/support/kb', 'Base de conhecimento' . ((int)($support_kb_draft_count ?? 0) > 0 ? ' (' . (int)$support_kb_draft_count . ')' : ''), $ico['help'], $isActive('/sys/support/kb')) ?>
                             <?= $navItem('/sys/support/settings', 'Configuração do assistente', $ico['settings'], $isActive('/sys/support/settings')) ?>
                             <?= $navItem('/sys/support/whatsapp', 'WhatsApp do suporte', $ico['help'], $isActive('/sys/support/whatsapp')) ?>
                         </div>

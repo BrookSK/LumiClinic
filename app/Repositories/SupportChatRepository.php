@@ -63,6 +63,17 @@ final class SupportChatRepository
         $stmt->execute(['status' => $status, 'id' => $id, 'clinic_id' => $clinicId, 'user_id' => $userId]);
     }
 
+    /** Passa a conversa de open para ticketed de forma atômica. Devolve false se outra requisição já fez isso. */
+    public function claimForTicket(int $id, int $clinicId, int $userId): bool
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE support_chat_conversations SET status = 'ticketed'
+            WHERE id = :id AND clinic_id = :clinic_id AND user_id = :user_id AND status = 'open'
+        ");
+        $stmt->execute(['id' => $id, 'clinic_id' => $clinicId, 'user_id' => $userId]);
+        return $stmt->rowCount() === 1;
+    }
+
     public function touchConversation(int $id, int $clinicId, int $userId, ?string $pagePath): void
     {
         $stmt = $this->pdo->prepare("

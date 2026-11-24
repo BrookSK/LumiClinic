@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Container\Container;
 use App\Core\Http\Response;
 use App\Core\View\View;
+use App\Repositories\SupportKbEntryRepository;
 use App\Services\Auth\AuthService;
 use App\Services\Authorization\AuthorizationService;
 use App\Services\System\SystemSettingsService;
@@ -40,7 +41,24 @@ abstract class Controller
             $data['support_bot_enabled'] = $this->supportBotEnabledForSession();
         }
 
+        if (!array_key_exists('support_kb_draft_count', $data)) {
+            $data['support_kb_draft_count'] = $this->supportKbDraftCountForSession();
+        }
+
         return Response::html(View::render($view, $data));
+    }
+
+    /** Rascunhos de FAQ aguardando revisão, só para o menu do super admin. */
+    private function supportKbDraftCountForSession(): int
+    {
+        try {
+            if (!isset($_SESSION['is_super_admin']) || (int)$_SESSION['is_super_admin'] !== 1) {
+                return 0;
+            }
+            return (new SupportKbEntryRepository($this->container->get(\PDO::class)))->countByStatus('draft');
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     /** Mostra o assistente de suporte só para usuário de clínica (não super admin, não "logar como") com o bot ativo. */
@@ -51,7 +69,7 @@ abstract class Controller
             if ($isSuperAdmin || !isset($_SESSION['user_id']) || (new AuthService($this->container))->isImpersonating()) {
                 return false;
             }
-            return (new SystemSettingsService($this->container))->getSupportBotSettings()['enabled'];
+            return (new SystemSettingsService($this->container))->isSupportBotEnabled();
         } catch (\Throwable $e) {
             return false;
         }

@@ -169,8 +169,20 @@ ob_start();
                     <label class="lc-label"><?= ($ticket['resolution_text'] ?? '') !== '' ? 'Atualizar resolução' : 'Como foi resolvido' ?></label>
                     <textarea class="lc-textarea" name="resolution" rows="4" maxlength="4000" required placeholder="Explique a solução em linguagem simples, sem dados pessoais."></textarea>
                 </div>
+                <label style="display:flex;gap:6px;align-items:center;font-size:13px;margin-top:8px;">
+                    <input type="checkbox" name="suggest_kb" value="1" checked />
+                    Sugerir entrada para a base de conhecimento
+                </label>
+                <div class="lc-muted" style="font-size:11px;">Cria apenas um rascunho anonimizado. Ele só vale para o assistente depois que você aprovar.</div>
                 <div style="margin-top:8px;"><button class="lc-btn lc-btn--primary" type="submit">Marcar como resolvido</button></div>
             </form>
+            <?php if (($ticket['resolution_text'] ?? '') !== ''): ?>
+                <form method="post" action="/sys/support/kb/generate" style="margin-top:8px;">
+                    <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>" />
+                    <input type="hidden" name="ticket_id" value="<?= $id ?>" />
+                    <button class="lc-btn lc-btn--secondary lc-btn--sm" type="submit">Gerar sugestão de FAQ</button>
+                </form>
+            <?php endif; ?>
         </div>
 
         <div style="<?= $card ?>">
