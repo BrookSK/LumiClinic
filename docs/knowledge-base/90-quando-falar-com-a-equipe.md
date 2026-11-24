@@ -44,7 +44,7 @@ Quanto mais detalhes, mais rápido a equipe resolve sem precisar perguntar de no
 São urgentes: sistema fora do ar para toda a clínica, acesso bloqueado com paciente na recepção, suspeita de vazamento de dados e perda de dados. Avise no chamado que é urgente e diga o impacto (quantos atendimentos estão parados).
 
 ## Perguntas frequentes
-**Como falo com o suporte?** Pelo assistente de ajuda do sistema: se ele não souber responder, ele abre o chamado para você depois de fazer algumas perguntas.
+**Como falo com o suporte?** Pelo assistente de ajuda do sistema (botão redondo de conversa no canto inferior direito da tela). Se ele não souber responder, ele abre o chamado para você depois de fazer algumas perguntas. O botão **Falar com a equipe** do painel do assistente também pede esses detalhes antes de abrir o chamado.
 
 **Quanto tempo leva para resolver?** Depende do problema. Casos que impedem o atendimento têm prioridade. Informe o impacto no chamado.
 

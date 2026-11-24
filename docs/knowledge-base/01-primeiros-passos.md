@@ -56,7 +56,7 @@ Para trocar de clínica depois, saia do sistema e entre novamente escolhendo a o
 4. Em /reset digite a **Nova senha** (mínimo 8 caracteres) e clique em **Salvar**.
 5. Volte ao login e entre com a nova senha.
 
-**Primeiro acesso de um usuário novo:** o dono cria o usuário em Configurações > Usuários e Acesso > Usuários e informa e-mail e senha inicial. O usuário pode entrar direto, ou usar Esqueci minha senha para definir a própria senha.
+**Primeiro acesso de um usuário novo:** o dono cria o usuário em Configurações > Usuários & Acesso > Usuários e informa e-mail e senha inicial. O usuário pode entrar direto, ou usar Esqueci minha senha para definir a própria senha.
 
 **Erros comuns**
 - "Token inválido." ou "Token inválido ou expirado.": o link expira em 1 hora e só pode ser usado uma vez. Gere um novo em /forgot.
@@ -75,7 +75,7 @@ Erros: "Preencha todos os campos obrigatórios.", "E-mail inválido.", "Senha de
 
 ## Configuração inicial (checklist)
 <!-- perm: nenhuma -->
-**Onde fica:** Menu > Ajuda > Configuração inicial (/tutorial/sistema/configuracao-inicial).
+**Onde fica:** Menu > Configuração inicial (item no fim do menu lateral, depois de Ajuda e Guia Completo; /tutorial/sistema/configuracao-inicial).
 A tela mostra uma barra de progresso e 7 passos, cada um com um botão que leva direto para a tela certa:
 1. **Dados da clínica** (/clinic).
 2. **Horários de funcionamento** (/clinic/working-hours).
@@ -98,7 +98,7 @@ Se a clínica exigir aceite de documentos legais, aparece a tela **Antes de cont
 Se aparecer a tela **Acesso bloqueado** (código 402), a assinatura da clínica está pendente ou vencida. Clique em **Ver minha assinatura** (/billing/subscription) para regularizar. Somente o Owner vê o item Assinatura no menu. Pessoas sem esse acesso devem falar com o dono da clínica.
 
 ## Telas de erro
-- **Acesso negado** (403): você não tem permissão para a tela. Peça ao dono para liberar a permissão em Papéis e Permissões.
+- **Acesso negado** (403): você não tem permissão para a tela. Peça ao dono para liberar a permissão em Papéis & Permissões.
 - **Página não encontrada** (404): endereço errado. Use Voltar ao início.
 - **Algo deu errado** (500) e **Sistema indisponível** (503): tente de novo em instantes. Se persistir, informe o suporte com o horário e o que estava fazendo.
 
@@ -110,7 +110,7 @@ Se aparecer a tela **Acesso bloqueado** (código 402), a assinatura da clínica 
 - **Agenda**: Agenda, Operação da Agenda, Fila de chegada.
 - **Pacientes** (o nome acompanha a terminologia da clínica): lista, Solicitações de perfil, Aniversariantes / Follow-up.
 - **Financeiro**, **Estoque**, **Marketing**, **Relatórios** (ver os outros arquivos).
-- **Configurações**: Geral, Modelos de prontuário, Clínica, Agenda (Horários, Feriados, Regras, Bloqueios), Usuários e Acesso (Usuários, Papéis e Permissões), Documentos e Termos, Anamnese, Serviços (Cadastro, Vínculo com estoque, Procedimentos).
+- **Configurações**: Geral, Modelos de prontuário, Clínica, Agenda (Horários, Feriados, Regras, Bloqueios), Usuários & Acesso (Usuários, Papéis & Permissões), Documentos & Termos, Anamnese, Serviços (Cadastro, Vínculo com estoque, Procedimentos).
 - **Ajuda**, **Guia Completo** e **Configuração inicial** no final do menu.
 Os grupos abrem e fecham clicando no título. O botão de três barras no topo recolhe ou expande o menu e o navegador lembra sua escolha. No celular o menu abre como painel deslizante.
 
@@ -119,7 +119,7 @@ Os grupos abrem e fecham clicando no título. O botão de três barras no topo r
 - **Busca rápida**: campo "Buscar paciente (nome, e-mail ou telefone)...". Digite e pressione **Enter** para abrir a lista de pacientes já filtrada (/patients?q=...). Se você não tem permissão de ver pacientes, a busca não abre a lista.
 - Selo **CLÍNICA**.
 - **Menu do usuário** (ícone de pessoa): **Perfil** (/me) e **Sair**.
-Botão verde **Falar com suporte** no canto inferior direito, quando a plataforma o habilita, abre o WhatsApp do suporte.
+**Assistente de suporte:** no canto inferior direito fica um botão redondo com o desenho de uma conversa (ao passar o mouse aparece "Precisa de ajuda?"). Ele abre o painel **Assistente LumiClinic**, onde você digita a dúvida em "Digite sua dúvida..." e clica em **Enviar**. No painel há **Nova conversa**, **Fechar**, o botão **Falar com a equipe** (para abrir um chamado) e o link **Guia completo**. Quando a plataforma não ativa o assistente, no mesmo lugar aparece o botão verde **Falar com suporte**, que abre o WhatsApp do suporte.
 
 ## Minha conta (Perfil)
 <!-- perm: nenhuma (qualquer usuario logado) -->
@@ -164,7 +164,7 @@ Clique em **Salvar configurações**.
 
 ## Usuários
 <!-- perm: users.read (lista), users.create, users.update, users.delete -->
-**Onde fica:** Menu > Configurações > Usuários e Acesso > Usuários (/users).
+**Onde fica:** Menu > Configurações > Usuários & Acesso > Usuários (/users).
 A lista mostra Nome, E-mail, Papel, Status (Ativo, Desativado, Inativo) e Criado em, com paginação.
 
 **Criar usuário** (botão **+ Novo usuário**, /users/create)
@@ -172,7 +172,7 @@ A lista mostra Nome, E-mail, Papel, Status (Ativo, Desativado, Inativo) e Criado
 2. Clique em **Criar usuário**.
 Erros: "Preencha todos os campos.", "Limite de usuários do plano atingido." (faça upgrade do plano em Assinatura).
 
-**Editar** (/users/edit): Nome completo, E-mail, Papel, Status, Nova senha (vazio mantém a atual), e em Dados profissionais: Especialidade e Número do conselho (CRM, CRO etc., aparece nas receitas).
+**Editar** (/users/edit): Nome completo, E-mail, Papel, Status, Nova senha (vazio mantém a atual), e em **Dados profissionais**: Especialidade e **Nº do conselho (CRM, CRO, etc.)** (aparece nas receitas). Na parte de baixo da tela há o bloco **Desativar usuário** com o botão **Confirmar desativação**.
 
 **Arquivar, Reativar, Excluir** (exigem users.delete)
 - **Arquivar**: o usuário perde o acesso mas pode ser reativado depois.
@@ -182,7 +182,7 @@ Regras que geram erro: você não pode arquivar/excluir o seu próprio usuário 
 
 ## Papéis e permissões
 <!-- perm: rbac.manage -->
-**Onde fica:** Menu > Configurações > Usuários e Acesso > Papéis e Permissões (/rbac). Aparece só para quem tem rbac.manage.
+**Onde fica:** Menu > Configurações > Usuários & Acesso > Papéis & Permissões (/rbac). Aparece só para quem tem rbac.manage.
 - A lista mostra cada papel com o selo **Sistema** (papéis de fábrica) ou **Personalizado**, e **Somente leitura** para o Owner.
 - **+ Novo papel**: informe o nome (ex.: Enfermeiro) e clique em Criar. O papel nasce sem permissões.
 - **Editar permissões** (/rbac/edit): as permissões ficam agrupadas por módulo (Agenda, Pacientes, Prontuários, Imagens Clínicas, Anamnese, Consentimento, Financeiro, Estoque, Marketing, Permissões, Usuários, Configurações, Clínica, Auditoria, Compliance, Relatórios, Procedimentos, Regras de Agenda, Profissionais, Bloqueios, Serviços, Modelos Prontuário). Em cada permissão marque **Permitir** ou **Negar**. **Negar** vence sempre sobre Permitir.
@@ -214,18 +214,18 @@ Erros: "Nome é obrigatório.", "Acesso negado." (papel Owner não pode ser edit
 
 **O link de redefinição diz "Token inválido ou expirado".** O link vale 1 hora e funciona uma vez. Gere um novo em /forgot.
 
-**Não vejo um item de menu (por exemplo Financeiro ou Papéis e Permissões).** O menu mostra apenas o que o seu papel permite. Peça ao dono para liberar a permissão em Configurações > Usuários e Acesso > Papéis e Permissões e depois saia e entre de novo.
+**Não vejo um item de menu (por exemplo Financeiro ou Papéis & Permissões).** O menu mostra apenas o que o seu papel permite. Peça ao dono para liberar a permissão em Configurações > Usuários & Acesso > Papéis & Permissões e depois saia e entre de novo.
 
 **Apareceu "Acesso negado".** Falta a permissão daquela tela. Informe ao dono a tela e o que você queria fazer.
 
 **Como troco de clínica?** O login e por clínica. Saia e, na tela Escolha como entrar, selecione a outra clínica (aparece quando o mesmo e-mail e senha existem em mais de uma).
 
-**Como mudo meu telefone ou minha senha?** Ícone de usuário no topo > Perfil. Dados pessoais e Alterar senha ficam em formulários separados, cada um com seu botão.
+**Como mudo meu telefone ou minha senha?** Clique no ícone de pessoa no topo da tela e depois em **Perfil**. Dados pessoais e Alterar senha ficam em formulários separados, cada um com seu botão.
 
-**Como troco "Paciente" por "Cliente" no sistema?** Configurações > Geral > Terminologia, altere os campos e salve.
+**Como troco "Paciente" por "Cliente" no sistema?** Menu > Configurações > Geral, bloco **Terminologia**: altere os campos e clique em **Salvar configurações**.
 
-**Como cadastro um novo funcionário?** Configurações > Usuários e Acesso > Usuários > + Novo usuário, escolha o papel. Se for profissional de atendimento, cadastre também em /professionals (ver 06-serviços-profissionais).
+**Como cadastro um novo funcionário?** Configurações > Usuários & Acesso > Usuários > + Novo usuário, escolha o papel. Se for profissional de atendimento, cadastre também em /professionals (ver 06-serviços-profissionais).
 
 **O login diz "Muitas requisições".** Houve muitas tentativas. Espere 15 minutos.
 
-**Por onde começo a configurar a clínica?** Ajuda > Configuração inicial e siga os 7 passos.
+**Por onde começo a configurar a clínica?** No fim do menu lateral clique em **Configuração inicial** e siga os 7 passos.

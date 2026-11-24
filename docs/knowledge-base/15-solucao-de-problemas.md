@@ -15,7 +15,7 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 ## Entrada e acesso
 
 ### 1. Não consigo entrar: "Credenciais inválidas."
-**Causa:** e-mail ou senha errados, ou o usuário está desativado ou arquivado. **O que fazer:** confira o e-mail, digite a senha com calma (atenção ao Caps Lock) e, se não lembra, use **Esqueci minha senha / primeiro acesso**. Se o usuário foi arquivado, peça ao dono da clínica para reativar em Configurações > Usuários.
+**Causa:** e-mail ou senha errados, ou o usuário está desativado ou arquivado. **O que fazer:** confira o e-mail, digite a senha com calma (atenção ao Caps Lock) e, se não lembra, use **Esqueci minha senha / primeiro acesso**. Se o usuário foi arquivado, peça ao dono da clínica para reativar em Configurações > Usuários & Acesso > Usuários.
 
 ### 2. "Muitas requisições. Tente novamente mais tarde."
 **Causa:** 10 tentativas de login em 10 minutos. **O que fazer:** aguarde 15 minutos e tente de novo. Em vez de insistir, use **Esqueci minha senha**.
@@ -24,7 +24,7 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 **O que fazer:** na tela de login clique em **Esqueci minha senha / primeiro acesso**, digite o e-mail e use o link que chega por e-mail (vale 1 hora). O sistema responde sempre "Se o e-mail existir, você receberá instruções para redefinir a senha.", mesmo se o e-mail não está cadastrado. Olhe também a caixa de spam.
 
 ### 4. O e-mail de redefinição de senha não chegou
-**Causa:** e-mail digitado errado, e-mail na caixa de spam, ou o usuário não existe com esse e-mail. **O que fazer:** confira o e-mail no cadastro do usuário (Configurações > Usuários), peça para olhar o spam e tente de novo. Se for o primeiro acesso de um paciente, gere o link pela ficha do paciente.
+**Causa:** e-mail digitado errado, e-mail na caixa de spam, ou o usuário não existe com esse e-mail. **O que fazer:** confira o e-mail no cadastro do usuário (Configurações > Usuários & Acesso > Usuários), peça para olhar o spam e tente de novo. Se for o primeiro acesso de um paciente, gere o link na tela /patients/portal-access?patient_id=... do paciente.
 
 ### 5. "Senha deve ter pelo menos 8 caracteres."
 **O que fazer:** use 8 caracteres ou mais, com letras e números.
@@ -36,7 +36,7 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 **Causa:** o mesmo e-mail e senha servem para mais de um acesso (duas clínicas, ou clínica e portal). **O que fazer:** marque a opção desejada e clique em **Entrar**.
 
 ### 8. "Acesso negado." ou o menu não mostra uma tela
-**Causa:** o seu papel não tem a permissão daquela tela. **O que fazer:** diga ao dono da clínica qual tela e qual ação você precisa. Ele ajusta em Configurações > Usuários e Acesso > Papéis & Permissões. Depois saia e entre de novo.
+**Causa:** o seu papel não tem a permissão daquela tela. **O que fazer:** diga ao dono da clínica qual tela e qual ação você precisa. Ele ajusta em Configurações > Usuários & Acesso > Papéis & Permissões. Depois saia e entre de novo.
 
 ### 9. Não vejo o menu Financeiro, Estoque ou Marketing
 **Causa:** faltam as permissões de leitura (finance.sales.read, stock.materials.read, marketing.calendar.read ou marketing.automation.read). **O que fazer:** peça ao dono para liberar.
@@ -59,7 +59,7 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 **Causa:** o profissional já tem outro agendamento nesse horário. **O que fazer:** escolha outro horário ou outro profissional.
 
 ### 15. "Paciente é obrigatório.", "Profissional é obrigatório.", "Serviço é obrigatório.", "Horário é obrigatório."
-**Causa:** campo obrigatório vazio no formulário de agendamento. **O que fazer:** preencha, escolhendo o paciente na lista que aparece ao digitar.
+**Causa:** campo obrigatório vazio no formulário de agendamento. **O que fazer:** preencha, escolhendo o paciente na lista que aparece ao digitar. Atenção: na tela essas mensagens podem aparecer com "?" no lugar das letras acentuadas (por exemplo "Servi?o ? obrigat?rio.").
 
 ### 16. "Data/hora inválida."
 **Causa:** data ou horário em formato inválido. **O que fazer:** escolha a data no calendário e o horário na lista.
@@ -103,7 +103,7 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 **Causa:** o limite mensal de minutos do plano acabou, ou o navegador sem microfone. **O que fazer:** veja o saldo em Assinatura; use um navegador que permita microfone (Chrome) e autorize o microfone.
 
 ### 29. O paciente não consegue entrar no portal
-**O que fazer:** veja 13-portal-do-paciente. Confirme se o acesso foi criado em **Acesso ao Portal**, se o e-mail está correto e gere um novo link (vale 1 hora). Mensagem "E-mail do paciente é obrigatório para criar acesso." significa que o paciente não tem e-mail no cadastro.
+**O que fazer:** veja 13-portal-do-paciente. Confirme se o acesso foi criado na tela do paciente /patients/portal-access?patient_id=... (abra pelo endereço), se o e-mail está correto e gere um novo link (vale 1 hora). Mensagem "E-mail do paciente é obrigatório para criar acesso." significa que o paciente não tem e-mail no cadastro.
 
 ### 30. "Link inválido ou expirado." (confirmação, anamnese, senha do portal)
 **Causa:** o link venceu ou já foi usado. **O que fazer:** gere e envie um novo link.
@@ -114,7 +114,7 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 ## WhatsApp e e-mail
 
 ### 32. O WhatsApp não envia as mensagens
-**Causa:** WhatsApp da clínica desconectado, número do paciente inválido, template desativado ou paciente sem opt-in. **O que fazer:** abra Configurações > Geral > WhatsApp e confira se está **Conectado ✓**. Use **Diagnosticar problemas**. Veja o status da mensagem em Logs WhatsApp (Falhou, Ignorado, Cancelado).
+**Causa:** WhatsApp da clínica desconectado, número do paciente inválido, template desativado ou paciente sem opt-in. **O que fazer:** abra Configurações > Geral, cartão WhatsApp e confira se está **Conectado ✓**. Use **Diagnosticar problemas**. Veja o status da mensagem em Logs WhatsApp (Falhou, Ignorado, Cancelado).
 
 ### 33. O QR Code expirou ou não aparece
 **O que fazer:** o QR Code se renova sozinho a cada cerca de 25 segundos. Clique em **Conectar WhatsApp** de novo. Se disser "O WhatsApp ainda não foi configurado pelo administrador do sistema.", avise a equipe de suporte.
@@ -173,7 +173,7 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 **O que fazer:** use um código novo no formato 1.1.2.08. O código da conta filha começa com o da conta pai.
 
 ### 51. Não consigo escolher Categoria ou Unidade ao cadastrar material
-**Causa:** nenhuma categoria ou unidade cadastrada. **O que fazer:** crie nas abas **Categorias** e **Unidades** de Estoque > Materiais.
+**Causa:** nenhuma categoria ou unidade cadastrada. **O que fazer:** crie nas abas **Categorias** e **Unidades** de Menu > Estoque > Materiais.
 
 ### 52. "Estoque insuficiente para a operação."
 **Causa:** a saída ou perda é maior que o saldo. **O que fazer:** confira o saldo; se o saldo real é maior, registre antes uma **Entrada** ou **Ajuste**.
@@ -199,15 +199,15 @@ Como usar: procure a mensagem exata que apareceu na tela ou descreva o sintoma. 
 **O que fazer:** Configurações > Geral, preencha os campos de terminologia e clique em **Salvar configurações**. Atualize a página.
 
 ### 59. A IA não funciona
-**Causa:** sem IA configurada ou limite do plano atingido. **O que fazer:** abra Configurações > Geral > Inteligência Artificial. Se aparece **IA não configurada**, avise o suporte; se aparece "Limite atingido", veja a Assinatura.
+**Causa:** sem IA configurada ou limite do plano atingido. **O que fazer:** abra Configurações > Geral, cartão Inteligência Artificial. Se aparece **IA não configurada**, avise o suporte; se aparece "Limite atingido", veja a Assinatura.
 
 ### 60. Usuário não aparece para vincular a um profissional
 **Causa:** o usuário já está vinculado ("Este usuário já está vinculado a um profissional.") ou está arquivado. **O que fazer:** use outro usuário ou reative o arquivado.
 
 ### 61. O paciente enviou fotos pelo portal e não aparecem
-**Causa:** as fotos aguardam moderação. **O que fazer:** aprove em Imagens clínicas > moderação (05-prontuarios-e-atendimento).
+**Causa:** as fotos aguardam moderação. **O que fazer:** aprove na tela Moderação ("Uploads pendentes (Portal)"), aberta pelo endereço /medical-images/moderation, pois não há item de menu (05-prontuarios-e-atendimento).
 
-### 62. "Termo obrigatório" bloqueia o acesso
+### 62. A tela "Antes de continuar" bloqueia o acesso (termo obrigatório)
 **Causa:** existe um documento LGPD com **Aceite obrigatório** pendente para o seu papel. **O que fazer:** leia e clique em **Assinar** na tela **Antes de continuar**.
 
 ## Mapa de rotas

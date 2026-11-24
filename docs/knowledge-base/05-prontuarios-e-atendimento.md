@@ -40,24 +40,24 @@ Alertas clínicos do paciente (alergias, contraindicações, avisos) aparecem em
 | Data/hora | Sim | Quando o atendimento aconteceu. Vem preenchido pela agenda |
 | Profissional | Não | Vem fixo quando o registro nasce de um agendamento. Senão é uma lista (opcional) |
 | Procedimento | Não | Texto livre, ex.: Botox, Limpeza. Vem do nome do serviço quando criado pela agenda |
-| Descrição clínica | Não | Texto longo com botão de microfone |
+| Descrição clínica | Não | Texto longo com botão de microfone (🎤) |
 | Evolução | Não | Texto longo com botão de microfone |
 | Produtos e materiais usados | Não | Linhas com Material, Qtd, Lote (opcional) e Descrição (opcional). **+ Adicionar material** cria uma linha |
-| Anexar imagens | Não | Várias imagens ou PDF de uma vez, ligadas a este prontuário |
+| 📷 Anexar imagens ao prontuário | Não | Várias imagens ou PDF de uma vez, ligadas a este prontuário |
 | Notas | Não | Texto longo com botão de microfone |
 
 - **Salvar registro** grava e abre a tela de edição do registro. **Cancelar** descarta.
-- Botão **Finalizar atendimento** no cabeçalho (aparece quando veio de um agendamento) abre a tela Finalizar sessão.
+- Botão **✓ Finalizar atendimento** no cabeçalho (aparece quando veio de um agendamento) abre a tela Finalizar sessão.
 - Abaixo do formulário fica o **Histórico** dos últimos registros do paciente, com **Mostrar mais** e **Ver tudo**.
 - **Materiais descontam do estoque** na hora de salvar. Se a quantidade pedida é maior que o saldo, aquela linha não é gravada (sem aviso na tela), então confira o estoque antes. Cada baixa cria uma movimentação de estoque de saída ligada ao prontuário.
 - Imagens que não puderem ser enviadas (formato inválido ou limite do plano) ficam de fora do registro, mas o texto e salvo.
 Erro: "Data/hora do atendimento é obrigatória."
 
 ### Ditado por voz (microfone)
-O botão do microfone ao lado de Descrição clínica, Evolução e Notas grava sua voz e transcreve para o texto.
-1. Clique no microfone (o navegador pede permissão de uso do microfone).
+O botão 🎤 (dica "Gravar") ao lado de Descrição clínica, Evolução e Notas grava sua voz e transcreve para o texto.
+1. Clique no 🎤 (o navegador pede permissão de uso do microfone).
 2. Fale. A tela mostra "Gravando..." com o tempo.
-3. Clique de novo para parar. Aparece "Transcrevendo..." e o texto entra no campo.
+3. Clique de novo (o botão vira ■, dica "Parar") para parar. Aparece "Transcrevendo..." e o texto entra no campo.
 Mensagens: "Sem suporte a microfone.", "Não suportado neste navegador.", "Restam N min de transcrição este mês.", "Limite de transcrição atingido. Faça upgrade do plano.", "Transcrição vazia.", "Falha ao transcrever." (a IA precisa estar disponível para a clínica; o limite depende do plano). Exige medical_records.create.
 
 ## Editar registro de prontuário
@@ -81,8 +81,8 @@ Erros: "Nome é obrigatório.", "Preencha os campos obrigatórios."
 ## Receituário (prescrições)
 <!-- perm: medical_records.read (ver, imprimir), medical_records.create (criar, editar, excluir) -->
 **Onde fica:** perfil do paciente > **Receituário** (/patients/prescriptions?patient_id=...).
-1. No cartão **Nova receita** confira os dados do **Paciente** (aviso amarelo se CPF ou Endereço não estiverem cadastrados, com link para completar) e do **Prescritor**.
-2. Escolha o **Profissional que prescreve**. Se o profissional não tem **Número do conselho** (CRM, CRO etc.), aparece um aviso com link para cadastrar.
+1. No cartão **Nova receita** confira os dados do **Paciente** (avisos "⚠ CPF não cadastrado" e "⚠ Endereço não cadastrado" com link **cadastrar**) e do **Prescritor**.
+2. Escolha o **Profissional que prescreve**. Se o profissional não tem o campo **Nº do conselho (CRM, CRO, etc.)** preenchido no cadastro dele, aparece o aviso "⚠ Nº do conselho não cadastrado" com link para cadastrar.
 3. Preencha **Título** (padrão Receita), **Data de emissão** e **Conteúdo da receita** (obrigatório).
 4. Clique em **Salvar receita** ("Receita criada.").
 Na lista **Receitas emitidas** há **Editar** (/patients/prescription/edit, campos Título, Data de emissão e Conteúdo), **Imprimir** (/patients/prescription/print, abre a página de impressão com cabeçalho da clínica, dados do paciente, texto e linha de assinatura com nome e conselho do profissional; use o botão Imprimir) e **Excluir** ("Receita excluída.").
@@ -92,7 +92,7 @@ Erros: "Preencha os campos obrigatórios.", "Dados inválidos."
 <!-- perm: anamnesis.manage -->
 **Onde fica:** Menu > Configurações > Anamnese (/anamnesis/templates).
 - Lista de cartões com nome, status e quantidade de campos, com **Editar**. **+ Novo template** cria um.
-- No cadastro informe o **Nome do template** (obrigatório) e clique em **+ Adicionar campo** para cada pergunta. Tipos de campo: **Texto curto**, **Texto longo**, **Sim/Não**, **Múltipla escolha** (uma opção por linha), **Número** e **Data**. Clique em **Criar template**.
+- No cadastro informe o **Nome do template** (obrigatório) e clique em **+ Adicionar campo** para cada pergunta (campo **Pergunta**, com o tipo ao lado e, para múltipla escolha, **Opções (uma por linha)**). Tipos de campo: **Texto curto**, **Texto longo**, **Sim/Não**, **Múltipla escolha** (uma opção por linha), **Número** e **Data**. Clique em **Criar template**.
 - Na edição é possível mudar o **Status** (Ativo ou inativo) e os campos.
 Erros: "Nome é obrigatório.", "Preencha os campos obrigatórios."
 
@@ -101,14 +101,14 @@ Erros: "Nome é obrigatório.", "Preencha os campos obrigatórios."
 **Onde fica:** perfil do paciente > **Anamnese** (/anamnesis?patient_id=...).
 1. Em **Nova anamnese** escolha o **Template**.
 2. **Preencher aqui** abre o formulário na clínica (/anamnesis/fill): responda os campos, escolha o **Profissional** (opcional), peça ao paciente para assinar no quadro (dedo ou mouse; **Limpar** refaz) e clique em **Salvar anamnese**.
-3. **Enviar ao paciente** abre o painel de envio. O paciente recebe um link para preencher e assinar. Marque **Não exigir login para preenchimento** para ele abrir direto pelo link. Escolha o canal:
-   - **WhatsApp**: precisa de telefone e de permissão de WhatsApp do paciente. Mensagens: "Paciente sem telefone cadastrado." ou "Paciente sem opt-in de WhatsApp."
-   - **E-mail**: precisa de e-mail ("Paciente sem e-mail cadastrado.").
-   - **Portal**: disponibiliza no portal do paciente.
+3. **Enviar ao paciente ▾** abre o painel de envio. O paciente recebe um link para preencher e assinar. Marque **Não exigir login para preenchimento** para ele abrir direto pelo link. Escolha o canal e clique no botão dele:
+   - **📱 WhatsApp** (botão **Enviar via WhatsApp**): precisa de telefone e de permissão de WhatsApp do paciente. Mensagens: "Paciente sem telefone cadastrado." ou "Paciente sem opt-in de WhatsApp."
+   - **✉ E-mail** (botão **Enviar por e-mail**): precisa de e-mail ("Paciente sem e-mail cadastrado.").
+   - **🌐 Portal** (botão **Disponibilizar no portal**): disponibiliza no portal do paciente.
    O link vale 7 dias.
 4. O paciente abre o link (/a/anamnese), preenche, assina e clica em **Enviar anamnese**. Aparece "Anamnese enviada!". Link vencido mostra "Link inválido ou expirado."
 5. Em **Respostas** ficam todas as anamneses do paciente com Data, Template e Assinatura (Assinado ou Sem assinatura), **Ver** (/anamnesis/response) e **PDF** (/anamnesis/export-pdf).
-Quando uma consulta e confirmada na agenda, o modelo definido em Configurações > Geral > Anamnese padrão e enviado automaticamente.
+Quando uma consulta e confirmada na agenda, o modelo definido em Configurações > Geral, campo Anamnese padrão e enviado automaticamente.
 
 ## Termos de consentimento
 <!-- perm: consent_terms.manage (cadastrar termos), consent_terms.accept (coletar aceite e assinatura) -->
@@ -120,13 +120,13 @@ Abrir a imagem da assinatura exige files.read.
 ## Imagens clínicas
 <!-- perm: medical_images.read (ver), medical_images.upload (enviar, marcar, recortar), files.read (abrir arquivos) -->
 **Onde fica:** perfil do paciente > **Imagens** (/medical-images?patient_id=...).
-- **+ Imagem**: campo **Arquivo** (JPG, PNG ou WebP, obrigatório), **Tipo** (Foto, Acompanhamento, Exame, Outro), **Procedimento** (opcional), **Data** (opcional) e **Descrição** (opcional, com microfone para ditar). Clique em **Enviar**. As imagens são comprimidas e convertidas para WebP, e reduzidas quando passam de 2048 pixels, para economizar espaço.
+- **+ Imagem**: campo **Arquivo (JPG, PNG, WebP)** (obrigatório), **Tipo** (Foto, Acompanhamento, Exame, Outro), **Procedimento (opcional)**, **Data (opcional)** e **Descrição (opcional)** (com **Gravar áudio** para ditar). Clique em **Enviar**. As imagens são comprimidas e convertidas para WebP, e reduzidas quando passam de 2048 pixels, para economizar espaço.
 - **+ Antes/Depois**: envie **Antes** e **Depois** (obrigatórios), **Procedimento** e **Data** e clique em **Criar comparação**.
 - A seção **Comparações** mostra cartões que abrem o comparador. A **galeria** mostra miniaturas com **Ver**, **Marcar** e o link para o prontuário de origem.
-- **Linha do tempo das imagens** (/medical-images/timeline): imagens agrupadas por procedimento e sessão, com Tipo, Data, Ângulo/Posição, **Abrir** e **Comparar**.
-- **Comparador** (/medical-images/compare): arraste o controle central para ver Antes e Depois lado a lado; atalhos **Marcar Antes** e **Marcar Depois**.
-- **Marcações** (/medical-images/annotate): ferramentas Retângulo, Círculo, Seta, Linha, Traço livre, Ponto, Texto e Medida; campo **Texto** (com microfone), **Cor** e **Salvar marcação**. A lista **Marcações** permite remover. **Recortar** ativa o modo de recorte: arraste sobre a imagem e escolha **Recortar esta imagem** ou **Salvar como copia**. **Ver original** abre o arquivo.
-- **Moderação de uploads do portal** (/medical-images/moderation): imagens enviadas pelo paciente ficam pendentes com **Aprovar** (Obs opcional) e **Rejeitar** (Motivo opcional). Abra pelo endereço.
+- **Linha do tempo das imagens** (/medical-images/timeline): imagens agrupadas por procedimento e sessão, com Tipo, Data, Ângulo/Posição, Arquivo, **Abrir** e **Comparar**.
+- **Comparador** (tela "Comparação Antes / Depois", /medical-images/compare): arraste o controle central para ver ANTES e DEPOIS lado a lado; atalhos **Marcar Antes** e **Marcar Depois**.
+- **Marcações** (tela "Marcações na imagem", /medical-images/annotate): ferramentas Retângulo, Círculo, Seta, Linha, Traço livre, Ponto, Texto e Medida; campo **Texto** (com **Gravar áudio**), **Cor** e **Salvar marcação**. A lista **Marcações** permite remover. **✂ Recortar** ativa o "Modo recorte": arraste sobre a imagem e escolha **✂ Recortar esta imagem** ou **📋 Salvar como cópia**. **Ver original** abre o arquivo.
+- **Moderação** (tela "Uploads pendentes (Portal)", /medical-images/moderation): imagens enviadas pelo paciente ficam pendentes com **Aprovar** (campo "Obs (opcional)") e **Rejeitar** (campo "Motivo (opcional)"). Não há item no menu: abra pelo endereço.
 Erros: "Formato não suportado. Use JPG/PNG/WEBP.", "Limite de armazenamento do plano atingido.", "Arquivo inválido.", "Falha no upload."
 
 ## Mapa de rotas e ações de prontuário, anamnese, termos e imagens
@@ -137,28 +137,28 @@ Erros: "Formato não suportado. Use JPG/PNG/WEBP.", "Limite de armazenamento do 
 - Imagens: /medical-images, /medical-images/upload (Enviar), /medical-images/upload-pair (Criar comparação), /medical-images/timeline, /medical-images/compare, /medical-images/file (mostra a imagem), /medical-images/annotate, /medical-images/annotations.json (carrega marcações), /medical-images/annotations/create (Salvar marcação), /medical-images/annotations/delete, /medical-images/crop (Recortar), /medical-images/moderation, /medical-images/moderation/approve, /medical-images/moderation/reject.
 
 ## Perguntas frequentes
-**Como abro o prontuário de um paciente?** Pacientes > Abrir > Prontuário. Precisa de medical_records.read.
+**Como abro o prontuário de um paciente?** Menu > Pacientes > Pacientes, clique em **Abrir** na linha do paciente e depois no botão **Prontuário**. Precisa de medical_records.read.
 
 **Como crio um novo registro?** No prontuário do paciente clique em + Novo registro, ou inicie o atendimento pela Agenda para já vir preenchido. Preencha ao menos a data e hora e clique em Salvar registro.
 
 **Posso editar um registro depois de salvo?** Sim, com a permissão medical_records.update. Cada edição gera uma versão, então o histórico fica preservado.
 
-**Usei material mas o estoque não baixou.** Se a quantidade era maior que o saldo, a linha não é gravada. Confira o saldo em Estoque > Materiais e repita. Também há baixa automática ao concluir o atendimento pela tela Finalizar sessão.
+**Usei material mas o estoque não baixou.** Se a quantidade era maior que o saldo, a linha não é gravada. Confira o saldo em Menu > Estoque > Materiais e repita. Também há baixa automática ao concluir o atendimento pela tela Finalizar sessão.
 
 **O microfone não funciona.** O navegador precisa permitir o microfone e suportar gravação. A mensagem "Limite de transcrição atingido" indica que o plano chegou ao limite mensal. "Falha ao transcrever" pode significar que a IA não está disponível para a clínica.
 
-**Como envio a anamnese para o paciente preencher em casa?** Pacientes > Anamnese > escolha o template > Enviar ao paciente > WhatsApp, E-mail ou Portal. O link vale 7 dias.
+**Como envio a anamnese para o paciente preencher em casa?** No perfil do paciente clique em **Anamnese**, escolha o **Template**, clique em **Enviar ao paciente** e use o botão **Enviar via WhatsApp**, **Enviar por e-mail** ou **Disponibilizar no portal**. O link vale 7 dias.
 
 **O paciente diz que o link da anamnese expirou.** Envie um novo link, o anterior vale por 7 dias.
 
-**Como imprimo uma receita?** Pacientes > Receituário > Imprimir na linha da receita. Cadastre o número do conselho do profissional para sair na receita (Configurações > Usuários > Editar, ou /professionals/edit).
+**Como imprimo uma receita?** No perfil do paciente clique em **Receituário** e depois em **Imprimir** na linha da receita. Cadastre o **Nº do conselho (CRM, CRO, etc.)** do profissional para sair na receita (Configurações > Usuários & Acesso > Usuários > Editar, ou /professionals/edit).
 
-**Como coleto assinatura do termo?** Pacientes > Termos, escolha o termo, o paciente assina no quadro e confirme.
+**Como coleto assinatura do termo?** No perfil do paciente clique em **Termos**: a tela lista só os aceites já registrados, e o botão **+ Novo aceite** não deixa escolher o termo e volta para a lista de pacientes. Para colher a assinatura use **Enviar p/ Assinatura** no perfil do paciente (veja 04-pacientes) ou abra o termo desejado pelo endereço /consent/accept?patient_id=...&term_id=... e peça ao paciente para assinar no quadro e clicar em **Confirmar e salvar**.
 
 **Não consigo ver as imagens do paciente.** Faltam as permissões medical_images.read e files.read. Fale com o dono da clínica.
 
-**Como faço um antes e depois?** Pacientes > Imagens > + Antes/Depois, envie as duas fotos e abra o comparador na seção Comparações.
+**Como faço um antes e depois?** No perfil do paciente clique em **Imagens** e em **+ Antes/Depois**, envie as duas fotos e abra o comparador na seção Comparações.
 
-**Posso desenhar na foto?** Sim, abra Marcar na imagem e use as ferramentas (seta, círculo, texto, medida etc.).
+**Posso desenhar na foto?** Sim, na galeria de Imagens clique em **Marcar** na foto e use as ferramentas (seta, círculo, texto, medida etc.).
 
-**Como corto uma foto?** Em Marcar, clique em Recortar, arraste a área e escolha Recortar esta imagem ou Salvar como copia.
+**Como corto uma foto?** Em Marcar, clique em **✂ Recortar**, arraste a área e escolha **✂ Recortar esta imagem** ou **📋 Salvar como cópia**.

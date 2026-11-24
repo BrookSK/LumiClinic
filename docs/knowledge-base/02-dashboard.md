@@ -32,7 +32,7 @@ O Dashboard é um resumo do dia da clínica. Ele mostra uma saudação com seu n
 - A receita do mês considera apenas vendas pagas; orçamentos em aberto não entram.
 
 ### Erros e dúvidas comuns
-- **Um cartão não aparece**: falta a permissão daquele cartão (veja a coluna Permissão). Peça ao dono em Configurações > Usuários e Acesso > Papéis e Permissões.
+- **Um cartão não aparece**: falta a permissão daquele cartão (veja a coluna Permissão). Peça ao dono em Configurações > Usuários & Acesso > Papéis & Permissões.
 - **Receita do mês zerada mas há vendas**: a venda precisa estar com status pago e criada neste mês. Veja Financeiro > Orçamentos.
 - **Atendimentos de hoje não aparecem em Próximos atendimentos**: a lista mostra só os que ainda não começaram e não foram cancelados.
 - **Nada aparece e surge a mensagem Selecione uma clínica**: a sessão está sem clínica ativa. Saia e entre novamente.
@@ -61,7 +61,7 @@ Clique em **Aplicar**; **Limpar** volta ao padrão (semana atual).
 - **Carga por profissional**: tempo total, quantidade de atendimentos e no-show de cada profissional (consultas não canceladas).
 - **Previsão (próximos 14 dias)**: ocupação estimada com base nos agendamentos futuros.
 
-**Dica:** para o painel fazer sentido, mantenha em dia Configurações > Clínica > Horários e as Regras de cada profissional (ver 03-agenda).
+**Dica:** para o painel fazer sentido, mantenha em dia Configurações > Agenda > Horários e as Regras de cada profissional (ver 03-agenda).
 
 ## Outras telas do painel que aparecem no menu Relatórios
 O grupo Relatórios do menu pode mostrar Financeiro, Estoque e Follow-up conforme as permissões. O relatório de **Follow-up** (/reports/follow-up) está descrito em 04-pacientes. Os relatórios Financeiro e Estoque ficam nos arquivos de Financeiro e Estoque.

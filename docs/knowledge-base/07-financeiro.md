@@ -58,7 +58,7 @@ Erro: "Paciente é obrigatório." (você não escolheu um paciente da lista).
 2. Escolha o **Serviço** (obrigatório). O **Valor unit. (R$)** é preenchido com o preço do serviço e pode ser alterado.
 3. Informe a **Qtd** (mínimo 1, vira o número de sessões planejadas) e, se quiser, o **Profissional (opcional)**.
 4. Clique em **Adicionar**.
-Para remover um item use o **✕** ao lado dele e confirme "Remover este item?". Só é possível adicionar ou remover itens enquanto o orçamento está aberto: "A venda não está aberta." e "Não é possível remover itens de um orçamento que não está aberto." aparecem quando ele já está pago ou cancelado.
+Para remover um item use o **✕** ao lado dele e confirme "Remover este item?". Só é possível adicionar ou remover itens enquanto o orçamento está aberto: "A venda não está aberta." (na tela pode aparecer como "A venda n?o est? aberta.") e "Não é possível remover itens de um orçamento que não está aberto." aparecem quando ele já está pago ou cancelado.
 
 ### Totais
 A área de totais mostra **Subtotal**, **Desconto**, **Total**, **Pago (x/y)**, **Pendente (n parcelas)** e **Restante**.
@@ -233,7 +233,7 @@ Mostra os lançamentos do fluxo de caixa do período classificados pelo Plano de
 
 **Como envio o orçamento para o paciente?** No detalhe do orçamento use **📱 Enviar WhatsApp** ou **📧 Enviar E-mail**. O paciente recebe um link público para ver o orçamento.
 
-**O botão de WhatsApp deu erro.** Confira se o paciente tem telefone e se o WhatsApp da clínica está conectado em Configurações > Geral > WhatsApp. Veja também os logs em Logs WhatsApp.
+**O botão de WhatsApp deu erro.** Confira se o paciente tem telefone e se o WhatsApp da clínica está conectado em Configurações > Geral, cartão WhatsApp. Veja também os logs em Logs WhatsApp.
 
 **Como dou desconto?** No detalhe do orçamento, campo **Desconto**, escolha R$ ou % e clique em **Aplicar**. Depois que o orçamento está pago ou cancelado o desconto trava.
 
@@ -267,7 +267,7 @@ Mostra os lançamentos do fluxo de caixa do período classificados pelo Plano de
 
 **Existe comissão para profissionais?** Não. O relatório Financeiro mostra receita e margem por profissional, mas não calcula comissão.
 
-**Não vejo o menu Financeiro.** Falta a permissão de ver orçamentos (finance.sales.read). Peça ao responsável em Papéis e Permissões.
+**Não vejo o menu Financeiro.** Falta a permissão de ver orçamentos (finance.sales.read). Peça ao responsável em Papéis & Permissões.
 
 ## Limitações conhecidas
 - Não existe tela para editar ou excluir o cadastro de formas de pagamento: a lista é fixa.

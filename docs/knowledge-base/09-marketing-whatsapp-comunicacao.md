@@ -137,7 +137,7 @@ Segmentos são grupos de pacientes filtrados por regras. Você cria o segmento e
 - Mensagem "Nenhum log encontrado." quando o filtro não traz resultados.
 
 ## Perguntas frequentes
-**Como conecto o WhatsApp da clínica?** Configurações > Geral > WhatsApp > **Conectar WhatsApp**, escaneie o QR Code com o celular da clínica (WhatsApp > Aparelhos conectados > Conectar aparelho). Aguarde aparecer **Conectado ✓**.
+**Como conecto o WhatsApp da clínica?** Configurações > Geral, cartão WhatsApp > **Conectar WhatsApp**, escaneie o QR Code com o celular da clínica (WhatsApp > Aparelhos conectados > Conectar aparelho). Aguarde aparecer **Conectado ✓**.
 
 **O QR Code não aparece.** Clique em **Conectar WhatsApp**. Se a tela diz que o WhatsApp não foi configurado, avise a equipe de suporte.
 
@@ -147,11 +147,11 @@ Segmentos são grupos de pacientes filtrados por regras. Você cria o segmento e
 
 **O WhatsApp aparece Desconectado.** O celular perdeu a sessão. Conecte de novo pelo QR Code. Enquanto estiver desconectado, lembretes e orçamentos por WhatsApp não saem.
 
-**Como sei se uma mensagem foi enviada?** Configurações > Geral > Logs WhatsApp. Procure o paciente e veja o status.
+**Como sei se uma mensagem foi enviada?** Configurações > Geral, cartão Logs WhatsApp. Procure o paciente e veja o status.
 
 **Mensagem com status Ignorado.** O paciente está sem telefone ou sem a marcação **Receber lembretes por WhatsApp**.
 
-**Como mudo o texto do lembrete?** Configurações > Geral > Templates WhatsApp > **Editar** no template reminder_24h ou reminder_2h.
+**Como mudo o texto do lembrete?** Configurações > Geral, cartão Templates WhatsApp > **Editar** no template reminder_24h ou reminder_2h.
 
 **Posso desligar os lembretes?** Desative os templates (Status **Desativado**). A mensagem não é enviada enquanto o template estiver desativado.
 

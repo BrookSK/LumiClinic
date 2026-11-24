@@ -30,6 +30,7 @@ Novos assuntos usam o próximo número livre entre 16 e 89. Nomes em minúsculas
 4. A permissão fica logo abaixo do título da seção, em um comentário: `<!-- perm: finance.sales.read (ver), finance.sales.create (criar) -->`. Use apenas códigos que existem nas migrações de permissões (database/migrations). Para tela sem permissão: `<!-- perm: nenhuma -->`.
 5. Todo arquivo termina com **Perguntas frequentes** e, quando faz sentido, **Limitações conhecidas** e **Mapa de rotas** (lista de URLs).
 6. Textos de tela entre aspas ou em negrito devem ser copiados **exatamente** como aparecem nas views, com acentos.
+7. Só descreva botão, aba, menu ou campo que exista na view. Diga onde ele fica (por exemplo "botão no topo à direita", "clique em uma linha vazia da grade"). Se a tela não tem item de menu, escreva "abra pelo endereço". Quando a view escreve sem acento ou com "?", copie como aparece e avise. Ao mudar uma view, revise o texto da base correspondente.
 
 ## Como adicionar uma tela ou módulo
 1. Abra o controller, a view (app/Views/...) e a rota (routes/web.php) da tela. Não escreva de memória.
