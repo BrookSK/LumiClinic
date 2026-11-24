@@ -128,7 +128,8 @@ final class SupportTicketRepository
 
         $sql = "
             SELECT t.id, t.public_code, t.clinic_id, t.user_id, t.title, t.category, t.severity, t.status,
-                   t.assigned_to_name, t.created_at, t.updated_at, c.name AS clinic_name
+                   t.assigned_to_name, t.created_at, t.updated_at, c.name AS clinic_name,
+                   (t.context_json LIKE '%\"impersonated_session\":true%') AS is_impersonated
             FROM support_tickets t
             LEFT JOIN clinics c ON c.id = t.clinic_id
             WHERE " . implode(' AND ', $where) . "

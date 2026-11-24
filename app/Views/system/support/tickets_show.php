@@ -194,7 +194,7 @@ ob_start();
                 <div><b>Telefone:</b> <?= $e(($ctxUser['phone'] ?? '') !== '' ? $ctxUser['phone'] : '-') ?></div>
                 <div><b>Perfis:</b> <?= $e($roleCodes !== [] ? implode(', ', $roleCodes) : '-') ?></div>
                 <?php if (!empty($context['impersonated_session'])): ?>
-                    <div class="lc-muted">Sessão aberta via "Logar como".</div>
+                    <div style="font-weight:700;color:#b45309;">Aberto por super admin em modo Logar como<?= (int)($context['impersonator_user_id'] ?? 0) > 0 ? ' (usuário #' . (int)$context['impersonator_user_id'] . ')' : '' ?></div>
                 <?php endif; ?>
             </div>
         </div>

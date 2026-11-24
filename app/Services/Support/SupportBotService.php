@@ -422,7 +422,7 @@ final class SupportBotService
         $auth = new AuthService($this->container);
         $clinicId = $auth->clinicId();
         $userId = $auth->userId();
-        if ($clinicId === null || $clinicId <= 0 || $userId === null || $userId <= 0 || $auth->isImpersonating()) {
+        if ($clinicId === null || $clinicId <= 0 || $userId === null || $userId <= 0) {
             throw new \RuntimeException('Contexto inválido.');
         }
         return [$clinicId, $userId];

@@ -130,6 +130,9 @@ ob_start();
                         <span><?= $e($t['clinic_name'] ?? ('Clínica #' . (int)$t['clinic_id'])) ?></span>
                         <span><?= $e($age((string)$t['created_at'])) ?></span>
                     </div>
+                    <?php if (!empty($t['is_impersonated'])): ?>
+                        <div style="font-size:11px;margin-top:4px;font-weight:700;color:#b45309;">Aberto por super admin em modo Logar como</div>
+                    <?php endif; ?>
                     <div class="lc-muted" style="font-size:11px;margin-top:4px;"><?= $e($catLabels[(string)$t['category']] ?? $t['category']) ?></div>
                 </a>
             <?php endforeach; ?>

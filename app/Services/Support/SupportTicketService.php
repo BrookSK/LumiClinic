@@ -94,7 +94,8 @@ final class SupportTicketService
         }
 
         $pagePath = $this->pathWithQueryKeys((string)($clientContext['page_path'] ?? ($conversation['page_path'] ?? '')));
-        $context = $this->buildContext($pdo, $clinicId, $userId, $clientContext, $pagePath, $kbChunkIds, $auth->isImpersonating());
+        $impersonatorUserId = $auth->isImpersonating() ? (int)($_SESSION['impersonator']['user_id'] ?? 0) : 0;
+        $context = $this->buildContext($pdo, $clinicId, $userId, $clientContext, $pagePath, $kbChunkIds, $impersonatorUserId);
 
         $title = $this->clean((string)($ticketData['title'] ?? ''), 190);
         if ($title === '') {
@@ -139,7 +140,9 @@ final class SupportTicketService
                 'page_path' => $pagePath !== '' ? $pagePath : null,
             ]);
 
-            $events->add($ticketId, $userId, 'created', 'Chamado criado pelo assistente de suporte.');
+            $events->add($ticketId, $userId, 'created', $impersonatorUserId > 0
+                ? 'Chamado criado pelo assistente de suporte por super admin (#' . $impersonatorUserId . ') em modo Logar como.'
+                : 'Chamado criado pelo assistente de suporte.');
             $pdo->commit();
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -233,7 +236,7 @@ final class SupportTicketService
      * @param array<string,mixed> $clientContext
      * @return array<string,mixed>
      */
-    private function buildContext(\PDO $pdo, int $clinicId, int $userId, array $clientContext, string $pagePath, array $kbChunkIds, bool $impersonating): array
+    private function buildContext(\PDO $pdo, int $clinicId, int $userId, array $clientContext, string $pagePath, array $kbChunkIds, int $impersonatorUserId): array
     {
         $stmt = $pdo->prepare('SELECT name FROM clinics WHERE id = :id LIMIT 1');
         $stmt->execute(['id' => $clinicId]);
@@ -289,7 +292,8 @@ final class SupportTicketService
             'role_codes' => $roleCodes,
             'permission_count' => count($permissions),
             'permissions' => $permissions,
-            'impersonated_session' => $impersonating,
+            'impersonated_session' => $impersonatorUserId > 0,
+            'impersonator_user_id' => $impersonatorUserId > 0 ? $impersonatorUserId : null,
             'page_path' => $pagePath,
             'referrer_path' => $this->pathWithQueryKeys((string)($clientContext['referrer_path'] ?? '')),
             'user_agent' => mb_substr(trim((string)($clientContext['user_agent'] ?? '')), 0, 300),

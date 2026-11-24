@@ -61,12 +61,12 @@ abstract class Controller
         }
     }
 
-    /** Mostra o assistente de suporte só para usuário de clínica (não super admin, não "logar como") com o bot ativo. */
+    /** Mostra o assistente de suporte para usuário de clínica (inclui "logar como"; super admin sem clínica não) com o bot ativo. */
     private function supportBotEnabledForSession(): bool
     {
         try {
             $isSuperAdmin = isset($_SESSION['is_super_admin']) && (int)$_SESSION['is_super_admin'] === 1;
-            if ($isSuperAdmin || !isset($_SESSION['user_id']) || (new AuthService($this->container))->isImpersonating()) {
+            if ($isSuperAdmin || !isset($_SESSION['user_id'])) {
                 return false;
             }
             return (new SystemSettingsService($this->container))->isSupportBotEnabled();
