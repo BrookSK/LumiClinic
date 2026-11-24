@@ -206,6 +206,63 @@ final class SystemSettingsService
         }
     }
 
+    /**
+     * Configuração do assistente de suporte (chatbot). Não confundir com getSupportSettings(), que é o contato público.
+     * A chave da OpenAI nunca é devolvida, só o indicador api_key_set.
+     *
+     * @return array{enabled:bool,model:string,api_key_set:bool,email_fallback:bool}
+     */
+    public function getSupportBotSettings(): array
+    {
+        $model = trim((string)($this->getText('support.bot.model') ?? ''));
+        $fallback = $this->getText('support.notify.email_fallback');
+
+        return [
+            'enabled' => trim((string)($this->getText('support.bot.enabled') ?? '')) === '1',
+            'model' => $model !== '' ? $model : 'gpt-4o-mini',
+            'api_key_set' => trim((string)($this->getText('support.bot.api_key') ?? '')) !== '',
+            'email_fallback' => $fallback === null || trim($fallback) !== '0',
+        ];
+    }
+
+    /**
+     * Chaves aceitas em $input: enabled (bool), model (string), api_key (string, só grava se não vazio),
+     * clear_api_key (bool), email_fallback (bool). Só grava o que estiver presente.
+     *
+     * @param array<string,mixed> $input
+     * @throws \InvalidArgumentException quando o nome do modelo é inválido
+     */
+    public function saveSupportBotSettings(array $input): void
+    {
+        if (array_key_exists('model', $input)) {
+            $model = trim((string)$input['model']);
+            if ($model === '') {
+                $model = 'gpt-4o-mini';
+            }
+            if (preg_match('/^[A-Za-z0-9._:-]{1,64}$/', $model) !== 1) {
+                throw new \InvalidArgumentException('Nome de modelo inválido. Use letras, números, ponto, hífen, dois-pontos ou sublinhado (até 64 caracteres).');
+            }
+            $this->setText('support.bot.model', $model);
+        }
+
+        if (array_key_exists('enabled', $input)) {
+            $this->setText('support.bot.enabled', !empty($input['enabled']) ? '1' : '0');
+        }
+
+        if (array_key_exists('email_fallback', $input)) {
+            $this->setText('support.notify.email_fallback', !empty($input['email_fallback']) ? '1' : '0');
+        }
+
+        if (!empty($input['clear_api_key'])) {
+            $this->setText('support.bot.api_key', null);
+        } elseif (array_key_exists('api_key', $input)) {
+            $key = trim((string)$input['api_key']);
+            if ($key !== '') {
+                $this->setText('support.bot.api_key', $key);
+            }
+        }
+    }
+
     /** @return array<string,string> */
     public function getSeoSettings(): array
     {

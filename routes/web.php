@@ -741,6 +741,15 @@ $router->post('/sys/settings/ai', [\App\Controllers\System\SystemSettingsControl
 $router->post('/sys/settings/ai/wallet', [\App\Controllers\System\AiWalletController::class, 'saveSettings']);
 $router->post('/sys/settings/ai/wallet/recharge', [\App\Controllers\System\AiWalletController::class, 'manualRecharge']);
 
+$router->get('/sys/support/tickets', [\App\Controllers\System\SystemSupportTicketsController::class, 'index']);
+$router->get('/sys/support/tickets/show', [\App\Controllers\System\SystemSupportTicketsController::class, 'show']);
+$router->post('/sys/support/tickets/status', [\App\Controllers\System\SystemSupportTicketsController::class, 'status']);
+$router->post('/sys/support/tickets/note', [\App\Controllers\System\SystemSupportTicketsController::class, 'note']);
+$router->post('/sys/support/tickets/resolve', [\App\Controllers\System\SystemSupportTicketsController::class, 'resolve']);
+
+$router->get('/sys/support/settings', [\App\Controllers\System\SystemSupportSettingsController::class, 'index']);
+$router->post('/sys/support/settings', [\App\Controllers\System\SystemSupportSettingsController::class, 'submit']);
+
 $router->get('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverRequirements']);
 $router->post('/sys/settings/server', [\App\Controllers\System\SystemSettingsController::class, 'serverSubmit']);
 $router->post('/sys/settings/server/migrate', [\App\Controllers\System\SystemSettingsController::class, 'serverMigrate']);

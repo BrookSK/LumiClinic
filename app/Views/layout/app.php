@@ -193,6 +193,22 @@ $ico = [
                     </div>
                 </details>
 
+                <details class="lc-navgroup" <?= $isActive('/sys/support') ? 'open' : '' ?>>
+                    <summary class="lc-nav__item lc-navgroup__summary<?= $isActive('/sys/support') ? ' lc-nav__item--active' : '' ?>">
+                        <span class="lc-nav__icon" aria-hidden="true"><?= $ico['help'] ?></span>
+                        <span class="lc-nav__label">Suporte</span>
+                        <span class="lc-navgroup__chev" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </summary>
+                    <div class="lc-navgroup__children">
+                        <div class="lc-nav__sub">
+                            <?= $navItem('/sys/support/tickets', 'Chamados', $ico['help'], $isActive('/sys/support/tickets')) ?>
+                            <?= $navItem('/sys/support/settings', 'Configuração do assistente', $ico['settings'], $isActive('/sys/support/settings')) ?>
+                        </div>
+                    </div>
+                </details>
+
                 <?= $navItem('/sys/error-logs', 'Logs de erro', $ico['settings'], $isActive('/sys/error-logs')) ?>
                 <?= $navItem('/sys/queue-jobs', 'Fila', $ico['stock'], $isActive('/sys/queue-jobs')) ?>
                 <?= $navItem('/sys/settings/server', 'Servidor', $ico['settings'], $isActive('/sys/settings/server')) ?>
